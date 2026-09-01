@@ -527,6 +527,7 @@ module.exports = {
     "CALENDAR.IMPORT.CALENDAR":'Do you wish to import Calendar:',
     "CALENDAR.LABEL":'Calendar',
     "CALENDAR.EVENT.LINK":'Link to event',
+    "CALENDAR.EVENT.DOWNLOADED":'Downloaded $NAME',
     "SANDBOX.APP.DATA":"Can store and read files in a folder private to the app",
     "SANDBOX.EDIT.FILE":"Can modify file chosen by user",
     "SANDBOX.READ.FOLDER":"Can read selected files of the associated types from folder chosen by user",

@@ -1205,6 +1205,7 @@ module.exports = {
         link.download = this.translate('CALENDAR.EVENT') + ' - ' + title + '.ics';
         link.click();
         this.removeSpinner();
+        this.showMessage(false, this.translate('CALENDAR.EVENT.DOWNLOADED').replace("$NAME", link.download));
     },
     sendEventToNativeEmailClient: function(calendarName, id, year, month, isRecurring, title) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
@@ -1218,9 +1219,14 @@ module.exports = {
                 let json = {open:true, secretLink:true,link:file.toLink()};
                 let body = that.translate('CALENDAR.EVENT.LINK') + ': ' + window.location.origin + window.location.pathname + "#" + propsToFragment(json);
                 var link = document.createElement("a");
-                link.href = "mailto:?subject=" + escape(title) + "&body=" + body;
+                link.href = "mailto:?subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
                 link.click();
+            } else {
+                that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
             }
+        }).exceptionally(function(throwable) {
+            that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
+            console.log(throwable.getMessage());
         });
     },
     emailEvent: function(calendarName, id, year, month, isRecurring, title) {
