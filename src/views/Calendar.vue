@@ -7,8 +7,7 @@
 		</AppHeader>
 		<main>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-            <a id="downloadEventAnchor" style="display:none"></a>
-	    <iframe id="calendar-iframe" :src="frameUrl()" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
+	    <iframe id="calendar-iframe" :src="frameUrl()" allow="clipboard-write" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
             <Choice
                 v-if="showChoice"
                 v-on:hide-choice="showChoice = false"
@@ -34,24 +33,6 @@
                 :consumer_cancel_func="confirm_consumer_cancel_func"
                 :consumer_func="confirm_consumer_func">
             </Confirm>
-            <Share
-		v-if="showShare"
-		v-on:hide-share-with="closeShare"
-		v-on:update-shared-refresh="forceSharedRefreshWithUpdate++"
-		v-on:update-files="updateSharedFile()"
-		:data="sharedWithData"
-		:fromApp="fromApp"
-		:displayName="displayName"
-		:allowReadWriteSharing="allowReadWriteSharing"
-		:allowCreateSecretLink="allowCreateSecretLink"
-                :autoOpenSecretLink="true"
-		:files="filesToShare"
-		:path="pathToFile"
-		:followernames="followernames"
-		:friendnames="friendnames"
-		:groups="groups"
-		:messages="messages">
-	    </Share>
 		</main>
 	</article>
 </template>
@@ -60,7 +41,6 @@
 const AppHeader = require("../components/AppHeader.vue");
 const Choice = require('../components/choice/Choice.vue');
 const Confirm = require("../components/confirm/Confirm.vue");
-const Share = require("../components/drive/DriveShare.vue");
 const ProgressBar = require("../components/drive/ProgressBar.vue");
 const Prompt = require("../components/prompt/Prompt.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
@@ -72,7 +52,6 @@ module.exports = {
     components: {
         Choice,
         Confirm,
-		Share,
 		AppHeader,
 		ProgressBar,
 		Prompt,
@@ -84,10 +63,10 @@ module.exports = {
             CALENDAR_DIR_NAME: 'calendar',
             DATA_DIR_NAME: 'data',
             CALENDAR_FILE_EXTENSION: '.ics',
+            calendarItemLinks: {},
             CONFIG_FILENAME: 'App.config',
             NEW_CALENDAR_FILENAME: 'calendar.inf',
             showSpinner: false,
-            showShare: false,
             spinnerMessage: "",
             calendarProperties: null,
             showPrompt: false,
@@ -115,7 +94,6 @@ module.exports = {
             hasEmail: false
         }
     },
-    props: ['messages'],
 	computed: {
 		...Vuex.mapState([
 			'context',
@@ -129,15 +107,6 @@ module.exports = {
 			'currentFilename',
 			'currentTheme',
 		]),
-        friendnames: function() {
-            return this.socialData.friends;
-        },
-        followernames: function() {
-            return this.socialData.followers;
-        },
-        groups: function() {
-		    return {groupsNameToUid: this.socialData.groupsNameToUid, groupsUidToName: this.socialData.groupsUidToName};
-	    },
 	},
 	watch: {
 		isDark() {
@@ -256,10 +225,14 @@ module.exports = {
     frameDomain: function() {
         return window.location.protocol + "//calendar." + window.location.host;
     },
+    // Targeted at the frame's own origin rather than '*': these messages
+    // carry the user's event contents and freshly minted secret links, and
+    // frameUrl() builds the iframe's src from this same origin, so it can
+    // never be anything else.
     postMessage: function(obj) {
     	var iframe = document.getElementById("calendar-iframe");
         if (this.isIframeInitialised) {
-            iframe.contentWindow.postMessage(obj, '*');
+            iframe.contentWindow.postMessage(obj, this.frameDomain());
         } else {
             let that = this;
             this.sendPing(iframe);
@@ -268,7 +241,7 @@ module.exports = {
     },
     sendPing: function(iframe) {
         let theme = this.$store.getters.currentTheme;
-        iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, '*');
+        iframe.contentWindow.postMessage({type: 'ping', currentTheme: theme, hasEmail: this.hasEmail}, this.frameDomain());
     },
     initialiseIFrameCommunication: function(iframe, callback, retryCount){
         if (this.isIframeInitialised) {
@@ -291,59 +264,53 @@ module.exports = {
     		setTimeout(function(){that.startListener(calendar)}, 1000);
 	    	return;
 	    }
-        // Listen for response messages from the frames.
+        // Listen for response messages from the frame.
         window.addEventListener('message', function (e) {
-            // Normally, you should verify that the origin of the message's sender
-            // was the origin and source you expected. This is easily done for the
-            // unsandboxed frame. The sandboxed frame, on the other hand is more
-            // difficult. Sandboxed iframes which lack the 'allow-same-origin'
-            // header have "null" rather than a valid origin. This means you still
-            // have to be careful about accepting data via the messaging API you
-            // create. Check that source, and validate those inputs!
+            // The `e.source` identity check is what actually gates this: only
+            // the calendar frame's own window can be the source, whatever
+            // origin it reports. "null" is still accepted alongside the real
+            // origin because a host embedding this page in a sandboxed
+            // context reports an opaque origin. Everything past this point
+            // is untrusted input and is validated before use - see
+            // isSafeEventId/eventDirPath.
             if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                 if (e.data.type == 'pong') {
                     that.isIframeInitialised = true;
                 } else if(e.data.type=="save") {
                     that.saveEvent(calendar, e.data);
-                } else if(e.data.type=="saveAll") {
-                    that.saveAllEvents(calendar, e.data);
                 } else if(e.data.type=="deleteCalendar") {
                     that.deleteCalendar(calendar, e.data);
                 } else if(e.data.type=="delete") {
                     that.deleteEvent(calendar, e.data);
-                } else if(e.data.type=="displaySpinner") {
-                    that.displaySpinner();
                 } else if(e.data.type=="removeSpinner") {
                     that.removeSpinner();
-                } else if(e.data.type=="displayMessage") {
-                    that.displayMessage(e.data.message);
+                } else if(e.data.type=="saveAll") {
+                    that.saveAllEvents(calendar, e.data);
+                } else if(e.data.type=="downloadIcs") {
+                    that.downloadIcsFile(e.data.filename, e.data.item);
+                } else if(e.data.type=="emailEvent") {
+                    that.emailEvent(e.data);
                 } else if(e.data.type=="loadAdditional") {
                     that.loadAdditional(calendar, e.data.year, e.data.month, 'loadAdditional');
-                } else if(e.data.type=="downloadEvent") {
-                    that.downloadEvent(calendar, e.data.title, e.data.event);
-                } else if(e.data.type=="sendEventToNativeEmailClient") {
-                    that.sendEventToNativeEmailClient(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring, e.data.title);
-                } else if(e.data.type=="emailEvent") {
-                    that.emailEvent(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring, e.data.title);
-                } else if(e.data.type=="shareCalendarEvent") {
-                    that.shareCalendarEvent(e.data.calendarName, e.data.id, e.data.year, e.data.month, e.data.isRecurring);
                 } else if (e.data.action == 'requestRenameCalendar') {
-                    that.renameCalendarRequest(calendar, e.data.calendar);
+                    that.renameCalendarRequest(calendar, e.data.calendar, e.data.newName);
                 } else if (e.data.action == 'requestCalendarColorChange') {
                     that.calendarColorChangeRequest(calendar, e.data.calendarName, e.data.newColor);
                 } else if (e.data.action == 'requestAddCalendar') {
-                    that.addCalendarRequest(calendar, e.data.newColor);
-                } else if (e.data.action == 'requestChoiceSelection') {
-                    that.requestChoiceSelection(e.data.method, e.data.includeChangeAll);
-                } else if(e.data.action=="shareCalendar") {
-                    that.shareCalendar(e.data.calendar);
+                    that.addCalendarRequest(calendar, e.data.newColor, e.data.newName);
+                } else if (e.data.action == 'shareStateRequest') {
+                    that.sendShareState(e.data);
+                } else if (e.data.action == 'shareAddUser') {
+                    that.shareCalendarItemWith(e.data);
+                } else if (e.data.action == 'shareRemoveUser') {
+                    that.unshareCalendarItemWith(e.data);
+                } else if (e.data.action == 'shareCreateLink') {
+                    that.createCalendarItemLink(e.data);
+                } else if (e.data.action == 'shareRevokeLink') {
+                    that.revokeCalendarItemLink(e.data);
                 }
             }
         });
-	    // Note that we're sending the message to "*", rather than some specific
-            // origin. Sandboxed iframes which lack the 'allow-same-origin' header
-            // don't have an origin which you can target: you'll have to send to any
-            // origin, which might alow some esoteric attacks. Validate your output!
         let date = new Date();
         let year = 1900 + date.getYear();
         let month = date.getMonth() + 1;
@@ -369,58 +336,7 @@ module.exports = {
             }
         }, 100);
 	},
-	closeShare: function() {
-            this.showShare = false;
-        },
-        shareWith: function(app, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
-            let dirPath = this.context.username + "/.apps/" + app;
-            this.showShareWithForFile(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay);
-        },
-        showShareWithForFile: function(dirPath, filename, allowReadWriteSharing, allowCreateSecretLink, nameToDisplay) {
-            let that = this;
-            var context = this.context;
-            this.context.getByPath(dirPath)
-                .thenApply(function(dir){dir.get().getChild(filename, that.context.crypto.hasher, that.context.network).thenApply(function(child){
-                    let file = child.get();
-                    if (file == null) {
-                        return;
-                    }
-                    that.filesToShare = [file];
-                    that.pathToFile = dirPath.split('/');
-                    let directoryPath = peergos.client.PathUtils.directoryToPath(that.pathToFile);
-                    context.getDirectorySharingState(directoryPath).thenApply(function(updatedSharedWithState) {
-                        let fileSharedWithState = updatedSharedWithState.get(file.getFileProperties().name);
-                        let read_usernames = fileSharedWithState.readAccess.toArray([]);
-                        let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
-                        that.sharedWithData = {read_shared_with_users:read_usernames, edit_shared_with_users:edit_usernames};
-                        that.fromApp = true;
-                        that.displayName = nameToDisplay != null && nameToDisplay.length > 0 ?
-                                                     nameToDisplay : file.getFileProperties().name;
-                        that.allowReadWriteSharing = allowReadWriteSharing;
-                        that.allowCreateSecretLink = allowCreateSecretLink;
-                        that.showShare = true;
-                    });
-                })});
-        },
-        requestChoiceSelection: function(method, includeChangeAll) {
-	    let that = this;
-        this.choice_message = method + ' ' + this.translate('CALENDAR.EVENT');
-        this.choice_body = '';
-        this.choice_consumer_func = (index) => {
-            //console.log("response=" + response);
-            let chosenIndex = includeChangeAll ? index : index + 1;
-            that.postMessage({type: 'respondChoiceSelection', optionIndex: chosenIndex, method: method});
-        };
-        let options = [];
-        if (includeChangeAll) {
-            options.push(this.translate('CALENDAR.ALL.EVENTS'));
-        }
-        options.push(this.translate('CALENDAR.THIS.EVENT'));
-        options.push(this.translate('CALENDAR.FUTURE.EVENTS'));
-        this.choice_options = options;
-        this.showChoice = true;
-	},
-    renameCalendarRequest: function(calendar, calendarItem) {
+    renameCalendarRequest: function(calendar, calendarItem, suppliedName) {
         let that = this;
         this.prompt_placeholder = this.translate('CALENDAR.NEW.NAME');
         this.prompt_value = calendarItem.name;
@@ -445,6 +361,7 @@ module.exports = {
                 for (var i=0;i < that.calendarProperties.calendars.length; i++) {
                     let calendar = that.calendarProperties.calendars[i];
                     if (calendar.name == newName) {
+                        that.showMessage(true, that.nameExistsMessage(newName));
                         return;
                     }
                 }
@@ -456,18 +373,32 @@ module.exports = {
                         break;
                     }
                 }
+                let previousName = calendarItem.name;
                 calendarToChange.name = newName;
                 calendarItem.name = newName;
                 that.displaySpinner();
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.removeSpinner();
                     that.postMessage({type: 'respondRenameCalendar', calendar: calendarItem});
+                }).exceptionally(function(throwable) {
+                    calendarToChange.name = previousName;
+                    calendarItem.name = previousName;
+                    that.removeSpinner();
+                    that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+                    return null;
                 });
             });
         };
+        // The calendar app collects the name in its own modal; reuse this
+        // consumer (validation + uniqueness live in it) instead of asking
+        // a second time. Falls back to the prompt when none was supplied.
+        if (suppliedName != null && suppliedName.length > 0) {
+            this.prompt_consumer_func(suppliedName);
+            return;
+        }
         this.showPrompt =  true;
     },
-    addCalendarRequest: function(calendar, newColor) {
+    addCalendarRequest: function(calendar, newColor, suppliedName) {
         let that = this;
         this.prompt_placeholder = this.translate('CALENDAR.NEW.NAME');
         this.prompt_value = "";
@@ -490,6 +421,7 @@ module.exports = {
                 for (var i=0;i < that.calendarProperties.calendars.length; i++) {
                     let calendar = that.calendarProperties.calendars[i];
                     if (calendar.name == newName) {
+                        that.showMessage(true, that.nameExistsMessage(newName));
                         return;
                     }
                 }
@@ -497,15 +429,31 @@ module.exports = {
                 that.displaySpinner();
                 let newId = String(that.calendarProperties.calendars.length + 1);
                 let dirName = that.generateDirectoryName();
-                that.calendarProperties.calendars.push({name:newName, directory:dirName, color: newColor, shareable: true});
+                let entry = {name:newName, directory:dirName, color: newColor, shareable: true};
+                that.calendarProperties.calendars.push(entry);
+                let failed = function(throwable) {
+                    that.dropCalendarEntry(entry);
+                    that.removeSpinner();
+                    that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+                    return null;
+                };
+                // Both chains are guarded rather than one: the inner future is
+                // not returned, so a failure there never reaches the outer one.
                 that.createCalendarFile(calendar, dirName, {name:newName, color: newColor}).thenApply(done => {
                     that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                         that.removeSpinner();
                         that.postMessage({type: 'respondAddCalendar', newId: newId, newName: newName, newColor: newColor});
-                    });
-                });
+                    }).exceptionally(failed);
+                }).exceptionally(failed);
             });
         };
+        // The calendar app collects the name in its own modal; reuse this
+        // consumer (validation + uniqueness live in it) instead of asking
+        // a second time. Falls back to the prompt when none was supplied.
+        if (suppliedName != null && suppliedName.length > 0) {
+            this.prompt_consumer_func(suppliedName);
+            return;
+        }
         this.showPrompt =  true;
     },
     isString: function(x) {
@@ -516,10 +464,14 @@ module.exports = {
         if (!this.isString(newColor)) {
             return;
         }
+        let changed = null;
+        let previousColor = null;
         for (var i=0;i < that.calendarProperties.calendars.length; i++) {
-            let calendar = that.calendarProperties.calendars[i];
-            if (calendar.name == calendarName) {
-                calendar.color = newColor;
+            let entry = that.calendarProperties.calendars[i];
+            if (entry.name == calendarName) {
+                changed = entry;
+                previousColor = entry.color;
+                entry.color = newColor;
                 break;
             }
         }
@@ -527,6 +479,12 @@ module.exports = {
         that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
             that.removeSpinner();
             that.postMessage({type: 'respondCalendarColorChange', calendarName: calendarName, newColor: newColor});
+        }).exceptionally(function(throwable) {
+            if (changed != null)
+                changed.color = previousColor;
+            that.removeSpinner();
+            that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+            return null;
         });
     },
     //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
@@ -598,10 +556,20 @@ module.exports = {
                 counter++;
             }
         }
-        that.calendarProperties.calendars.push({name:currentCalendarName, owner: that.owner,
-            directory: directory, color: color});
+        // The list is updated in memory before the file is written, so a
+        // failed write has to take the entry back out - otherwise the view
+        // keeps a calendar the stored file never got, and the next successful
+        // write persists it.
+        let entry = {name:currentCalendarName, owner: that.owner,
+            directory: directory, color: color};
+        that.calendarProperties.calendars.push(entry);
         that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
             that.load(calendar, year, month);
+        }).exceptionally(function(throwable) {
+            that.dropCalendarEntry(entry);
+            that.removeSpinner();
+            that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+            return null;
         });
     },
     load: function(calendar, year, month) {
@@ -619,14 +587,16 @@ module.exports = {
     loadCalendars: function(calendar, year, month, importCalendarEventParams) {
         let that = this;
         that.getRecurringCalendarEvents(calendar).thenApply(function(recurringEvents) {
-            that.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
-                that.loadEvents(year, month, allEvents.previous, allEvents.current,
-                        allEvents.next, recurringEvents, importCalendarEventParams);
+            that.getTaskItems(calendar).thenApply(function(taskItems) {
+                that.getCalendarEventsAroundMonth(calendar, year, month).thenApply(function(allEvents) {
+                    that.loadEvents(year, month, allEvents.previous, allEvents.current,
+                            allEvents.next, recurringEvents, taskItems, importCalendarEventParams);
+                });
             });
         });
     },
 
-    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents, importCalendarEventParams) {
+    loadEvents: function(year, month, eventsPreviousMonth, eventsThisMonth, eventsNextMonth, recurringEvents, taskItems, importCalendarEventParams) {
         let that = this;
         let yearMonth = year * 12 + (month-1);
         let calendars = [];
@@ -638,13 +608,19 @@ module.exports = {
             let username = (that.loadCalendarAsGuest && !that.isCalendarReadOnly) ? that.owner : that.context.username;
             that.postMessage({type: 'load', previousMonth: eventsPreviousMonth,
                 currentMonth: eventsThisMonth, nextMonth: eventsNextMonth, recurringEvents: recurringEvents,
-                yearMonth: yearMonth, username: username, calendars: calendars,
+                tasks: taskItems, yearMonth: yearMonth, username: username, calendars: calendars,
                 importCalendarEventParams: importCalendarEventParams, isReadOnly: that.isCalendarReadOnly});
         });
     },
     postDeleteCalendar: function(calendar, data) {
         let that = this;
-        this.calendarProperties.calendars.splice(this.calendarProperties.calendars.findIndex(v => v.id === data.id), 1);
+        // Matched by name: entries in calendarProperties.calendars carry no
+        // id, so findIndex on one always returned -1 and splice(-1, 1)
+        // dropped the last calendar instead of the deleted one.
+        let index = this.calendarProperties.calendars.findIndex(v => v.name === data.calendarName);
+        if (index !== -1) {
+            this.calendarProperties.calendars.splice(index, 1);
+        }
         this.updatePropertiesFile(calendar, this.calendarProperties).thenApply(res => {
             that.removeSpinner();
             that.postMessage({type: 'respondDeleteCalendar', calendar: data});
@@ -662,14 +638,20 @@ module.exports = {
                 break;
             }
         }
-        this.confirmDeleteCalendar(data.calendarName,
-            () => { that.showConfirm = false;
+        // The calendar app runs its own confirm dialog, so asking again here
+        // would stack a second one on top of it.
+        let proceed = () => { that.showConfirm = false;
         	    that.displaySpinner();
         	    if (isSharedCalendar) {
                     that.postDeleteCalendar(calendar, data);
         	    } else {
-                    let dirPath = peergos.client.PathUtils.directoryToPath(
-                        [that.findCalendarDirectory(data.calendarName)]);
+                    let directory = that.findCalendarDirectory(data.calendarName);
+                    if (directory == null) {
+                        that.removeSpinner();
+                        that.showMessage(true, that.translate('CALENDAR.ERROR.DELETE'));
+                        return;
+                    }
+                    let dirPath = peergos.client.PathUtils.directoryToPath([directory]);
                     calendar.deleteInternal(dirPath).thenApply(function(res) {
                         that.postDeleteCalendar(calendar, data);
                     }).exceptionally(function(throwable) {
@@ -682,9 +664,12 @@ module.exports = {
                         }
                     });
                 }
-            },
-            () => { that.showConfirm = false;}
-        );
+            };
+        if (data.confirmed) {
+            proceed();
+        } else {
+            this.confirmDeleteCalendar(data.calendarName, proceed, () => { that.showConfirm = false;});
+        }
     },
     confirmDeleteCalendar: function(calendarName, deleteCalendarFunction, cancelFunction) {
 
@@ -694,9 +679,58 @@ module.exports = {
         this.confirm_consumer_func = deleteCalendarFunction;
         this.showConfirm = true;
     },
-    removeCalendarEvent: function(calendar, calendarName, year, month, id, isRecurring) {
+    // An event id originates in a .ics UID, which can come from any file the
+    // user imports, and year/month arrive over postMessage - all three are
+    // concatenated into a path below. The app sanitises ids at its own
+    // boundary; this is the privileged side refusing to build a path out of
+    // anything that could climb out of the event directory.
+    // Tasks live beside the year buckets rather than inside one: a task
+    // may have no due date at all, so there is no year/month to file it
+    // under. Same fail-closed contract as eventDirPath - an unknown
+    // calendar name resolves to nothing, never to a default.
+    taskDirPath: function(calendarName) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);
-        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
+        return calendarDirectory == null ? null : calendarDirectory + "/tasks";
+    },
+    itemDirPath: function(item) {
+        return item.isTask ? this.taskDirPath(item.calendarName)
+            : this.eventDirPath(item.calendarName, item.year, item.month, item.isRecurring);
+    },
+    isSafeEventId: function(id) {
+        return this.isString(id) && id.length > 0 && id !== '.' && id !== '..'
+            && id.indexOf('/') === -1 && id.indexOf('\\') === -1;
+    },
+    eventDirPath: function(calendarName, year, month, isRecurring) {
+        let calendarDirectory = this.findCalendarDirectory(calendarName);
+        if (calendarDirectory == null) {
+            return null;
+        }
+        if (isRecurring) {
+            return calendarDirectory + "/recurring";
+        }
+        let y = parseInt(year, 10);
+        let m = parseInt(month, 10);
+        if (!(y >= 1 && y <= 9999) || !(m >= 1 && m <= 12)) {
+            return null;
+        }
+        return calendarDirectory + "/" + y + "/" + m;
+    },
+    // Guards the two entry points that turn an app message into a path.
+    // Returns false (and clears the spinner it was raised under) rather than
+    // letting a bad id or month reach PathUtils.
+    isValidEventRequest: function(calendarName, year, month, id, isRecurring, isTask) {
+        let dirPath = isTask ? this.taskDirPath(calendarName)
+            : this.eventDirPath(calendarName, year, month, isRecurring);
+        if (this.isSafeEventId(id) && dirPath != null) {
+            return true;
+        }
+        this.removeSpinner();
+        this.showMessage(true, this.translate('CALENDAR.ERROR.SAVE.EVENT'));
+        return false;
+    },
+    removeCalendarEvent: function(calendar, calendarName, year, month, id, isRecurring, isTask) {
+        let dirPath = isTask ? this.taskDirPath(calendarName)
+            : this.eventDirPath(calendarName, year, month, isRecurring);
         let filename = id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         return calendar.deleteInternal(filePath);
@@ -704,10 +738,13 @@ module.exports = {
     deleteEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
-        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring).thenApply(function(res) {
+	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
+	        return;
+	    }
+        this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask).thenApply(function(res) {
 	        that.removeSpinner();
         }).exceptionally(function(throwable) {
-            that.showMessage(true, that.translate("CALENDAR.ERROR.DELETE.EVENT"));
+            that.showMessage(true, that.translate(item.isTask ? "CALENDAR.ERROR.DELETE.TASK" : "CALENDAR.ERROR.DELETE.EVENT"));
             console.log(throwable.getMessage());
 	        that.removeSpinner();
         });
@@ -717,9 +754,6 @@ module.exports = {
     },
     removeSpinner: function() {
         this.showSpinner = false;
-    },
-    displayMessage: function(msg) {
-        this.showMessage(true, msg);
     },
     getPropertiesFile: function(calendar) {
         let that = this;
@@ -806,10 +840,11 @@ module.exports = {
         return calendar.readInternal(filePath, owner).thenApply(data => {
             return JSON.parse(new TextDecoder().decode(data));
         }).exceptionally(function(throwable) {//File not found
-            let props = new Object();
-            props.calendars = [];
-            props.calendars.push({name: this.owner + "-shared", color: '#00a9ff'});
-            return props;
+            // `owner`, not `this.owner`: this callback is a plain function,
+            // so `this` was not the component and the fallback threw a
+            // TypeError instead of returning. Shape matches what callers
+            // read off it (json.name / json.color), not a properties file.
+            return {name: owner + "-shared", color: '#00a9ff'};
         });
     },
     createCalendarFile: function(calendar, directory, json) {
@@ -837,6 +872,9 @@ module.exports = {
         }
         return null;
     },
+    // A name that is not on the list resolves to nothing rather than to the default
+    // calendar: falling back would have let a delete or a share land on a directory
+    // the request never named.
     findCalendarDirectory: function(calendarName) {
         for (var i=0; i < this.calendarProperties.calendars.length; i++) {
             let calendar = this.calendarProperties.calendars[i];
@@ -844,11 +882,10 @@ module.exports = {
                 return calendar.directory;
             }
         }
-        return "default";
+        return null;
     },
     updateCalendarEvent: function(calendar, item) {
-        let calendarDirectory = this.findCalendarDirectory(item.calendarName);
-        let dirPath =  item.isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + item.year + "/" + item.month;
+        let dirPath = this.itemDirPath(item);
         let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), filename);
         let encoder = new TextEncoder();
@@ -859,6 +896,21 @@ module.exports = {
     saveEvent: function(calendar, item) {
 	    const that = this;
 	    that.displaySpinner();
+	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
+	        return;
+	    }
+	    // A task has no recurrence and no month to move between, so none of
+	    // the event placement logic below applies to it.
+	    if (item.isTask) {
+	        this.updateCalendarEvent(calendar, item).thenApply(function(res) {
+	            that.removeSpinner();
+	        }).exceptionally(function(throwable) {
+	            that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE.TASK'));
+	            that.removeSpinner();
+	            return null;
+	        });
+	        return;
+	    }
 	    if (item.action == "createRecurring") {
             this.moveEvent(calendar, item, false);
 	    } else if (item.action == "deleteRecurring") {
@@ -938,6 +990,12 @@ module.exports = {
                     console.log(throwable.getMessage());
                     uploadFuture.complete(false);
                });
+           // Without this the future never settles when the upload directory
+           // cannot be resolved, and the spinner stays up for good.
+           }).exceptionally(function (throwable) {
+               that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
+               uploadFuture.complete(false);
+               return null;
            });
        }
        return uploadFuture;
@@ -945,8 +1003,13 @@ module.exports = {
     prepareImportCalendarEvent: function(item, uploadParams) {
         let that = this;
 
-        let calendarDirectory = this.findCalendarDirectory(item.calendarName);
-        let dirPath =  item.isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + item.year + "/" + item.month;
+        // itemDirPath, not eventDirPath: an imported task belongs in the
+        // calendar's tasks/ directory and arrives in the same batch.
+        let dirPath = this.itemDirPath(item);
+        if (dirPath == null) {
+            this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
+            return;
+        }
         let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let encoder = new TextEncoder();
         let uint8Array = encoder.encode(item.item);
@@ -997,83 +1060,46 @@ module.exports = {
         let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];
         fileUploadList.push(fup);
     },
+    // Every event and task from one import, written as a single batched
+    // upload rather than a write per item: a file with hundreds of events
+    // would otherwise be hundreds of round trips. The recursion this
+    // replaced existed only to ask about each event in turn - the app owns
+    // that conversation now and reports one summary at the end.
     saveAllEvents: function(calendar, data) {
+        const that = this;
         this.removeSpinner();
+        let items = (data && data.items) || [];
+        if (items.length == 0) {
+            return;
+        }
         let name = 'bulkImport';
-        let title = this.translate("CALENDAR.IMPORT.MSG").replace("$ITEMS", data.items.length);
-        var progress = {
-            title:title,
-            done:0,
-            max:data.items.length,
-            name: name
-        };
+        let title = this.translate("CALENDAR.IMPORT.MSG").replace("$ITEMS", items.length);
+        let progress = {title: title, done: 0, max: items.length, name: name};
         let uploads = {
-            directoryPath: this.context.username + "/.apps/calendar/data/",
+            directoryPath: this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/",
             uploadPaths: [],
             fileUploadProperties: [],
             progress: progress,
             name: name,
             title: title
         };
-        if (!data.showConfirmation) {
-            this.$toast(
-                {component: ProgressBar,props:  progress} ,
-                { icon: false , timeout:false, id: name});
+        // A single file finishes before a progress bar could be read, and
+        // one that flashes and vanishes reads as a glitch.
+        if (items.length > 1) {
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name});
         }
-        this.saveAllEventsRecursive(calendar, data.items, 0, data.showConfirmation, uploads);
-    },
-    saveAllEventsRecursive: function(calendar, items, index, showConfirmation, uploads) {
-        const that = this;
-        if (index == items.length) {
-            if (showConfirmation) {
-                that.removeSpinner();
-                that.close();
-            } else {
-                this.bulkUpload(uploads).thenApply(done => {
-                    that.removeSpinner();
-                    if (done) {
-                        that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
-                    }
-                });
+        items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
+        this.bulkUpload(uploads).thenApply(function(done) {
+            that.removeSpinner();
+            if (done) {
+                that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
             }
-        } else {
-            let item = items[index];
-            if (showConfirmation) {
-                this.confirmImportEventFile(item.summary,
-                    () => { that.showConfirm = false; that.importEventFile(calendar, items, index, showConfirmation, uploads);},
-                    () => { that.showConfirm = false; that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);}
-                );
-            } else {
-                this.importEventFile(calendar, items, index, showConfirmation, uploads);
-            }
-        }
-    },
-    importEventFile: function(calendar, items, index, showConfirmation, uploads) {
-        let that = this;
-        let item = items[index];
-        that.displaySpinner();
-        if (showConfirmation) {
-            this.updateCalendarEvent(calendar, item).thenApply(function(res) {
-                that.postMessage({type: 'respondConfirmImportICSFile', item: item, index: index});
-                that.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);
-            }).exceptionally(function(throwable) {
-                that.removeSpinner();
-                that.close();
-                that.showMessage(true, that.translate('CALENDAR.ERROR.IMPORT.EVENT'));
-                console.log(throwable.getMessage());
-            });
-        } else {
-            this.prepareImportCalendarEvent(item, uploads);
-            this.saveAllEventsRecursive(calendar, items, ++index, showConfirmation, uploads);
-        }
-    },
-    confirmImportEventFile: function(summary, importFunction, cancelFunction) {
-        this.confirm_message= this.translate('CALENDAR.IMPORT.EVENT') + ' ' + summary.datetime
-                + ' - ' + summary.title + ' ?';
-        this.confirm_body='';
-        this.confirm_consumer_cancel_func = cancelFunction;
-        this.confirm_consumer_func = importFunction;
-        this.showConfirm = true;
+        }).exceptionally(function(throwable) {
+            that.$toast.dismiss(name);
+            that.removeSpinner();
+            that.showMessage(true, that.translate('CALENDAR.ERROR.IMPORT.EVENT'));
+            return null;
+        });
     },
     confirmImportCalendar: function(calendarName, importFunction, cancelFunction) {
         this.confirm_message= this.translate('CALENDAR.IMPORT.CALENDAR') + ' ' + calendarName + ' ?';
@@ -1091,6 +1117,31 @@ module.exports = {
         }
         that.calendarProperties.calendars.forEach(currentCalendar => {
             let dirStr = currentCalendar.directory + "/recurring";
+            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
+            calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
+                that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
+                    accumulator.push(res);
+                    if (accumulator.length == that.calendarProperties.calendars.length) {
+                        future.complete(accumulator.reduce((a, b) => a.concat(b), []));
+                    }
+                })
+            });
+        });
+        return future;
+    },
+    // Same shape as getRecurringCalendarEvents: one directory per calendar,
+    // read whole. Tasks are read in full rather than by month because an
+    // open task matters regardless of which month is on screen - and an
+    // undated one has no month to be found under.
+    getTaskItems: function(calendar) {
+        let that = this;
+        let accumulator = [];
+        let future = peergos.shared.util.Futures.incomplete();
+        if (that.calendarProperties.calendars.length == 0) {
+            future.complete(accumulator);
+        }
+        that.calendarProperties.calendars.forEach(currentCalendar => {
+            let dirStr = currentCalendar.directory + "/tasks";
             let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([])).thenApply(res => {
@@ -1192,77 +1243,221 @@ module.exports = {
         });
         return future;
     },
-    downloadEvent: function(calendar, title, event) {
-        this.displaySpinner();
-        let filename = this.translate('CALENDAR.EVENT') + ' - ' + title + '.ics';
-        // a blob: url never reaches the android app's DownloadListener, so hand it the text
-        if (typeof window.Android !== "undefined" && window.Android
-                && typeof window.Android.saveToDownloads === "function") {
-            window.Android.saveToDownloads(filename, "text/calendar", event);
-            this.removeSpinner();
+    // --- Sharing driven by the calendar app's own modal ---
+    // Read/write access and secret links. The sharing state is keyed by a
+    // resolved file's own properties name, so the file has to be looked up
+    // first rather than addressed by a path string.
+    shareItemPath: function(req) {
+        let base = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME;
+        if (req.target == 'calendar') {
+            let directory = this.findCalendarDirectory(req.calendarName);
+                return directory == null ? null : {dir: base, name: directory};
+        }
+        // Same guard as the save/delete paths, and it matters most here:
+        // createCalendarItemLink concatenates this into a plain string path
+        // for createSecretLink, which normalises nothing.
+        let sub = this.eventDirPath(req.calendarName, req.year, req.month, req.isRecurring);
+        if (sub == null || !this.isSafeEventId(req.id)) {
+            return null;
+        }
+        return {dir: base + "/" + sub, name: req.id + this.CALENDAR_FILE_EXTENSION};
+    },
+    shareError: function(throwable) {
+        this.removeSpinner();
+        let detail = throwable == null ? "" : (throwable.getMessage ? throwable.getMessage() : throwable);
+        this.showMessage(true, this.translate('CALENDAR.ERROR.SHARE.ITEM') + (detail ? ": " + detail : ""));
+    },
+    withSharedFile: function(req, action) {
+        let that = this;
+        let loc = this.shareItemPath(req);
+        // Every bail-out reports: these run under a spinner the caller
+        // raised, and the app is waiting on a reply that would never come.
+        if (loc == null) {
+            this.shareError(null);
             return;
         }
-        let encoder = new TextEncoder();
-        let uint8Array = encoder.encode(event);
-        let data = convertToByteArray(uint8Array);
-        let blob =  new Blob([data], {type: "octet/stream"});
-        let url = window.URL.createObjectURL(blob);
-        let link = document.getElementById("downloadEventAnchor");
-        link.href = url;
-        link.type = "text/calendar";
-        link.download = filename;
-        link.click();
-        this.removeSpinner();
-        this.showMessage(false, this.translate('CALENDAR.EVENT.DOWNLOADED').replace("$NAME", filename));
-    },
-    sendEventToNativeEmailClient: function(calendarName, id, year, month, isRecurring, title) {
-        let calendarDirectory = this.findCalendarDirectory(calendarName);
-        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
-        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
-        let filename = id + '.ics';
-        let that = this;
-        this.context.getByPath(path + '/' + filename).thenApply(fileOpt => {
-            if (fileOpt.isPresent()) {
-                let file = fileOpt.get();
-                let json = {open:true, secretLink:true,link:file.toLink()};
-                let body = that.translate('CALENDAR.EVENT.LINK') + ': ' + window.location.origin + window.location.pathname + "#" + propsToFragment(json);
-                var link = document.createElement("a");
-                link.href = "mailto:?subject=" + encodeURIComponent(title) + "&body=" + encodeURIComponent(body);
-                link.click();
-            } else {
-                that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
+        this.context.getByPath(loc.dir).thenApply(function(dirOpt) {
+            let dir = dirOpt.get();
+            if (dir == null) {
+                that.shareError(null);
+                return;
             }
-        }).exceptionally(function(throwable) {
-            that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
-            console.log(throwable.getMessage());
+            dir.getChild(loc.name, that.context.crypto.hasher, that.context.network).thenApply(function(childOpt) {
+                let file = childOpt.get();
+                if (file == null) {
+                    that.shareError(null);
+                    return;
+                }
+                action(loc, file, file.getFileProperties().name);
+            }).exceptionally(function(t) { that.shareError(t); });
+        }).exceptionally(function(t) { that.shareError(t); });
+    },
+    sendShareState: function(req) {
+        let that = this;
+        this.withSharedFile(req, function(loc, file, name) {
+            let directoryPath = peergos.client.PathUtils.directoryToPath(loc.dir.split('/'));
+            that.context.getDirectorySharingState(directoryPath).thenApply(function(state) {
+                let shared = state.get(name);
+                let users = [];
+                let writeUsers = [];
+                if (shared != null) {
+                    // String(...) per entry: toArray hands back Java strings
+                    // carrying GWT internals, which postMessage cannot clone.
+                    let asNames = function (set) {
+                        return set.toArray([]).map(function (u) { return String(u); });
+                    };
+                    writeUsers = asNames(shared.writeAccess);
+                    // Deduped: write access is also recorded as read access
+                    // for some shares, which rendered the user twice.
+                    users = asNames(shared.readAccess).concat(writeUsers)
+                        .filter(function(u, i, all) { return all.indexOf(u) === i; });
+                }
+                let link = that.calendarItemLinks[req.calendarName + '/' + name];
+                // The app clears the spinner once it has actually rendered
+                // this state - a cross-origin message hop lands after Vue's
+                // own tick, so clearing here uncovers the modal too early.
+                that.postMessage({type: 'respondShareState', requestId: req.requestId, users: users,
+                    writeUsers: writeUsers, secretLink: link == null ? null : link.url});
+            }).exceptionally(function(t) { that.shareError(t); });
         });
     },
-    emailEvent: function(calendarName, id, year, month, isRecurring, title) {
-        let calendarDirectory = this.findCalendarDirectory(calendarName);
-        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
-        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath;
-        let filename = id + '.ics';
-        this.openFileOrDir("Email", path, {filename:filename});
+    shareCalendarItemWith: function(req) {
+        let that = this;
+        if (!req.username) return;
+        this.displaySpinner();
+        this.withSharedFile(req, function(loc, file, name) {
+            let filePath = peergos.client.PathUtils.toPath(loc.dir.split('/'), name);
+            let users = peergos.client.JsUtil.asSet([req.username]);
+            let grant = req.access == 'edit'
+                ? that.context.shareWriteAccessWith(filePath, users)
+                : that.context.shareReadAccessWith(filePath, users);
+            grant.thenApply(function() {
+                that.sendShareState(req);
+            }).exceptionally(function(t) { that.shareError(t); });
+        });
     },
-    updateSharedFile: function() {
-        var file = this.filesToShare[0];
-        if (file == null)
+    unshareCalendarItemWith: function(req) {
+        let that = this;
+        if (!req.username) return;
+        this.displaySpinner();
+        this.withSharedFile(req, function(loc, file, name) {
+            let filePath = peergos.client.PathUtils.toPath(loc.dir.split('/'), name);
+            let users = peergos.client.JsUtil.asSet([req.username]);
+            that.context.unShareReadAccessWith(filePath, users).thenApply(function() {
+                return that.context.unShareWriteAccessWith(filePath, users);
+            }).thenApply(function() {
+                that.sendShareState(req);
+            }).exceptionally(function(t) { that.shareError(t); });
+        });
+    },
+    createCalendarItemLink: function(req) {
+        let that = this;
+        this.displaySpinner();
+        this.withSharedFile(req, function(loc, file, name) {
+            // createSecretLink takes a plain string path, unlike
+            // share*AccessWith which take a PathUtils Path (see Sync.vue).
+            let linkPath = "/" + loc.dir + "/" + name;
+            let key = req.calendarName + '/' + name;
+            let mint = function() {
+                that.context.createSecretLink(linkPath, req.access == 'edit', java.util.Optional.empty(), "", "", false)
+                    .thenApply(function(props) {
+                        // Same construction as SecretLink.vue's buildHref().
+                        let host = window.location.host;
+                        let scheme = host.startsWith("localhost:") ? "http://" : "https://";
+                        that.calendarItemLinks[key] = {
+                            url: scheme + host + "/" + that.context.getLinkString(props),
+                            // Kept so the link can actually be deleted later -
+                            // deleteSecretLink is addressed by label, not by URL.
+                            label: props.getLinkLabel(),
+                            writable: req.access == 'edit'
+                        };
+                        that.sendShareState(req);
+                    }).exceptionally(function(t) { that.shareError(t); });
+            };
+            let previous = that.calendarItemLinks[key];
+            if (previous == null) {
+                mint();
+                return;
+            }
+            // Changing the access level re-mints, and a file holds a *list* of
+            // links (see DriveShare.deleteLink), so minting on top of an
+            // existing one leaves that one live at its old access - and its
+            // label is overwritten here, which is the only handle the modal
+            // has to revoke it.
+            let filePath = peergos.client.PathUtils.toPath(loc.dir.split('/'), name);
+            that.context.deleteSecretLink(previous.label, filePath, previous.writable).thenApply(function(res) {
+                delete that.calendarItemLinks[key];
+                mint();
+            }).exceptionally(function(t) { that.shareError(t); });
+        });
+    },
+    revokeCalendarItemLink: function(req) {
+        let that = this;
+        this.displaySpinner();
+        this.withSharedFile(req, function(loc, file, name) {
+            let key = req.calendarName + '/' + name;
+            let link = that.calendarItemLinks[key];
+            if (link == null) {
+                that.sendShareState(req);
+                return;
+            }
+            // Dropping the URL on this side alone would leave the link live
+            // and still handing out the file - it has to be deleted.
+            let filePath = peergos.client.PathUtils.toPath(loc.dir.split('/'), name);
+            that.context.deleteSecretLink(link.label, filePath, link.writable).thenApply(function(res) {
+                delete that.calendarItemLinks[key];
+                that.sendShareState(req);
+            }).exceptionally(function(t) { that.shareError(t); });
+        });
+    },
+    // Takes an entry back out of the in-memory list after its write failed.
+    dropCalendarEntry: function(entry) {
+        let at = this.calendarProperties.calendars.indexOf(entry);
+        if (at > -1)
+            this.calendarProperties.calendars.splice(at, 1);
+    },
+    nameExistsMessage: function(name) {
+        return this.translate('CALENDAR.NAME.EXISTS').replace('$NAME', name);
+    },
+    // The app hands the .ics text over rather than downloading it itself: a
+    // blob: URL never reaches the Android app's DownloadListener, and the
+    // native bridge that takes the text instead only exists in this frame.
+    downloadIcsFile: function(filename, text) {
+        // The name comes from the frame, and it is about to be a filename.
+        let safe = String(filename == null ? '' : filename).replace(/[\\\/\u0000-\u001f]/g, '_').slice(0, 120);
+        if (safe === '' || safe === '.' || safe === '..') {
+            safe = this.translate('CALENDAR.TITLE');
+        }
+        if (!safe.toLowerCase().endsWith(this.CALENDAR_FILE_EXTENSION)) {
+            safe = safe + this.CALENDAR_FILE_EXTENSION;
+        }
+        if (typeof window.Android !== "undefined" && window.Android
+                && typeof window.Android.saveToDownloads === "function") {
+            // The native side reports its own completion, so no toast here.
+            window.Android.saveToDownloads(safe, "text/calendar", text);
             return;
-        var that = this;
-        file.getLatest(this.context.network).thenApply(updated => {
-            that.filesToShare[0] = updated;
-        })
+        }
+        let url = window.URL.createObjectURL(new Blob([text], {type: "text/calendar;charset=utf-8"}));
+        let link = document.createElement("a");
+        link.href = url;
+        link.download = safe;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        this.showMessage(false, this.translate('CALENDAR.EVENT.DOWNLOADED').replace("$NAME", safe));
     },
-    shareCalendarEvent: function(calendarName, id, year, month, isRecurring) {
-        let calendarDirectory = this.findCalendarDirectory(calendarName);
-        let dirPath =  isRecurring ? calendarDirectory + "/recurring" : calendarDirectory + "/" + year + "/" + month;
-        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + dirPath,
-            id + '.ics', false, true, 'Calendar Event');
-    },
-    shareCalendar: function(calendar) {
-        let calendarDirectory = this.findCalendarDirectory(calendar.name);
-        this.shareWith(this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME, calendarDirectory, false, true,
-            this.translate('CALENDAR.LABEL') + ' - ' + calendar.name);
+    // Opens the stored .ics in the Peergos Email app as a real attachment.
+    // Only offered when the account has that app - the frame is told so in
+    // `ping` and falls back to a mailto: summary when it doesn't.
+    emailEvent: function(req) {
+        let sub = this.eventDirPath(req.calendarName, req.year, req.month, req.isRecurring);
+        if (sub == null || !this.isSafeEventId(req.id)) {
+            this.showMessage(true, this.translate('CALENDAR.ERROR.LOAD.FILE'));
+            return;
+        }
+        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + sub;
+        this.openFileOrDir("Email", path, {filename: req.id + this.CALENDAR_FILE_EXTENSION});
     },
     showMessage: function(isError, message) {
         if (isError) {
