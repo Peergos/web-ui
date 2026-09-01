@@ -1194,6 +1194,14 @@ module.exports = {
     },
     downloadEvent: function(calendar, title, event) {
         this.displaySpinner();
+        let filename = this.translate('CALENDAR.EVENT') + ' - ' + title + '.ics';
+        // a blob: url never reaches the android app's DownloadListener, so hand it the text
+        if (typeof window.Android !== "undefined" && window.Android
+                && typeof window.Android.saveToDownloads === "function") {
+            window.Android.saveToDownloads(filename, "text/calendar", event);
+            this.removeSpinner();
+            return;
+        }
         let encoder = new TextEncoder();
         let uint8Array = encoder.encode(event);
         let data = convertToByteArray(uint8Array);
@@ -1202,10 +1210,10 @@ module.exports = {
         let link = document.getElementById("downloadEventAnchor");
         link.href = url;
         link.type = "text/calendar";
-        link.download = this.translate('CALENDAR.EVENT') + ' - ' + title + '.ics';
+        link.download = filename;
         link.click();
         this.removeSpinner();
-        this.showMessage(false, this.translate('CALENDAR.EVENT.DOWNLOADED').replace("$NAME", link.download));
+        this.showMessage(false, this.translate('CALENDAR.EVENT.DOWNLOADED').replace("$NAME", filename));
     },
     sendEventToNativeEmailClient: function(calendarName, id, year, month, isRecurring, title) {
         let calendarDirectory = this.findCalendarDirectory(calendarName);

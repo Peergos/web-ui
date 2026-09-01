@@ -87,6 +87,12 @@ module.exports = {
             });
         },
         download: function() {
+            // a blob: url never reaches the android app's DownloadListener, so hand it the text
+            if (typeof window.Android !== "undefined" && window.Android
+                    && typeof window.Android.saveToDownloads === "function") {
+                window.Android.saveToDownloads('peergos-backup-codes.txt', 'text/plain', this.asText());
+                return;
+            }
             let blob = new Blob([this.asText()], { type: 'octet/stream' });
             let link = document.getElementById('downloadAnchor');
             link.href = window.URL.createObjectURL(blob);
