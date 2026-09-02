@@ -26,10 +26,11 @@ Single file source programs, so there is no build step - `java` compiles them on
 
 ## Coverage
 
-Covered: sign in and reach the drive, upload a file, upload a folder with a nested subfolder,
-two concurrent downloads, download a folder as a zip, download a calendar event as .ics. Every
-assertion is on the bytes - hashed against the source, or unzipped and compared - not on a file
-merely existing.
+Covered: sign in and reach the drive, upload a file, upload a group of files in one go, upload a
+folder with a nested subfolder, render a pdf in the pdf app, two concurrent downloads, download a
+folder as a zip, download a calendar event as .ics. Every assertion is on the bytes - hashed
+against the source, unzipped and compared, or a rendered canvas with real dimensions - never on a
+file or an app merely appearing.
 
 The download tests are skipped on webkitgtk: WebKitWebDriver has no download directory
 capability, so there is nowhere to look for the file. Only chromedriver can drive the folder

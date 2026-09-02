@@ -17,7 +17,9 @@ public class Suite {
             String[] args1 = {engine, server.url()};
             run(failures, "smoke", () -> SmokeTest.main(new String[]{engine, server.url() + "/"}));
             run(failures, "upload file", () -> UploadTest.run(args1));
+            run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));
             run(failures, "upload folder", () -> UploadFolderTest.run(args1));
+            run(failures, "render a pdf in the pdf app", () -> PdfRenderTest.run(args1));
 
             // WebKitWebDriver cannot be told where downloads go, so everything that asserts on a
             // downloaded file runs on the engines that can. WebKit download coverage belongs with
