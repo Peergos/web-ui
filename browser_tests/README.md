@@ -1,5 +1,36 @@
 # Peergos web-ui browser tests
 
+## Java tests (current)
+
+Direct drivers, no third party libraries and no downloaded browser drivers. Run one engine:
+
+```
+cd browser_tests
+java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, or webkit
+```
+
+Each run starts its own Peergos server on a free port with its own PEERGOS_PATH, uploads its own
+fixtures, and stops the server afterwards. Nothing touches another Peergos on the machine.
+
+- `HEADLESS=0` to watch it. WebKitGTK has no headless mode, so it needs either a real display or
+  xvfb; the launcher uses `xvfb-run` when it is installed.
+- `FIREFOX`, `CHROMIUM`, `CHROMEDRIVER`, `WEBKITWEBDRIVER` override binary locations.
+- `-Dfixture.size=` and `-Dlatency.ms=` tune the download test.
+
+Drivers: Firefox needs none, it is driven over marionette which is built in. Chromium needs
+`chromedriver` and WebKitGTK needs `WebKitWebDriver` (`apt install webkit2gtk-driver`), both from
+the distro so they stay version matched to their browser.
+
+Single file source programs, so there is no build step - `java` compiles them on the fly and
+`../server/Peergos.jar` supplies the json parser.
+
+## Python tests (unmaintained)
+
+The selenium suite below has not run in CI since 2021 and no longer runs at all: it pins
+selenium 3.14 and Chrome 84, and downloads chromedriver from an endpoint that now 404s. Kept for
+reference while its cases are ported.
+
+
 Runs selenium-based tests against a local Peergos web-server.
 
 ### requirements

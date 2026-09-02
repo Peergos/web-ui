@@ -3,8 +3,13 @@ name: Browser Tests
 on: [push]
 
 jobs:
-  build:
+  browser-tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [firefox, chromium, webkit]
+    name: ${{ matrix.engine }}
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK
@@ -12,18 +17,40 @@ jobs:
       with:
         distribution: temurin
         java-version: 25
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.11.0'
-    - name: Build with Ant
-      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
-    - name: echo chrome
-      run: which google-chrome 
-      shell: bash
-    - name: chrome-version
-      run: google-chrome --version
-      shell: bash
-#    - name: browser-tests
-#      working-directory: browser_tests
-#      run: ./setup_and_run_browser_tests.sh
-#      timeout-minutes: 90
+
+    - name: Build server and web ui
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
+
+    # No driver is ever downloaded. Firefox needs none at all - it is driven over marionette,
+    # which is built in. chromedriver and WebKitWebDriver come from the image or apt, where they
+    # are already version matched to their browser. Pinning a driver to a browser version, and
+    # fetching it from a url, is what left the previous suite unrunnable.
+    - name: Install drivers
+      run: |
+        if [ "${{ matrix.engine }}" = "webkit" ]; then
+          sudo apt-get update
+          # MiniBrowser has no headless mode, so it needs a virtual display
+          sudo apt-get install -y webkit2gtk-driver xvfb
+        fi
+
+    - name: Show versions
+      run: |
+        java -version
+        case "${{ matrix.engine }}" in
+          firefox)  firefox --version ;;
+          chromium) (google-chrome --version || chromium --version); chromedriver --version ;;
+          webkit)   WebKitWebDriver --version || true ;;
+        esac
+
+    - name: Run browser tests
+      working-directory: browser_tests
+      timeout-minutes: 45
+      env:
+        HEADLESS: "1"
+        # the image ships Chrome rather than Chromium
+        CHROMIUM: /usr/bin/google-chrome
+      run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
+
+    - name: Server log on failure
+      if: failure()
+      run: tail -n 100 /tmp/peergos-browser-test-*/server.log || true

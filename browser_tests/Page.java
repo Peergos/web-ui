@@ -1,0 +1,86 @@
+/** The few app interactions every test needs. */
+public class Page {
+
+    /** Signs in and waits for the app to finish loading.
+     *
+     *  The username and password are set through the native value setter and an input event
+     *  rather than by typing: this form's vue model does not pick up a plain value assignment,
+     *  and the app ends up signing in with a null username.
+     */
+    public static void login(WebDriver d, String username, String password) {
+        d.script(
+                "const set = (el, v) => {" +
+                "  const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
+                "  s.call(el, v); el.dispatchEvent(new Event('input', {bubbles: true}));" +
+                "};" +
+                "set(document.querySelector('input[name=username]'), arguments[0]);" +
+                "set(document.querySelector('input[name=password]'), arguments[1]);",
+                username, password);
+        d.script("[...document.querySelectorAll('button')]" +
+                ".find(b => b.textContent.trim() === 'Sign in').click();");
+        // key generation is scrypt, so this is slow on a cold profile
+        d.waitForScript("sign in to complete",
+                "document.body.innerText.indexOf('UPGRADE') >= 0", 300_000);
+    }
+
+    /** Opens the drive and hands back a handle on its vue component as window.__drive. */
+    public static void gotoDrive(WebDriver d) {
+        d.script("location.hash = '#/drive';");
+        d.waitForScript("drive component", "(() => {" +
+                "  function find(c, depth) {" +
+                "    if (depth > 8 || !c) return null;" +
+                "    if (typeof c.downloadFile === 'function') return c;" +
+                "    for (const child of (c.$children || [])) {" +
+                "      const found = find(child, depth + 1); if (found) return found;" +
+                "    }" +
+                "    return null;" +
+                "  }" +
+                "  const root = document.querySelector('#app');" +
+                "  window.__drive = root && root.__vue__ ? find(root.__vue__, 0) : null;" +
+                "  return window.__drive;" +
+                "})()", 120_000);
+    }
+
+    /** Resolves a file by absolute peergos path and stashes it as window.__f[path]. */
+    public static void resolve(WebDriver d, String path) {
+        // The path is captured in a const rather than read from arguments inside the callback:
+        // the callback runs long after the injected script returned, and arguments is not
+        // reliably still in scope by then in every driver.
+        d.script("const path = arguments[0];" +
+                "window.__f = window.__f || {}; window.__fErr = window.__fErr || {};" +
+                "window.__drive.context.getByPath(path)" +
+                "  .thenApply(o => { window.__f[path] = o.isPresent() ? o.get() : null;" +
+                "                    if (!o.isPresent()) window.__fErr[path] = 'no such file'; })" +
+                "  .exceptionally(t => { window.__fErr[path] = '' + t; return null; });",
+                path);
+        d.waitUntil("resolve " + path, () -> {
+            Object err = d.script("return window.__fErr ? window.__fErr[arguments[0]] || null : null", path);
+            if (err != null)
+                throw new IllegalStateException("Could not resolve " + path + ": " + err);
+            return d.script("return !!(window.__f && window.__f[arguments[0]])", path);
+        }, 120_000);
+    }
+
+    public static long size(WebDriver d, String path) {
+        Object low = d.script("const p = window.__f[arguments[0]].getFileProperties();" +
+                "let low = p.sizeLow(); if (low < 0) low = low + Math.pow(2, 32);" +
+                "return low + p.sizeHigh() * Math.pow(2, 32);", path);
+        return ((Number) low).longValue();
+    }
+
+    public static void download(WebDriver d, String path) {
+        d.script("window.__drive.downloadFile(window.__f[arguments[0]]);", path);
+    }
+
+    public static boolean errorShown(WebDriver d) {
+        return Boolean.TRUE.equals(d.script("return !!window.__drive.showError"));
+    }
+
+    public static String errorText(WebDriver d) {
+        return String.valueOf(d.script("return '' + window.__drive.errorTitle + ' / ' + window.__drive.errorBody"));
+    }
+
+    private static String quote(String s) {
+        return "'" + s.replace("\\", "\\\\").replace("'", "\\'") + "'";
+    }
+}
