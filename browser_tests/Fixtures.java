@@ -82,6 +82,14 @@ public class Fixtures {
             throw new IllegalStateException("Could not build " + remoteDir + ":\n" + tail(out));
     }
 
+    /** Runs arbitrary shell commands, for fixtures that need more than one directory. */
+    public static void commands(Path jar, String url, String username, String password,
+                                String... cmds) {
+        String out = shell(jar, url, username, password, cmds);
+        if (out.contains("Failed to execute"))
+            throw new IllegalStateException("Fixture commands failed:\n" + tail(out));
+    }
+
     /** Pulls a file back out over the api, so an upload can be checked byte for byte. */
     public static void download(Path jar, String url, String username, String password,
                                 String remoteName, Path localTarget) {

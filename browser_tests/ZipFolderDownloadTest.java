@@ -57,6 +57,18 @@ public class ZipFolderDownloadTest {
                 Page.login(d, Server.USERNAME, Server.PASSWORD);
                 Page.gotoDrive(d);
 
+                // Walk into the folder and back before zipping. The zip is built from what the
+                // app can see, and if its view of the directory is still empty the download
+                // succeeds with an empty archive - 22 bytes, just an end of central directory
+                // record - which is a pass as far as "a file arrived" goes.
+                String root = Page.currentPath(d);
+                Page.waitForInDrive(d, folder, 120_000);
+                Page.openPath(d, root + folder, folder);
+                for (String entry : expected.keySet())
+                    Page.waitForInDrive(d, entry, 120_000);
+                Page.openPath(d, root, "peergos");
+                Page.waitForInDrive(d, folder, 120_000);
+
                 Page.select(d, folder);
                 System.out.println("zipping and downloading " + folder);
                 d.script("window.__drive.zipAndDownloadFolders();");
@@ -108,7 +120,9 @@ public class ZipFolderDownloadTest {
         for (Map.Entry<String, byte[]> e : expected.entrySet()) {
             byte[] got = found.get(e.getKey());
             if (got == null)
-                throw new AssertionError("Zip is missing " + e.getKey() + ", holds " + found.keySet());
+                throw new AssertionError(found.isEmpty() ?
+                        "The zip is empty, so the app saw no files in the folder when it zipped it"
+                        : "Zip is missing " + e.getKey() + ", holds " + found.keySet());
             if (! Arrays.equals(got, e.getValue()))
                 throw new AssertionError("Zip entry " + e.getKey() + " is " + got.length
                         + " bytes, expected " + e.getValue().length);

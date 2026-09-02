@@ -40,17 +40,20 @@ public class Page {
      *  encrypted session, so assigning a route to it leaves the view mounted but never loaded -
      *  a permanent spinner with a null currentDir.
      *
-     *  The click is repeated while waiting. A single click that lands before the app has finished
-     *  wiring the nav is simply lost, and then no amount of waiting will produce the view - which
-     *  is how the calendar test failed on CI while passing everywhere slower machines are not.
+     *  A click that lands before the app has finished wiring the nav is simply lost, so the click
+     *  is retried - but only after a long wait. Clicking again while the view is still loading
+     *  restarts the load, and with a short retry interval that livelocks: every round throws away
+     *  what the previous round started, and the view never finishes on a slow machine even though
+     *  it is plainly there by the time the test gives up.
      */
     public static void gotoView(WebDriver d, String navLabel, String methodName, String handle) {
-        long end = System.currentTimeMillis() + 300_000;
-        do {
-            clickNav(d, navLabel);
-            if (awaitComponent(d, methodName, handle, 10_000))
+        for (int round = 0; round < 5; round++) {
+            if (awaitComponent(d, methodName, handle, 0))
                 return;
-        } while (System.currentTimeMillis() < end);
+            clickNav(d, navLabel);
+            if (awaitComponent(d, methodName, handle, 60_000))
+                return;
+        }
         throw new IllegalStateException("The " + navLabel + " view never appeared. Visible: "
                 + d.scriptQuiet("return document.body.innerText.replace(/\\n/g, ' | ').substring(0, 300)"));
     }
@@ -68,6 +71,7 @@ public class Page {
      *  component tree, so nesting depth does not matter. */
     private static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
         long end = System.currentTimeMillis() + millis;
+        boolean first = true;
         String find = "(() => {" +
                 "  const wanted = '" + methodName + "';" +
                 "  for (const el of document.querySelectorAll('*')) {" +
@@ -76,9 +80,12 @@ public class Page {
                 "  }" +
                 "  return false;" +
                 "})()";
-        while (System.currentTimeMillis() < end) {
+        while (first || System.currentTimeMillis() < end) {
+            first = false;
             if (Boolean.TRUE.equals(d.scriptQuiet("return " + find)))
                 return true;
+            if (System.currentTimeMillis() >= end)
+                break;
             WebDriver.sleep(250);
         }
         return false;
@@ -129,6 +136,19 @@ public class Page {
     public static void waitForInDrive(WebDriver d, String name, long timeoutMillis) {
         d.waitUntil("'" + name + "' to appear in the drive",
                 () -> driveListing(d).contains(name), timeoutMillis);
+    }
+
+    /** Navigates the drive to a path and waits for its listing. */
+    public static void openPath(WebDriver d, String path, String expectedDirName) {
+        d.script("window.__drive.changePath(arguments[0]);", path);
+        d.waitForScript("the drive to open " + path,
+                "window.__drive.currentDir"
+                        + " && window.__drive.currentDir.getName() === '" + expectedDirName + "'"
+                        + " && !window.__drive.showSpinner", 180_000);
+    }
+
+    public static String currentPath(WebDriver d) {
+        return String.valueOf(d.script("return window.__drive.getPath"));
     }
 
     /** Selects a single entry by name, as clicking it in the ui would. */
