@@ -39,27 +39,49 @@ public class Page {
      *  By clicking the nav, not by setting location.hash: after signing in the fragment holds the
      *  encrypted session, so assigning a route to it leaves the view mounted but never loaded -
      *  a permanent spinner with a null currentDir.
+     *
+     *  The click is repeated while waiting. A single click that lands before the app has finished
+     *  wiring the nav is simply lost, and then no amount of waiting will produce the view - which
+     *  is how the calendar test failed on CI while passing everywhere slower machines are not.
      */
     public static void gotoView(WebDriver d, String navLabel, String methodName, String handle) {
-        Object clicked = d.script("const label = arguments[0];" +
+        long end = System.currentTimeMillis() + 300_000;
+        do {
+            clickNav(d, navLabel);
+            if (awaitComponent(d, methodName, handle, 10_000))
+                return;
+        } while (System.currentTimeMillis() < end);
+        throw new IllegalStateException("The " + navLabel + " view never appeared. Visible: "
+                + d.scriptQuiet("return document.body.innerText.replace(/\\n/g, ' | ').substring(0, 300)"));
+    }
+
+    private static void clickNav(WebDriver d, String navLabel) {
+        Object clicked = d.scriptQuiet("const label = arguments[0];" +
                 "const b = [...document.querySelectorAll('button')]" +
                 "  .find(x => x.textContent.trim() === label);" +
                 "if (b) { b.click(); return true; } return false;", navLabel);
         if (! Boolean.TRUE.equals(clicked))
             throw new IllegalStateException("No '" + navLabel + "' item in the nav");
-        d.waitForScript(navLabel + " view", "(() => {" +
-                "  function find(c, depth) {" +
-                "    if (depth > 10 || !c) return null;" +
-                "    if (typeof c['" + methodName + "'] === 'function') return c;" +
-                "    for (const child of (c.$children || [])) {" +
-                "      const found = find(child, depth + 1); if (found) return found;" +
-                "    }" +
-                "    return null;" +
+    }
+
+    /** Finds a mounted component exposing the named method, by walking the dom rather than the
+     *  component tree, so nesting depth does not matter. */
+    private static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
+        long end = System.currentTimeMillis() + millis;
+        String find = "(() => {" +
+                "  const wanted = '" + methodName + "';" +
+                "  for (const el of document.querySelectorAll('*')) {" +
+                "    const c = el.__vue__;" +
+                "    if (c && typeof c[wanted] === 'function') { window." + handle + " = c; return true; }" +
                 "  }" +
-                "  const root = document.querySelector('#app');" +
-                "  window." + handle + " = root && root.__vue__ ? find(root.__vue__, 0) : null;" +
-                "  return window." + handle + ";" +
-                "})()", 120_000);
+                "  return false;" +
+                "})()";
+        while (System.currentTimeMillis() < end) {
+            if (Boolean.TRUE.equals(d.scriptQuiet("return " + find)))
+                return true;
+            WebDriver.sleep(250);
+        }
+        return false;
     }
 
     /** Resolves a file by absolute peergos path and stashes it as window.__f[path]. */

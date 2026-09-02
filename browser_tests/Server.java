@@ -105,11 +105,11 @@ public class Server implements AutoCloseable {
         RuntimeException last = null;
         while (System.currentTimeMillis() < end) {
             try {
-                NetworkAccess network = Builder.buildJavaNetworkAccess(new URL(url()), false,
-                        Optional.empty(), Optional.empty()).join();
+                NetworkAccess network = Builder.buildJavaNetworkAccess(
+                        URI.create(url()).toURL(), false, Optional.empty(), Optional.empty()).join();
                 if (! network.coreNode.getChain(USERNAME).join().isEmpty())
                     return;
-            } catch (RuntimeException | java.net.MalformedURLException e) {
+            } catch (RuntimeException | java.io.IOException e) {
                 last = e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
             }
             WebDriver.sleep(1000);
