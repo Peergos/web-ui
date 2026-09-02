@@ -14,14 +14,22 @@ public class Suite {
         List<String> failures = new ArrayList<>();
         try (Server server = Server.start(serverDir)) {
             System.out.println("server at " + server.url() + ", engine " + engine);
+            String[] args1 = {engine, server.url()};
             run(failures, "smoke", () -> SmokeTest.main(new String[]{engine, server.url() + "/"}));
-            // WebKitWebDriver cannot be told where downloads go, so this one runs on the engines
-            // that can. WebKit download coverage belongs with the gtk host.
-            if (! engine.startsWith("webkit"))
-                run(failures, "concurrent downloads",
-                        () -> ConcurrentDownloadTest.main(new String[]{engine, server.url()}));
-            else
-                System.out.println("SKIP concurrent downloads on webkit: no download directory capability");
+            run(failures, "upload file", () -> UploadTest.run(args1));
+            run(failures, "upload folder", () -> UploadFolderTest.run(args1));
+
+            // WebKitWebDriver cannot be told where downloads go, so everything that asserts on a
+            // downloaded file runs on the engines that can. WebKit download coverage belongs with
+            // the gtk host, which sets the destination itself.
+            if (! engine.startsWith("webkit")) {
+                run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
+                run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
+                run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
+            } else {
+                System.out.println("\nSKIP the download tests on webkit:"
+                        + " WebKitWebDriver has no download directory capability");
+            }
         }
 
         System.out.println();

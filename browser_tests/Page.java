@@ -1,3 +1,5 @@
+import java.util.*;
+
 /** The few app interactions every test needs. */
 public class Page {
 
@@ -25,19 +27,38 @@ public class Page {
 
     /** Opens the drive and hands back a handle on its vue component as window.__drive. */
     public static void gotoDrive(WebDriver d) {
-        d.script("location.hash = '#/drive';");
-        d.waitForScript("drive component", "(() => {" +
+        gotoView(d, "Drive", "downloadFile", "__drive");
+        // the view mounts before the listing arrives, and an empty listing is indistinguishable
+        // from a directory that has not loaded, so wait for the directory itself
+        d.waitForScript("drive listing",
+                "window.__drive.currentDir && !window.__drive.showSpinner", 180_000);
+    }
+
+    /** Opens a view from the nav and hands back its component.
+     *
+     *  By clicking the nav, not by setting location.hash: after signing in the fragment holds the
+     *  encrypted session, so assigning a route to it leaves the view mounted but never loaded -
+     *  a permanent spinner with a null currentDir.
+     */
+    public static void gotoView(WebDriver d, String navLabel, String methodName, String handle) {
+        Object clicked = d.script("const label = arguments[0];" +
+                "const b = [...document.querySelectorAll('button')]" +
+                "  .find(x => x.textContent.trim() === label);" +
+                "if (b) { b.click(); return true; } return false;", navLabel);
+        if (! Boolean.TRUE.equals(clicked))
+            throw new IllegalStateException("No '" + navLabel + "' item in the nav");
+        d.waitForScript(navLabel + " view", "(() => {" +
                 "  function find(c, depth) {" +
-                "    if (depth > 8 || !c) return null;" +
-                "    if (typeof c.downloadFile === 'function') return c;" +
+                "    if (depth > 10 || !c) return null;" +
+                "    if (typeof c['" + methodName + "'] === 'function') return c;" +
                 "    for (const child of (c.$children || [])) {" +
                 "      const found = find(child, depth + 1); if (found) return found;" +
                 "    }" +
                 "    return null;" +
                 "  }" +
                 "  const root = document.querySelector('#app');" +
-                "  window.__drive = root && root.__vue__ ? find(root.__vue__, 0) : null;" +
-                "  return window.__drive;" +
+                "  window." + handle + " = root && root.__vue__ ? find(root.__vue__, 0) : null;" +
+                "  return window." + handle + ";" +
                 "})()", 120_000);
     }
 
@@ -70,6 +91,44 @@ public class Page {
 
     public static void download(WebDriver d, String path) {
         d.script("window.__drive.downloadFile(window.__f[arguments[0]]);", path);
+    }
+
+    /** Names currently listed in the drive view. */
+    public static List<String> driveListing(WebDriver d) {
+        Object names = d.script("return (window.__drive.files || []).map(f =>" +
+                " f.getName ? f.getName() : (f.props ? f.props.name : '?'));");
+        List<String> out = new ArrayList<>();
+        if (names instanceof List)
+            for (Object o : (List<?>) names)
+                out.add(String.valueOf(o));
+        return out;
+    }
+
+    public static void waitForInDrive(WebDriver d, String name, long timeoutMillis) {
+        d.waitUntil("'" + name + "' to appear in the drive",
+                () -> driveListing(d).contains(name), timeoutMillis);
+    }
+
+    /** Selects a single entry by name, as clicking it in the ui would. */
+    public static void select(WebDriver d, String name) {
+        Object found = d.script("const n = arguments[0];" +
+                "const f = (window.__drive.files || []).find(x =>" +
+                "  (x.getName ? x.getName() : (x.props ? x.props.name : null)) === n);" +
+                "if (f) window.__drive.selectedFiles = [f];" +
+                "return !!f;", name);
+        if (! Boolean.TRUE.equals(found))
+            throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
+    }
+
+    /** Answers the yes/no dialog the drive raises before zipping a folder. */
+    public static void confirmYes(WebDriver d, long timeoutMillis) {
+        d.waitForScript("confirm dialog", "window.__drive.showConfirm", timeoutMillis);
+        Object clicked = d.script(
+                "const b = [...document.querySelectorAll('.pg-dialog button')]" +
+                "  .find(x => x.textContent.trim() === 'Yes');" +
+                "if (b) { b.click(); return true; } return false;");
+        if (! Boolean.TRUE.equals(clicked))
+            throw new IllegalStateException("No Yes button in the confirm dialog");
     }
 
     public static boolean errorShown(WebDriver d) {

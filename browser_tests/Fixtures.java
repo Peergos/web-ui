@@ -65,18 +65,75 @@ public class Fixtures {
         }
     }
 
+    /** Creates a remote folder and puts files in it, in one shell session.
+     *
+     *  Uploading a local directory with a single `put` proved unreliable for anything but the
+     *  first file, so the folder is built explicitly.
+     */
+    public static void uploadInto(Path jar, String url, String username, String password,
+                                  String remoteDir, List<Path> locals) {
+        List<String> cmds = new ArrayList<>();
+        cmds.add("mkdir " + remoteDir);
+        cmds.add("cd " + remoteDir);
+        for (Path l : locals)
+            cmds.add("put " + l.toAbsolutePath());
+        String out = shell(jar, url, username, password, cmds.toArray(new String[0]));
+        if (out.contains("Failed to execute"))
+            throw new IllegalStateException("Could not build " + remoteDir + ":\n" + tail(out));
+    }
+
+    /** Pulls a file back out over the api, so an upload can be checked byte for byte. */
+    public static void download(Path jar, String url, String username, String password,
+                                String remoteName, Path localTarget) {
+        String out = shell(jar, url, username, password,
+                "get " + remoteName + " " + localTarget.toAbsolutePath());
+        if (! Files.exists(localTarget))
+            throw new IllegalStateException("Could not fetch " + remoteName + " over the api:\n" + tail(out));
+    }
+
     public static List<String> listing(Path jar, String url, String username, String password) {
-        String out = shell(jar, url, username, password, "ls");
+        return listing(jar, url, username, password, null);
+    }
+
+    /** Waits for a listing to contain everything named, since an upload keeps going after the
+     *  first entry shows up. */
+    public static void awaitListing(Path jar, String url, String username, String password,
+                                    String path, long timeoutMillis, String... expected) {
+        long end = System.currentTimeMillis() + timeoutMillis;
+        List<String> seen = List.of();
+        while (System.currentTimeMillis() < end) {
+            seen = listing(jar, url, username, password, path);
+            if (seen.containsAll(Arrays.asList(expected)))
+                return;
+            WebDriver.sleep(2000);
+        }
+        throw new IllegalStateException("Timed out waiting for " + Arrays.toString(expected)
+                + " in " + (path == null ? "/" : path) + ", saw " + seen);
+    }
+
+    /** Directory listing, of the root or of a path below it. */
+    public static List<String> listing(Path jar, String url, String username, String password,
+                                       String path) {
+        String out = shell(jar, url, username, password, path == null ? "ls" : "ls " + path);
         List<String> names = new ArrayList<>();
-        for (String line : out.split("\n")) {
+        for (String line : out.replace('\r', '\n').split("\n")) {
+            // The shell echoes its prompt and then the first entry on the same line, so the
+            // prompt has to be stripped rather than the line skipped - skipping it silently
+            // loses one file from every listing.
             String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.contains("@" + url) || trimmed.startsWith("WARNING")
-                    || trimmed.startsWith("Logging") || trimmed.startsWith("Generating")
-                    || trimmed.startsWith("Retrieving") || trimmed.startsWith("Exiting"))
-                continue;
-            // the prompt is echoed before the first entry
             int prompt = trimmed.lastIndexOf("> ");
-            names.add(prompt >= 0 ? trimmed.substring(prompt + 2) : trimmed);
+            if (prompt >= 0)
+                trimmed = trimmed.substring(prompt + 2).trim();
+            else if (trimmed.endsWith(">"))
+                continue;
+            if (trimmed.isEmpty() || trimmed.startsWith("WARNING") || trimmed.startsWith("Logging")
+                    || trimmed.startsWith("Generating") || trimmed.startsWith("Retrieving")
+                    || trimmed.startsWith("Exiting") || trimmed.startsWith("Successfully")
+                    || trimmed.startsWith("Current directory") || trimmed.startsWith("INFO:")
+                    || trimmed.startsWith("at ") || trimmed.contains("org.jline")
+                    || trimmed.matches("^[A-Z][a-z]{2,4} \\d{1,2}, \\d{4} .*"))
+                continue;
+            names.add(trimmed);
         }
         return names;
     }

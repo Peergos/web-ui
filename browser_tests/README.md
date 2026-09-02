@@ -26,8 +26,18 @@ Single file source programs, so there is no build step - `java` compiles them on
 
 ## Coverage
 
-Ported so far: sign in, reach the drive, two concurrent downloads with hashes checked against the
-source. Everything below is still to do, on each of firefox, chromium and webkitgtk.
+Covered: sign in and reach the drive, upload a file, upload a folder with a nested subfolder,
+two concurrent downloads, download a folder as a zip, download a calendar event as .ics. Every
+assertion is on the bytes - hashed against the source, or unzipped and compared - not on a file
+merely existing.
+
+The download tests are skipped on webkitgtk: WebKitWebDriver has no download directory
+capability, so there is nowhere to look for the file. Only chromedriver can drive the folder
+picker; marionette refuses a directory outright and WebKitWebDriver takes it as a single file, so
+elsewhere the folder upload hands the app the same flat webkitRelativePath list the browser would
+have built.
+
+Everything below is still to do, on each of firefox, chromium and webkitgtk.
 
 #### account stuff
 * sign up
