@@ -1,5 +1,6 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const loopback = require("../loopback/index.js");
+const downloadUrl = require("../download-url/index.js");
 const storage = require("../storage/index.js");
 module.exports = {
 	data() {
@@ -64,11 +65,7 @@ module.exports = {
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
-                    let link = document.createElement('a')
-                    let click = new MouseEvent('click')
-                    link.type = mimeType
-                    link.href = url
-                    link.dispatchEvent(click)
+                    downloadUrl.startDownload(url)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();

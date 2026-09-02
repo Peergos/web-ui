@@ -29,7 +29,11 @@ self.onmessage = event => {
           .replace(/\*/g, '%2A')
       headers = {
           'Content-Type': event.data.mimeType,
-          'Content-Disposition': "attachment; filename*=UTF-8''" + filename
+          'Content-Disposition': "attachment; filename*=UTF-8''" + filename,
+          // the page is cross origin isolated, so a document embedded by it has to say it is
+          // too, otherwise the load is blocked before the download ever starts
+          'Cross-Origin-Resource-Policy': 'same-origin',
+          'Cross-Origin-Embedder-Policy': 'require-corp'
       }
       const stream = event.data.readableStream || createStream(port)
       if (event.data.size) headers['Content-Length'] = event.data.size
