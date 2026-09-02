@@ -24,48 +24,21 @@ the distro so they stay version matched to their browser.
 Single file source programs, so there is no build step - `java` compiles them on the fly and
 `../server/Peergos.jar` supplies the json parser.
 
-## Python tests (unmaintained)
+## Coverage
 
-The selenium suite below has not run in CI since 2021 and no longer runs at all: it pins
-selenium 3.14 and Chrome 84, and downloads chromedriver from an endpoint that now 404s. Kept for
-reference while its cases are ported.
-
-
-Runs selenium-based tests against a local Peergos web-server.
-
-### requirements
-* Python 3.6+
-* pip3
-* Chrome 84 (or Chromium) web browser
-NB: *it has to be chrome84 for the web-driver to work*
-> sudo apt-get install python-setuptools
-#####  chromedriver
-taken from https://sites.google.com/a/chromium.org/chromedriver/downloads
-
-### install dependencies and python  v-env
->  . setup_browser_tests.sh
-
-### start server and run tests
-##### with  visible browser
-> ./run_browser_tests.sh 0 || true 
-##### headlessly 
-> ./run_browser_tests.sh || true 
-
-
-### test cases (X = done)
-(firefox, chromium) * (desktop, mobile) for all
+Ported so far: sign in, reach the drive, two concurrent downloads with hashes checked against the
+source. Everything below is still to do, on each of firefox, chromium and webkitgtk.
 
 #### account stuff
-* sign up - X
+* sign up
 * sign up password warning for "123456"
 * sign up password warning for < 12 chars
-* sign in - X
+* sign in
 * change password
-* sign out - X
-
+* sign out
 #### single user stuff
 * upload file and read back (< 5mb, > 5mb)
-* create dir - X
+* create dir
 * rename file
 * delete file
 * rename dir
