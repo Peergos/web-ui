@@ -23,6 +23,10 @@ function fragmentToProps(fragment) {
 }
 
 var MAX_CONCURRENT_REQUESTS = 50;
+// A request that never fires load, error, abort or timeout holds its slot for ever, and the
+// browser does exactly that to requests it cancels itself. Without a deadline those slots are
+// lost one at a time until nothing can be sent at all.
+var REQUEST_TIMEOUT_MILLIS = 120000;
 var activeRequests = 0;
 var requestQueue = [];
 
@@ -85,7 +89,17 @@ function getWithHeadersProm(url, headers) {
         future.completeExceptionally(new peergos.shared.storage.RateLimitException());
     };
 
-    acquireRequestSlot(() => req.send());
+    req.ontimeout = function(e) {
+        releaseRequestSlot();
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+    };
+
+    acquireRequestSlot(() => {
+        // the deadline only starts once we actually have a slot, so time spent queued here
+        // is not counted against it
+        req.timeout = REQUEST_TIMEOUT_MILLIS;
+        req.send();
+    });
     return future;
 }
 
@@ -144,7 +158,11 @@ function postProm(url, data, timeout) {
             reject(Error("Network timeout"));
         };
 
-	acquireRequestSlot(() => req.send(data));
+	acquireRequestSlot(() => {
+            if (!(timeout >= 0))
+                req.timeout = REQUEST_TIMEOUT_MILLIS;
+            req.send(data);
+        });
     }).then(function(result, err) {
         if (err != null)
             future.completeExceptionally(java.lang.Throwable.of(err));
