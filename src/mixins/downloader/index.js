@@ -204,9 +204,26 @@ module.exports = {
               size
             )
             let writer = fileStream.getWriter()
+            // a download that stops part way must fail the stream, otherwise the browser
+            // sits on a part file for ever with no indication that anything went wrong
+            let failed = false
+            let fail = (message) => {
+              if (failed)
+                return
+              failed = true
+              progress.show = false
+              that.$toast.dismiss(filename)
+              that.errorTitle = 'Error downloading file: ' + filename
+              that.errorBody = message
+              that.showError = true
+              writer.abort(message).catch(() => {})
+              result.completeExceptionally(new Error(message))
+            }
             let pump = () => {
+              if (failed)
+                return
               if (blockSize == 0) {
-                writer.close()
+                writer.close().catch(err => fail('' + err))
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))
                 reader
@@ -218,17 +235,14 @@ module.exports = {
                       setTimeout(pump)
                     }).catch((err) => {
                         console.error(err);
+                        fail('' + err);
                     });
                     if (size == 0) {
                         result.complete(true);
                     }
                   }).exceptionally(t => {
                       console.log(t);
-                      progress.show = false
-                      that.errorTitle = 'Error downloading file: ' + filename
-                      that.errorBody = t.getMessage()
-                      that.showError = true
-                      result.completeExceptionally(t);
+                      fail(t.getMessage());
                   })
               }
             }

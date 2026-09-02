@@ -1008,26 +1008,40 @@ function getFromCacheProm(hash) {
 }
 function getFromCachePromWithRetry(context, future, hash) {
     let that = context;
-    if (!that.isCachingEnabled) {
+    // a cache read that never completes stalls the whole download that asked for the block,
+    // so every path here has to end in a completed future - a miss is always safe
+    let miss = (err) => {
+        if (err != null)
+            console.log('block cache read failed: ' + err);
         future.complete(peergos.client.JsUtil.emptyOptional());
+    };
+    if (!that.isCachingEnabled) {
+        miss(null);
     } else {
         let key = hash.toString();
         if (that.isOpfsCachingEnabled) {
             getOPFSKV(key, that.cacheStore).thenApply((val) => {
                 if (val == null) {
-                    future.complete(peergos.client.JsUtil.emptyOptional());
+                    miss(null);
                 } else {
                     try {
-                        let now = new Date();
-                        that.cacheMetadataRefs['k'+key].t = now.getTime();
-                    } catch(e) {}
-                    future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                        try {
+                            let now = new Date();
+                            that.cacheMetadataRefs['k'+key].t = now.getTime();
+                        } catch(e) {}
+                        future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
+                    } catch (e) {
+                        miss(e);
+                    }
                 }
+            }).exceptionally(t => {
+                miss(t);
+                return null;
             });
         } else {
             getIDBKV(key, that.cacheStore).then((val) => {
                 if (val == null) {
-                    future.complete(peergos.client.JsUtil.emptyOptional());
+                    miss(null);
                 } else {
                     setTimeout(() => {
                         let metaData = createBlockCacheMetadataRecord(key, val.length);
@@ -1042,6 +1056,8 @@ function getFromCachePromWithRetry(context, future, hash) {
                     });
                     future.complete(peergos.client.JsUtil.optionalOf(convertToByteArray(val)));
                 }
+            }).catch(err => {
+                miss(err);
             });
         }
     }
