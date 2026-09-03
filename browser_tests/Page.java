@@ -20,9 +20,9 @@ public class Page {
                 username, password);
         d.script("[...document.querySelectorAll('button')]" +
                 ".find(b => b.textContent.trim() === 'Sign in').click();");
-        // Key generation is scrypt. Windows has no native tweetnacl build - the run logs
-        // "Couldn't load native crypto library ... tweetnacl.dll" - so it falls back to java and
-        // takes far longer there than the 300s that is plenty everywhere else.
+        // Key generation is scrypt, in the browser, so nothing the server links against changes
+        // it. Windows just needs longer: the runner is slower and the sqlite backed server it is
+        // talking to is slower still.
         long timeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 900_000 : 300_000;
         d.waitForScript("sign in to complete",
                 "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);

@@ -117,8 +117,8 @@ jobs:
       env:
         # safari has no headless mode, and the macos runner has a ui session for it to use
         HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
-        # windows has no native tweetnacl build, so every scrypt login falls back to java and
-        # the server is several times slower besides
+        # the windows runner is slower, and the sqlite backed server slower still, so the
+        # browser side sign in needs longer than the 300s that suffices elsewhere
         PEERGOS_TEST_SLOW: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
