@@ -117,6 +117,9 @@ jobs:
       env:
         # safari has no headless mode, and the macos runner has a ui session for it to use
         HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
+        # windows has no native tweetnacl build, so every scrypt login falls back to java and
+        # the server is several times slower besides
+        PEERGOS_TEST_SLOW: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}

@@ -20,9 +20,12 @@ public class Page {
                 username, password);
         d.script("[...document.querySelectorAll('button')]" +
                 ".find(b => b.textContent.trim() === 'Sign in').click();");
-        // key generation is scrypt, so this is slow on a cold profile
+        // Key generation is scrypt. Windows has no native tweetnacl build - the run logs
+        // "Couldn't load native crypto library ... tweetnacl.dll" - so it falls back to java and
+        // takes far longer there than the 300s that is plenty everywhere else.
+        long timeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 900_000 : 300_000;
         d.waitForScript("sign in to complete",
-                "document.body.innerText.indexOf('UPGRADE') >= 0", 300_000);
+                "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
     }
 
     /** Opens the drive and hands back a handle on its vue component as window.__drive. */

@@ -41,6 +41,7 @@ public class MarionetteDriver implements WebDriver {
             this.out = s.getOutputStream();
             readFrame(); // the server's handshake
             command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            focusAWindow();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -71,6 +72,43 @@ public class MarionetteDriver implements WebDriver {
         }
     }
 
+    /** Points the session at a window that actually exists.
+     *
+     *  A fresh profile can end up with the session bound to a browsing context that is then
+     *  discarded - an import or welcome window replacing the first one, which happens on windows
+     *  and macos far more than on linux. Every later command then fails with "no such window",
+     *  or hangs waiting for a page that is not in the window being polled.
+     */
+    @SuppressWarnings("unchecked")
+    private void focusAWindow() {
+        try {
+            Object handles = command("WebDriver:GetWindowHandles", Map.of());
+            List<Object> list = handles instanceof List ? (List<Object>) handles : List.of();
+            if (! list.isEmpty())
+                command("WebDriver:SwitchToWindow",
+                        Map.of("handle", String.valueOf(list.get(list.size() - 1))));
+        } catch (RuntimeException e) {
+            // nothing to switch to; the next command will report the real problem
+        }
+    }
+
+    private static boolean isDiscardedWindow(RuntimeException e) {
+        String message = String.valueOf(e.getMessage());
+        return message.contains("no such window") || message.contains("discarded");
+    }
+
+    /** Runs a command, and if the window went away, re-focuses one and tries once more. */
+    private Object commandWithRecovery(String name, Map<String, Object> params) {
+        try {
+            return command(name, params);
+        } catch (IllegalStateException e) {
+            if (! isDiscardedWindow(e))
+                throw e;
+            focusAWindow();
+            return command(name, params);
+        }
+    }
+
     private static String describe(Object error) {
         if (error instanceof Map) {
             Map m = (Map) error;
@@ -96,12 +134,12 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void navigate(String url) {
-        command("WebDriver:Navigate", Map.of("url", url));
+        commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
     }
 
     @Override
     public Object script(String body, Object... args) {
-        return value(command("WebDriver:ExecuteScript",
+        return value(commandWithRecovery("WebDriver:ExecuteScript",
                 Map.of("script", body, "args", Arrays.asList(args))));
     }
 

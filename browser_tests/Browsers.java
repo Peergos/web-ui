@@ -63,6 +63,16 @@ public class Browsers {
                 "user_pref(\"browser.startup.homepage_override.mstone\", \"ignore\");",
                 "user_pref(\"datareporting.policy.dataSubmissionEnabled\", false);",
                 "user_pref(\"dom.serviceWorkers.testing.enabled\", true);",
+                // anything that can open a second window, or replace the first, loses the
+                // session's browsing context on a fresh profile
+                "user_pref(\"browser.startup.page\", 0);",
+                "user_pref(\"browser.migration.version\", 9999);",
+                "user_pref(\"browser.uitour.enabled\", false);",
+                "user_pref(\"browser.newtabpage.enabled\", false);",
+                "user_pref(\"browser.sessionstore.resume_from_crash\", false);",
+                "user_pref(\"toolkit.startup.max_resumed_crashes\", -1);",
+                "user_pref(\"browser.tabs.warnOnClose\", false);",
+                "user_pref(\"datareporting.healthreport.uploadEnabled\", false);",
                 "");
         Files.writeString(profile.resolve("user.js"), prefs);
 
