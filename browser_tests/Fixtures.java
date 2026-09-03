@@ -1,4 +1,10 @@
+import peergos.server.Builder;
+import peergos.shared.Crypto;
+import peergos.shared.NetworkAccess;
+import peergos.shared.user.UserContext;
+
 import java.io.*;
+import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
 
@@ -11,6 +17,22 @@ import java.util.*;
  *  a download test from failing for upload reasons.
  */
 public class Fixtures {
+
+    /** Creates an extra account over the api.
+     *
+     *  Needed because the admin account is called "peergos", which collides with the magic
+     *  /peergos/ prefix the sandbox service worker uses to recognise a drive path.
+     */
+    public static void signUp(String peergosUrl, String username, String password) {
+        try {
+            Crypto crypto = Builder.initCrypto();
+            NetworkAccess network = Builder.buildJavaNetworkAccess(
+                    URI.create(peergosUrl).toURL(), false, Optional.empty(), Optional.empty()).join();
+            UserContext.signUp(username, password, "", network, crypto).join();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not sign up " + username + ": " + e, e);
+        }
+    }
 
     /** A deterministic pseudo random file, so a rerun reuses it rather than regenerating. */
     public static Path localFile(String name, long size) throws IOException {

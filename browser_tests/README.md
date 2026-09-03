@@ -27,10 +27,17 @@ Single file source programs, so there is no build step - `java` compiles them on
 ## Coverage
 
 Covered: sign in and reach the drive, upload a file, upload a group of files in one go, upload a
-folder with a nested subfolder, render a pdf in the pdf app, two concurrent downloads, download a
-folder as a zip, download a calendar event as .ics. Every assertion is on the bytes - hashed
+folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
+and into a subdirectory, render html with links and images from both its own directory and a
+subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
+as .ics. Every assertion is on the bytes - hashed
 against the source, unzipped and compared, or a rendered canvas with real dimensions - never on a
 file or an app merely appearing.
+
+The html viewer test signs up its own user. `/peergos/` is a magic prefix to the sandbox service
+worker, marking an absolute drive path of the form `/peergos/<username>/<rest>` which it redirects
+to `/<username>/<rest>`. The admin account is itself called `peergos`, so viewing html from it
+gets redirected as though the first directory name were the username, and renders nothing.
 
 The download tests are skipped on webkitgtk: WebKitWebDriver has no download directory
 capability, so there is nowhere to look for the file. Only chromedriver can drive the folder
