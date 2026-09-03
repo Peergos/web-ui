@@ -1,0 +1,1773 @@
+/* Inter is the Peergos UI's own typeface. This app is served from its own
+   origin (calendar.<host>), so it cannot reuse the host UI's copy - a font
+   fetched cross-origin needs CORS headers the server does not send. Only
+   the two weights used here are vendored; both files are byte-identical to
+   web-ui's own assets/fonts/inter. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/inter/Inter-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/inter/Inter-SemiBold.woff2") format("woff2");
+}
+
+/* Peergos' own design tokens, mirrored from web-ui's 0_variables.css and
+   2_status-cards.css so this app's chrome - dialogs, buttons, fields -
+   is the same shape and colour as the rest of the app. Copied rather than
+   imported for the same cross-origin reason as the font; the names are
+   web-ui's, so a change there has an obvious counterpart here. */
+:root {
+  --pg-green: #26b99a;
+  --pg-green-hover: #63e3bd;
+  --pg-alert: #f15151;
+  --pg-muted: #566571;
+  --pg-surface-2: #f1f4f7;
+  --pg-tint-ok: #e8f8f3;
+  --pg-tint-error: #fdecec;
+  --pg-track: #e6ebef;
+  --pg-scrim: rgba(8, 15, 20, .55);
+  --pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .4);
+
+  --radius-control: 8px;
+  --radius-field: 10px;
+  --radius-container: 14px;
+  --radius-pill: 999px;
+
+  /* web-ui's --pg-on-error, which is the token it uses for error *text*.
+     Its --alert (#f15151) is the fill colour and reaches only 3.4:1 on
+     white - short of WCAG AA for the 14px label a danger button carries. */
+  --danger: #b3261e;
+
+  /* Retints the vendored Breezy palette (its own :root loads before this
+     file) so the grid shares the chrome's accent and neutrals rather than
+     the theme's stock indigo. The vendored files stay untouched. */
+  --fc-breezy-primary: var(--pg-green);
+  --fc-breezy-primary-over: var(--pg-green-hover);
+  --fc-breezy-primary-foreground: #ffffff;
+  --fc-breezy-foreground: #2c3e50;
+  --fc-breezy-muted-foreground: var(--pg-muted);
+  --fc-breezy-border: #e1e1e1;
+  --fc-breezy-strong-border: #b6bcc1;
+  --fc-breezy-now: var(--pg-alert);
+}
+
+/* Every event opens something on click - the popover, or the task dialog -
+   so it points like the day cells already do. [data-search-event-id] is
+   this app's own attribute, set on each event element in eventDidMount:
+   Breezy hashes FullCalendar's class names, so nothing else is stable. */
+[data-search-event-id] {
+  cursor: pointer;
+}
+
+/* Marks whichever event the popover is open for (toggled in
+   showEventPopover()/hideEventPopover()). */
+.fc-event-selected {
+  outline: 2px solid var(--fc-breezy-primary);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* Month and Year paint the week number over the last column, where the day
+   number and events already compete for room. FullCalendar offers no mount
+   hook for it here (weekNumberDidMount never fires in this build) and
+   ignores weekNumbersWithinDays, so it is moved with CSS: the row opens a
+   gutter at its start edge, and the number - absolutely positioned, with an
+   inline offset FullCalendar recomputes for every row - is pinned into it.
+   Week and Day views already place theirs in the top-left corner. */
+/* The week number rides in the corner of the row's first day rather than in
+   a column of its own: a gutter has to be opened in the header row too or
+   every column sits right of its heading, and it costs 30px that seven
+   columns would rather have. FullCalendar offers no mount hook for this
+   element here (weekNumberDidMount never fires in this build) and ignores
+   weekNumbersWithinDays, so it is placed with CSS - it is absolutely
+   positioned in the row, with an inline offset FullCalendar recomputes per
+   row, hence the !important. */
+[data-view="dayGridMonth"] [role="row"] > [aria-hidden="true"][aria-label] {
+  inset-inline-start: 6px !important;
+  /* Breezy pins both edges; releasing the far one lets the badge shrink to
+     its own text instead of stretching the width of the row. */
+  inset-inline-end: auto !important;
+  top: 6px;
+  width: auto;
+  height: auto;
+  padding: 1px 7px;
+  /* Breezy dresses it for the corner it used to sit in - an opaque fill, a
+     rounded corner and two rules. */
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--pg-surface-2);
+  color: var(--pg-muted);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+/* Year draws twelve grids at once, and a badge in each would be 72 of them
+   on cells with no room to spare. */
+[data-view="multiMonthYear"] [role="row"] > [aria-hidden="true"][aria-label] {
+  display: none;
+}
+
+/* Year cells are 54x46 and FullCalendar owns the twelve month blocks'
+   heights - taller cells only push each month's last week past its block
+   and clip it, and dayMaxEvents does not move that either. So everything
+   inside the cell shrinks instead: of the 46px the date block took 22, and
+   an entry (18) plus the "+N" (12) needs 30, which is why every day
+   collapsed to a bare count. Taking 6px off the date and 4 off the entry
+   fits one real entry beside the count - a title says more at a glance -
+   and the count still opens the day's list for the rest. */
+[data-view="multiMonthYear"] [data-day-number] {
+  font-size: 11px;
+  line-height: 16px;
+}
+
+[data-view="multiMonthYear"] [data-date] div:has(> [data-day-number]) {
+  height: 16px;
+  padding: 0;
+}
+
+[data-view="multiMonthYear"] [data-search-event-id] {
+  height: 12px;
+  min-height: 0;
+  margin: 0 2px 1px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+/* "+N more" is an action, not another entry: a thin accent outline says so
+   without giving it an entry's weight. */
+[data-date] [role="button"][aria-haspopup] {
+  border: 1px solid var(--pg-green);
+  border-radius: 4px;
+}
+
+[data-view="multiMonthYear"] [data-date] [role="button"][aria-haspopup] {
+  display: flex;
+  align-items: center;
+  /* The slot FullCalendar leaves is exactly 12px and the button renders at
+     14, which is the 2px it was hanging below the cell by. */
+  height: 12px;
+  overflow: hidden;
+  padding: 0 3px;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+/* Centred dates. The wrapper is already the full width of the cell - it is
+   a stretched child of the cell's column flex - so centring its content is
+   the whole job. It must NOT be given flex-grow: that makes it claim the
+   cell's spare height and pushes the day's events to the bottom, which on a
+   busy day left a 101px hole under the date and doubled the row. */
+[data-view="dayGridMonth"] [data-date] div:has(> [data-day-number]),
+[data-view="multiMonthYear"] [data-date] div:has(> [data-day-number]) {
+  justify-content: center;
+}
+
+/* On a phone a badge would sit on top of the date it shares a corner with. */
+@media (max-width: 700px) {
+  [data-view="dayGridMonth"] [role="row"] > [aria-hidden="true"][aria-label] {
+    display: none;
+  }
+}
+
+/* Hints that an empty cell is clickable to create an event - [data-date]
+   is FullCalendar's own native attribute (unhashed by Breezy) on each day
+   cell/column. Creating always lands in a writable calendar (the primary
+   one, by default), so this isn't conditional. (hover: hover) excludes
+   touch - a tapped cell otherwise looks stuck highlighted once the
+   modal that covered it closes, since touch has no real pointer to
+   leave and clear :hover.
+
+   :not(:has([role="link"]:hover, [data-search-event-id]:hover,
+   [style*="inset-inline"]:hover)) - the day-number link and each event
+   already carry Breezy's own correctly-scoped hover style; without this,
+   hovering either one *also* lights up the whole cell around it, since
+   :hover on a child always matches its ancestors too. The
+   [style*="inset-inline"] arm covers a multi-day event's own positioning
+   wrapper (every event has exactly one, single- or multi-day), which
+   renders a few px wider than the event element itself on every side -
+   without it, hovering that sliver of the wrapper (not the event, not
+   caught by [data-search-event-id]:hover) still flashed the highlight on
+   whichever single cell the wrapper happens to be a DOM descendant of. */
+@media (hover: hover) {
+  [role="gridcell"][data-date]:hover:not(:has([role="link"]:hover, [data-search-event-id]:hover, [style*="inset-inline"]:hover)) {
+    background: var(--fc-breezy-muted);
+    cursor: pointer;
+  }
+
+  /* Suppresses the hint above only while the event popover is open - it
+     anchors right next to a specific clicked event, so hovering other
+     cells while mid-interaction with it is confusing. Menus/search/the
+     date picker don't have the same issue (they sit off in a corner,
+     not anchored to a specific cell), so cells stay hoverable normally
+     while those are open. The #event-popover id inside :has() gives this
+     enough specificity to win over the rule above without !important. */
+  body:has(#event-popover.open) [role="gridcell"][data-date]:hover {
+    background: initial;
+    cursor: auto;
+  }
+}
+
+/* Breezy has no text-overflow handling by default. [data-event-all-day]
+   is this app's own attribute (eventDidMount, calendar.js) - Breezy
+   hashes FullCalendar's own class names, so nothing else is stable. */
+[data-event-all-day="1"] > div > div {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Timed events: the title is always the last direct child (time+title -
+   see fixDayGridEventLayout()). */
+[data-event-all-day="0"] > div:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The dark half of both sets above, again mirroring web-ui's own dark
+   theme rather than Breezy's stock near-black. The Breezy retint has to be
+   restated in full here: the vendored palette carries its own dark block,
+   so anything left out of this one falls back to the theme's indigo. */
+[data-color-scheme=dark] {
+  --pg-muted: #a7b6c2;
+  --pg-surface-2: #22303c;
+  --pg-tint-ok: #1d4a41;
+  --pg-tint-error: #4d2b2e;
+  --pg-track: #1f2c37;
+  --pg-scrim: rgba(0, 0, 0, .65);
+  --pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .55);
+  --danger: #ffa1a1;
+  color-scheme: dark;
+
+  --fc-breezy-background: #2c3e50;
+  --fc-breezy-popover: #283744;
+  --fc-breezy-primary: var(--pg-green);
+  --fc-breezy-primary-over: var(--pg-green-hover);
+  --fc-breezy-foreground: #ffffff;
+  --fc-breezy-muted-foreground: var(--pg-muted);
+  --fc-breezy-border: #566571;
+  --fc-breezy-strong-border: #566571;
+  --fc-breezy-now: var(--pg-alert);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* iOS Safari ignores the viewport meta tag's user-scalable/maximum-scale
+     (has since iOS 10) - a pinch or fast double-tap still zooms the page
+     there regardless of what index.html's <meta viewport> says. pan-x
+     pan-y keeps normal scrolling but drops both zoom gestures; the meta
+     tag stays too, for browsers that do honor it. */
+  touch-action: pan-x pan-y;
+}
+
+body {
+  display: flex;
+  flex-direction: row;
+  background: var(--fc-breezy-background);
+  color: var(--fc-breezy-foreground);
+}
+
+#main-column {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+#sidebar {
+  flex: 0 0 240px;
+  box-sizing: border-box;
+  padding: 12px 8px;
+  border-right: 1px solid var(--fc-breezy-border);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: flex-basis .2s ease, padding .2s ease;
+}
+
+/* Desktop-only collapse - `.open`/backdrop below is the mobile drawer. */
+@media (min-width: 701px) {
+  #sidebar.collapsed {
+    flex-basis: 0;
+    padding: 0;
+    border-right: none;
+    overflow: hidden;
+  }
+}
+
+#sidebar-backdrop {
+  display: none;
+}
+
+.calendar-list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--radius-field);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* (hover: hover) excludes touch - same stuck-highlight issue as
+   [data-date] above (this row is a stable, long-lived element, not
+   rebuilt on every tap, so a stuck :hover would stay visible). */
+@media (hover: hover) {
+  .calendar-list-item:hover {
+    background: var(--fc-breezy-faint);
+  }
+}
+
+.calendar-list-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.calendar-list-name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .9em;
+}
+
+.calendar-readonly-badge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--fc-breezy-secondary-icon);
+  opacity: .7;
+}
+
+.calendar-menu-button {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fc-breezy-secondary-icon);
+  cursor: pointer;
+  opacity: 0;
+  /* An overlay (e.g. the event-form modal's backdrop) can sit on top of
+     this button while open; closing it reveals whatever's still under
+     the pointer, which would otherwise snap straight to :hover with no
+     transition and read as a flash. */
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.calendar-list-item:hover .calendar-menu-button,
+.calendar-menu-button:focus-visible {
+  opacity: 1;
+}
+
+.calendar-menu-button:hover {
+  background: var(--fc-breezy-strong);
+  color: var(--fc-breezy-secondary-icon-over);
+}
+
+/* Touch devices don't reliably trigger :hover - this button (and
+   everything behind it) would otherwise be unreachable on mobile. */
+@media (hover: none) {
+  .calendar-menu-button {
+    opacity: 1;
+  }
+}
+
+.calendar-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 4px;
+  background: var(--fc-breezy-popover);
+  border-radius: var(--radius-container);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+  padding: 4px;
+  min-width: 140px;
+  z-index: 1060;
+}
+
+.calendar-menu.open {
+  display: block;
+}
+
+.calendar-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  transition: background-color .15s ease;
+}
+
+.calendar-menu button:hover {
+  background: var(--fc-breezy-muted);
+}
+
+.calendar-menu button.danger {
+  color: var(--danger);
+}
+
+.calendar-menu button svg {
+  flex: 0 0 auto;
+}
+
+.calendar-menu-version {
+  padding: 8px 10px;
+  color: var(--fc-breezy-faint-foreground);
+  font-size: .8em;
+  white-space: nowrap;
+}
+
+#overflow-menu-wrap,
+#add-menu-wrap {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* The menu hangs from the + rather than from the bar's right edge. */
+#add-menu {
+  right: auto;
+  left: 0;
+  min-width: 150px;
+}
+
+/* left is computed/clamped to the viewport in openGotoDatePicker()
+   (calendar.js). right: auto overrides .calendar-menu's own
+   `right: 4px` (meant for the other dropdowns) - with both left and
+   right set, width:auto would stretch to fill the gap instead of
+   shrinking to content. */
+#goto-date-menu {
+  position: fixed;
+  right: auto;
+  padding: 8px;
+  display: none;
+  gap: 6px;
+}
+
+#goto-date-menu.open {
+  display: flex;
+}
+
+/* height + box-sizing explicit and shared with #goto-date-year-stepper
+   button below - a <select> and a number input don't naturally settle
+   at the same height otherwise, even with identical padding. */
+#goto-date-menu select,
+#goto-date-menu input,
+#goto-date-menu select {
+  box-sizing: border-box;
+  height: 40px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--fc-breezy-foreground);
+  background: var(--pg-surface-2);
+  border: 1px solid var(--pg-track);
+  border-radius: var(--radius-field);
+  padding: 0 10px;
+}
+
+#goto-date-menu input:focus,
+#goto-date-menu select:focus {
+  outline: none;
+  border-color: var(--pg-green);
+  box-shadow: 0 0 0 3px var(--pg-tint-ok);
+}
+
+#goto-date-menu input[type="number"] {
+  width: 4.5em;
+  text-align: center;
+  /* Native spinner arrows are tiny/unreliable on touch - the explicit
+     #goto-date-year-up/down buttons are the real stepper now. */
+  -moz-appearance: textfield;
+}
+
+#goto-date-menu input[type="number"]::-webkit-inner-spin-button,
+#goto-date-menu input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#goto-date-year-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#goto-date-year-stepper button {
+  box-sizing: border-box;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--fc-breezy-border);
+  border-radius: var(--radius-control);
+  background: var(--fc-breezy-background);
+  color: var(--fc-breezy-foreground);
+  font-size: 1.2em;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#goto-date-year-stepper button:hover {
+  background: var(--fc-breezy-muted);
+}
+
+/* [role="heading"] is FullCalendar's own title element - Breezy hashes
+   its class names, so this is the only stable hook for it. */
+#calendar [role="heading"] {
+  white-space: nowrap;
+}
+
+/* Matches Breezy's own toolbar buttons (radius, padding, hover) rather
+   than reading as a standalone pill. */
+#calendar .goto-date-trigger {
+  display: inline-block;
+  cursor: pointer;
+  border-radius: var(--radius-control);
+  padding: 8px 12px;
+  /* Stretches the existing space in e.g. "July 2026" for breathing room
+     between the words, without needing to know the exact title format. */
+  word-spacing: 4px;
+}
+
+#calendar .goto-date-trigger:hover,
+#calendar .goto-date-trigger:focus-visible {
+  background: var(--fc-breezy-muted);
+}
+
+.sidebar-add-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--fc-breezy-foreground);
+  transition: background-color .15s ease;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sidebar-add-button:hover {
+  background: var(--fc-breezy-faint);
+}
+
+.color-swatches {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.color-swatch svg {
+  display: none;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+}
+
+.color-swatch.selected svg {
+  display: block;
+}
+
+@media (max-width: 700px) {
+  #sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 240px;
+    z-index: 1100;
+    background: var(--fc-breezy-background);
+    transform: translateX(-100%);
+    transition: transform .2s ease;
+  }
+
+  /* Only while open - a box-shadow isn't clipped to its own element's box,
+     so even fully translated off-screen its blur (12px) plus offset (2px)
+     painted a thin strip along the left edge of the viewport, visible as
+     a sliver of the "closed" drawer. */
+  #sidebar.open {
+    transform: translateX(0);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, .15);
+  }
+
+  #sidebar-backdrop.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .3);
+    z-index: 1090;
+  }
+
+  /* Bottom sheet instead of a small popover anchored under the title -
+     see the matching JS branch in openGotoDatePicker() (calendar.js),
+     which skips setting inline left/top below this same breakpoint so
+     these rules apply cleanly instead of fighting inline ones. */
+  #goto-date-menu.open {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    box-sizing: border-box;
+    justify-content: center;
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+    padding: 16px;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  /* Compacts FullCalendar's own header toolbar (title row + view-tab
+     row) - its 16px padding/gap costs vertical space that's precious on
+     a phone. [role="heading"] is FullCalendar's own stable role (Breezy
+     hashes everything else) and :has() reaches its hashed-class
+     container without naming it; `#calendar > div` keeps this off the
+     grid below, which has no [role="heading"] descendant. Button padding
+     is left alone - already tight as a touch target. */
+  #calendar > div:has([role="heading"]) {
+    padding: 8px 16px;
+    gap: 8px;
+  }
+}
+
+/* Hamburger pinned left, search bar centered, overflow menu pinned
+   right. */
+#utility-bar {
+  flex: 0 0 auto;
+  padding: 8px 8px 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Three adjacent pieces (input, clear "x", search button) sharing one
+   border/radius so it reads as a single control. */
+#search-bar {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: stretch;
+}
+
+#search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--fc-breezy-strong-border);
+  border-right: none;
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  font: inherit;
+  outline: none;
+  box-sizing: border-box;
+  background: var(--fc-breezy-background);
+  color: var(--fc-breezy-foreground);
+}
+
+#search-input:focus {
+  border-color: var(--pg-green);
+  box-shadow: 0 0 0 3px var(--pg-tint-ok);
+}
+
+#search-clear-button {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid var(--fc-breezy-strong-border);
+  border-left: none;
+  border-right: none;
+  background: var(--fc-breezy-background);
+  color: var(--fc-breezy-secondary-icon);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+#search-clear-button.visible {
+  display: flex;
+}
+
+#search-button {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  border: 1px solid var(--fc-breezy-strong-border);
+  border-left: none;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
+  background: var(--fc-breezy-faint);
+  color: var(--fc-breezy-secondary-icon);
+  transition: background-color .15s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+#search-button:hover {
+  background: var(--fc-breezy-muted);
+}
+
+.search-results {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 6px;
+  background: var(--fc-breezy-popover);
+  border-radius: var(--radius-container);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+  padding: 6px;
+  box-sizing: border-box;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1050;
+}
+
+.search-results.open {
+  display: block;
+}
+
+.search-result-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  justify-content: center;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-field);
+  transition: background-color .15s ease;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.search-result-item:hover {
+  background: var(--fc-breezy-muted);
+}
+
+.search-result-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-result-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.search-result-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.search-result-cancelled {
+  text-decoration: line-through;
+  opacity: .6;
+}
+
+.search-result-badge {
+  display: inline-flex;
+  opacity: .55;
+  flex: 0 0 auto;
+}
+
+.search-result-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .8em;
+  color: var(--fc-breezy-muted-foreground);
+}
+
+.search-empty {
+  padding: 16px 10px;
+  color: var(--fc-breezy-muted-foreground);
+  font-size: .9em;
+  text-align: center;
+}
+
+#calendar {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+.fc-event-cancelled {
+  opacity: .6;
+  text-decoration: line-through;
+}
+
+/* ---------- Tasks ---------- */
+
+#tasks-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--fc-breezy-border);
+}
+
+.task-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 4px;
+}
+
+.task-panel-title {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Only rendered when there is an open task, so an empty list stays quiet. */
+.task-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--pg-surface-2);
+  color: var(--pg-muted);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+.task-count:empty {
+  display: none;
+}
+
+.task-filter {
+  flex: 0 0 auto;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--pg-muted);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.task-filter:hover {
+  background: var(--pg-surface-2);
+  color: var(--fc-breezy-foreground);
+}
+
+.task-group-heading {
+  margin: 8px 0 2px;
+  padding: 0 10px;
+  color: var(--pg-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+/* Overdue is the one group that earns colour - it is the only one that is
+   telling the user something is wrong. */
+.task-group-heading--overdue {
+  color: var(--danger);
+}
+
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--radius-field);
+}
+
+.task-row:hover {
+  background: var(--pg-surface-2);
+}
+
+.task-check {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--pg-green);
+  cursor: pointer;
+}
+
+.task-open {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-due {
+  color: var(--pg-muted);
+  font-size: 12px;
+}
+
+.task-due--overdue {
+  color: var(--danger);
+}
+
+/* Done tasks stay legible but stop competing - struck through, not hidden,
+   so ticking one off reads as an action rather than a disappearance. */
+.task-row--done .task-title {
+  color: var(--pg-muted);
+  text-decoration: line-through;
+}
+
+.task-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.task-empty {
+  margin: 4px 0;
+  padding: 0 10px;
+  color: var(--pg-muted);
+  font-size: 13px;
+}
+
+/* A task on the grid: the same chip an all-day event gets, with a check
+   mark in front of the title so the two are told apart at a glance. */
+.fc-task[data-event-all-day="1"] {
+  padding-left: 18px;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5l9 -9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 4px center;
+}
+
+.fc-task-done {
+  opacity: .6;
+  text-decoration: line-through;
+}
+
+/* Dialogs follow the same anatomy as the rest of Peergos (web-ui's
+   .pg-dialog): a pinned head carrying the title and the close control, a
+   scrolling body, and a pinned foot holding the actions - so a long form
+   never scrolls its own Save button out of reach. */
+.event-modal-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: var(--pg-scrim);
+  /* keeps a flick inside the dialog from scrolling the grid behind it */
+  overscroll-behavior: contain;
+}
+
+.event-modal-backdrop.open {
+  display: flex;
+}
+
+.event-modal {
+  display: flex;
+  flex-direction: column;
+  width: 420px;
+  max-width: 100%;
+  max-height: 92vh;
+  overflow: hidden;
+  box-sizing: border-box;
+  background: var(--fc-breezy-popover);
+  border: 1px solid var(--fc-breezy-border);
+  border-radius: var(--radius-container);
+  box-shadow: var(--pg-shadow-dialog);
+}
+
+/* The dialog takes focus on open (see openDialog()); it is a container,
+   not a control, so it shows no ring of its own. */
+.event-modal:focus {
+  outline: none;
+}
+
+/* A form is the flex child that has to carry head/body/foot, so it has to
+   be a column too rather than a block wrapper around them. */
+.event-modal form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-head {
+  display: flex;
+  align-items: start;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 18px 16px 14px 20px;
+}
+
+.event-modal h2 {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+  /* an event title with no spaces has nowhere to break, and the head is
+     the one part of a dialog that cannot scroll */
+  overflow-wrap: anywhere;
+}
+
+.modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  /* the head aligns to the first line of the title, and this control is
+     taller than that line: lift it so it reads as centred on the words */
+  margin-top: -6px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pg-muted);
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  background: var(--pg-surface-2);
+  color: var(--fc-breezy-foreground);
+}
+
+.modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 20px;
+}
+
+.modal-foot {
+  flex: 0 0 auto;
+  padding: 14px 20px 16px;
+}
+
+.event-modal label {
+  display: block;
+  font-size: .85em;
+  font-weight: 600;
+  margin: 12px 0 4px;
+}
+
+.event-modal label.field-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-icon {
+  opacity: .6;
+  flex: 0 0 auto;
+}
+
+/* web-ui's .pg-input. input[type=number] is listed too - it was the one
+   field type the old rule missed, so the repeat interval and occurrence
+   count rendered as unstyled browser defaults next to styled siblings. */
+.event-modal input[type="text"],
+.event-modal input[type="date"],
+.event-modal input[type="time"],
+.event-modal input[type="number"],
+.event-modal select,
+.event-modal textarea {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--pg-track);
+  border-radius: var(--radius-field);
+  background: var(--pg-surface-2);
+  color: var(--fc-breezy-foreground);
+  font-family: inherit;
+  font-size: 15px;
+}
+
+/* A select opens a menu and a tick box toggles, so both point - the browser
+   forces `default` on form controls, which beats the pointer they would
+   otherwise inherit from the row around them. Text fields keep the I-beam. */
+.event-modal select,
+.event-modal input[type="checkbox"],
+.event-modal input[type="radio"],
+#goto-date-menu select {
+  cursor: pointer;
+}
+
+.event-modal input:focus,
+.event-modal select:focus,
+.event-modal textarea:focus {
+  outline: none;
+  border-color: var(--pg-green);
+  box-shadow: 0 0 0 3px var(--pg-tint-ok);
+}
+
+.event-modal .date-time-row {
+  display: flex;
+  gap: 8px;
+}
+
+.event-modal .date-time-row input[type="date"] {
+  flex: 3;
+  min-width: 0;
+}
+
+.event-modal .date-time-row input[type="time"] {
+  flex: 2;
+  min-width: 0;
+}
+
+.event-modal textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.event-modal .all-day-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.event-modal .all-day-row label {
+  margin: 0;
+}
+
+.event-modal .repeat-details {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--fc-breezy-border);
+}
+
+.event-modal .repeat-details label {
+  margin-top: 10px;
+}
+
+.event-modal .repeat-interval-row,
+.event-modal .repeat-count-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-modal .repeat-interval-row input[type="number"],
+.event-modal .repeat-count-row input[type="number"] {
+  width: 64px;
+}
+
+.repeat-weekday-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* 40px is the height every other control in the app has. */
+.weekday-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--fc-breezy-strong-border);
+  background: transparent;
+  color: var(--fc-breezy-foreground);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.weekday-toggle.selected {
+  background: var(--pg-green);
+  border-color: var(--pg-green);
+  color: var(--fc-breezy-primary-foreground);
+}
+
+.event-modal #event-repeat-monthly-mode,
+.event-modal #event-repeat-until {
+  margin-top: 8px;
+}
+
+.event-modal .modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.scope-modal {
+  width: 340px;
+}
+
+.scope-modal .scope-subtitle {
+  margin: 4px 0 0;
+  color: var(--fc-breezy-muted-foreground);
+  font-size: .9em;
+}
+
+.scope-modal .scope-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.scope-modal .scope-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 4px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+
+.scope-modal .scope-option:hover {
+  background: var(--pg-surface-2);
+}
+
+.scope-modal .scope-option input[type="radio"] {
+  margin: 0;
+}
+
+#share-modal-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.share-modal-fixed {
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.share-modal-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.share-section + .share-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--fc-breezy-border);
+}
+
+.share-section-heading {
+  margin: 0 0 8px;
+  font-size: .85em;
+  font-weight: 600;
+  color: var(--fc-breezy-muted-foreground);
+}
+
+.share-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.share-user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: .9em;
+}
+
+.share-user-row .share-username {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-modal .share-user-row button,
+.event-modal #share-link-copy-button,
+.event-modal #share-link-revoke-button {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fc-breezy-secondary-icon);
+  cursor: pointer;
+}
+
+.event-modal .share-user-row button:hover,
+.event-modal #share-link-revoke-button:hover {
+  background: var(--fc-breezy-strong);
+  color: var(--danger);
+}
+
+/* Copying isn't destructive - a neutral hover, not the danger red the
+   two remove/revoke buttons above use. */
+.event-modal #share-link-copy-button:hover {
+  background: var(--fc-breezy-strong);
+  color: var(--fc-breezy-secondary-icon-over);
+}
+
+.share-empty {
+  padding: 6px 4px;
+  color: var(--fc-breezy-muted-foreground);
+  font-size: .9em;
+}
+
+.share-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.share-add-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Overrides .event-modal select's own width: 100% - sized to content
+   instead, like the input next to them staying the flexible one.
+   share-link-access-select is excluded - it's on its own full-width
+   row, not sharing space with an input. */
+.share-add-row select,
+.share-user-row select {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.event-modal .share-link-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 12px;
+  padding: 8px;
+  border: none;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--fc-breezy-foreground);
+  font: inherit;
+  font-size: .9em;
+  cursor: pointer;
+  text-align: left;
+}
+
+.event-modal .share-link-button:hover {
+  background: var(--fc-breezy-faint);
+}
+
+/* Column, not a single row - the URL needs its own full-width line (see
+   .share-link-url-row) rather than fighting the access <select> and
+   copy button for space, which used to truncate it. */
+.share-link-row {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.share-link-row.open {
+  display: flex;
+}
+
+.share-link-url-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.share-link-url-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.event-modal .share-link-row input {
+  color: var(--fc-breezy-muted-foreground);
+}
+
+/* web-ui's .pg-btn, to the pixel: 40px tall, 14px semi-bold label.
+   Scoped to the rows that hold text buttons rather than every button in a
+   dialog: the icon buttons, colour swatches and weekday toggles have
+   shapes of their own, and a blanket rule outranked all of them on
+   specificity - which is how the swatches ended up as 60x44 rounded
+   rectangles instead of 28px circles. */
+.event-modal .modal-actions button,
+.event-modal .share-add-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 9px 16px;
+  border: 1px solid var(--fc-breezy-strong-border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--fc-breezy-foreground);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.event-modal .modal-actions button:hover,
+.event-modal .share-add-row button:hover {
+  background: var(--pg-surface-2);
+}
+
+.event-modal button.primary {
+  background: var(--pg-green);
+  color: var(--fc-breezy-primary-foreground);
+  border-color: var(--pg-green);
+}
+
+.event-modal button.primary:hover {
+  background: var(--pg-green-hover);
+  border-color: var(--pg-green-hover);
+}
+
+/* Borderless like web-ui's .pg-btn--danger: a destructive action sits
+   below the primary one, so it is a tinted label rather than a second
+   outlined control competing with Cancel. */
+.event-modal button.danger {
+  color: var(--danger);
+  border-color: transparent;
+  margin-right: auto;
+}
+
+.event-modal button.danger:hover {
+  background: var(--pg-tint-error);
+}
+
+/* One ring for every control in the app, matching web-ui's .pg-btn. Fields
+   are not here: they show focus as a border and halo instead, further down,
+   the way web-ui's .pg-input does. */
+.event-modal button:focus-visible,
+.modal-close:focus-visible,
+.sidebar-add-button:focus-visible,
+.calendar-menu button:focus-visible,
+.search-result-item:focus-visible,
+.color-swatch:focus-visible,
+.weekday-toggle:focus-visible,
+.popover-icon-btn:focus-visible,
+#search-button:focus-visible,
+#search-clear-button:focus-visible,
+#goto-date-year-stepper button:focus-visible {
+  outline: 2px solid var(--pg-green);
+  outline-offset: 2px;
+}
+
+@media (max-width: 450px) {
+  .event-modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .event-modal {
+    width: 100%;
+    max-height: 92vh;
+    border-width: 0;
+    border-radius: var(--radius-container) var(--radius-container) 0 0;
+  }
+
+  /* 44px is the touch-target floor; the 40px above is the pointer size
+     every control in web-ui uses. */
+  .event-modal .modal-actions button,
+  .event-modal .share-add-row button,
+  .event-modal input,
+  .event-modal select {
+    min-height: 44px;
+  }
+
+  .weekday-toggle {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.event-popover {
+  display: none;
+  position: fixed;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  background: var(--fc-breezy-popover);
+  border-radius: var(--radius-container);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+  z-index: 1050;
+}
+
+.event-popover.open {
+  display: block;
+}
+
+/* A sibling of .popover-scroll, not a descendant - stays fixed in the
+   corner regardless of how far that scrolls. */
+.popover-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+}
+
+.popover-scroll {
+  padding: 16px;
+  box-sizing: border-box;
+  /* Scrolls instead of clamping, so long text always stays readable. */
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+}
+
+/* Only when .popover-actions provides its own closing space (toggled in
+   showEventPopover()) - a read-only event has none, so .popover-scroll's
+   own bottom padding applies instead. */
+.event-popover.has-actions .popover-scroll {
+  padding-bottom: 0;
+}
+
+.popover-header {
+  /* Room for .popover-close-btn floating in the corner. */
+  padding-right: 32px;
+}
+
+.popover-title {
+  font-size: 1.05em;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.popover-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fc-breezy-secondary-icon);
+  cursor: pointer;
+  flex: 0 0 auto;
+  transition: background-color .15s ease, color .15s ease;
+}
+
+.popover-icon-btn:hover {
+  background: var(--fc-breezy-muted);
+  color: var(--fc-breezy-secondary-icon-over);
+}
+
+#popover-delete:hover {
+  color: var(--danger);
+}
+
+/* Pushes delete/duplicate/edit to the far right, away from export/email. */
+#popover-delete {
+  margin-left: auto;
+}
+
+.popover-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: 10px;
+  font-size: .9em;
+  color: var(--fc-breezy-foreground);
+}
+
+#popover-location,
+#popover-description {
+  word-break: break-word;
+}
+
+.popover-icon {
+  opacity: .6;
+  margin-top: 1px;
+  flex: 0 0 auto;
+}
+
+.popover-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 14px;
+  padding-top: 10px;
+  padding-bottom: 16px;
+  border-top: 1px solid var(--fc-breezy-border);
+  /* Stays reachable at the bottom no matter how far content scrolls -
+     own padding-bottom stands in for .popover-scroll's (zeroed out via
+     .has-actions above). */
+  position: sticky;
+  bottom: 0;
+  background: var(--fc-breezy-popover);
+}
+
+@media (max-width: 450px) {
+  .event-popover {
+    left: 8px !important;
+    right: 8px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* Transient confirmations - "copied", "press back again to exit". Fades
+   rather than display:none, so the timed hide has something to transition. */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: var(--fc-breezy-popover);
+  color: var(--fc-breezy-foreground);
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+  font-size: .9em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s ease;
+  z-index: 1200;
+}
+
+#toast.visible {
+  opacity: 1;
+}
+
+/* Breezy's own event text defaults to 11-12px in Month/Week/Day/Year -
+   too small per user feedback. [data-search-event-id] is this app's own
+   attribute (eventDidMount, calendar.js), stable across Breezy's hashed
+   class names; a descendant element selector off it already outranks a
+   single hashed class, so no !important. Agenda view is already 14px. */
+[data-search-event-id] div,
+[data-search-event-id] span {
+  font-size: 13px;
+}
+
+/* Month/Year day numbers default to 11-12px, same too-small complaint as
+   event text above. [role="link"] alone also matches Week's column
+   headers, Day's week-number link, and Year/Agenda's own heading links
+   (14-16px, already fine) - [data-day-number] is this app's own marker
+   (dayCellDidMount, calendar.js), scoped to just the day-grid cells. It
+   only ties a hashed class on specificity, so unlike the rule above it
+   wins on source order (this file loads later) rather than selector
+   strength. */
+[data-day-number] {
+  font-size: 13px;
+}
+
+/* Timed events get the same light-tint chip Breezy already gives
+   all-day/multi-day events by default - Breezy's own formula (theme.css,
+   .fc-breezy-GjO), reused here because that class is hashed and timed
+   events don't carry it. Deliberately no per-color contrast text:
+   Breezy's own default reads fine against its own light tints, which a
+   solid full-saturation fill would not. */
+[data-event-all-day="0"] {
+  background-color: var(--fc-event-color);
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  [data-event-all-day="0"] {
+    background-color: color-mix(in oklab, var(--fc-event-color) 20%, var(--fc-breezy-background));
+  }
+}

@@ -1,121 +1,478 @@
-<!DOCTYPE html>
+<!DOCTYPE HTML>
 <html>
   <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" type="text/css" href="css/bootstrap.css" />
-    <link rel="stylesheet" type="text/css" href="css/default.css" />
-    <link rel="stylesheet" type="text/css" href="css/tui-color-picker.css" />
-    <script src="purify.min.js"></script>
-    <script src="jquery-3.js"></script>
-    <script src="bootstrap.js"></script>
-    <script src="tui-code-snippet.js"></script>
-    <script src="tui-time-picker.js"></script>
-    <script src="tui-date-picker.js"></script>
-    <script src="moment.js"></script>
-    <script src="moment-timezone-with-data-10-year-range.js"></script>
-    <script src="ical.min.js"></script>
-    <script src="ical.timezones.js"></script>
-    <script src="ical-expander.js"></script>
-    <script src="tui-calendar.js"></script>
-    <script src="tui-color-picker.js"></script>
-    <script src="en-gb.js"></script>
+    <title>Calendar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta name="google" value="notranslate"/>
+    <link href="vendor/fullcalendar/dist/skeleton.css" rel="stylesheet"/>
+    <link href="vendor/fullcalendar/dist/themes/breezy/theme.css" rel="stylesheet"/>
+    <link href="vendor/fullcalendar/dist/themes/breezy/palettes/indigo.css" rel="stylesheet"/>
+    <link href="calendar.css" rel="stylesheet"/>
   </head>
   <body>
-    <div id="ui" class="calendar-hidden">
-        <div id="calendarMessageModal" class="calendar-message-modal">
-            <div class="calendar-message-modal-content">
-                <span class="calendar-message-modal-close">&times;</span>
-                <div class="twenty-top">
-                    <p id="calendar-message-text"></p>
-                </div>
-                <div>
-                    <button id="calendar-ok-button" class="ten-top">OK</button>
-                </div>
-            </div>
+
+    <div id="sidebar-backdrop"></div>
+
+    <aside id="sidebar" class="collapsed">
+      <div id="calendar-list"></div>
+      <button type="button" id="add-calendar-button" class="sidebar-add-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+        Add calendar
+      </button>
+
+      <section id="tasks-panel" aria-labelledby="tasks-panel-heading">
+        <div class="task-panel-head">
+          <h2 id="tasks-panel-heading" class="task-panel-title">Tasks<span id="task-count" class="task-count"></span></h2>
+          <button type="button" id="show-completed-tasks" class="task-filter" aria-pressed="false">Show completed</button>
         </div>
-        <div id="calendarModal" class="calendar-modal">
-            <div class="calendar-modal-content">
-	      <span class="calendar-modal-close">&times;</span>
-                <div id="color-picker-container">
-                    <div id="color-picker" class="calendar-hidden"></div>
-                </div>
-                <div id="calendars" class="twenty-top">
-                    <ul id="calendar-list">
-                    </ul>
-                </div>
-                <div id="add-calendar-container">
-                    <button id="add-calendar-button" class="ten-top">Add Calendar</button>
-                </div>
-            </div>
-        </div>
-      <div id="lnb" class="calendar-hidden">
-	<div id="lnb-calendars" class="lnb-calendars">
-	  <div>
-          <div class="lnb-calendars-item">
-              <button id="show-configuration-button" class="button-action">
-                <label>
-                  <strong id="calendar-settings-label">Calendar Settings</strong>
-                </label>
-              </button>
+        <div id="task-list"></div>
+      </section>
+    </aside>
+
+    <div id="main-column">
+      <div id="utility-bar">
+        <button type="button" id="sidebar-toggle-button" class="popover-icon-btn" aria-label="Toggle calendar list" title="Toggle calendar list">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l16 0"/><path d="M4 12l16 0"/><path d="M4 18l16 0"/></svg>
+        </button>
+        <!-- Not FullCalendar's own headerToolbar "buttons" API - see
+             README's Vendored dependencies notes. -->
+        <div id="add-menu-wrap">
+          <button type="button" id="toolbar-add-button" class="popover-icon-btn" aria-label="New" title="New" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l0 14"/><path d="M5 12l14 0"/></svg>
+          </button>
+          <div id="add-menu" class="calendar-menu">
+            <button type="button" id="add-menu-event">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/></svg>
+              Event
+            </button>
+            <button type="button" id="add-menu-task">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5l9 -9"/></svg>
+              Task
+            </button>
           </div>
-            <div class="lnb-calendars-item">
-              <label>
-		<input class="tui-full-calendar-checkbox-square" type="checkbox" value="all" checked>
-		<span></span>
-		<strong id="calendar-view-all-label">View all</strong>
-              </label>
-            </div>
-	  </div>
-	  <div id="calendarList" class="lnb-calendars-d1">
-	  </div>
-	</div>
+        </div>
+        <div id="search-bar">
+          <input type="text" id="search-input" placeholder="Search events" autocomplete="off"/>
+          <button type="button" id="search-clear-button" aria-label="Clear search" title="Clear search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+          </button>
+          <button type="button" id="search-button" aria-label="Search events" title="Search events">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"/><path d="M21 21l-6 -6"/></svg>
+          </button>
+          <div id="search-results" class="search-results"></div>
+        </div>
+
+        <!-- Opened by clicking/activating the calendar's own title (see
+             openGotoDatePicker() in calendar.js) - positioned there
+             dynamically since it has no fixed home in FullCalendar's
+             own toolbar markup. -->
+        <div id="goto-date-menu" class="calendar-menu">
+          <select id="goto-date-month" aria-label="Month"></select>
+          <div id="goto-date-year-stepper">
+            <button type="button" id="goto-date-year-down" aria-label="Previous year">−</button>
+            <input type="number" id="goto-date-year" aria-label="Year" min="1" max="9999"/>
+            <button type="button" id="goto-date-year-up" aria-label="Next year">+</button>
+          </div>
+        </div>
+
+        <div id="overflow-menu-wrap">
+          <button type="button" id="overflow-menu-button" class="popover-icon-btn" aria-label="More options" title="More options" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M11 19a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/><path d="M11 5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"/></svg>
+          </button>
+          <div id="overflow-menu" class="calendar-menu">
+            <button type="button" id="overflow-import-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 9l5 -5l5 5"/><path d="M12 4l0 12"/></svg>
+              Import .ics
+            </button>
+            <div id="overflow-menu-version" class="calendar-menu-version"></div>
+          </div>
+        </div>
+        <input type="file" id="ics-file-input" accept=".ics,text/calendar" style="display:none"/>
       </div>
-      <div id="right">
-	
-	<div id="menu">
-	  <span>
-	    <button id="calendar-settings" class="btn btn-default btn-sm"><img src="images/cog.png"/></button>
-	  </span>
-	  <span class="dropdown">
-            <button id="dropdownMenu-calendarType" class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="true">
-              <!-- i id="calendarTypeIcon" class="calendar-icon ic_view_month" style="margin-right: 4px;"></i -->
-              <span id="calendarTypeName">Dropdown</span>&nbsp;
-              <i class="calendar-icon tui-full-calendar-dropdown-arrow"></i>
-            </button>
-            <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu-calendarType">
-              <li role="presentation">
-		<a id="calendar-label-daily" class="dropdown-menu-title" role="menuitem" data-action="toggle-daily">
-		  <i class="calendar-icon ic_view_day"></i>
-		</a>
-              </li>
-              <li role="presentation">
-		<a id="calendar-label-weekly" class="dropdown-menu-title" role="menuitem" data-action="toggle-weekly">
-		  <i class="calendar-icon ic_view_week"></i>
-		</a>
-              </li>
-              <li role="presentation">
-		<a id="calendar-label-month" class="dropdown-menu-title" role="menuitem" data-action="toggle-monthly">
-		  <i class="calendar-icon ic_view_month"></i>
-		</a>
-              </li>
-            </ul>
-	  </span>
-	  <span id="menu-navi">
-            <button id="calendar-label-today" type="button" class="btn btn-default btn-sm move-today" data-action="move-today">Today</button>
-            <button type="button" class="btn btn-default btn-sm move-day" data-action="move-prev">
-              <i class="calendar-icon ic-arrow-line-left" data-action="move-prev"></i>
-            </button>
-            <button type="button" class="btn btn-default btn-sm move-day" data-action="move-next">
-              <i class="calendar-icon ic-arrow-line-right" data-action="move-next"></i>
-            </button>
-	  </span>
-	  <span id="renderRange" class="render-range"></span>
-	</div>
-	<div id="calendar" class="all-calendar"></div>
+
+      <div id="calendar"></div>
+    </div>
+
+    <div id="calendar-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="calendar-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="calendar-modal-heading">New calendar</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <form id="calendar-form">
+          <div class="modal-body">
+            <label for="calendar-name-input">Name</label>
+            <input type="text" id="calendar-name-input" required/>
+
+            <label>Color</label>
+            <div id="calendar-color-swatches" class="color-swatches"></div>
+          </div>
+          <div class="modal-foot">
+            <div class="modal-actions">
+              <button type="button" id="calendar-delete" class="danger">Delete</button>
+              <button type="button" id="calendar-cancel">Cancel</button>
+              <button type="submit" class="primary">Save</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
-    <script src="init.js"></script>
+
+    <div id="confirm-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="confirm-modal-heading">Are you sure?</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-modal-message"></p>
+        </div>
+        <div class="modal-foot">
+          <div class="modal-actions">
+            <button type="button" id="confirm-ok" class="danger">Delete</button>
+            <button type="button" id="confirm-cancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-summary-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="import-summary-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="import-summary-heading">Import complete</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p id="import-summary-message"></p>
+        </div>
+        <div class="modal-foot">
+          <div class="modal-actions">
+            <button type="button" id="import-summary-ok" class="primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="event-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="event-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="event-modal-heading">New event</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <form id="event-form">
+          <div class="modal-body">
+            <label for="event-title">Title</label>
+            <input type="text" id="event-title" maxlength="1024" required/>
+
+            <label for="event-calendar" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>Calendar</label>
+            <select id="event-calendar"></select>
+
+            <label for="event-location" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0"/></svg>Location</label>
+            <input type="text" id="event-location" maxlength="1024"/>
+
+            <label for="event-start-date" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>Start</label>
+            <div class="date-time-row">
+              <input type="date" id="event-start-date" required/>
+              <input type="time" id="event-start-time" required/>
+            </div>
+
+            <label for="event-end-date">End</label>
+            <div class="date-time-row">
+              <input type="date" id="event-end-date" required/>
+              <input type="time" id="event-end-time" required/>
+            </div>
+
+            <div class="all-day-row">
+              <input type="checkbox" id="event-all-day"/>
+              <label for="event-all-day">All day</label>
+            </div>
+
+            <div id="event-repeat-section">
+              <label for="event-repeat-freq" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"/><path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"/></svg>Repeat</label>
+              <select id="event-repeat-freq">
+                <option value="">Does not repeat</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+
+              <div id="event-repeat-details" class="repeat-details">
+                <div class="repeat-interval-row">
+                  <span>Every</span>
+                  <input type="number" id="event-repeat-interval" min="1" value="1"/>
+                  <span id="event-repeat-interval-unit">day(s)</span>
+                </div>
+
+                <div id="event-repeat-weekday-row" class="repeat-weekday-row">
+                  <button type="button" class="weekday-toggle" data-day="MO">M</button>
+                  <button type="button" class="weekday-toggle" data-day="TU">T</button>
+                  <button type="button" class="weekday-toggle" data-day="WE">W</button>
+                  <button type="button" class="weekday-toggle" data-day="TH">T</button>
+                  <button type="button" class="weekday-toggle" data-day="FR">F</button>
+                  <button type="button" class="weekday-toggle" data-day="SA">S</button>
+                  <button type="button" class="weekday-toggle" data-day="SU">S</button>
+                </div>
+
+                <select id="event-repeat-monthly-mode">
+                  <option value="dayOfMonth"></option>
+                  <option value="nthWeekday"></option>
+                </select>
+
+                <label for="event-repeat-end">Ends</label>
+                <select id="event-repeat-end">
+                  <option value="never">Never</option>
+                  <option value="until">On date</option>
+                  <option value="count">After a number of occurrences</option>
+                </select>
+
+                <input type="date" id="event-repeat-until"/>
+
+                <div id="event-repeat-count-row" class="repeat-count-row">
+                  <input type="number" id="event-repeat-count" min="1" value="10"/>
+                  <span>occurrence(s)</span>
+                </div>
+              </div>
+            </div>
+
+            <label for="event-status" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a5 5 0 0 1 7 0a5 5 0 0 0 7 0v9a5 5 0 0 1 -7 0a5 5 0 0 0 -7 0v-9"/><path d="M5 21v-7"/></svg>Status</label>
+            <select id="event-status">
+              <option value="active">Active</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            <label for="event-description" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14"/><path d="M9 7l6 0"/><path d="M9 11l6 0"/><path d="M9 15l4 0"/></svg>Description</label>
+            <textarea id="event-description"></textarea>
+          </div>
+          <div class="modal-foot">
+            <div class="modal-actions">
+              <button type="button" id="event-delete" class="danger">Delete</button>
+              <button type="button" id="event-cancel">Cancel</button>
+              <button type="submit" id="event-save" class="primary">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="share-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="share-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="share-modal-heading">Share</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="share-section">
+            <h3 class="share-section-heading">People with access</h3>
+            <div id="share-user-list" class="share-user-list"></div>
+            <div class="share-add-row">
+              <input type="text" id="share-username-input" placeholder="Username" autocomplete="off"/>
+              <select id="share-access-select" aria-label="Access level">
+                <option value="view">Can view</option>
+                <option value="edit">Can edit</option>
+              </select>
+              <button type="button" id="share-add-button">Share</button>
+            </div>
+          </div>
+
+          <div class="share-section">
+            <h3 class="share-section-heading">Get link</h3>
+            <button type="button" id="share-create-link-button" class="share-link-button">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l6 -6"/><path d="M11 6l.463 -.536a5 5 0 0 1 7.071 7.072l-.534 .464"/><path d="M13 18l-.397 .534a5.068 5.068 0 0 1 -7.127 0a4.972 4.972 0 0 1 0 -7.071l.524 -.463"/></svg>
+              Create secret link
+            </button>
+            <div id="share-link-row" class="share-link-row">
+              <div class="share-link-url-row">
+                <input type="text" id="share-link-input" readonly/>
+                <button type="button" id="share-link-copy-button" aria-label="Copy link" title="Copy link">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>
+                </button>
+                <button type="button" id="share-link-revoke-button" aria-label="Revoke link" title="Revoke link">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <select id="share-link-access-select" aria-label="Secret link access">
+                <option value="view">Anyone with the link can view</option>
+                <option value="edit">Anyone with the link can edit</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <div class="modal-actions">
+            <button type="button" id="share-close-button" class="primary">Done</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="task-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="task-modal-heading">New task</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <form id="task-form">
+          <div class="modal-body">
+            <label for="task-title">Title</label>
+            <input type="text" id="task-title" maxlength="1024" required/>
+
+            <label for="task-calendar">Calendar</label>
+            <select id="task-calendar"></select>
+
+            <div class="all-day-row">
+              <input type="checkbox" id="task-has-due"/>
+              <label for="task-has-due">Set a due date</label>
+            </div>
+
+            <div id="task-due-fields">
+              <div class="date-time-row">
+                <input type="date" id="task-due-date" aria-label="Due date"/>
+                <input type="time" id="task-due-time" aria-label="Due time"/>
+              </div>
+              <div class="all-day-row">
+                <input type="checkbox" id="task-due-all-day" checked/>
+                <label for="task-due-all-day">All day</label>
+              </div>
+            </div>
+
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option value="0">None</option>
+              <option value="1">High</option>
+              <option value="5">Medium</option>
+              <option value="9">Low</option>
+            </select>
+
+            <label for="task-description">Notes</label>
+            <textarea id="task-description"></textarea>
+          </div>
+          <div class="modal-foot">
+            <div class="modal-actions">
+              <button type="button" id="task-delete" class="danger">Delete</button>
+              <button type="button" id="task-cancel">Cancel</button>
+              <button type="submit" id="task-save" class="primary">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="email-choice-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal scope-modal" role="dialog" aria-modal="true" aria-labelledby="email-choice-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="email-choice-heading">Email this event</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p class="scope-subtitle">Mail can't carry the event file itself from here, so choose what to send.</p>
+          <div class="scope-options">
+            <label class="scope-option">
+              <input type="radio" name="email-mode" value="text" checked/>
+              <span>The details as text, copied ready to paste</span>
+            </label>
+            <label class="scope-option">
+              <input type="radio" name="email-mode" value="link"/>
+              <span>A secret link, which you create next &mdash; anyone holding it can view this event until you revoke it</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <div class="modal-actions">
+            <button type="button" id="email-choice-cancel">Cancel</button>
+            <button type="button" id="email-choice-confirm" class="primary">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="scope-modal-backdrop" class="event-modal-backdrop">
+      <div class="event-modal scope-modal" role="dialog" aria-modal="true" aria-labelledby="scope-modal-heading" tabindex="-1">
+        <div class="modal-head">
+          <h2 id="scope-modal-heading">This is a recurring event</h2>
+          <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <p class="scope-subtitle" id="scope-subtitle">Which events would you like to change?</p>
+          <div class="scope-options">
+            <label class="scope-option">
+              <input type="radio" name="scope" value="this" checked/>
+              <span>This event</span>
+            </label>
+            <label class="scope-option">
+              <input type="radio" name="scope" value="following"/>
+              <span>This and following events</span>
+            </label>
+            <label class="scope-option">
+              <input type="radio" name="scope" value="all"/>
+              <span>All events</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <div class="modal-actions">
+            <button type="button" id="scope-cancel">Cancel</button>
+            <button type="button" id="scope-confirm" class="primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="event-popover" class="event-popover">
+      <button type="button" id="popover-close" class="popover-icon-btn popover-close-btn" aria-label="Close" title="Close">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6l-12 12"/><path d="M6 6l12 12"/></svg>
+      </button>
+      <div class="popover-scroll">
+        <div class="popover-header">
+          <span id="popover-title" class="popover-title"></span>
+        </div>
+        <div class="popover-row">
+          <svg class="popover-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M12 7v5l3 3"/></svg>
+          <span id="popover-time"></span>
+        </div>
+        <div class="popover-row" id="popover-repeat-row">
+          <svg class="popover-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v-3a3 3 0 0 1 3 -3h13m-3 -3l3 3l-3 3"/><path d="M20 12v3a3 3 0 0 1 -3 3h-13m3 3l-3 -3l3 -3"/></svg>
+          <span id="popover-repeat"></span>
+        </div>
+        <div class="popover-row" id="popover-location-row">
+          <svg class="popover-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0"/></svg>
+          <span id="popover-location"></span>
+        </div>
+        <div class="popover-row" id="popover-description-row">
+          <svg class="popover-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-10a2 2 0 0 1 -2 -2l0 -14"/><path d="M9 7l6 0"/><path d="M9 11l6 0"/><path d="M9 15l4 0"/></svg>
+          <span id="popover-description"></span>
+        </div>
+        <div class="popover-actions" id="popover-actions">
+          <button type="button" id="popover-export" class="popover-icon-btn" aria-label="Export as .ics" title="Export as .ics">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"/><path d="M7 11l5 5l5 -5"/><path d="M12 4l0 12"/></svg>
+          </button>
+          <button type="button" id="popover-email" class="popover-icon-btn" aria-label="Email event" title="Email event">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10z"/><path d="M3 7l9 6l9 -6"/></svg>
+          </button>
+          <button type="button" id="popover-share" class="popover-icon-btn" aria-label="Share event" title="Share event">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M15 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.7 10.7l6.6 -3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg>
+          </button>
+          <button type="button" id="popover-delete" class="popover-icon-btn" aria-label="Delete" title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0"/><path d="M10 11l0 6"/><path d="M14 11l0 6"/><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12"/><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3"/></svg>
+          </button>
+          <button type="button" id="popover-duplicate" class="popover-icon-btn" aria-label="Duplicate" title="Duplicate">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667l0 -8.666"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>
+          </button>
+          <button type="button" id="popover-edit" class="popover-icon-btn" aria-label="Edit" title="Edit">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" role="status" aria-live="polite"></div>
+
+    <script src="vendor/fullcalendar/dist/fullcalendar.global.js"></script>
+    <script src="vendor/fullcalendar/dist/themes/breezy/global.js"></script>
+    <script src="vendor/fullcalendar/dist/locales-all/global.js"></script>
+    <script src="vendor/rrule/dist/es5/rrule.min.js"></script>
+    <script src="vendor/fullcalendar-rrule/global.js"></script>
+    <script src="calendar.js"></script>
   </body>
 </html>
-

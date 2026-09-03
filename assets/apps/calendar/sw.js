@@ -1,47 +1,19 @@
-const cacheName = 'BrowserCache_v1';
+const cacheName = 'BrowserCache_v5';
 
 const precachedAssets = [
-    'purify.min.js',
-    'purify.min.js.map',
-    'tui-code-snippet.js',
-    'tui-calendar.js',
-    'moment.js',
-    'tui-time-picker.js',
-    'jquery-3.js',
-    'init.js',
-    'css/bootstrap.css',
-    'css/tui-color-picker.css',
-    'css/default.css',
-    'tui-date-picker.js',
-    'bootstrap.js',
-    'images/ic-arrow-line-left@3x.png',
-    'images/download.png',
-    'images/user-plus.svg',
-    'images/ic-view-week@3x.png',
-    'images/envelope.png',
-    'images/ic-view-month@3x.png',
-    'images/ic-view-month.png',
-    'images/ic-arrow-line-right@3x.png',
-    'images/ic-arrow-line-right@2x.png',
-    'images/ic-traveltime-w.png',
-    'images/ic-view-week.png',
-    'images/ic-view-day.png',
-    'images/trash.png',
-    'images/ic-view-day@2x.png',
-    'images/ic-arrow-line-left@2x.png',
-    'images/ic-view-day@3x.png',
-    'images/edit.png',
-    'images/cog.png',
-    'images/ic-view-week@2x.png',
-    'images/ic-arrow-line-right.png',
-    'images/ic-view-month@2x.png',
-    'images/external-link-square.png',
-    'images/ic-arrow-line-left.png',
-    'tui-color-picker.js',
-    'ical.min.js',
     'index.html',
-    'moment-timezone-with-data-10-year-range.js',
-    'ical-expander.js'
+    'calendar.js',
+    'calendar.css',
+    'fonts/inter/Inter-Regular.woff2',
+    'fonts/inter/Inter-SemiBold.woff2',
+    'vendor/fullcalendar/dist/fullcalendar.global.js',
+    'vendor/fullcalendar/dist/skeleton.css',
+    'vendor/fullcalendar/dist/locales-all/global.js',
+    'vendor/fullcalendar/dist/themes/breezy/global.js',
+    'vendor/fullcalendar/dist/themes/breezy/theme.css',
+    'vendor/fullcalendar/dist/themes/breezy/palettes/indigo.css',
+    'vendor/fullcalendar-rrule/global.js',
+    'vendor/rrule/dist/es5/rrule.min.js'
 ];
 
 self.addEventListener('install', event =>  {
@@ -51,6 +23,11 @@ self.addEventListener('install', event =>  {
     self.skipWaiting();
 });
 self.addEventListener('activate', event => {
+    // Drops the previous engine's cache, which pinned assets this app no
+    // longer ships.
+    event.waitUntil(caches.keys().then(names =>
+        Promise.all(names.filter(n => n !== cacheName).map(n => caches.delete(n)))
+    ));
     clients.claim();
 });
 
@@ -59,7 +36,18 @@ self.onfetch = event => {
     let requestURL = new URL(url);
     if (requestURL.pathname.startsWith('/api')) return;
     if (event.request.mode === 'navigate') {
+        // Network first: cache-first served a previous build's index.html
+        // until a later load happened to refresh it, which pairs a stale
+        // document with freshly-fetched scripts - and a missing element
+        // takes the whole app down. Cache stays as the offline fallback.
         event.respondWith(caches.open(cacheName).then(async cache => {
+            try {
+                const fresh = await fetch(event.request.url, {cache: 'no-store'});
+                if (fresh && fresh.ok) {
+                    cache.put(event.request.url, fresh.clone());
+                    return fresh;
+                }
+            } catch (e) { /* offline - fall through to the cache */ }
             const cached = await cache.match(event.request.url);
             if (cached) return cached;
             const index = await cache.match('index.html');
@@ -75,4 +63,3 @@ self.onfetch = event => {
         }));
     }
 }
-
