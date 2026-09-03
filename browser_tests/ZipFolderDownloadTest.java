@@ -76,8 +76,9 @@ public class ZipFolderDownloadTest {
                 Page.confirmYes(d, 120_000);
                 System.out.println("  confirmed the download dialog");
 
-                // the name comes from a counter on the component, starting at zero
-                Downloads.Result zip = Downloads.await(downloads, "archive-" + zipIndex(d) + ".zip", 600_000, 60_000);
+                // the app numbers the file from a counter of its own, so take whatever zip lands
+                Downloads.Result zip = Downloads.awaitMatching(downloads, "archive-", ".zip",
+                        600_000, 60_000);
                 System.out.println("  " + zip);
                 if (zip.path == null)
                     throw new AssertionError("No zip appeared in " + downloads);
@@ -93,12 +94,6 @@ public class ZipFolderDownloadTest {
             if (own != null)
                 own.close();
         }
-    }
-
-    /** The zip is named from a counter on the component, which advances per download. */
-    private static long zipIndex(WebDriver d) {
-        Object n = d.script("return window.__drive.zipAndDownloadFoldersCount - 1;");
-        return n instanceof Number ? ((Number) n).longValue() : 0;
     }
 
     private static void check(Path zipFile, Map<String, byte[]> expected) throws IOException {

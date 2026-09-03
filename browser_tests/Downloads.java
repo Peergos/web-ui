@@ -64,6 +64,30 @@ public class Downloads {
         return total;
     }
 
+    /** Waits for whatever file appears with this prefix and suffix.
+     *
+     *  For downloads whose exact name the app decides - the zip is numbered from a counter on a
+     *  component the test does not own - so that reading the wrong number cannot be mistaken for
+     *  the download never arriving.
+     */
+    public static Result awaitMatching(Path dir, String prefix, String suffix,
+                                       long timeoutMillis, long quietMillis) {
+        long end = System.currentTimeMillis() + timeoutMillis;
+        while (System.currentTimeMillis() < end) {
+            try (var s = Files.list(dir)) {
+                Optional<String> found = s.map(p -> p.getFileName().toString())
+                        .filter(n -> n.startsWith(prefix) && n.endsWith(suffix))
+                        .findFirst();
+                if (found.isPresent())
+                    return await(dir, found.get(), timeoutMillis, quietMillis);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            WebDriver.sleep(500);
+        }
+        return new Result(null, 0, true);
+    }
+
     /** Waits for a download to finish, or to stop making progress.
      *
      *  @param quietMillis how long the size may stand still before we call it stalled

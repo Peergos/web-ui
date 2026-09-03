@@ -103,16 +103,26 @@ public class MarionetteDriver implements WebDriver {
         return message.contains("no such window") || message.contains("discarded");
     }
 
-    /** Runs a command, and if the window went away, re-focuses one and tries once more. */
+    /** Runs a command, re-focusing a window and trying again while the context keeps going away.
+     *
+     *  Retried with a pause rather than once immediately: a browser that is still starting can
+     *  replace its first context a moment after the session attached to it, so an instant retry
+     *  lands on the same discarded context the first attempt did.
+     */
     private Object commandWithRecovery(String name, Map<String, Object> params) {
-        try {
-            return command(name, params);
-        } catch (IllegalStateException e) {
-            if (! isDiscardedWindow(e))
-                throw e;
-            focusAWindow();
-            return command(name, params);
+        IllegalStateException last = null;
+        for (int attempt = 0; attempt < 4; attempt++) {
+            try {
+                return command(name, params);
+            } catch (IllegalStateException e) {
+                if (! isDiscardedWindow(e))
+                    throw e;
+                last = e;
+                WebDriver.sleep(2000);
+                focusAWindow();
+            }
         }
+        throw last;
     }
 
     private static String describe(Object error) {
