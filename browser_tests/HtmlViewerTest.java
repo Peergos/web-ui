@@ -49,7 +49,8 @@ public class HtmlViewerTest {
         String user = "html" + (System.currentTimeMillis() % 1_000_000);
         String password = "htmlviewertestpassword";
         Fixtures.signUp(url, user, password);
-        System.out.println("signed up " + user);
+        Fixtures.installHtmlViewerApp(jar, url, user, password);
+        System.out.println("signed up " + user + " and installed the html viewer app");
 
         String folder = "htmltest-" + System.currentTimeMillis();
         Path dir = Files.createTempDirectory("peergos-html-");
@@ -191,8 +192,12 @@ public class HtmlViewerTest {
                 " + ' serviceWorker=' + ('serviceWorker' in navigator)" +
                 " + ' streams=' + (() => { try { return !!new ReadableStream() && !!new WritableStream(); }" +
                 "                          catch (e) { return 'threw: ' + e; } })()" +
-                " + ' visibleError=' + JSON.stringify(document.body.innerText" +
-                "     .split('\\n').filter(l => /sandbox|isolated|incognito/i.test(l)).slice(0, 3))"));
+                // any dialog or toast, not a keyword match: the message that actually appears is
+                // "Application properties not found", which no sandbox-flavoured filter catches
+                " + ' visibleError=' + JSON.stringify([...document.querySelectorAll(" +
+                "     '[class*=toast], [class*=dialog], [class*=error], [role=dialog]')]" +
+                "     .map(e => e.innerText.replace(/\\n/g, ' ').trim())" +
+                "     .filter(t => t.length > 0 && t.length < 300).slice(0, 4))"));
     }
 
     private static void inFrame(WebDriver d, Runnable body) {

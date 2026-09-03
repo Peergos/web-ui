@@ -19,6 +19,12 @@ jobs:
             engine: safari
           - os: windows-latest
             engine: safari
+          # homebrew disabled the chromedriver cask on 2026-09-01 for failing the macos
+          # gatekeeper check, and the design rule here is not to download drivers by hand.
+          # Chromium is covered on linux and windows; macos is covered by safari, which is
+          # the engine that actually matters there anyway.
+          - os: macos-latest
+            engine: chromium
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.engine }} on ${{ matrix.os }}
     steps:
@@ -68,10 +74,6 @@ jobs:
         case "${{ matrix.engine }}" in
           firefox)
             brew install --cask firefox ;;
-          chromium)
-            brew install --cask google-chrome chromedriver
-            # cask binaries are quarantined, and a quarantined driver is killed on launch
-            sudo xattr -dr com.apple.quarantine "$(command -v chromedriver)" || true ;;
           safari)
             # safaridriver ships with the os but refuses to serve until remote automation is on
             sudo safaridriver --enable ;;

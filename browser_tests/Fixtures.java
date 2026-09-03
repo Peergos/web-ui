@@ -104,6 +104,41 @@ public class Fixtures {
             throw new IllegalStateException("Could not build " + remoteDir + ":\n" + tail(out));
     }
 
+    /** Writes the app manifest the sandbox needs before it will open a viewer.
+     *
+     *  AppSandbox reads .apps/<app>/peergos-app.json and calls fatalError("Application properties
+     *  not found") if it is missing, closing itself without throwing - so the viewer just never
+     *  appears. Signup.vue installs this on a ui signup; an account created over the api has to
+     *  do it explicitly. Mirrors installDefaultApp in mixins/sandbox.
+     */
+    public static void installHtmlViewerApp(Path jar, String url, String username, String password) {
+        try {
+            Path manifest = Files.createTempDirectory("peergos-app-").resolve("peergos-app.json");
+            Files.writeString(manifest, String.join("\n",
+                    "{",
+                    "  \"schemaVersion\": \"1\",",
+                    "  \"displayName\": \"HTML Viewer\",",
+                    "  \"name\": \"htmlviewer\",",
+                    "  \"version\": \"1.0.0-initial\",",
+                    "  \"author\": \"peergos\",",
+                    "  \"folderAction\": false,",
+                    "  \"description\": \"for viewing HTML files\",",
+                    "  \"source\": \"\",",
+                    "  \"launchable\": false,",
+                    "  \"fileExtensions\": [],",
+                    "  \"mimeTypes\": [],",
+                    "  \"fileTypes\": [],",
+                    "  \"permissions\": []",
+                    "}",
+                    ""));
+            commands(jar, url, username, password,
+                    "mkdir .apps", "cd .apps", "mkdir htmlviewer", "cd htmlviewer",
+                    "put " + manifest.toAbsolutePath());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     /** Runs arbitrary shell commands, for fixtures that need more than one directory. */
     public static void commands(Path jar, String url, String username, String password,
                                 String... cmds) {
