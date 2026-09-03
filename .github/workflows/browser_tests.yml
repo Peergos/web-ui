@@ -4,12 +4,20 @@ on: [push]
 
 jobs:
   browser-tests:
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
         engine: [firefox, chromium, webkit]
-    name: ${{ matrix.engine }}
+        exclude:
+          # WebKitGTK and its driver are linux only. The mac equivalent would be safari, driven
+          # by the safaridriver built into the os, which is not wired up yet.
+          - os: windows-latest
+            engine: webkit
+          - os: macos-latest
+            engine: webkit
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.engine }} on ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK
@@ -18,39 +26,72 @@ jobs:
         distribution: temurin
         java-version: 25
 
+    - name: Install ant
+      shell: bash
+      run: |
+        if command -v ant >/dev/null; then exit 0; fi
+        case "${{ runner.os }}" in
+          Windows) choco install ant -y --no-progress ;;
+          macOS)   brew install ant ;;
+          Linux)   sudo apt-get update && sudo apt-get install -y ant ;;
+        esac
+
     - name: Build server and web ui
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
+      shell: bash
 
-    # No driver is ever downloaded. Firefox needs none at all - it is driven over marionette,
-    # which is built in. chromedriver and WebKitWebDriver come from the image or apt, where they
-    # are already version matched to their browser. Pinning a driver to a browser version, and
-    # fetching it from a url, is what left the previous suite unrunnable.
-    - name: Install drivers
+    # No driver is ever downloaded by the tests. Firefox needs none at all - it is driven over
+    # marionette, which is built in. chromedriver comes from the runner image where there is one,
+    # and from the package manager otherwise, so it stays version matched to its browser.
+    - name: Install browsers and drivers (linux)
+      if: runner.os == 'Linux' && matrix.engine == 'webkit'
       run: |
-        if [ "${{ matrix.engine }}" = "webkit" ]; then
-          sudo apt-get update
-          # MiniBrowser has no headless mode, so it needs a virtual display
-          sudo apt-get install -y webkit2gtk-driver xvfb
+        sudo apt-get update
+        # MiniBrowser has no headless mode, so it needs a virtual display
+        sudo apt-get install -y webkit2gtk-driver xvfb
+
+    - name: Install firefox (windows)
+      if: runner.os == 'Windows' && matrix.engine == 'firefox'
+      shell: bash
+      run: |
+        if [ ! -f "/c/Program Files/Mozilla Firefox/firefox.exe" ]; then
+          choco install firefox -y --no-progress
         fi
 
+    - name: Install browsers and drivers (macos)
+      if: runner.os == 'macOS'
+      run: |
+        if [ "${{ matrix.engine }}" = "firefox" ]; then
+          brew install --cask firefox
+        else
+          brew install --cask google-chrome chromedriver
+          # cask binaries are quarantined, and a quarantined driver is killed on launch
+          sudo xattr -dr com.apple.quarantine "$(command -v chromedriver)" || true
+        fi
+      shell: bash
+
     - name: Show versions
+      shell: bash
       run: |
         java -version
         case "${{ matrix.engine }}" in
-          firefox)  firefox --version ;;
-          chromium) (google-chrome --version || chromium --version); chromedriver --version ;;
+          firefox)  (firefox --version || "/Applications/Firefox.app/Contents/MacOS/firefox" --version || true) ;;
+          chromium) (google-chrome --version || chromium --version || true); (chromedriver --version || true) ;;
           webkit)   WebKitWebDriver --version || true ;;
         esac
 
     - name: Run browser tests
       working-directory: browser_tests
-      timeout-minutes: 45
+      # windows is several times slower on the sqlite backed server
+      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
+      shell: bash
       env:
         HEADLESS: "1"
-        # the image ships Chrome rather than Chromium
-        CHROMIUM: /usr/bin/google-chrome
+        # only linux ships the browser under this name; elsewhere chromedriver finds it itself
+        CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
 
     - name: Server log on failure
       if: failure()
-      run: tail -n 100 /tmp/peergos-browser-test-*/server.log || true
+      shell: bash
+      run: tail -n 100 ${TMPDIR:-/tmp}/peergos-browser-test-*/server.log || true

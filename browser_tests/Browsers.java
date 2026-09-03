@@ -50,7 +50,7 @@ public class Browsers {
         String prefs = String.join("\n",
                 "user_pref(\"marionette.port\", " + port + ");",
                 "user_pref(\"browser.download.folderList\", 2);",
-                "user_pref(\"browser.download.dir\", \"" + downloadDir.toAbsolutePath() + "\");",
+                "user_pref(\"browser.download.dir\", \"" + jsString(downloadDir) + "\");",
                 "user_pref(\"browser.download.useDownloadDir\", true);",
                 "user_pref(\"browser.download.always_ask_before_handling_new_types\", false);",
                 "user_pref(\"browser.download.alwaysOpenPanel\", false);",
@@ -71,9 +71,17 @@ public class Browsers {
         return new MarionetteDriver(port, p);
     }
 
+    /** user.js is javascript, so a windows path's backslashes have to be escaped or the pref
+     *  silently fails to parse and downloads go to the default directory instead. */
+    private static String jsString(Path path) {
+        return path.toAbsolutePath().toString().replace("\\", "\\\\");
+    }
+
     private static String firefoxBinary() {
-        String env = System.getenv("FIREFOX");
-        return env != null ? env : "firefox";
+        return binary("FIREFOX", "firefox",
+                "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+                "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
+                "/Applications/Firefox.app/Contents/MacOS/firefox");
     }
 
     private static WebDriver chromium(Path downloadDir, boolean headless) throws IOException {
@@ -91,7 +99,7 @@ public class Browsers {
             args.add("--headless=new");
 
         Map<String, Object> chromeOptions = new LinkedHashMap<>();
-        String binary = System.getenv("CHROMIUM");
+        String binary = env("CHROMIUM");
         if (binary != null)
             chromeOptions.put("binary", binary);
         chromeOptions.put("args", args);
@@ -108,8 +116,37 @@ public class Browsers {
     }
 
     private static String chromedriverBinary() {
-        String env = System.getenv("CHROMEDRIVER");
-        return env != null ? env : "chromedriver";
+        // the github windows and macos images put the driver in a directory named by this
+        return binary("CHROMEDRIVER", isWindows() ? "chromedriver.exe" : "chromedriver",
+                envPath("ChromeWebDriver", isWindows() ? "chromedriver.exe" : "chromedriver"));
+    }
+
+    /** Treats an empty variable as unset: a workflow matrix that only sets a value on some
+     *  platforms passes "" on the others, and "" as a browser path is not the same as no path. */
+    private static String env(String name) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String envPath(String dirVar, String name) {
+        String dir = env(dirVar);
+        return dir == null ? null : Paths.get(dir, name).toString();
+    }
+
+    public static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
+    }
+
+    /** An explicit override wins, then any candidate that exists, then the bare name on PATH. */
+    private static String binary(String envVar, String onPath, String... candidates) {
+        String env = env(envVar);
+        if (env != null)
+            return env;
+        for (String candidate : candidates) {
+            if (candidate != null && Files.isExecutable(Paths.get(candidate)))
+                return candidate;
+        }
+        return onPath;
     }
 
     private static WebDriver webkit(Path downloadDir, boolean headless) throws IOException {
@@ -143,6 +180,8 @@ public class Browsers {
     }
 
     private static boolean hasXvfb() {
+        if (isWindows())
+            return false;
         try {
             return new ProcessBuilder("which", "xvfb-run")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD)

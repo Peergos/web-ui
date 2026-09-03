@@ -184,7 +184,15 @@ public class HtmlViewerTest {
                 " + ' container=' + !!document.getElementById('sandbox-container')" +
                 " + ' iframes=[' + [...document.querySelectorAll('iframe')]" +
                 "     .map(f => (f.id || '?') + ':' + (f.getAttribute('src') || '').substring(0, 60)).join(' | ') + ']'" +
-                " + ' errors=' + JSON.stringify((window.__htmlErrors || []).slice(0, 6))"));
+                " + ' errors=' + JSON.stringify((window.__htmlErrors || []).slice(0, 6))" +
+                // AppSandbox refuses to open at all unless both of these hold, and it closes
+                // itself rather than throwing, which is why the page looks untouched afterwards
+                " + ' crossOriginIsolated=' + window.crossOriginIsolated" +
+                " + ' serviceWorker=' + ('serviceWorker' in navigator)" +
+                " + ' streams=' + (() => { try { return !!new ReadableStream() && !!new WritableStream(); }" +
+                "                          catch (e) { return 'threw: ' + e; } })()" +
+                " + ' visibleError=' + JSON.stringify(document.body.innerText" +
+                "     .split('\\n').filter(l => /sandbox|isolated|incognito/i.test(l)).slice(0, 3))"));
     }
 
     private static void inFrame(WebDriver d, Runnable body) {
