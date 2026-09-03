@@ -158,18 +158,17 @@ public class HtmlViewerTest {
      *  empty body and every assertion then fails for the wrong reason.
      */
     private static void descend(WebDriver d) {
-        Object outer;
         try {
-            outer = d.waitUntil("the sandbox frame", () -> d.find("iframe#sandboxId"), 120_000);
+            d.waitUntil("the sandbox frame", () -> d.find("iframe#sandboxId"), 120_000);
         } catch (RuntimeException e) {
             // AppSandbox creates this iframe from javascript in startListener, after an async
             // setup, so its absence means that setup never finished rather than "not yet drawn"
             throw new AssertionError("The sandbox frame never appeared. " + diagnose(d));
         }
-        d.switchToFrame(outer);
-        Object inner = d.waitUntil("the page frame inside the sandbox",
+        d.switchToFrame("iframe#sandboxId");
+        d.waitUntil("the page frame inside the sandbox",
                 () -> d.find("iframe#appSandboxId"), 120_000);
-        d.switchToFrame(inner);
+        d.switchToFrame("iframe#appSandboxId");
     }
 
     /** What the page looks like when the sandbox never opens, so a CI failure is readable. */
@@ -214,7 +213,7 @@ public class HtmlViewerTest {
         try {
             body.run();
         } finally {
-            d.switchToFrame(null);
+            d.switchToTop();
         }
     }
 
@@ -226,7 +225,7 @@ public class HtmlViewerTest {
             if (! Boolean.TRUE.equals(clicked))
                 throw new AssertionError("No link #" + id + " in the rendered page");
         } finally {
-            d.switchToFrame(null);
+            d.switchToTop();
         }
     }
 

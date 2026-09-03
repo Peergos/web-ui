@@ -112,8 +112,8 @@ public class MarkdownLinksTest {
 
     /** Clicks a link inside the viewer frame and waits for the next document to render. */
     private static void follow(WebDriver d, String linkText, String heading, String body) {
-        Object frame = frame(d);
-        d.switchToFrame(frame);
+        frame(d);
+        d.switchToFrame("#md-editor");
         try {
             Object clicked = d.script("const wanted = arguments[0];" +
                     "const a = [...document.querySelectorAll('a')]" +
@@ -122,19 +122,19 @@ public class MarkdownLinksTest {
             if (! Boolean.TRUE.equals(clicked))
                 throw new AssertionError("No link '" + linkText + "' in the rendered markdown");
         } finally {
-            d.switchToFrame(null);
+            d.switchToTop();
         }
         // the parent tears the iframe down and rebuilds it for each document
         requireRendered(d, heading, 120_000);
-        Object frame2 = frame(d);
-        d.switchToFrame(frame2);
+        frame(d);
+        d.switchToFrame("#md-editor");
         try {
             String text = String.valueOf(d.script("return document.body.innerText"));
             if (! text.contains(body))
                 throw new AssertionError("Expected '" + body + "' after following '" + linkText
                         + "', got: " + text.replace("\n", " | "));
         } finally {
-            d.switchToFrame(null);
+            d.switchToTop();
         }
     }
 
@@ -149,12 +149,12 @@ public class MarkdownLinksTest {
             Object f = d.find("#md-editor");
             if (f == null)
                 return false;
-            d.switchToFrame(f);
+            d.switchToFrame("#md-editor");
             try {
                 Object text = d.scriptQuiet("return document.body.innerText");
                 return text != null && String.valueOf(text).contains(heading);
             } finally {
-                d.switchToFrame(null);
+                d.switchToTop();
             }
         }, timeoutMillis);
     }

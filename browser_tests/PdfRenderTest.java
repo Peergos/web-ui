@@ -53,7 +53,7 @@ public class PdfRenderTest {
                 System.out.println("opening " + name + " in the pdf app");
                 d.script("window.__drive.openInApp({filename: arguments[0]}, 'pdf');", name);
 
-                Object frame = d.waitUntil("the pdf app frame", () -> d.find("#pdf"), 60_000);
+                d.waitUntil("the pdf app frame", () -> d.find("#pdf"), 60_000);
                 String frameSrc = String.valueOf(d.script(
                         "return document.getElementById('pdf').getAttribute('src')"));
                 System.out.println("  frame src " + frameSrc);
@@ -61,7 +61,7 @@ public class PdfRenderTest {
                     throw new AssertionError("The pdf app should be framed from its own subdomain,"
                             + " got " + frameSrc);
 
-                d.switchToFrame(frame);
+                d.switchToFrame("#pdf");
                 try {
                     // pdf.js builds a .page per page and paints into a canvas inside it
                     try {
@@ -111,7 +111,7 @@ public class PdfRenderTest {
                     if (String.valueOf(text).contains("Peergos browser test"))
                         System.out.println("  text layer holds the document's text");
                 } finally {
-                    d.switchToFrame(null);
+                    d.switchToTop();
                 }
                 System.out.println("  ok   the pdf app rendered the file");
                 System.out.println("PASS");

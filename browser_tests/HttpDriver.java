@@ -98,9 +98,19 @@ public class HttpDriver implements WebDriver {
     }
 
     @Override
-    public void switchToFrame(Object frameElementOrNull) {
+    public void switchToFrame(String css) {
+        Object element = find(css);
+        if (element == null)
+            throw new IllegalStateException("No frame matching " + css + " to switch into");
         Map<String, Object> params = new HashMap<>();
-        params.put("id", frameElementOrNull);
+        params.put("id", element);
+        send("POST", session("/frame"), params);
+    }
+
+    @Override
+    public void switchToTop() {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", null);
         send("POST", session("/frame"), params);
     }
 

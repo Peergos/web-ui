@@ -73,9 +73,30 @@ public class Page {
         if (! Boolean.TRUE.equals(opened))
             throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
         // openFile does nothing at all when the selection went away, so make that its own failure
-        d.waitForScript("the viewer to open for " + name,
-                "window.__drive.showAppSandbox || window.__drive.showMarkupViewer"
-                        + " || window.__drive.showPdfViewer", 120_000);
+        try {
+            d.waitForScript("the viewer to open for " + name,
+                    "window.__drive.showAppSandbox || window.__drive.showMarkupViewer"
+                            + " || window.__drive.showPdfViewer", 120_000);
+        } catch (RuntimeException e) {
+            System.out.println("  view state: " + d.scriptQuiet("return ["
+                    + "'selected=' + (window.__drive.selectedFiles || []).length,"
+                    + "'spinner=' + window.__drive.showSpinner,"
+                    + "'sandbox=' + window.__drive.showAppSandbox,"
+                    + "'markup=' + window.__drive.showMarkupViewer,"
+                    + "'pdf=' + window.__drive.showPdfViewer,"
+                    + "'appName=' + window.__drive.sandboxAppName,"
+                    + "'appsForFile=' + (() => { try {"
+                    + "   const f = (window.__drive.files || []).find(x => x.getName() === arguments[0]);"
+                    + "   return f ? window.__drive.availableAppsForFile(f).map(a => a.name).join(',')"
+                    + "            : 'no such file'; } catch (ex) { return 'threw: ' + ex; } })(),"
+                    + "'hashLength=' + location.hash.length,"
+                    + "'visible=' + JSON.stringify([...document.querySelectorAll("
+                    + "   '[class*=toast], [class*=dialog], [role=dialog]')]"
+                    + "   .map(x => x.innerText.replace(/\\n/g, ' ').trim())"
+                    + "   .filter(t => t.length > 0 && t.length < 200).slice(0, 3))"
+                    + "].join(' ')", name));
+            throw e;
+        }
     }
 
     /** Opens a view from the nav and hands back its component.

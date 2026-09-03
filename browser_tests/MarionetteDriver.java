@@ -21,7 +21,7 @@ public class MarionetteDriver implements WebDriver {
     private final Process browser;
     private final String marker;
     private int messageId = 0;
-    private Object currentFrame = null;
+    private final List<String> frames = new ArrayList<>();
 
     public MarionetteDriver(int port, Process browser) {
         this(port, browser, null);
@@ -162,11 +162,29 @@ public class MarionetteDriver implements WebDriver {
     }
 
     @Override
-    public void switchToFrame(Object frameElementOrNull) {
+    public void switchToFrame(String css) {
+        enterFrame(css);
+        frames.add(css);
+    }
+
+    @Override
+    public void switchToTop() {
+        switchToTopContext();
+        frames.clear();
+    }
+
+    private void switchToTopContext() {
         Map<String, Object> params = new HashMap<>();
-        params.put("element", frameElementOrNull == null ? null : elementId(frameElementOrNull));
+        params.put("element", null);
         command("WebDriver:SwitchToFrame", params);
-        this.currentFrame = frameElementOrNull;
+    }
+
+    private void enterFrame(String css) {
+        Object element = value(command("WebDriver:FindElement",
+                Map.of("using", "css selector", "value", css)));
+        Map<String, Object> params = new HashMap<>();
+        params.put("element", elementId(element));
+        command("WebDriver:SwitchToFrame", params);
     }
 
     /** Puts us back in the frame we were in before recovering from a discarded window.
@@ -178,11 +196,16 @@ public class MarionetteDriver implements WebDriver {
      *  than swallowed, because carrying on in the wrong document is what made this invisible.
      */
     private void restoreFrame() {
-        if (currentFrame == null)
+        if (frames.isEmpty())
             return;
-        Map<String, Object> params = new HashMap<>();
-        params.put("element", elementId(currentFrame));
-        command("WebDriver:SwitchToFrame", params);
+        try {
+            switchToTopContext();
+            for (String css : frames)
+                enterFrame(css);
+        } catch (RuntimeException e) {
+            throw new FrameContextLost("Could not get back into " + frames
+                    + " after the window went away", e);
+        }
     }
 
     @Override

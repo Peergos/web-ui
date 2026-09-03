@@ -15,8 +15,11 @@ public interface WebDriver extends AutoCloseable {
     /** Evaluates a function body in the page and returns the result, JSON decoded. */
     Object script(String body, Object... args);
 
-    /** Switches into the frame holding the given element, or back to the top with null. */
-    void switchToFrame(Object frameElementOrNull);
+    /** Switches into the frame matching a css selector in the current context. */
+    void switchToFrame(String css);
+
+    /** Switches back to the top level document. */
+    void switchToTop();
 
     /** The element handle for a css selector, or null if there is none. */
     Object find(String css);
@@ -32,8 +35,20 @@ public interface WebDriver extends AutoCloseable {
     default Object scriptQuiet(String body, Object... args) {
         try {
             return script(body, args);
+        } catch (FrameContextLost e) {
+            // Never swallowed. A poll that quietly keeps running in the wrong document reports
+            // the app as broken for the whole timeout, which is a far worse failure than saying
+            // the context went away.
+            throw e;
         } catch (RuntimeException e) {
             return null;
+        }
+    }
+
+    /** The frame we were working in went away and could not be re-entered. */
+    class FrameContextLost extends RuntimeException {
+        public FrameContextLost(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 
@@ -47,6 +62,8 @@ public interface WebDriver extends AutoCloseable {
                 if (val != null && ! Boolean.FALSE.equals(val))
                     return val;
                 last = null;
+            } catch (FrameContextLost e) {
+                throw e;
             } catch (RuntimeException e) {
                 last = e;
             }
