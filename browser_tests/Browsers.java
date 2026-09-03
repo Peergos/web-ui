@@ -10,7 +10,7 @@ import java.util.*;
  */
 public class Browsers {
 
-    public enum Engine { FIREFOX, CHROMIUM, WEBKIT }
+    public enum Engine { FIREFOX, CHROMIUM, WEBKIT, SAFARI }
 
     public static Engine engine(String name) {
         switch (name.toLowerCase()) {
@@ -19,6 +19,7 @@ public class Browsers {
             case "chromium": return Engine.CHROMIUM;
             case "webkit":
             case "webkitgtk": return Engine.WEBKIT;
+            case "safari": return Engine.SAFARI;
             default: throw new IllegalArgumentException("Unknown engine: " + name);
         }
     }
@@ -30,6 +31,7 @@ public class Browsers {
                 case FIREFOX: return firefox(downloadDir, headless);
                 case CHROMIUM: return chromium(downloadDir, headless);
                 case WEBKIT: return webkit(downloadDir, headless);
+                case SAFARI: return safari();
             }
             throw new IllegalStateException();
         } catch (IOException e) {
@@ -177,6 +179,26 @@ public class Browsers {
                 Map.of("browserName", "MiniBrowser",
                         "webkitgtk:browserOptions", Map.of("args", List.of())));
         return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+    }
+
+    /** Safari, driven by the safaridriver built into macos.
+     *
+     *  Closest engine there is to the WKWebView the mac desktop app embeds. Three things it does
+     *  not do: run headless, take a download directory, or allow more than one session at a time.
+     *  So the download tests skip it, exactly as they skip WebKitGTK.
+     *
+     *  Needs "Allow Remote Automation", which `sudo safaridriver --enable` turns on once.
+     */
+    private static WebDriver safari() throws IOException {
+        int port = freePort();
+        Process driver = start(List.of(safariDriverBinary(), "-p", Integer.toString(port)));
+        awaitDriver("http://127.0.0.1:" + port + "/status");
+        Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
+        return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+    }
+
+    private static String safariDriverBinary() {
+        return binary("SAFARIDRIVER", "safaridriver", "/usr/bin/safaridriver");
     }
 
     private static boolean hasXvfb() {

@@ -23,16 +23,17 @@ public class Suite {
             run(failures, "follow markdown links", () -> MarkdownLinksTest.run(args1));
             run(failures, "html viewer links and images", () -> HtmlViewerTest.run(args1));
 
-            // WebKitWebDriver cannot be told where downloads go, so everything that asserts on a
-            // downloaded file runs on the engines that can. WebKit download coverage belongs with
-            // the gtk host, which sets the destination itself.
-            if (! engine.startsWith("webkit")) {
+            // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
+            // everything that asserts on a downloaded file runs on the engines that can. WebKit
+            // download coverage belongs with the gtk host, which sets the destination itself.
+            boolean canPlaceDownloads = ! engine.startsWith("webkit") && ! engine.equals("safari");
+            if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
             } else {
-                System.out.println("\nSKIP the download tests on webkit:"
-                        + " WebKitWebDriver has no download directory capability");
+                System.out.println("\nSKIP the download tests on " + engine
+                        + ": its driver has no download directory capability");
             }
         }
 

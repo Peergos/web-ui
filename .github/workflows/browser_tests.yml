@@ -8,14 +8,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        engine: [firefox, chromium, webkit]
+        engine: [firefox, chromium, webkit, safari]
         exclude:
-          # WebKitGTK and its driver are linux only. The mac equivalent would be safari, driven
-          # by the safaridriver built into the os, which is not wired up yet.
+          # WebKitGTK and its driver are linux only; safari and safaridriver are macos only
           - os: windows-latest
             engine: webkit
           - os: macos-latest
             engine: webkit
+          - os: ubuntu-latest
+            engine: safari
+          - os: windows-latest
+            engine: safari
     runs-on: ${{ matrix.os }}
     name: ${{ matrix.engine }} on ${{ matrix.os }}
     steps:
@@ -60,15 +63,19 @@ jobs:
 
     - name: Install browsers and drivers (macos)
       if: runner.os == 'macOS'
-      run: |
-        if [ "${{ matrix.engine }}" = "firefox" ]; then
-          brew install --cask firefox
-        else
-          brew install --cask google-chrome chromedriver
-          # cask binaries are quarantined, and a quarantined driver is killed on launch
-          sudo xattr -dr com.apple.quarantine "$(command -v chromedriver)" || true
-        fi
       shell: bash
+      run: |
+        case "${{ matrix.engine }}" in
+          firefox)
+            brew install --cask firefox ;;
+          chromium)
+            brew install --cask google-chrome chromedriver
+            # cask binaries are quarantined, and a quarantined driver is killed on launch
+            sudo xattr -dr com.apple.quarantine "$(command -v chromedriver)" || true ;;
+          safari)
+            # safaridriver ships with the os but refuses to serve until remote automation is on
+            sudo safaridriver --enable ;;
+        esac
 
     - name: Show versions
       shell: bash
@@ -78,6 +85,7 @@ jobs:
           firefox)  (firefox --version || "/Applications/Firefox.app/Contents/MacOS/firefox" --version || true) ;;
           chromium) (google-chrome --version || chromium --version || true); (chromedriver --version || true) ;;
           webkit)   WebKitWebDriver --version || true ;;
+          safari)   safaridriver --version || true ;;
         esac
 
     - name: Run browser tests
@@ -86,7 +94,8 @@ jobs:
       timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
       shell: bash
       env:
-        HEADLESS: "1"
+        # safari has no headless mode, and the macos runner has a ui session for it to use
+        HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}

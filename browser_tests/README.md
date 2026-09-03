@@ -6,14 +6,18 @@ Direct drivers, no third party libraries and no downloaded browser drivers. Run 
 
 ```
 cd browser_tests
-java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, or webkit
+java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, webkit, safari
 ```
+
+CI runs the matrix: firefox and chromium on linux, windows and macos; webkitgtk on linux;
+safari on macos.
 
 Each run starts its own Peergos server on a free port with its own PEERGOS_PATH, uploads its own
 fixtures, and stops the server afterwards. Nothing touches another Peergos on the machine.
 
-- `HEADLESS=0` to watch it. WebKitGTK has no headless mode, so it needs either a real display or
-  xvfb; the launcher uses `xvfb-run` when it is installed.
+- `HEADLESS=0` to watch it. Neither WebKitGTK nor safari has a headless mode: webkitgtk needs a
+  real display or xvfb, which the launcher uses when it is installed, and safari always needs a
+  ui session.
 - `FIREFOX`, `CHROMIUM`, `CHROMEDRIVER`, `WEBKITWEBDRIVER` override binary locations.
 - `-Dfixture.size=` and `-Dlatency.ms=` tune the download test.
 
@@ -39,7 +43,7 @@ worker, marking an absolute drive path of the form `/peergos/<username>/<rest>` 
 to `/<username>/<rest>`. The admin account is itself called `peergos`, so viewing html from it
 gets redirected as though the first directory name were the username, and renders nothing.
 
-The download tests are skipped on webkitgtk: WebKitWebDriver has no download directory
+The download tests are skipped on webkitgtk and safari: neither driver has a download directory
 capability, so there is nowhere to look for the file. Only chromedriver can drive the folder
 picker; marionette refuses a directory outright and WebKitWebDriver takes it as a single file, so
 elsewhere the folder upload hands the app the same flat webkitRelativePath list the browser would
