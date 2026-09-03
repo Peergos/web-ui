@@ -21,6 +21,7 @@ public class MarionetteDriver implements WebDriver {
     private final Process browser;
     private final String marker;
     private int messageId = 0;
+    private Object currentFrame = null;
 
     public MarionetteDriver(int port, Process browser) {
         this(port, browser, null);
@@ -120,6 +121,7 @@ public class MarionetteDriver implements WebDriver {
                 last = e;
                 WebDriver.sleep(2000);
                 focusAWindow();
+                restoreFrame();
             }
         }
         throw last;
@@ -163,6 +165,23 @@ public class MarionetteDriver implements WebDriver {
     public void switchToFrame(Object frameElementOrNull) {
         Map<String, Object> params = new HashMap<>();
         params.put("element", frameElementOrNull == null ? null : elementId(frameElementOrNull));
+        command("WebDriver:SwitchToFrame", params);
+        this.currentFrame = frameElementOrNull;
+    }
+
+    /** Puts us back in the frame we were in before recovering from a discarded window.
+     *
+     *  Switching window resets the browsing context to the top document. Without this, a single
+     *  recovery inside a frame leaves every later script running in the parent instead, where
+     *  the app under test simply does not exist - so the test polls a document that can never
+     *  satisfy it and blames the app for never loading. Failing to get back is thrown rather
+     *  than swallowed, because carrying on in the wrong document is what made this invisible.
+     */
+    private void restoreFrame() {
+        if (currentFrame == null)
+            return;
+        Map<String, Object> params = new HashMap<>();
+        params.put("element", elementId(currentFrame));
         command("WebDriver:SwitchToFrame", params);
     }
 

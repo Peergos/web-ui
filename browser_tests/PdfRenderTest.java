@@ -65,6 +65,14 @@ public class PdfRenderTest {
                 try {
                     // pdf.js builds a .page per page and paints into a canvas inside it
                     try {
+                        // Three separate waits so a failure names the step that did not happen.
+                        // Landing in the wrong document, an app that never ran, and a viewer
+                        // that never painted all look identical from the last wait alone.
+                        d.waitForScript("to be inside the pdf app document",
+                                "location.href.indexOf('/apps/pdf/') >= 0", 60_000);
+                        d.waitForScript("the pdf viewer to initialise",
+                                "window.PDFViewerApplication && PDFViewerApplication.initialized",
+                                60_000);
                         d.waitForScript("a rendered page", "(() => {" +
                                 "  const c = document.querySelector('#viewer .page canvas');" +
                                 "  return c && c.width > 0 && c.height > 0;" +
@@ -72,8 +80,14 @@ public class PdfRenderTest {
                     } catch (RuntimeException e) {
                         // An empty viewer looks the same however it got that way, so say which
                         // of the steps between framing the app and painting a page did not run.
+                        // href and the viewer container come first deliberately: an empty
+                        // parent document and a frame whose app never ran report the same
+                        // absent app and zero pages, and only the url tells them apart.
                         System.out.println("  pdf app state: " + d.scriptQuiet("return ["
+                                + "'href=' + location.href,"
                                 + "'readyState=' + document.readyState,"
+                                + "'viewerContainer=' + (!!document.querySelector('#viewer')),"
+                                + "'moduleTag=' + (!!document.querySelector('script[src*=viewer]')),"
                                 + "'app=' + (!!window.PDFViewerApplication),"
                                 + "'initialised=' + (window.PDFViewerApplication ?"
                                 + "   PDFViewerApplication.initialized : 'n/a'),"
@@ -81,7 +95,8 @@ public class PdfRenderTest {
                                 + "   !!PDFViewerApplication.pdfDocument : 'n/a'),"
                                 + "'pages=' + document.querySelectorAll('#viewer .page').length,"
                                 + "'error=' + (document.querySelector('#errorMessage') ?"
-                                + "   document.querySelector('#errorMessage').textContent.trim() : '')"
+                                + "   document.querySelector('#errorMessage').textContent.trim() : ''),"
+                                + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 120)"
                                 + "].join(' ')"));
                         throw e;
                     }

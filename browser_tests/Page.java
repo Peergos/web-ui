@@ -24,8 +24,27 @@ public class Page {
         // it. Windows just needs longer: the runner is slower and the sqlite backed server it is
         // talking to is slower still.
         long timeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 900_000 : 300_000;
-        d.waitForScript("sign in to complete",
-                "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
+        try {
+            d.waitForScript("sign in to complete",
+                    "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
+        } catch (RuntimeException e) {
+            // A sign in that never completes looks the same whether the form was never filled,
+            // the click missed, the page went somewhere else, or key generation really is still
+            // running. Say which, rather than reading a slow runner into every timeout.
+            System.out.println("  sign in state: " + d.scriptQuiet("return ["
+                    + "'href=' + location.href,"
+                    + "'form=' + (!!document.querySelector('input[name=username]')),"
+                    + "'username=' + (document.querySelector('input[name=username]') ?"
+                    + "   document.querySelector('input[name=username]').value : 'n/a'),"
+                    + "'passwordLength=' + (document.querySelector('input[name=password]') ?"
+                    + "   document.querySelector('input[name=password]').value.length : 'n/a'),"
+                    + "'signInButton=' + [...document.querySelectorAll('button')]"
+                    + "   .some(b => b.textContent.trim() === 'Sign in'),"
+                    + "'spinner=' + (document.querySelectorAll('.spinner, .v-spinner').length > 0),"
+                    + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 200)"
+                    + "].join(' ')"));
+            throw e;
+        }
     }
 
     /** Opens the drive and hands back a handle on its vue component as window.__drive. */
