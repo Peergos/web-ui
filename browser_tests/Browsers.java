@@ -10,13 +10,14 @@ import java.util.*;
  */
 public class Browsers {
 
-    public enum Engine { FIREFOX, CHROMIUM, WEBKIT, SAFARI }
+    public enum Engine { FIREFOX, CHROMIUM, BRAVE, WEBKIT, SAFARI }
 
     public static Engine engine(String name) {
         switch (name.toLowerCase()) {
             case "firefox": return Engine.FIREFOX;
             case "chrome":
             case "chromium": return Engine.CHROMIUM;
+            case "brave": return Engine.BRAVE;
             case "webkit":
             case "webkitgtk": return Engine.WEBKIT;
             case "safari": return Engine.SAFARI;
@@ -29,7 +30,8 @@ public class Browsers {
             Files.createDirectories(downloadDir);
             switch (engine) {
                 case FIREFOX: return firefox(downloadDir, headless);
-                case CHROMIUM: return chromium(downloadDir, headless);
+                case CHROMIUM: return chromium(downloadDir, headless, env("CHROMIUM"));
+                case BRAVE: return chromium(downloadDir, headless, braveBinary());
                 case WEBKIT: return webkit(downloadDir, headless);
                 case SAFARI: return safari();
             }
@@ -86,7 +88,20 @@ public class Browsers {
                 "/Applications/Firefox.app/Contents/MacOS/firefox");
     }
 
-    private static WebDriver chromium(Path downloadDir, boolean headless) throws IOException {
+    /** Brave is chromium underneath, so chromedriver drives it - it just has to be pointed at
+     *  the right executable. The driver still has to match brave's chromium version, which is why
+     *  it comes from the same place the browser does rather than being fetched separately. */
+    private static String braveBinary() {
+        return binary("BRAVE", isWindows() ? "brave.exe" : "brave-browser",
+                "/usr/bin/brave-browser",
+                "/usr/bin/brave",
+                "/opt/brave.com/brave/brave-browser",
+                "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+                "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe");
+    }
+
+    private static WebDriver chromium(Path downloadDir, boolean headless, String browserBinary)
+            throws IOException {
         int port = freePort();
         Process driver = start(List.of(chromedriverBinary(), "--port=" + port));
         awaitDriver("http://127.0.0.1:" + port + "/status");
@@ -101,9 +116,8 @@ public class Browsers {
             args.add("--headless=new");
 
         Map<String, Object> chromeOptions = new LinkedHashMap<>();
-        String binary = env("CHROMIUM");
-        if (binary != null)
-            chromeOptions.put("binary", binary);
+        if (browserBinary != null)
+            chromeOptions.put("binary", browserBinary);
         chromeOptions.put("args", args);
         chromeOptions.put("prefs", Map.of(
                 "download.default_directory", downloadDir.toAbsolutePath().toString(),

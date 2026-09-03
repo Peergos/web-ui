@@ -32,7 +32,6 @@ public class UploadGroupTest {
         String url = own != null ? own.url() : given;
 
         long stamp = System.currentTimeMillis();
-        Path dir = Files.createTempDirectory("peergos-group-");
         // a mix of sizes, since the batch is sorted by size before upload and the big one
         // crosses the chunk boundary
         Map<String, Integer> sizes = new LinkedHashMap<>();
@@ -40,11 +39,8 @@ public class UploadGroupTest {
         sizes.put("group-" + stamp + "-small.bin", 64 * 1024);
         sizes.put("group-" + stamp + "-big.bin", 6 * 1024 * 1024);
         List<Path> locals = new ArrayList<>();
-        for (Map.Entry<String, Integer> e : sizes.entrySet()) {
-            Path f = dir.resolve(e.getKey());
-            Files.write(f, bytes(e.getValue()));
-            locals.add(f);
-        }
+        for (Map.Entry<String, Integer> e : sizes.entrySet())
+            locals.add(Fixtures.patternFile(e.getKey(), e.getValue()));
 
         Path downloads = Files.createTempDirectory("peergos-group-dl-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
@@ -63,7 +59,12 @@ public class UploadGroupTest {
                 paths.append(l.toAbsolutePath());
             }
             System.out.println("uploading " + locals.size() + " files in one go");
-            d.sendKeys(input, paths.toString());
+            if (Page.canDriveFilePicker(engine)) {
+                d.sendKeys(input, paths.toString());
+            } else {
+                System.out.println("  this driver cannot set a file input, handing the app the list");
+                Page.handFiles(d, sizes);
+            }
 
             Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, null,
                     300_000, sizes.keySet().toArray(new String[0]));
@@ -87,10 +88,4 @@ public class UploadGroupTest {
         }
     }
 
-    private static byte[] bytes(int n) {
-        byte[] b = new byte[n];
-        for (int i = 0; i < n; i++)
-            b[i] = (byte) ((i * 13 + 5) & 0xff);
-        return b;
-    }
 }

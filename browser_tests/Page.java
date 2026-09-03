@@ -122,6 +122,30 @@ public class Page {
         d.script("window.__drive.downloadFile(window.__f[arguments[0]]);", path);
     }
 
+    /** safaridriver has no remote file upload, so sendKeys on a file input does nothing there.
+     *  Chromedriver and marionette both handle it. */
+    public static boolean canDriveFilePicker(String engine) {
+        return ! Browsers.engine(engine).equals(Browsers.Engine.SAFARI);
+    }
+
+    /** Hands the app the file list the picker would have produced.
+     *
+     *  Contents come from the same generator as Fixtures.patternFile, so whichever route the
+     *  test took, the bytes hashed afterwards are the same.
+     */
+    public static void handFiles(WebDriver d, Map<String, Integer> namesToSizes) {
+        StringBuilder list = new StringBuilder();
+        for (Map.Entry<String, Integer> e : namesToSizes.entrySet()) {
+            if (list.length() > 0)
+                list.append(", ");
+            list.append("mk('").append(e.getKey()).append("', ").append(e.getValue()).append(")");
+        }
+        d.script("function pattern(n) { const a = new Uint8Array(n);" +
+                "  for (let i = 0; i < n; i++) a[i] = (i * 31 + 7) & 0xff; return a; }" +
+                "function mk(name, size) { return new File([pattern(size)], name); }" +
+                "window.__drive.uploadFiles({target: {files: [" + list + "]}});");
+    }
+
     /** Names currently listed in the drive view. */
     public static List<String> driveListing(WebDriver d) {
         Object names = d.script("return (window.__drive.files || []).map(f =>" +

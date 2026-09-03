@@ -34,6 +34,19 @@ public class Fixtures {
         }
     }
 
+    /** A file whose bytes can be regenerated in the browser, for drivers that cannot drive the
+     *  file picker and have to be handed a File instead. Must match Page.handFiles. */
+    public static Path patternFile(String name, int size) throws IOException {
+        Path dir = Paths.get(System.getProperty("java.io.tmpdir"), "peergos-browser-fixtures");
+        Files.createDirectories(dir);
+        Path file = dir.resolve(name);
+        byte[] bytes = new byte[size];
+        for (int i = 0; i < size; i++)
+            bytes[i] = (byte) ((i * 31 + 7) & 0xff);
+        Files.write(file, bytes);
+        return file;
+    }
+
     /** A deterministic pseudo random file, so a rerun reuses it rather than regenerating. */
     public static Path localFile(String name, long size) throws IOException {
         Path dir = Paths.get(System.getProperty("java.io.tmpdir"), "peergos-browser-fixtures");

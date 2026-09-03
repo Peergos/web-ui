@@ -9,7 +9,7 @@ import java.nio.file.*;
  */
 public class UploadTest {
 
-    static final long SIZE = Long.getLong("upload.size", 7L * 1024 * 1024);
+    static final int SIZE = Integer.getInteger("upload.size", 7 * 1024 * 1024);
 
     public static void main(String[] args) throws Exception {
         try {
@@ -31,7 +31,7 @@ public class UploadTest {
         String url = own != null ? own.url() : given;
 
         String name = "uploaded-" + System.currentTimeMillis() + ".bin";
-        Path source = Fixtures.localFile(name, SIZE);
+        Path source = Fixtures.patternFile(name, SIZE);
         Path downloads = Files.createTempDirectory("peergos-upload-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
@@ -43,7 +43,12 @@ public class UploadTest {
             if (input == null)
                 throw new AssertionError("No file input in the drive view");
             System.out.println("uploading " + name + " (" + SIZE + " bytes)");
-            d.sendKeys(input, source.toAbsolutePath().toString());
+            if (Page.canDriveFilePicker(engine)) {
+                d.sendKeys(input, source.toAbsolutePath().toString());
+            } else {
+                System.out.println("  this driver cannot set a file input, handing the app the file");
+                Page.handFiles(d, java.util.Map.of(name, SIZE));
+            }
 
             Page.waitForInDrive(d, name, 300_000);
             System.out.println("  appeared in the drive listing");

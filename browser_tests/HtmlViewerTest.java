@@ -176,8 +176,20 @@ public class HtmlViewerTest {
     /** What the page looks like when the sandbox never opens, so a CI failure is readable. */
     private static String diagnose(WebDriver d) {
         return String.valueOf(d.scriptQuiet(
-                "const dr = window.__drive || {};" +
-                "return 'showAppSandbox=' + dr.showAppSandbox" +
+                // Read the live Drive component, not the handle captured earlier: closing the
+                // sandbox can reload the drive, which replaces the component, and the stale one
+                // then reports a pristine state that says nothing about what happened.
+                "function findDrive() {" +
+                "  for (const el of document.querySelectorAll('*')) {" +
+                "    const c = el.__vue__;" +
+                "    if (c && typeof c.downloadFile === 'function') return c;" +
+                "  }" +
+                "  return null;" +
+                "}" +
+                "const live = findDrive();" +
+                "const dr = live || window.__drive || {};" +
+                "return 'driveReloaded=' + (live != null && live !== window.__drive)" +
+                " + ' showAppSandbox=' + dr.showAppSandbox" +
                 " + ' sandboxAppName=' + dr.sandboxAppName" +
                 " + ' currentFile=' + (dr.currentFile ? dr.currentFile.getName() : null)" +
                 " + ' currentPath=' + dr.currentPath" +
@@ -192,8 +204,6 @@ public class HtmlViewerTest {
                 " + ' serviceWorker=' + ('serviceWorker' in navigator)" +
                 " + ' streams=' + (() => { try { return !!new ReadableStream() && !!new WritableStream(); }" +
                 "                          catch (e) { return 'threw: ' + e; } })()" +
-                // any dialog or toast, not a keyword match: the message that actually appears is
-                // "Application properties not found", which no sandbox-flavoured filter catches
                 " + ' visibleError=' + JSON.stringify([...document.querySelectorAll(" +
                 "     '[class*=toast], [class*=dialog], [class*=error], [role=dialog]')]" +
                 "     .map(e => e.innerText.replace(/\\n/g, ' ').trim())" +

@@ -6,11 +6,15 @@ Direct drivers, no third party libraries and no downloaded browser drivers. Run 
 
 ```
 cd browser_tests
-java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, webkit, safari
+java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, brave, webkit, safari
 ```
 
-CI runs the matrix: firefox and chromium on linux, windows and macos; webkitgtk on linux;
-safari on macos.
+CI runs the matrix: firefox on linux, windows and macos; chromium on linux and windows; brave and
+webkitgtk on linux; safari on macos.
+
+Brave is chromium underneath, so chromedriver drives it once pointed at the brave executable with
+`BRAVE=`. It is worth its own job for what is brave specific - the shields defaults, which can
+affect storage and service workers - rather than for the engine.
 
 Each run starts its own Peergos server on a free port with its own PEERGOS_PATH, uploads its own
 fixtures, and stops the server afterwards. Nothing touches another Peergos on the machine.
@@ -44,7 +48,9 @@ to `/<username>/<rest>`. The admin account is itself called `peergos`, so viewin
 gets redirected as though the first directory name were the username, and renders nothing.
 
 The download tests are skipped on webkitgtk and safari: neither driver has a download directory
-capability, so there is nowhere to look for the file. Only chromedriver can drive the folder
+capability, so there is nowhere to look for the file. safaridriver additionally has no remote file
+upload, so the upload tests hand the app the file list the picker would have produced, the same
+fallback the folder upload uses everywhere except chromium. Only chromedriver can drive the folder
 picker; marionette refuses a directory outright and WebKitWebDriver takes it as a single file, so
 elsewhere the folder upload hands the app the same flat webkitRelativePath list the browser would
 have built.

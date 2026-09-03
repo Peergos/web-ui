@@ -8,7 +8,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        engine: [firefox, chromium, webkit, safari]
+        engine: [firefox, chromium, brave, webkit, safari]
         exclude:
           # WebKitGTK and its driver are linux only; safari and safaridriver are macos only
           - os: windows-latest
@@ -17,6 +17,12 @@ jobs:
             engine: webkit
           - os: ubuntu-latest
             engine: safari
+          # brave is the same engine as chromium, so one platform is enough to catch what is
+          # brave specific - its shields defaults, which can affect storage and service workers
+          - os: windows-latest
+            engine: brave
+          - os: macos-latest
+            engine: brave
           - os: windows-latest
             engine: safari
           # homebrew disabled the chromedriver cask on 2026-09-01 for failing the macos
@@ -59,6 +65,16 @@ jobs:
         # MiniBrowser has no headless mode, so it needs a virtual display
         sudo apt-get install -y webkit2gtk-driver xvfb
 
+    - name: Install brave (linux)
+      if: runner.os == 'Linux' && matrix.engine == 'brave'
+      run: |
+        curl -fsSL https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
+          | sudo tee /usr/share/keyrings/brave-browser-archive-keyring.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+          | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+        sudo apt-get update
+        sudo apt-get install -y brave-browser
+
     - name: Install firefox (windows)
       if: runner.os == 'Windows' && matrix.engine == 'firefox'
       shell: bash
@@ -86,6 +102,9 @@ jobs:
         case "${{ matrix.engine }}" in
           firefox)  (firefox --version || "/Applications/Firefox.app/Contents/MacOS/firefox" --version || true) ;;
           chromium) (google-chrome --version || chromium --version || true); (chromedriver --version || true) ;;
+          # chromedriver enforces a major version match, and the runner's is pinned to chrome,
+          # so a brave built on a different chromium will fail to start a session here
+          brave)    (brave-browser --version || true); (chromedriver --version || true) ;;
           webkit)   WebKitWebDriver --version || true ;;
           safari)   safaridriver --version || true ;;
         esac
