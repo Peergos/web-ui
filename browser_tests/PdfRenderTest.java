@@ -64,10 +64,27 @@ public class PdfRenderTest {
                 d.switchToFrame(frame);
                 try {
                     // pdf.js builds a .page per page and paints into a canvas inside it
-                    d.waitForScript("a rendered page", "(() => {" +
-                            "  const c = document.querySelector('#viewer .page canvas');" +
-                            "  return c && c.width > 0 && c.height > 0;" +
-                            "})()", 120_000);
+                    try {
+                        d.waitForScript("a rendered page", "(() => {" +
+                                "  const c = document.querySelector('#viewer .page canvas');" +
+                                "  return c && c.width > 0 && c.height > 0;" +
+                                "})()", 120_000);
+                    } catch (RuntimeException e) {
+                        // An empty viewer looks the same however it got that way, so say which
+                        // of the steps between framing the app and painting a page did not run.
+                        System.out.println("  pdf app state: " + d.scriptQuiet("return ["
+                                + "'readyState=' + document.readyState,"
+                                + "'app=' + (!!window.PDFViewerApplication),"
+                                + "'initialised=' + (window.PDFViewerApplication ?"
+                                + "   PDFViewerApplication.initialized : 'n/a'),"
+                                + "'document=' + (window.PDFViewerApplication ?"
+                                + "   !!PDFViewerApplication.pdfDocument : 'n/a'),"
+                                + "'pages=' + document.querySelectorAll('#viewer .page').length,"
+                                + "'error=' + (document.querySelector('#errorMessage') ?"
+                                + "   document.querySelector('#errorMessage').textContent.trim() : '')"
+                                + "].join(' ')"));
+                        throw e;
+                    }
                     Object width = d.script("return document.querySelector('#viewer .page canvas').width");
                     Object height = d.script("return document.querySelector('#viewer .page canvas').height");
                     Object pages = d.script("return document.querySelectorAll('#viewer .page').length");

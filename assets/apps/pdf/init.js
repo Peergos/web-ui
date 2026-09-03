@@ -15,15 +15,37 @@ window.addEventListener('message', function (e) {
     parentWindow = e.source;
     parentOrigin = e.origin;
 
-    var loadFile = (ev) => {
+    // The viewer is a module, so it runs after this classic script. At ping time it may not
+    // exist at all, and moments later it can exist and still be inside initialize(), which
+    // awaits storage a cross origin frame is not always granted promptly. open() is async, so
+    // a failure in that window came back as a rejected promise a try/catch never sees, and the
+    // viewer sat there with its chrome up and no page, for good.
+    var loadFile = (ev, waited, failures) => {
+        let rounds = waited || 0;
+        let failed = failures || 0;
+        let again = (f) => setTimeout(() => loadFile(ev, rounds + 1, f), 200);
+        if (! window.PDFViewerApplication || ! PDFViewerApplication.initialized) {
+            if (rounds < 300)
+                again(failed);
+            else
+                console.log("pdf viewer never finished initialising");
+            return;
+        }
         try {
             PDFViewerApplication.setTitle(ev.data.name);
-            PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)});
-            if (ev.data.writable) {
-                installSaveHook();
-            }
+            PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)})
+                .then(() => {
+                    if (ev.data.writable) {
+                        installSaveHook();
+                    }
+                }, ex => {
+                    // Once initialised, a rejection is far more likely to be the document
+                    // itself, which the viewer reports on its own, so do not retry for long.
+                    if (failed < 2)
+                        again(failed + 1);
+                });
         } catch(ex) {
-            setTimeout(() => loadFile(ev), 200)
+            again(failed);
         }
     }
 
