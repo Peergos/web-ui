@@ -214,11 +214,23 @@ public class Browsers {
      *  Needs "Allow Remote Automation", which `sudo safaridriver --enable` turns on once.
      */
     private static WebDriver safari() throws IOException {
-        int port = freePort();
-        Process driver = start(List.of(safariDriverBinary(), "-p", Integer.toString(port)));
-        awaitDriver("http://127.0.0.1:" + port + "/status");
-        Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
-        return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        // a driver left over from the previous test can keep this one from starting, so give it
+        // a few goes on fresh ports rather than failing the test for a lifecycle race
+        RuntimeException last = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            int port = freePort();
+            Process driver = start(List.of(safariDriverBinary(), "-p", Integer.toString(port)));
+            try {
+                awaitDriver("http://127.0.0.1:" + port + "/status");
+                Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
+                return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+            } catch (RuntimeException e) {
+                last = e;
+                HttpDriver.stop(driver);
+                WebDriver.sleep(5_000);
+            }
+        }
+        throw last;
     }
 
     private static String safariDriverBinary() {

@@ -188,7 +188,6 @@ public class MarionetteDriver implements WebDriver {
         } catch (IOException e) {
             // ditto
         }
-        if (browser != null)
-            browser.destroy();
+        HttpDriver.stop(browser);
     }
 }

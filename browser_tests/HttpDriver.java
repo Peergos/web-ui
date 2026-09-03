@@ -128,7 +128,25 @@ public class HttpDriver implements WebDriver {
         } catch (RuntimeException e) {
             // the session may already be gone; the driver process still has to go
         }
-        if (driverProcess != null)
-            driverProcess.destroy();
+        stop(driverProcess);
+    }
+
+    /** Waits for the driver to actually exit.
+     *
+     *  safaridriver serves one session at a time and refuses to start while the previous one is
+     *  still around, so returning from close() before the process is gone makes the next test
+     *  fail to launch a driver at all.
+     */
+    static void stop(Process process) {
+        if (process == null)
+            return;
+        process.destroy();
+        try {
+            if (! process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS))
+                process.destroyForcibly().waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            process.destroyForcibly();
+        }
     }
 }
