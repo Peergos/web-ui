@@ -194,10 +194,18 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void close() {
+        // Ask the browser to quit rather than relying on killing it. Deleting the session leaves
+        // firefox running, and the sweep that catches a reparented browser matches on the command
+        // line, which the jdk does not fill in on every platform - so where it is missing, every
+        // test leaks a browser and a later sign in times out on a starved machine.
         try {
-            command("WebDriver:DeleteSession", Map.of());
+            command("Marionette:Quit", Map.of("flags", List.of("eForceQuit")));
         } catch (RuntimeException e) {
-            // going away regardless
+            try {
+                command("WebDriver:DeleteSession", Map.of());
+            } catch (RuntimeException ignored) {
+                // going away regardless
+            }
         }
         try {
             socket.close();
