@@ -158,11 +158,33 @@ public class HtmlViewerTest {
      *  empty body and every assertion then fails for the wrong reason.
      */
     private static void descend(WebDriver d) {
-        Object outer = d.waitUntil("the sandbox frame", () -> d.find("iframe#sandboxId"), 120_000);
+        Object outer;
+        try {
+            outer = d.waitUntil("the sandbox frame", () -> d.find("iframe#sandboxId"), 120_000);
+        } catch (RuntimeException e) {
+            // AppSandbox creates this iframe from javascript in startListener, after an async
+            // setup, so its absence means that setup never finished rather than "not yet drawn"
+            throw new AssertionError("The sandbox frame never appeared. " + diagnose(d));
+        }
         d.switchToFrame(outer);
         Object inner = d.waitUntil("the page frame inside the sandbox",
                 () -> d.find("iframe#appSandboxId"), 120_000);
         d.switchToFrame(inner);
+    }
+
+    /** What the page looks like when the sandbox never opens, so a CI failure is readable. */
+    private static String diagnose(WebDriver d) {
+        return String.valueOf(d.scriptQuiet(
+                "const dr = window.__drive || {};" +
+                "return 'showAppSandbox=' + dr.showAppSandbox" +
+                " + ' sandboxAppName=' + dr.sandboxAppName" +
+                " + ' currentFile=' + (dr.currentFile ? dr.currentFile.getName() : null)" +
+                " + ' currentPath=' + dr.currentPath" +
+                " + ' selected=' + (dr.selectedFiles || []).length" +
+                " + ' container=' + !!document.getElementById('sandbox-container')" +
+                " + ' iframes=[' + [...document.querySelectorAll('iframe')]" +
+                "     .map(f => (f.id || '?') + ':' + (f.getAttribute('src') || '').substring(0, 60)).join(' | ') + ']'" +
+                " + ' errors=' + JSON.stringify((window.__htmlErrors || []).slice(0, 6))"));
     }
 
     private static void inFrame(WebDriver d, Runnable body) {
