@@ -37,6 +37,28 @@ public class Page {
                 "window.__drive.currentDir && !window.__drive.showSpinner", 180_000);
     }
 
+    /** Selects an entry and opens it with View, in one call.
+     *
+     *  Both in one script deliberately: a listing refresh between selecting and opening clears
+     *  selectedFiles, and openFile returns silently when nothing is selected - so the viewer
+     *  never opens and every later assertion blames the viewer for a lost selection.
+     */
+    public static void viewFile(WebDriver d, String name) {
+        Object opened = d.script("const wanted = arguments[0];" +
+                "const f = (window.__drive.files || []).find(x =>" +
+                "  (x.getName ? x.getName() : (x.props ? x.props.name : null)) === wanted);" +
+                "if (! f) return false;" +
+                "window.__drive.selectedFiles = [f];" +
+                "window.__drive.viewFile();" +
+                "return true;", name);
+        if (! Boolean.TRUE.equals(opened))
+            throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
+        // openFile does nothing at all when the selection went away, so make that its own failure
+        d.waitForScript("the viewer to open for " + name,
+                "window.__drive.showAppSandbox || window.__drive.showMarkupViewer"
+                        + " || window.__drive.showPdfViewer", 120_000);
+    }
+
     /** Opens a view from the nav and hands back its component.
      *
      *  By clicking the nav, not by setting location.hash: after signing in the fragment holds the

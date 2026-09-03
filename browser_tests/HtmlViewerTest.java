@@ -107,8 +107,7 @@ public class HtmlViewerTest {
                 // html and "htmlviewer" only when it is not, so this is the context menu's View,
                 // not Open. viewFile() calls openFile(false), which is what the menu item does.
                 System.out.println("opening index.html with View");
-                Page.select(d, "index.html");
-                d.script("window.__drive.viewFile();");
+                Page.viewFile(d, "index.html");
 
                 inFrame(d, () -> {
                     requireText(d, "the index");

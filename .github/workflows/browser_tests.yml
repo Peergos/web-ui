@@ -117,9 +117,10 @@ jobs:
       env:
         # safari has no headless mode, and the macos runner has a ui session for it to use
         HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
-        # the windows runner is slower, and the sqlite backed server slower still, so the
-        # browser side sign in needs longer than the 300s that suffices elsewhere
-        PEERGOS_TEST_SLOW: ${{ matrix.os == 'windows-latest' && '1' || '0' }}
+        # the windows and macos runners are slower, and safari cannot run headless so it is
+        # doing real rendering besides: the browser side sign in needs longer than the 300s
+        # that suffices on linux
+        PEERGOS_TEST_SLOW: ${{ (matrix.os == 'windows-latest' || matrix.os == 'macos-latest') && '1' || '0' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
