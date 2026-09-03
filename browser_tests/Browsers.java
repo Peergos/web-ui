@@ -82,7 +82,7 @@ public class Browsers {
             cmd.add("--headless");
         cmd.add("about:blank");
         Process p = start(cmd);
-        return new MarionetteDriver(port, p);
+        return new MarionetteDriver(port, p, profile.toString());
     }
 
     /** user.js is javascript, so a windows path's backslashes have to be escaped or the pref
@@ -136,7 +136,7 @@ public class Browsers {
 
         Map<String, Object> caps = Map.of("alwaysMatch",
                 Map.of("browserName", "chrome", "goog:chromeOptions", chromeOptions));
-        HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver, userData.toString());
         d.setDownloadDirectory(downloadDir.toAbsolutePath().toString());
         return d;
     }

@@ -16,9 +16,16 @@ public class HttpDriver implements WebDriver {
     private final String base;
     private final String sessionId;
     private final Process driverProcess;
+    private final String marker;
 
     public HttpDriver(String base, Map<String, Object> capabilities, Process driverProcess) {
+        this(base, capabilities, driverProcess, null);
+    }
+
+    public HttpDriver(String base, Map<String, Object> capabilities, Process driverProcess,
+                      String marker) {
         this.base = base;
+        this.marker = marker;
         this.driverProcess = driverProcess;
         Object res = send("POST", "/session", Map.of("capabilities", capabilities));
         this.sessionId = (String) value(res, "sessionId");
@@ -128,7 +135,7 @@ public class HttpDriver implements WebDriver {
         } catch (RuntimeException e) {
             // the session may already be gone; the driver process still has to go
         }
-        stop(driverProcess);
+        stop(driverProcess, marker);
     }
 
     /** Waits for the driver to actually exit.
@@ -138,15 +145,54 @@ public class HttpDriver implements WebDriver {
      *  fail to launch a driver at all.
      */
     static void stop(Process process) {
-        if (process == null)
+        stop(process, null);
+    }
+
+    /** @param marker a string unique to this launch - the temp profile path - that identifies
+     *                the browser even after it has been reparented away from us */
+    static void stop(Process process, String marker) {
+        if (process == null && marker == null)
             return;
-        process.destroy();
-        try {
-            if (! process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS))
-                process.destroyForcibly().waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            process.destroyForcibly();
+        // Kill the children first. On macos and windows the command we launched is often a stub
+        // that execs the real browser, so destroying only our own handle leaves the browser
+        // running - and ten tests each leaving one behind starve the machine until scrypt in the
+        // page cannot finish inside any sane timeout.
+        List<ProcessHandle> children = process == null ? List.of()
+                : process.descendants().collect(java.util.stream.Collectors.toList());
+        if (process != null) {
+            process.destroy();
+            children.forEach(ProcessHandle::destroy);
+            try {
+                if (! process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS))
+                    process.destroyForcibly().waitFor(10, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                process.destroyForcibly();
+            }
+        }
+        for (ProcessHandle child : children) {
+            if (child.isAlive())
+                child.destroyForcibly();
+        }
+        // The launcher we started often execs the real browser and exits, leaving it reparented
+        // and no longer a descendant of anything we hold. Ten tests each leaving one behind
+        // starve the machine, and the symptom is a later test timing out in scrypt at sign in.
+        sweep(marker);
+    }
+
+    private static void sweep(String marker) {
+        if (marker == null)
+            return;
+        List<ProcessHandle> strays = ProcessHandle.allProcesses()
+                .filter(h -> h.info().commandLine().map(c -> c.contains(marker)).orElse(false))
+                .collect(java.util.stream.Collectors.toList());
+        strays.forEach(ProcessHandle::destroy);
+        long deadline = System.currentTimeMillis() + 15_000;
+        for (ProcessHandle stray : strays) {
+            while (stray.isAlive() && System.currentTimeMillis() < deadline)
+                WebDriver.sleep(200);
+            if (stray.isAlive())
+                stray.destroyForcibly();
         }
     }
 }

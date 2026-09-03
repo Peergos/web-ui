@@ -19,10 +19,16 @@ public class MarionetteDriver implements WebDriver {
     private final InputStream in;
     private final OutputStream out;
     private final Process browser;
+    private final String marker;
     private int messageId = 0;
 
     public MarionetteDriver(int port, Process browser) {
+        this(port, browser, null);
+    }
+
+    public MarionetteDriver(int port, Process browser, String marker) {
         this.browser = browser;
+        this.marker = marker;
         try {
             Socket s = null;
             long end = System.currentTimeMillis() + 60_000;
@@ -188,6 +194,6 @@ public class MarionetteDriver implements WebDriver {
         } catch (IOException e) {
             // ditto
         }
-        HttpDriver.stop(browser);
+        HttpDriver.stop(browser, marker);
     }
 }
