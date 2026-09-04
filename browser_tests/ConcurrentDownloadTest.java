@@ -86,6 +86,10 @@ public class ConcurrentDownloadTest {
             Downloads.Result b = Downloads.await(downloads, "dlB.bin", 900_000, 45_000);
             System.out.println("  first  " + a);
             System.out.println("  second " + b);
+            if (a.path == null || b.path == null) {
+                System.out.println("  download directory holds: " + Downloads.listing(downloads));
+                System.out.println("  in flight at that point: " + Page.inFlight(d));
+            }
             if (b.path == null)
                 System.out.println("  in flight when the second never arrived: " + Page.inFlight(d));
 

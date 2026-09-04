@@ -138,6 +138,27 @@ public class Downloads {
         }
     }
 
+    /** Everything actually in the download directory, with sizes.
+     *
+     *  What a browser calls a download in progress is convention, not contract - a duplicate gets
+     *  renamed, a partial is suffixed differently by every engine - so when nothing matched, the
+     *  directory itself is the evidence, rather than another guess at the naming.
+     */
+    public static String listing(Path dir) {
+        try (var s = Files.list(dir)) {
+            List<String> entries = s.map(p -> {
+                try {
+                    return p.getFileName() + " (" + Files.size(p) + ")";
+                } catch (IOException e) {
+                    return p.getFileName() + " (gone)";
+                }
+            }).sorted().toList();
+            return entries.isEmpty() ? "the download directory is empty" : String.join(", ", entries);
+        } catch (IOException e) {
+            return "could not list " + dir + ": " + e;
+        }
+    }
+
     public static String sha256(Path p) {
         try (InputStream in = Files.newInputStream(p)) {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
