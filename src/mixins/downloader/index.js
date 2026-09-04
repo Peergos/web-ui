@@ -190,11 +190,12 @@ module.exports = {
             var blockSize = size > maxBlockSize ? maxBlockSize : size
 
             console.log('saving data of length ' + size + ' to ' + filename)
+            let disposeFrame = null
             let fileStream = streamSaver.createWriteStream(
               filename,
               props.mimeType,
               function (url) {
-                downloadUrl.startDownload(url)
+                disposeFrame = downloadUrl.startDownload(url)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
               undefined,
@@ -214,13 +215,18 @@ module.exports = {
               that.errorBody = message
               that.showError = true
               writer.abort(message).catch(() => {})
+              if (disposeFrame != null)
+                disposeFrame()
               result.completeExceptionally(new Error(message))
             }
             let pump = () => {
               if (failed)
                 return
               if (blockSize == 0) {
-                writer.close().catch(err => fail('' + err))
+                writer.close().then(() => {
+                  if (disposeFrame != null)
+                    disposeFrame()
+                }).catch(err => fail('' + err))
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))
                 reader

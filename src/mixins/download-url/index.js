@@ -12,11 +12,18 @@ module.exports = {
         frame.hidden = true;
         frame.src = url;
         document.body.appendChild(frame);
-        // the download is owned by the download manager once it has started, so the frame
-        // is only needed long enough to hand it over
-        setTimeout(function () {
+        let remove = function () {
             if (frame.parentNode != null)
                 frame.parentNode.removeChild(frame);
-        }, 60000);
+        };
+        // The frame is the client the service worker is streaming the download into, so taking
+        // it away mid transfer aborts the fetch and the browser discards what it had written.
+        // It goes when the download is done, and the timer is only a backstop for a caller that
+        // never says so.
+        let fallback = setTimeout(remove, 30 * 60 * 1000);
+        return function () {
+            clearTimeout(fallback);
+            remove();
+        };
     }
 }

@@ -63,12 +63,18 @@ module.exports = {
             
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
+            let disposeFrame = null;
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
-                    downloadUrl.startDownload(url)
+                    disposeFrame = downloadUrl.startDownload(url)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
+            zipFuture.thenApply(res => {
+                if (disposeFrame != null)
+                    disposeFrame();
+                return res;
+            });
             return zipFuture;
         },
         reduceZippingFiles(allFiles, index, future, progress, writer, zipFilename, state) {
