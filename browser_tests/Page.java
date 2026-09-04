@@ -63,40 +63,63 @@ public class Page {
      *  never opens and every later assertion blames the viewer for a lost selection.
      */
     public static void viewFile(WebDriver d, String name) {
-        Object opened = d.script("const wanted = arguments[0];" +
+        // Retried, because a listing refresh landing during the open clears selectedFiles and
+        // the half finished open goes nowhere: no viewer, no error. Rounds are long so a retry
+        // cannot restart an open that is merely slow.
+        for (int round = 0; round < 4; round++) {
+            if (! Boolean.TRUE.equals(selectAndOpen(d, name)))
+                throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
+            if (viewerOpened(d, 30_000))
+                return;
+        }
+        System.out.println("  view state: " + d.scriptQuiet("return ["
+                + "'selected=' + (window.__drive.selectedFiles || []).length,"
+                + "'spinner=' + window.__drive.showSpinner,"
+                + "'sandbox=' + window.__drive.showAppSandbox,"
+                + "'markup=' + window.__drive.showMarkupViewer,"
+                + "'pdf=' + window.__drive.showPdfViewer,"
+                + "'appName=' + window.__drive.sandboxAppName,"
+                + "'lastOpen=[' + window.__viewDebug + ']',"
+                + "'hashLength=' + location.hash.length,"
+                + "'visible=' + JSON.stringify([...document.querySelectorAll("
+                + "   '[class*=toast], [class*=dialog], [role=dialog]')]"
+                + "   .map(x => x.innerText.replace(/\\n/g, ' ').trim())"
+                + "   .filter(t => t.length > 0 && t.length < 200).slice(0, 3))"
+                + "].join(' ')"));
+        throw new IllegalStateException("The viewer never opened for " + name);
+    }
+
+    /** Selects and opens in one script, recording what the open decided.
+     *
+     *  Both in one call deliberately: a listing refresh between selecting and opening clears
+     *  selectedFiles, and openFile returns silently when nothing is selected.
+     */
+    private static Object selectAndOpen(WebDriver d, String name) {
+        return d.script("const wanted = arguments[0];" +
                 "const f = (window.__drive.files || []).find(x =>" +
                 "  (x.getName ? x.getName() : (x.props ? x.props.name : null)) === wanted);" +
                 "if (! f) return false;" +
                 "window.__drive.selectedFiles = [f];" +
+                "const before = location.hash.length;" +
+                "let app;" +
+                "try { app = window.__drive.getApp(f, window.__drive.getPath, false); }" +
+                "catch (e) { app = 'threw: ' + e; }" +
                 "window.__drive.viewFile();" +
+                "window.__viewDebug = 'app=' + app + ' hashBefore=' + before" +
+                "  + ' hashAfter=' + location.hash.length" +
+                "  + ' selectedAfter=' + (window.__drive.selectedFiles || []).length;" +
                 "return true;", name);
-        if (! Boolean.TRUE.equals(opened))
-            throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
-        // openFile does nothing at all when the selection went away, so make that its own failure
-        try {
-            d.waitForScript("the viewer to open for " + name,
-                    "window.__drive.showAppSandbox || window.__drive.showMarkupViewer"
-                            + " || window.__drive.showPdfViewer", 120_000);
-        } catch (RuntimeException e) {
-            System.out.println("  view state: " + d.scriptQuiet("return ["
-                    + "'selected=' + (window.__drive.selectedFiles || []).length,"
-                    + "'spinner=' + window.__drive.showSpinner,"
-                    + "'sandbox=' + window.__drive.showAppSandbox,"
-                    + "'markup=' + window.__drive.showMarkupViewer,"
-                    + "'pdf=' + window.__drive.showPdfViewer,"
-                    + "'appName=' + window.__drive.sandboxAppName,"
-                    + "'appsForFile=' + (() => { try {"
-                    + "   const f = (window.__drive.files || []).find(x => x.getName() === arguments[0]);"
-                    + "   return f ? window.__drive.availableAppsForFile(f).map(a => a.name).join(',')"
-                    + "            : 'no such file'; } catch (ex) { return 'threw: ' + ex; } })(),"
-                    + "'hashLength=' + location.hash.length,"
-                    + "'visible=' + JSON.stringify([...document.querySelectorAll("
-                    + "   '[class*=toast], [class*=dialog], [role=dialog]')]"
-                    + "   .map(x => x.innerText.replace(/\\n/g, ' ').trim())"
-                    + "   .filter(t => t.length > 0 && t.length < 200).slice(0, 3))"
-                    + "].join(' ')", name));
-            throw e;
+    }
+
+    private static boolean viewerOpened(WebDriver d, long millis) {
+        long end = System.currentTimeMillis() + millis;
+        while (System.currentTimeMillis() < end) {
+            if (Boolean.TRUE.equals(d.scriptQuiet("return !!(window.__drive.showAppSandbox"
+                    + " || window.__drive.showMarkupViewer || window.__drive.showPdfViewer)")))
+                return true;
+            WebDriver.sleep(250);
         }
+        return false;
     }
 
     /** Opens a view from the nav and hands back its component.

@@ -132,6 +132,10 @@ public class Browsers {
         chromeOptions.put("prefs", Map.of(
                 "download.default_directory", downloadDir.toAbsolutePath().toString(),
                 "download.prompt_for_download", false,
+                // chrome blocks a site's second automatic download behind a permission prompt,
+                // and a headless browser answers that prompt by dropping the download with no
+                // file and no error - which is indistinguishable from the bug under test
+                "profile.default_content_setting_values.automatic_downloads", 1,
                 "safebrowsing.enabled", false));
 
         Map<String, Object> caps = Map.of("alwaysMatch",

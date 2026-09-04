@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.*;
 
 /** Test files, created by the test rather than assumed to be sitting on the server.
  *
@@ -223,14 +224,43 @@ public class Fixtures {
             Process p = new ProcessBuilder(cmd)
                     .redirectErrorStream(true)
                     .start();
+            // Drained on its own thread, and bounded. A shell that never exits used to block
+            // readAllBytes for as long as the job was allowed to run, so one stuck upload spent
+            // the entire ci budget and reported a timeout of the whole run rather than itself.
+            StringBuilder collected = new StringBuilder();
+            Thread reader = new Thread(() -> {
+                try (BufferedReader r = new BufferedReader(
+                        new InputStreamReader(p.getInputStream()))) {
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        synchronized (collected) {
+                            collected.append(line).append('\n');
+                        }
+                    }
+                } catch (IOException e) {
+                    // the process went away, which waitFor below reports properly
+                }
+            });
+            reader.setDaemon(true);
+            reader.start();
             try (Writer w = new OutputStreamWriter(p.getOutputStream())) {
                 for (String c : commands)
                     w.write(c + "\n");
                 w.write("exit\n");
             }
-            String out = new String(p.getInputStream().readAllBytes());
-            p.waitFor();
-            return out;
+            long minutes = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 15 : 8;
+            if (! p.waitFor(minutes, TimeUnit.MINUTES)) {
+                p.destroyForcibly();
+                synchronized (collected) {
+                    throw new IllegalStateException("The peergos shell did not finish within "
+                            + minutes + " minutes running " + Arrays.toString(commands)
+                            + ". Output so far: " + collected);
+                }
+            }
+            reader.join(30_000);
+            synchronized (collected) {
+                return collected.toString();
+            }
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
