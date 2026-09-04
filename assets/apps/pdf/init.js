@@ -24,11 +24,22 @@ window.addEventListener('message', function (e) {
         let rounds = waited || 0;
         let failed = failures || 0;
         let again = (f) => setTimeout(() => loadFile(ev, rounds + 1, f), 200);
-        if (! window.PDFViewerApplication || ! PDFViewerApplication.initialized) {
-            if (rounds < 300)
+        if (! window.PDFViewerApplication) {
+            if (rounds < 1500)
                 again(failed);
             else
-                console.log("pdf viewer never finished initialising");
+                console.log("the pdf viewer script never ran");
+            return;
+        }
+        if (! PDFViewerApplication.initialized) {
+            // The viewer's own signal, rather than polling to a deadline of our choosing:
+            // initialising awaits storage, which a loaded machine can be slow to hand a cross
+            // origin frame, and a deadline that runs out leaves the file never opened at all.
+            let ready = PDFViewerApplication.initializedPromise;
+            if (ready && typeof ready.then === 'function')
+                ready.then(() => loadFile(ev, rounds, failed), () => again(failed));
+            else
+                again(failed);
             return;
         }
         try {

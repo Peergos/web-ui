@@ -70,9 +70,12 @@ public class PdfRenderTest {
                         // that never painted all look identical from the last wait alone.
                         d.waitForScript("to be inside the pdf app document",
                                 "location.href.indexOf('/apps/pdf/') >= 0", 60_000);
+                        // Generous: initialising awaits storage, and a loaded runner has been
+                        // seen to take longer than a minute over it. The wait ends as soon as
+                        // the viewer is ready, so the ceiling costs a healthy run nothing.
                         d.waitForScript("the pdf viewer to initialise",
                                 "window.PDFViewerApplication && PDFViewerApplication.initialized",
-                                60_000);
+                                180_000);
                         d.waitForScript("a rendered page", "(() => {" +
                                 "  const c = document.querySelector('#viewer .page canvas');" +
                                 "  return c && c.width > 0 && c.height > 0;" +
