@@ -191,10 +191,12 @@ module.exports = {
 
             console.log('saving data of length ' + size + ' to ' + filename)
             let disposeFrame = null
+            let interceptUrl = null
             let fileStream = streamSaver.createWriteStream(
               filename,
               props.mimeType,
               function (url) {
+                interceptUrl = url
                 disposeFrame = downloadUrl.startDownload(url)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
@@ -202,6 +204,19 @@ module.exports = {
               size
             )
             let writer = fileStream.getWriter()
+            // The service worker tells us if it was restarted between registering this download
+            // and the browser asking for it: the stream it was going to serve died with it, so
+            // everything written from here on goes nowhere and no file is ever saved.
+            let lostListener = null
+            if (navigator.serviceWorker != null) {
+              lostListener = e => {
+                // only our own download: another one going wrong is not this one's problem
+                if (e.data != null && e.data.unknownDownload === interceptUrl
+                    && interceptUrl != null)
+                  fail('The browser stopped the download before it started. Please try again.')
+              }
+              navigator.serviceWorker.addEventListener('message', lostListener)
+            }
             // a download that stops part way must fail the stream, otherwise the browser
             // sits on a part file for ever with no indication that anything went wrong
             let failed = false
@@ -217,6 +232,10 @@ module.exports = {
               writer.abort(message).catch(() => {})
               if (disposeFrame != null)
                 disposeFrame()
+              if (lostListener != null && navigator.serviceWorker != null) {
+                navigator.serviceWorker.removeEventListener('message', lostListener)
+                lostListener = null
+              }
               result.completeExceptionally(new Error(message))
             }
             let pump = () => {
@@ -226,6 +245,10 @@ module.exports = {
                 writer.close().then(() => {
                   if (disposeFrame != null)
                     disposeFrame()
+                  if (lostListener != null && navigator.serviceWorker != null) {
+                    navigator.serviceWorker.removeEventListener('message', lostListener)
+                    lostListener = null
+                  }
                 }).catch(err => fail('' + err))
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))

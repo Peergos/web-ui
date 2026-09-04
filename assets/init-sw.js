@@ -8,9 +8,14 @@ if (window.location.host == host && window.location.protocol != "https:")
 // This will prevent the sw from restarting
 let keepAlive = sw => {
   keepAlive = () => {}
+  // Everything a download needs - its stream and headers - lives in the worker's memory, so if
+  // the worker is stopped the request for that download falls through to the network and no
+  // file is saved, while the page carries on writing to a stream no one is reading. Pinging
+  // every four and a half minutes against a five minute limit leaves half a minute of slack,
+  // and a timer on a loaded machine is not delivered that punctually.
   setInterval(() => {
     sw.postMessage('ping', [new MessageChannel().port2])
-  }, 27E4) // 4.5min
+  }, 3E4) // 30s
 }
 
 // message event is the first thing we need to setup a listner for
