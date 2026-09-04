@@ -47,87 +47,106 @@ public class PdfRenderTest {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
                 Page.login(d, Server.USERNAME, Server.PASSWORD);
-                Page.gotoDrive(d);
-                Page.waitForInDrive(d, name, 120_000);
-
-                System.out.println("opening " + name + " in the pdf app");
-                d.script("window.__drive.openInApp({filename: arguments[0]}, 'pdf');", name);
-
-                d.waitUntil("the pdf app frame", () -> d.find("#pdf"), 60_000);
-                String frameSrc = String.valueOf(d.script(
-                        "return document.getElementById('pdf').getAttribute('src')"));
-                System.out.println("  frame src " + frameSrc);
-                if (! frameSrc.contains("//pdf."))
-                    throw new AssertionError("The pdf app should be framed from its own subdomain,"
-                            + " got " + frameSrc);
-
-                d.switchToFrame("#pdf");
-                try {
-                    // pdf.js builds a .page per page and paints into a canvas inside it
+                // Retried once: if the browsing context is discarded mid test the app comes back
+                // without the viewer open, and the frame the assertions live in is genuinely
+                // gone. Opening it again is the only way to carry on, and one retry keeps a
+                // repeatable failure from being papered over.
+                for (int attempt = 0; ; attempt++) {
                     try {
-                        // Three separate waits so a failure names the step that did not happen.
-                        // Landing in the wrong document, an app that never ran, and a viewer
-                        // that never painted all look identical from the last wait alone.
-                        d.waitForScript("to be inside the pdf app document",
-                                "location.href.indexOf('/apps/pdf/') >= 0", 60_000);
-                        // Generous: initialising awaits storage, and a loaded runner has been
-                        // seen to take longer than a minute over it. The wait ends as soon as
-                        // the viewer is ready, so the ceiling costs a healthy run nothing.
-                        d.waitForScript("the pdf viewer to initialise",
-                                "window.PDFViewerApplication && PDFViewerApplication.initialized",
-                                180_000);
-                        d.waitForScript("a rendered page", "(() => {" +
-                                "  const c = document.querySelector('#viewer .page canvas');" +
-                                "  return c && c.width > 0 && c.height > 0;" +
-                                "})()", 120_000);
-                    } catch (RuntimeException e) {
-                        // An empty viewer looks the same however it got that way, so say which
-                        // of the steps between framing the app and painting a page did not run.
-                        // href and the viewer container come first deliberately: an empty
-                        // parent document and a frame whose app never ran report the same
-                        // absent app and zero pages, and only the url tells them apart.
-                        System.out.println("  pdf app state: " + d.scriptQuiet("return ["
-                                + "'href=' + location.href,"
-                                + "'readyState=' + document.readyState,"
-                                + "'viewerContainer=' + (!!document.querySelector('#viewer')),"
-                                + "'moduleTag=' + (!!document.querySelector('script[src*=viewer]')),"
-                                + "'app=' + (!!window.PDFViewerApplication),"
-                                + "'initialised=' + (window.PDFViewerApplication ?"
-                                + "   PDFViewerApplication.initialized : 'n/a'),"
-                                + "'document=' + (window.PDFViewerApplication ?"
-                                + "   !!PDFViewerApplication.pdfDocument : 'n/a'),"
-                                // set inside open(), so it separates a file that never arrived
-                                // from one whose load was started and never finished
-                                + "'loadingTask=' + (window.PDFViewerApplication ?"
-                                + "   !!PDFViewerApplication.pdfLoadingTask : 'n/a'),"
-                                + "'appState=' + JSON.stringify(window.__pdfState || null),"
-                                + "'pages=' + document.querySelectorAll('#viewer .page').length,"
-                                + "'error=' + (document.querySelector('#errorMessage') ?"
-                                + "   document.querySelector('#errorMessage').textContent.trim() : ''),"
-                                + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 120)"
-                                + "].join(' ')"));
-                        throw e;
+                        renderAndCheck(d, name);
+                        break;
+                    } catch (WebDriver.FrameContextLost e) {
+                        d.switchToTop();
+                        if (attempt > 0)
+                            throw e;
+                        System.out.println("  the viewer's frame went away, opening it again");
                     }
-                    Object width = d.script("return document.querySelector('#viewer .page canvas').width");
-                    Object height = d.script("return document.querySelector('#viewer .page canvas').height");
-                    Object pages = d.script("return document.querySelectorAll('#viewer .page').length");
-                    System.out.println("  rendered " + pages + " page(s), first canvas "
-                            + width + "x" + height);
-
-                    Object text = d.script("const l = document.querySelector('#viewer .textLayer');"
-                            + "return l ? l.textContent : '';");
-                    if (String.valueOf(text).contains("Peergos browser test"))
-                        System.out.println("  text layer holds the document's text");
-                } finally {
-                    d.switchToTop();
                 }
-                System.out.println("  ok   the pdf app rendered the file");
-                System.out.println("PASS");
             }
         } finally {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** Opens the pdf in its app and checks it actually rendered. */
+    private static void renderAndCheck(WebDriver d, String name) throws Exception {
+        Page.gotoDrive(d);
+        Page.waitForInDrive(d, name, 120_000);
+
+        System.out.println("opening " + name + " in the pdf app");
+        d.script("window.__drive.openInApp({filename: arguments[0]}, 'pdf');", name);
+
+        d.waitUntil("the pdf app frame", () -> d.find("#pdf"), 60_000);
+        String frameSrc = String.valueOf(d.script(
+                "return document.getElementById('pdf').getAttribute('src')"));
+        System.out.println("  frame src " + frameSrc);
+        if (! frameSrc.contains("//pdf."))
+            throw new AssertionError("The pdf app should be framed from its own subdomain,"
+                    + " got " + frameSrc);
+
+        d.switchToFrame("#pdf");
+        try {
+            // pdf.js builds a .page per page and paints into a canvas inside it
+            try {
+                // Three separate waits so a failure names the step that did not happen.
+                // Landing in the wrong document, an app that never ran, and a viewer
+                // that never painted all look identical from the last wait alone.
+                d.waitForScript("to be inside the pdf app document",
+                        "location.href.indexOf('/apps/pdf/') >= 0", 60_000);
+                // Generous: initialising awaits storage, and a loaded runner has been
+                // seen to take longer than a minute over it. The wait ends as soon as
+                // the viewer is ready, so the ceiling costs a healthy run nothing.
+                d.waitForScript("the pdf viewer to initialise",
+                        "window.PDFViewerApplication && PDFViewerApplication.initialized",
+                        180_000);
+                d.waitForScript("a rendered page", "(() => {" +
+                        "  const c = document.querySelector('#viewer .page canvas');" +
+                        "  return c && c.width > 0 && c.height > 0;" +
+                        "})()", 120_000);
+            } catch (RuntimeException e) {
+                // An empty viewer looks the same however it got that way, so say which
+                // of the steps between framing the app and painting a page did not run.
+                // href and the viewer container come first deliberately: an empty
+                // parent document and a frame whose app never ran report the same
+                // absent app and zero pages, and only the url tells them apart.
+                System.out.println("  pdf app state: " + d.scriptQuiet("return ["
+                        + "'href=' + location.href,"
+                        + "'readyState=' + document.readyState,"
+                        + "'viewerContainer=' + (!!document.querySelector('#viewer')),"
+                        + "'moduleTag=' + (!!document.querySelector('script[src*=viewer]')),"
+                        + "'app=' + (!!window.PDFViewerApplication),"
+                        + "'initialised=' + (window.PDFViewerApplication ?"
+                        + "   PDFViewerApplication.initialized : 'n/a'),"
+                        + "'document=' + (window.PDFViewerApplication ?"
+                        + "   !!PDFViewerApplication.pdfDocument : 'n/a'),"
+                        // set inside open(), so it separates a file that never arrived
+                        // from one whose load was started and never finished
+                        + "'loadingTask=' + (window.PDFViewerApplication ?"
+                        + "   !!PDFViewerApplication.pdfLoadingTask : 'n/a'),"
+                        + "'appState=' + JSON.stringify(window.__pdfState || null),"
+                        + "'pages=' + document.querySelectorAll('#viewer .page').length,"
+                        + "'error=' + (document.querySelector('#errorMessage') ?"
+                        + "   document.querySelector('#errorMessage').textContent.trim() : ''),"
+                        + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 120)"
+                        + "].join(' ')"));
+                throw e;
+            }
+            Object width = d.script("return document.querySelector('#viewer .page canvas').width");
+            Object height = d.script("return document.querySelector('#viewer .page canvas').height");
+            Object pages = d.script("return document.querySelectorAll('#viewer .page').length");
+            System.out.println("  rendered " + pages + " page(s), first canvas "
+                    + width + "x" + height);
+
+            Object text = d.script("const l = document.querySelector('#viewer .textLayer');"
+                    + "return l ? l.textContent : '';");
+            if (String.valueOf(text).contains("Peergos browser test"))
+                System.out.println("  text layer holds the document's text");
+        } finally {
+            d.switchToTop();
+        }
+        System.out.println("  ok   the pdf app rendered the file");
+        System.out.println("PASS");
     }
 
     /** A one page pdf with a line of text, built here so the test carries no binary fixture. */
