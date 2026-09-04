@@ -96,18 +96,42 @@ public class MarionetteDriver implements WebDriver {
             // last handle on trust is how a recovery re-attaches to the same dead window each
             // time and spends its whole budget getting nowhere.
             for (int i = list.size() - 1; i >= 0; i--) {
-                try {
-                    command("WebDriver:SwitchToWindow",
-                            Map.of("handle", String.valueOf(list.get(i))));
-                    command("WebDriver:ExecuteScript",
-                            Map.of("script", "return 1", "args", List.of()));
+                if (usable(String.valueOf(list.get(i))))
                     return;
-                } catch (RuntimeException e) {
-                    // that one is gone too, so try the next
-                }
+            }
+            // Every window is gone, which switching between them cannot fix. Opening one gives
+            // the session somewhere to live again, and a browser whose windows have all been
+            // discarded is otherwise unusable for as long as the test is willing to wait.
+            Object created = command("WebDriver:NewWindow",
+                    Map.of("type", "tab", "focus", true));
+            if (created instanceof Map) {
+                Object handle = ((Map<?, ?>) created).get("handle");
+                if (handle != null && usable(String.valueOf(handle)))
+                    return;
             }
         } catch (RuntimeException e) {
             // nothing to switch to; the next command will report the real problem
+        }
+    }
+
+    /** Switching to a discarded context succeeds, so a window only counts once it runs something. */
+    private boolean usable(String handle) {
+        try {
+            command("WebDriver:SwitchToWindow", Map.of("handle", handle));
+            command("WebDriver:ExecuteScript", Map.of("script", "return 1", "args", List.of()));
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private String windowSummary() {
+        try {
+            Object handles = command("WebDriver:GetWindowHandles", Map.of());
+            List<?> list = handles instanceof List ? (List<?>) handles : List.of();
+            return list.size() + " window handle(s)";
+        } catch (RuntimeException e) {
+            return "window handles unavailable (" + e.getMessage() + ")";
         }
     }
 
@@ -141,7 +165,8 @@ public class MarionetteDriver implements WebDriver {
                 restoreFrame();
             }
         } while (System.currentTimeMillis() < end);
-        throw last;
+        throw new IllegalStateException(last.getMessage() + " - recovery gave up, "
+                + windowSummary(), last);
     }
 
     private static String describe(Object error) {
