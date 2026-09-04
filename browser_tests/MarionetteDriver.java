@@ -22,6 +22,7 @@ public class MarionetteDriver implements WebDriver {
     private final String marker;
     private int messageId = 0;
     private final List<String> frames = new ArrayList<>();
+    private String recovery = "not attempted";
 
     public MarionetteDriver(int port, Process browser) {
         this(port, browser, null);
@@ -99,18 +100,31 @@ public class MarionetteDriver implements WebDriver {
                 if (usable(String.valueOf(list.get(i))))
                     return;
             }
-            // Every window is gone, which switching between them cannot fix. Opening one gives
-            // the session somewhere to live again, and a browser whose windows have all been
-            // discarded is otherwise unusable for as long as the test is willing to wait.
-            Object created = command("WebDriver:NewWindow",
-                    Map.of("type", "tab", "focus", true));
-            if (created instanceof Map) {
-                Object handle = ((Map<?, ?>) created).get("handle");
-                if (handle != null && usable(String.valueOf(handle)))
-                    return;
-            }
+            openAWindow();
         } catch (RuntimeException e) {
             // nothing to switch to; the next command will report the real problem
+        }
+    }
+
+    /** Opens a window and moves the session into it.
+     *
+     *  Escalated to rather than kept for the case where no handle answers at all: a window can
+     *  run a script and still refuse to navigate, and re-focusing it then repeats a step that
+     *  cannot work for as long as the budget lasts. Giving the session a window it opened itself
+     *  is the only move that changes anything.
+     */
+    private void openAWindow() {
+        try {
+            Object created = command("WebDriver:NewWindow", Map.of("type", "tab", "focus", true));
+            Object handle = created instanceof Map ? ((Map<?, ?>) created).get("handle") : null;
+            if (handle == null)
+                recovery = "opening a window returned no handle";
+            else if (usable(String.valueOf(handle)))
+                recovery = "opened a window";
+            else
+                recovery = "opened a window and it was not usable either";
+        } catch (RuntimeException e) {
+            recovery = "could not open a window (" + e.getMessage() + ")";
         }
     }
 
@@ -150,6 +164,7 @@ public class MarionetteDriver implements WebDriver {
      */
     private Object commandWithRecovery(String name, Map<String, Object> params) {
         IllegalStateException last = null;
+        int attempts = 0, opened = 0;
         // Bounded by time rather than by a count of attempts. A slow windows runner can still be
         // replacing the window it started with well after a handful of two second pauses have
         // run out, and giving up then reports a browser that was about to be perfectly usable.
@@ -163,12 +178,21 @@ public class MarionetteDriver implements WebDriver {
                     throw e;
                 last = e;
                 WebDriver.sleep(2000);
-                focusAWindow();
+                // Re-focus once, then stop repeating it: whatever the current window is doing,
+                // it is not going to start working on the tenth identical attempt. The
+                // escalation is capped, because a browser that has ignored three new windows is
+                // not short of windows, and opening one every two seconds only adds to its load.
+                if (++attempts > 1 && opened < 3) {
+                    opened++;
+                    openAWindow();
+                } else {
+                    focusAWindow();
+                }
                 restoreFrame();
             }
         } while (System.currentTimeMillis() < end);
         throw new IllegalStateException(last.getMessage() + " - recovery gave up, "
-                + windowSummary(), last);
+                + windowSummary() + ", " + recovery, last);
     }
 
     private static String describe(Object error) {
