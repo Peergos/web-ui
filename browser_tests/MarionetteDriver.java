@@ -139,6 +139,34 @@ public class MarionetteDriver implements WebDriver {
         }
     }
 
+    /** Rebuilds the session on the connection we already have.
+     *
+     *  The last resort, and the only one left when the context is discarded: opening a window is
+     *  itself a command against that context, so it fails the same way, and the session cannot
+     *  talk about anything any more. Only listing windows still answers, because the parent
+     *  process handles that one. The browser is alive, so a new session can attach to it.
+     */
+    private void restartSession() {
+        boolean wasInFrame = ! frames.isEmpty();
+        try {
+            try {
+                command("WebDriver:DeleteSession", Map.of());
+            } catch (RuntimeException e) {
+                // it is already unusable, which is why we are here
+            }
+            command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            frames.clear();
+            focusAWindow();
+            recovery = "restarted the session";
+        } catch (RuntimeException e) {
+            recovery = "could not restart the session (" + e.getMessage() + ")";
+            return;
+        }
+        if (wasInFrame)
+            throw new FrameContextLost("The session was restarted while working inside "
+                    + "a frame, so the document under test is gone", null);
+    }
+
     private String windowSummary() {
         String process = browser == null ? "browser not ours to watch"
                 : browser.isAlive() ? "browser alive" : "browser has exited";
@@ -165,6 +193,7 @@ public class MarionetteDriver implements WebDriver {
     private Object commandWithRecovery(String name, Map<String, Object> params) {
         IllegalStateException last = null;
         int attempts = 0, opened = 0;
+        boolean restarted = false;
         // Bounded by time rather than by a count of attempts. A slow windows runner can still be
         // replacing the window it started with well after a handful of two second pauses have
         // run out, and giving up then reports a browser that was about to be perfectly usable.
@@ -178,13 +207,20 @@ public class MarionetteDriver implements WebDriver {
                     throw e;
                 last = e;
                 WebDriver.sleep(2000);
-                // Re-focus once, then stop repeating it: whatever the current window is doing,
-                // it is not going to start working on the tenth identical attempt. The
-                // escalation is capped, because a browser that has ignored three new windows is
-                // not short of windows, and opening one every two seconds only adds to its load.
-                if (++attempts > 1 && opened < 3) {
+                // An escalation, because repeating a step that has already failed is not a
+                // recovery: re-focus, then open a window, then rebuild the session, then go back
+                // to waiting. Opening is capped - a browser that has ignored three new windows is
+                // not short of windows - and the session is rebuilt once, since a rebuild that
+                // does not help will not help the second time either.
+                attempts++;
+                if (attempts == 1)
+                    focusAWindow();
+                else if (opened < 3) {
                     opened++;
                     openAWindow();
+                } else if (! restarted) {
+                    restarted = true;
+                    restartSession();
                 } else {
                     focusAWindow();
                 }
