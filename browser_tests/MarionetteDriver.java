@@ -91,9 +91,21 @@ public class MarionetteDriver implements WebDriver {
         try {
             Object handles = command("WebDriver:GetWindowHandles", Map.of());
             List<Object> list = handles instanceof List ? (List<Object>) handles : List.of();
-            if (! list.isEmpty())
-                command("WebDriver:SwitchToWindow",
-                        Map.of("handle", String.valueOf(list.get(list.size() - 1))));
+            // Newest first, and every candidate is probed: switching to a discarded context
+            // succeeds, and only the command after it reports that nothing is there. Taking the
+            // last handle on trust is how a recovery re-attaches to the same dead window each
+            // time and spends its whole budget getting nowhere.
+            for (int i = list.size() - 1; i >= 0; i--) {
+                try {
+                    command("WebDriver:SwitchToWindow",
+                            Map.of("handle", String.valueOf(list.get(i))));
+                    command("WebDriver:ExecuteScript",
+                            Map.of("script", "return 1", "args", List.of()));
+                    return;
+                } catch (RuntimeException e) {
+                    // that one is gone too, so try the next
+                }
+            }
         } catch (RuntimeException e) {
             // nothing to switch to; the next command will report the real problem
         }
@@ -112,7 +124,12 @@ public class MarionetteDriver implements WebDriver {
      */
     private Object commandWithRecovery(String name, Map<String, Object> params) {
         IllegalStateException last = null;
-        for (int attempt = 0; attempt < 4; attempt++) {
+        // Bounded by time rather than by a count of attempts. A slow windows runner can still be
+        // replacing the window it started with well after a handful of two second pauses have
+        // run out, and giving up then reports a browser that was about to be perfectly usable.
+        long end = System.currentTimeMillis()
+                + ("1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 120_000 : 60_000);
+        do {
             try {
                 return command(name, params);
             } catch (IllegalStateException e) {
@@ -123,7 +140,7 @@ public class MarionetteDriver implements WebDriver {
                 focusAWindow();
                 restoreFrame();
             }
-        }
+        } while (System.currentTimeMillis() < end);
         throw last;
     }
 
