@@ -10,6 +10,65 @@ public class Page {
      *  and the app ends up signing in with a null username.
      */
     public static void login(WebDriver d, String username, String password) {
+        // Key generation is scrypt, in the browser, so nothing the server links against changes
+        // it. Windows just needs longer: the runner is slower and the sqlite backed server it is
+        // talking to is slower still.
+        long timeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 900_000 : 300_000;
+        // Sign in is disabled until the network is up, and a click on a disabled button is
+        // dropped in silence - no spinner, no error, the form still sitting there - so waiting
+        // for the button is the difference between signing in and waiting out the whole timeout.
+        d.waitForScript("the sign in button to be enabled", signInEnabled(), timeout);
+        for (int round = 0; round < 3; round++) {
+            fillCredentials(d, username, password);
+            d.script("[...document.querySelectorAll('button')]" +
+                    ".find(b => b.textContent.trim() === 'Sign in').click();");
+            // The app disables the button while it is logging in, so its going away is the
+            // click having been taken. A click that was dropped leaves it enabled.
+            boolean taken = false;
+            long end = System.currentTimeMillis() + 30_000;
+            while (! taken && System.currentTimeMillis() < end) {
+                taken = ! Boolean.TRUE.equals(d.scriptQuiet("return " + signInEnabled()));
+                if (! taken)
+                    WebDriver.sleep(500);
+            }
+            if (taken)
+                break;
+        }
+        try {
+            d.waitForScript("sign in to complete",
+                    "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
+        } catch (RuntimeException e) {
+            // A sign in that never completes looks the same whether the form was never filled,
+            // the click was dropped, the page went somewhere else, or key generation really is
+            // still running. Say which, rather than reading a slow runner into every timeout.
+            System.out.println("  sign in state: " + d.scriptQuiet("return ["
+                    + "'href=' + location.href,"
+                    + "'form=' + (!!document.querySelector('input[name=username]')),"
+                    + "'username=' + (document.querySelector('input[name=username]') ?"
+                    + "   document.querySelector('input[name=username]').value : 'n/a'),"
+                    + "'passwordLength=' + (document.querySelector('input[name=password]') ?"
+                    + "   document.querySelector('input[name=password]').value.length : 'n/a'),"
+                    + "'signInEnabled=' + [...document.querySelectorAll('button')]"
+                    + "   .some(b => b.textContent.trim() === 'Sign in' && ! b.disabled),"
+                    + "'signInButton=' + [...document.querySelectorAll('button')]"
+                    + "   .some(b => b.textContent.trim() === 'Sign in'),"
+                    + "'spinner=' + (document.querySelectorAll('.spinner, .v-spinner').length > 0),"
+                    + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 200)"
+                    + "].join(' ')"));
+            throw e;
+        }
+    }
+
+    /** A bare expression, not a statement: waitForScript wraps what it is given in a return. */
+    private static String signInEnabled() {
+        return "[...document.querySelectorAll('button')]"
+                + ".some(b => b.textContent.trim() === 'Sign in' && ! b.disabled)";
+    }
+
+    /** Set through the native value setter and an input event rather than by typing: this
+     *  form's vue model does not pick up a plain value assignment, and the app then signs in
+     *  with a null username. */
+    private static void fillCredentials(WebDriver d, String username, String password) {
         d.script(
                 "const set = (el, v) => {" +
                 "  const s = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
@@ -18,33 +77,6 @@ public class Page {
                 "set(document.querySelector('input[name=username]'), arguments[0]);" +
                 "set(document.querySelector('input[name=password]'), arguments[1]);",
                 username, password);
-        d.script("[...document.querySelectorAll('button')]" +
-                ".find(b => b.textContent.trim() === 'Sign in').click();");
-        // Key generation is scrypt, in the browser, so nothing the server links against changes
-        // it. Windows just needs longer: the runner is slower and the sqlite backed server it is
-        // talking to is slower still.
-        long timeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 900_000 : 300_000;
-        try {
-            d.waitForScript("sign in to complete",
-                    "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
-        } catch (RuntimeException e) {
-            // A sign in that never completes looks the same whether the form was never filled,
-            // the click missed, the page went somewhere else, or key generation really is still
-            // running. Say which, rather than reading a slow runner into every timeout.
-            System.out.println("  sign in state: " + d.scriptQuiet("return ["
-                    + "'href=' + location.href,"
-                    + "'form=' + (!!document.querySelector('input[name=username]')),"
-                    + "'username=' + (document.querySelector('input[name=username]') ?"
-                    + "   document.querySelector('input[name=username]').value : 'n/a'),"
-                    + "'passwordLength=' + (document.querySelector('input[name=password]') ?"
-                    + "   document.querySelector('input[name=password]').value.length : 'n/a'),"
-                    + "'signInButton=' + [...document.querySelectorAll('button')]"
-                    + "   .some(b => b.textContent.trim() === 'Sign in'),"
-                    + "'spinner=' + (document.querySelectorAll('.spinner, .v-spinner').length > 0),"
-                    + "'body=' + document.body.innerText.replace(/\\s+/g, ' ').slice(0, 200)"
-                    + "].join(' ')"));
-            throw e;
-        }
     }
 
     /** Opens the drive and hands back a handle on its vue component as window.__drive. */
@@ -207,7 +239,19 @@ public class Page {
     }
 
     public static void download(WebDriver d, String path) {
-        d.script("window.__drive.downloadFile(window.__f[arguments[0]]);", path);
+        Object res = d.script("try { window.__drive.downloadFile(window.__f[arguments[0]]);"
+                + "  return 'called'; } catch (e) { return 'threw: ' + e; }", path);
+        if (! "called".equals(String.valueOf(res)))
+            throw new IllegalStateException("downloadFile(" + path + ") " + res);
+    }
+
+    /** What the app is showing about work in flight: the download toasts carry a file name and
+     *  a percentage, so a download that never started is visible as the absence of its toast. */
+    public static String inFlight(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return JSON.stringify("
+                + "[...document.querySelectorAll('[class*=toast]')]"
+                + "  .map(x => x.innerText.replace(/\\s+/g, ' ').trim())"
+                + "  .filter(t => t.length > 0 && t.length < 200))"));
     }
 
     /** safaridriver has no remote file upload, so sendKeys on a file input does nothing there.

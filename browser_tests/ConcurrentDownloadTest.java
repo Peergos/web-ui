@@ -77,11 +77,17 @@ public class ConcurrentDownloadTest {
             Page.download(d, fileA);
             WebDriver.sleep(5_000);
             Page.download(d, fileB);       // the second download is what used to break the first
+            // A download that never puts a file on disk has either not started in the page or
+            // been dropped by the browser, and only the app's own progress says which.
+            WebDriver.sleep(5_000);
+            System.out.println("  in flight after starting both: " + Page.inFlight(d));
 
             Downloads.Result a = Downloads.await(downloads, "dlA.bin", 900_000, 45_000);
             Downloads.Result b = Downloads.await(downloads, "dlB.bin", 900_000, 45_000);
             System.out.println("  first  " + a);
             System.out.println("  second " + b);
+            if (b.path == null)
+                System.out.println("  in flight when the second never arrived: " + Page.inFlight(d));
 
             failures += check("first download intact", a, sizeA, srcA);
             failures += check("second download intact", b, sizeB, srcB);
