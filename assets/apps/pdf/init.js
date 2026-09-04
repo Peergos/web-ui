@@ -1,8 +1,13 @@
 let parentWindow = null;
 let parentOrigin = null;
 let saveHookInstalled = false;
+// A viewer showing its chrome and no page looks the same however it got there, so keep a note
+// of how far it got: whether the file ever arrived, whether opening it was tried, and why the
+// last attempt failed.
+window.__pdfState = {messages: 0, opens: 0, lastError: ''};
 
 window.addEventListener('message', function (e) {
+    window.__pdfState.messages++;
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
     // from our own origin, so we can simply compare the message event's
@@ -43,6 +48,7 @@ window.addEventListener('message', function (e) {
             return;
         }
         try {
+            window.__pdfState.opens++;
             PDFViewerApplication.setTitle(ev.data.name);
             PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)})
                 .then(() => {
@@ -50,12 +56,16 @@ window.addEventListener('message', function (e) {
                         installSaveHook();
                     }
                 }, ex => {
-                    // Once initialised, a rejection is far more likely to be the document
-                    // itself, which the viewer reports on its own, so do not retry for long.
-                    if (failed < 2)
-                        again(failed + 1);
+                    // Backed off rather than retried at once: opening fetches the pdf.js worker,
+                    // and a frame on a busy machine can be slow enough to fail an attempt that
+                    // would succeed a second later. Bounded, since a file that is simply broken
+                    // fails every time and the viewer says so itself.
+                    window.__pdfState.lastError = '' + ex;
+                    if (failed < 5)
+                        setTimeout(() => loadFile(ev, rounds + 1, failed + 1), 1000 * (failed + 1));
                 });
         } catch(ex) {
+            window.__pdfState.lastError = '' + ex;
             again(failed);
         }
     }

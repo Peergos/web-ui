@@ -96,6 +96,11 @@ public class PdfRenderTest {
                                 + "   PDFViewerApplication.initialized : 'n/a'),"
                                 + "'document=' + (window.PDFViewerApplication ?"
                                 + "   !!PDFViewerApplication.pdfDocument : 'n/a'),"
+                                // set inside open(), so it separates a file that never arrived
+                                // from one whose load was started and never finished
+                                + "'loadingTask=' + (window.PDFViewerApplication ?"
+                                + "   !!PDFViewerApplication.pdfLoadingTask : 'n/a'),"
+                                + "'appState=' + JSON.stringify(window.__pdfState || null),"
                                 + "'pages=' + document.querySelectorAll('#viewer .page').length,"
                                 + "'error=' + (document.querySelector('#errorMessage') ?"
                                 + "   document.querySelector('#errorMessage').textContent.trim() : ''),"
