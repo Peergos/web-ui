@@ -75,13 +75,22 @@ public class ZipFolderDownloadTest {
                 // the drive asks before zipping, and the flow does not continue until it is answered
                 Page.confirmYes(d, 120_000);
                 System.out.println("  confirmed the download dialog");
+                // The counter the app names archives from is the signal that the zip flow got
+                // past the dialog at all: it is bumped where the file is named. Toasts alone say
+                // nothing, they are empty in a healthy run too.
+                WebDriver.sleep(5_000);
+                System.out.println("  zip state after confirming: " + zipState(d));
 
                 // the app numbers the file from a counter of its own, so take whatever zip lands
                 Downloads.Result zip = Downloads.awaitMatching(downloads, "archive-", ".zip",
                         600_000, 60_000);
                 System.out.println("  " + zip);
-                if (zip.path == null)
+                if (zip.path == null) {
+                    System.out.println("  zip state when none arrived: " + zipState(d));
+                    if (Page.errorShown(d))
+                        System.out.println("  app reported: " + Page.errorText(d));
                     throw new AssertionError("No zip appeared in " + downloads);
+                }
                 if (zip.stalled)
                     throw new AssertionError("Zip download stalled at " + zip.size + " bytes");
 
@@ -134,5 +143,19 @@ public class ZipFolderDownloadTest {
         for (int i = 0; i < n; i++)
             b[i] = (byte) ((i * 17 + 3) & 0xff);
         return b;
+    }
+
+    /** Whether the app got as far as naming and building an archive. */
+    private static String zipState(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return ["
+                + "'archivesNamed=' + window.__drive.zipAndDownloadFoldersCount,"
+                + "'spinner=' + window.__drive.showSpinner,"
+                + "'progress=' + JSON.stringify([...document.querySelectorAll("
+                + "   '[class*=progress]')].map(x => x.innerText.replace(/\\s+/g, ' ').trim())"
+                + "   .filter(t => t.length > 0 && t.length < 120).slice(0, 3)),"
+                + "'toasts=' + JSON.stringify([...document.querySelectorAll('[class*=toast]')]"
+                + "   .map(x => x.innerText.replace(/\\s+/g, ' ').trim())"
+                + "   .filter(t => t.length > 0 && t.length < 120).slice(0, 3))"
+                + "].join(' ')"));
     }
 }

@@ -85,6 +85,18 @@ public class Downloads {
             }
             WebDriver.sleep(500);
         }
+        // Nothing arrived under its final name, so report a partial if one is sitting there. A
+        // download that started and never finished and one that never started at all both leave
+        // no file matching the suffix, and only the partial tells them apart.
+        try (var s = Files.list(dir)) {
+            List<Path> partial = s.filter(p -> p.getFileName().toString().startsWith(prefix))
+                    .filter(p -> isPartial(p.getFileName().toString()))
+                    .toList();
+            if (! partial.isEmpty())
+                return new Result(partial.get(0), totalSize(partial), true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return new Result(null, 0, true);
     }
 
