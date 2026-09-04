@@ -192,8 +192,8 @@ public class MarionetteDriver implements WebDriver {
      */
     private Object commandWithRecovery(String name, Map<String, Object> params) {
         IllegalStateException last = null;
-        int attempts = 0, opened = 0;
-        boolean restarted = false;
+        int attempts = 0;
+        boolean opened = false, restarted = false;
         // Bounded by time rather than by a count of attempts. A slow windows runner can still be
         // replacing the window it started with well after a handful of two second pauses have
         // run out, and giving up then reports a browser that was about to be perfectly usable.
@@ -209,14 +209,14 @@ public class MarionetteDriver implements WebDriver {
                 WebDriver.sleep(2000);
                 // An escalation, because repeating a step that has already failed is not a
                 // recovery: re-focus, then open a window, then rebuild the session, then go back
-                // to waiting. Opening is capped - a browser that has ignored three new windows is
-                // not short of windows - and the session is rebuilt once, since a rebuild that
-                // does not help will not help the second time either.
+                // to waiting. One attempt at a window, not three: opening one is itself a command
+                // against the context that has gone, so when it fails it will keep failing, and
+                // the attempts are better spent getting to the rebuild.
                 attempts++;
                 if (attempts == 1)
                     focusAWindow();
-                else if (opened < 3) {
-                    opened++;
+                else if (! opened) {
+                    opened = true;
                     openAWindow();
                 } else if (! restarted) {
                     restarted = true;
@@ -226,7 +226,19 @@ public class MarionetteDriver implements WebDriver {
                 }
                 restoreFrame();
             }
-        } while (System.currentTimeMillis() < end);
+            // The ladder is always finished, whatever the clock says: a failing command is not
+            // instant, and three of them can spend the whole budget before the one step that
+            // might have worked has been tried at all.
+        } while (System.currentTimeMillis() < end || ! restarted);
+        // A rebuilt session is worth nothing without an attempt after it, and the clock can run
+        // out on the very step that was going to work.
+        if (restarted) {
+            try {
+                return command(name, params);
+            } catch (IllegalStateException e) {
+                last = e;
+            }
+        }
         throw new IllegalStateException(last.getMessage() + " - recovery gave up, "
                 + windowSummary() + ", " + recovery, last);
     }
