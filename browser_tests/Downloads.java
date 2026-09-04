@@ -1,3 +1,5 @@
+import peergos.shared.util.PathUtil;
+
 import java.io.*;
 import java.nio.file.*;
 import java.security.MessageDigest;
@@ -157,6 +159,42 @@ public class Downloads {
         } catch (IOException e) {
             return "could not list " + dir + ": " + e;
         }
+    }
+
+    /** Anything under the temp tree whose name looks like this download.
+     *
+     *  A browser decides for itself where to write a partial, and it is not obliged to be the
+     *  directory it was told to save into. When the destination is empty the question is whether
+     *  the file exists at all - so this asks that, rather than assuming the answer.
+     */
+    public static String findAnywhere(Path root, String namePrefix) {
+        long deadline = System.currentTimeMillis() + 30_000;
+        List<String> hits = new ArrayList<>();
+        try {
+            // A visitor rather than a stream walk: a temp directory holds things that are not
+            // ours to read, and a walk gives up on the whole search the first time it meets one.
+            Files.walkFileTree(root, java.util.Set.of(), 4,
+                    new java.nio.file.SimpleFileVisitor<Path>() {
+                @Override
+                public java.nio.file.FileVisitResult visitFile(Path p,
+                        java.nio.file.attribute.BasicFileAttributes attrs) {
+                    if (p.getFileName().toString().startsWith(namePrefix))
+                        hits.add(p + " (" + attrs.size() + ")");
+                    return hits.size() >= 20 || System.currentTimeMillis() > deadline
+                            ? java.nio.file.FileVisitResult.TERMINATE
+                            : java.nio.file.FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public java.nio.file.FileVisitResult visitFileFailed(Path p, IOException e) {
+                    return java.nio.file.FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            return "could not search " + root + ": " + e;
+        }
+        return hits.isEmpty() ? "nothing named " + namePrefix + "* anywhere under " + root
+                : String.join(", ", hits);
     }
 
     public static String sha256(Path p) {

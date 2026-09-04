@@ -89,6 +89,10 @@ public class ConcurrentDownloadTest {
             if (a.path == null || b.path == null) {
                 System.out.println("  download directory holds: " + Downloads.listing(downloads));
                 System.out.println("  in flight at that point: " + Page.inFlight(d));
+                if (a.path == null)
+                    System.out.println("  dlA anywhere: " + Downloads.findAnywhere(downloads.getParent(), "dlA"));
+                if (b.path == null)
+                    System.out.println("  dlB anywhere: " + Downloads.findAnywhere(downloads.getParent(), "dlB"));
             }
             if (b.path == null)
                 System.out.println("  in flight when the second never arrived: " + Page.inFlight(d));
