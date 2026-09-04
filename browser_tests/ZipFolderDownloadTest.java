@@ -69,9 +69,8 @@ public class ZipFolderDownloadTest {
                 Page.openPath(d, root, "peergos");
                 Page.waitForInDrive(d, folder, 120_000);
 
-                Page.select(d, folder);
                 System.out.println("zipping and downloading " + folder);
-                d.script("window.__drive.zipAndDownloadFolders();");
+                Page.zipFolder(d, folder);
                 // the drive asks before zipping, and the flow does not continue until it is answered
                 Page.confirmYes(d, 120_000);
                 System.out.println("  confirmed the download dialog");

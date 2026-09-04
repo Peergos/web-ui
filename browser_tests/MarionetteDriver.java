@@ -194,7 +194,16 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void navigate(String url) {
-        commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+        try {
+            commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+        } catch (IllegalStateException e) {
+            // Loading a page is idempotent, and a machine busy enough to miss a five minute page
+            // load is usually busy for a moment rather than for the rest of the run.
+            if (! String.valueOf(e.getMessage()).contains("timed out"))
+                throw e;
+            System.out.println("  page load timed out, navigating again: " + url);
+            commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+        }
     }
 
     @Override

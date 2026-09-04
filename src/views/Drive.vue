@@ -1881,11 +1881,22 @@ module.exports = {
         this.confirm_consumer_func = continueFunction;
         this.showConfirm = true;
     },
-    zipAndDownloadFolders() {
-        this.showSpinner = true;
+    zipAndDownloadFolders(selection) {
+        // Carried through the resolution below rather than read again afterwards: a listing
+        // refresh landing while a folder is being resolved empties the selection, and starting
+        // from an empty one still names an archive and writes a valid, empty zip.
+        let files = selection || this.selectedFiles.slice();
+        if (files.length == 0)
+            return;
         let that = this;
+        // The listing hands out lazy wrappers that fill themselves in on demand, and collecting
+        // a folder's contents needs the real file. Resolve one and come back, as opening a file
+        // does, rather than asking a wrapper for children it does not have.
+        let wrapped = files.filter(f => f.isWrapper);
+        if (wrapped.length > 0)
+            return wrapped[0].getFile().thenApply(f => that.zipAndDownloadFolders(files));
+        this.showSpinner = true;
         let futureTotalSize = peergos.shared.util.Futures.incomplete();
-        let files = this.selectedFiles.slice();
         let path = this.getPath;
         let statisticsList = [];
         that.reduceTotalSize(0, path, files, 0, statisticsList, futureTotalSize);

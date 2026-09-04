@@ -154,6 +154,28 @@ public class Page {
         return false;
     }
 
+    /** Selects a folder and starts zipping it in one call.
+     *
+     *  Separate calls let a listing refresh clear selectedFiles in between, and
+     *  zipAndDownloadFolders copies the selection on entry: with nothing selected it still names
+     *  an archive, still shows its progress toast, and still writes a valid empty zip - which
+     *  passes for a download that worked right up until the archive is opened.
+     */
+    public static void zipFolder(WebDriver d, String name) {
+        Object started = d.script("const wanted = arguments[0];" +
+                "const f = (window.__drive.files || []).find(x =>" +
+                "  (x.getName ? x.getName() : (x.props ? x.props.name : null)) === wanted);" +
+                "if (! f) return 'no entry called ' + wanted;" +
+                "window.__drive.selectedFiles = [f];" +
+                "if ((window.__drive.selectedFiles || []).length === 0)" +
+                "  return 'the selection did not stick';" +
+                "window.__drive.zipAndDownloadFolders();" +
+                "return true;", name);
+        if (! Boolean.TRUE.equals(started))
+            throw new IllegalStateException("Could not start zipping " + name + ": " + started
+                    + " in " + driveListing(d));
+    }
+
     /** Opens a view from the nav and hands back its component.
      *
      *  By clicking the nav, not by setting location.hash: after signing in the fragment holds the
