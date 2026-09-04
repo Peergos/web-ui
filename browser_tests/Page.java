@@ -196,8 +196,30 @@ public class Page {
             if (awaitComponent(d, methodName, handle, 60_000))
                 return;
         }
-        throw new IllegalStateException("The " + navLabel + " view never appeared. Visible: "
+        throw new IllegalStateException("The " + navLabel + " view never appeared."
+                + " Components mounted: " + components(d)
+                + ". Visible: "
                 + d.scriptQuiet("return document.body.innerText.replace(/\\n/g, ' | ').substring(0, 300)"));
+    }
+
+    /** The component tree by name, so a view that is on screen but not found says which
+     *  components the test could see instead of only what the page looked like. */
+    private static String components(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return (() => {" +
+                "  let root = null;" +
+                "  for (const el of document.querySelectorAll('*'))" +
+                "    if (el.__vue__) { root = el.__vue__.$root; break; }" +
+                "  if (! root) return 'no vue instance on the page';" +
+                "  const names = []; const stack = [root];" +
+                "  while (stack.length > 0) {" +
+                "    const c = stack.pop();" +
+                "    if (! c) continue;" +
+                "    const o = c.$options || {};" +
+                "    names.push(o.name || o._componentTag || 'anon');" +
+                "    if (c.$children) for (const kid of c.$children) stack.push(kid);" +
+                "  }" +
+                "  return names.slice(0, 40).join(',');" +
+                "})()"));
     }
 
     private static void clickNav(WebDriver d, String navLabel) {
@@ -210,7 +232,13 @@ public class Page {
     }
 
     /** Finds a mounted component exposing the named method, by walking the dom rather than the
-     *  component tree, so nesting depth does not matter. */
+     *  component tree, so nesting depth does not matter.
+     *
+     *  Deliberately the dom and not the component tree: the router builds a view's component
+     *  before it is shown, so a tree walk finds a Drive that has never been opened, returns
+     *  without clicking the nav, and leaves every later wait asking a view that was never asked
+     *  to load anything.
+     */
     private static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
         long end = System.currentTimeMillis() + millis;
         boolean first = true;

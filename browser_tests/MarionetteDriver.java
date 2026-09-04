@@ -126,12 +126,14 @@ public class MarionetteDriver implements WebDriver {
     }
 
     private String windowSummary() {
+        String process = browser == null ? "browser not ours to watch"
+                : browser.isAlive() ? "browser alive" : "browser has exited";
         try {
             Object handles = command("WebDriver:GetWindowHandles", Map.of());
             List<?> list = handles instanceof List ? (List<?>) handles : List.of();
-            return list.size() + " window handle(s)";
+            return process + ", " + list.size() + " window handle(s)";
         } catch (RuntimeException e) {
-            return "window handles unavailable (" + e.getMessage() + ")";
+            return process + ", window handles unavailable (" + e.getMessage() + ")";
         }
     }
 
