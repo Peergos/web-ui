@@ -12,6 +12,7 @@ public class Suite {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
 
         List<String> failures = new ArrayList<>();
+        String serverLog = null;
         try (Server server = Server.start(serverDir)) {
             System.out.println("server at " + server.url() + ", engine " + engine);
             String[] args1 = {engine, server.url()};
@@ -35,9 +36,17 @@ public class Suite {
                 System.out.println("\nSKIP the download tests on " + engine
                         + ": its driver has no download directory capability");
             }
+            if (! failures.isEmpty())
+                serverLog = server.tailLog(120);
         }
 
         System.out.println();
+        if (! failures.isEmpty() && serverLog != null) {
+            System.out.println("--- the end of the server's log");
+            System.out.println(serverLog);
+            System.out.println("--- end of server log");
+            System.out.println();
+        }
         if (failures.isEmpty()) {
             System.out.println("all tests passed on " + engine);
         } else {

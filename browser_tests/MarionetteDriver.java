@@ -49,6 +49,14 @@ public class MarionetteDriver implements WebDriver {
             this.out = s.getOutputStream();
             readFrame(); // the server's handshake
             command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            // Five minutes of waiting on one page is most of a test's budget spent learning
+            // nothing. Two minutes is still far longer than this app takes to load even on a
+            // labouring runner, and failing sooner leaves room to simply try again.
+            try {
+                command("WebDriver:SetTimeouts", Map.of("pageLoad", 120_000));
+            } catch (RuntimeException e) {
+                // an older marionette without the command; the default stands
+            }
             focusAWindow();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -268,16 +276,21 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void navigate(String url) {
-        try {
-            commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
-        } catch (IllegalStateException e) {
-            // Loading a page is idempotent, and a machine busy enough to miss a five minute page
-            // load is usually busy for a moment rather than for the rest of the run.
-            if (! String.valueOf(e.getMessage()).contains("timed out"))
-                throw e;
-            System.out.println("  page load timed out, navigating again: " + url);
-            commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+        // Loading a page is idempotent, and a server too busy to answer is usually busy for a
+        // moment rather than for the rest of the run - so try a few times rather than once.
+        IllegalStateException last = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+                return;
+            } catch (IllegalStateException e) {
+                if (! String.valueOf(e.getMessage()).contains("timed out"))
+                    throw e;
+                last = e;
+                System.out.println("  page load timed out, navigating again: " + url);
+            }
         }
+        throw last;
     }
 
     @Override

@@ -118,13 +118,27 @@ public class Server implements AutoCloseable {
     }
 
     private String tailLog() {
+        return tailLog(20);
+    }
+
+    /** The end of the server's own log.
+     *
+     *  Every test in a run shares one server, so when a page will not load or a download writes
+     *  nothing, whether the server was answering at the time is the other half of the story - and
+     *  it is not visible from the browser's side at all.
+     */
+    public String tailLog(int lines) {
         try {
-            List<String> lines = Files.readAllLines(log);
-            List<String> tail = lines.subList(Math.max(0, lines.size() - 20), lines.size());
+            List<String> all = Files.readAllLines(log);
+            List<String> tail = all.subList(Math.max(0, all.size() - lines), all.size());
             return String.join("\n", tail);
         } catch (IOException e) {
             return "(no server log at " + log + ")";
         }
+    }
+
+    public Path logPath() {
+        return log;
     }
 
     private static int freePort() throws IOException {
