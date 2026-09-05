@@ -1358,6 +1358,12 @@ module.exports = {
                 this.appArgs = args;
 		        this.selectedFiles = this.files.filter(f => f.getName() == args.filename);
                 let that = this;
+                // A listing row is a lazy wrapper until it is asked for the real file, and a
+                // wrapper reports a size of zero. Handing one to a viewer gives it an empty
+                // file: the pdf viewer opens on nothing at all and says the document is empty.
+                let chosen = this.selectedFiles[0];
+                if (chosen != null && chosen.isWrapper)
+                    return chosen.getFile().thenApply(f => that.openInApp(args, app));
                 this.closeApps();
                 this.viewerFile = this.selectedFiles[0] || null;
                 if (app == "Gallery")
