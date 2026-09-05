@@ -192,11 +192,19 @@ module.exports = {
             console.log('saving data of length ' + size + ' to ' + filename)
             let disposeFrame = null
             let interceptUrl = null
+            // The service worker answers with a url to download from, and until it does there is
+            // nothing to save into. When that answer never comes the page waits for ever behind a
+            // progress bar that cannot move, so give up and say so instead.
+            let handshakeTimer = setTimeout(() => {
+              if (interceptUrl == null)
+                fail('The download could not be started. Please reload the page and try again.')
+            }, 60000)
             let fileStream = streamSaver.createWriteStream(
               filename,
               props.mimeType,
               function (url) {
                 interceptUrl = url
+                clearTimeout(handshakeTimer)
                 window.__downloads = window.__downloads || {}
                 window.__downloads[filename] = {url: url, framed: true, served: false}
                 disposeFrame = downloadUrl.startDownload(url)
@@ -230,6 +238,7 @@ module.exports = {
               if (failed)
                 return
               failed = true
+              clearTimeout(handshakeTimer)
               progress.show = false
               that.$toast.dismiss(filename)
               that.errorTitle = 'Error downloading file: ' + filename

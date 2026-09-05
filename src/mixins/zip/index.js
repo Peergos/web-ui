@@ -82,9 +82,22 @@ module.exports = {
                 };
                 navigator.serviceWorker.addEventListener('message', lostListener);
             }
+            // The service worker answers with a url to write the archive to, and zipping only
+            // starts once it has. When that answer never comes, nothing is zipped and nothing is
+            // saved, behind a progress bar that says otherwise.
+            let handshakeTimer = setTimeout(() => {
+                if (interceptUrl == null) {
+                    progress.show = false;
+                    that.$toast.dismiss(zipFilename);
+                    that.showToastError("The download could not be started."
+                        + " Please reload the page and try again.");
+                    zipFuture.complete(false);
+                }
+            }, 60000);
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
                     interceptUrl = url
+                    clearTimeout(handshakeTimer)
                     window.__downloads = window.__downloads || {}
                     window.__downloads[zipFilename] = {url: url, framed: true, served: false}
                     disposeFrame = downloadUrl.startDownload(url)
