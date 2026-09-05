@@ -64,8 +64,29 @@ module.exports = {
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let disposeFrame = null;
+            let interceptUrl = null;
+            // The same record the file downloader keeps: an archive that is being written to a
+            // stream nobody is reading looks exactly like one that is merely slow, and only
+            // whether the browser asked for it tells the two apart.
+            let lostListener = null;
+            if (navigator.serviceWorker != null) {
+                lostListener = e => {
+                    if (e.data == null || interceptUrl == null)
+                        return;
+                    if (e.data.startedDownload === interceptUrl && window.__downloads != null
+                        && window.__downloads[zipFilename] != null)
+                        window.__downloads[zipFilename].served = true;
+                    if (e.data.unknownDownload === interceptUrl)
+                        that.showToastError("The browser stopped the download before it started."
+                            + " Please try again.");
+                };
+                navigator.serviceWorker.addEventListener('message', lostListener);
+            }
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
+                    interceptUrl = url
+                    window.__downloads = window.__downloads || {}
+                    window.__downloads[zipFilename] = {url: url, framed: true, served: false}
                     disposeFrame = downloadUrl.startDownload(url)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
@@ -73,6 +94,10 @@ module.exports = {
             zipFuture.thenApply(res => {
                 if (disposeFrame != null)
                     disposeFrame();
+                if (lostListener != null && navigator.serviceWorker != null) {
+                    navigator.serviceWorker.removeEventListener('message', lostListener);
+                    lostListener = null;
+                }
                 return res;
             });
             return zipFuture;

@@ -152,6 +152,7 @@ public class ZipFolderDownloadTest {
                 + "'progress=' + JSON.stringify([...document.querySelectorAll("
                 + "   '[class*=progress]')].map(x => x.innerText.replace(/\\s+/g, ' ').trim())"
                 + "   .filter(t => t.length > 0 && t.length < 120).slice(0, 3)),"
+                + "'registered=' + JSON.stringify(window.__downloads || null),"
                 + "'toasts=' + JSON.stringify([...document.querySelectorAll('[class*=toast]')]"
                 + "   .map(x => x.innerText.replace(/\\s+/g, ' ').trim())"
                 + "   .filter(t => t.length > 0 && t.length < 120).slice(0, 3))"
