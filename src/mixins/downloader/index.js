@@ -190,17 +190,47 @@ module.exports = {
             var blockSize = size > maxBlockSize ? maxBlockSize : size
 
             console.log('saving data of length ' + size + ' to ' + filename)
+            let disposeFrame = null
+            let interceptUrl = null
+            // The service worker answers with a url to download from, and until it does there is
+            // nothing to save into. When that answer never comes the page waits for ever behind a
+            // progress bar that cannot move, so give up and say so instead.
+            let handshakeTimer = setTimeout(() => {
+              if (interceptUrl == null)
+                fail('The download could not be started. Please reload the page and try again.')
+            }, 60000)
             let fileStream = streamSaver.createWriteStream(
               filename,
               props.mimeType,
               function (url) {
-                downloadUrl.startDownload(url)
+                interceptUrl = url
+                clearTimeout(handshakeTimer)
+                window.__downloads = window.__downloads || {}
+                window.__downloads[filename] = {url: url, framed: true, served: false}
+                disposeFrame = downloadUrl.startDownload(url)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
               undefined,
               size
             )
             let writer = fileStream.getWriter()
+            // The service worker tells us if it was restarted between registering this download
+            // and the browser asking for it: the stream it was going to serve died with it, so
+            // everything written from here on goes nowhere and no file is ever saved.
+            let lostListener = null
+            if (navigator.serviceWorker != null) {
+              lostListener = e => {
+                if (e.data == null)
+                  return
+                if (e.data.startedDownload === interceptUrl && interceptUrl != null
+                    && window.__downloads != null && window.__downloads[filename] != null)
+                  window.__downloads[filename].served = true
+                // only our own download: another one going wrong is not this one's problem
+                if (e.data.unknownDownload === interceptUrl && interceptUrl != null)
+                  fail('The browser stopped the download before it started. Please try again.')
+              }
+              navigator.serviceWorker.addEventListener('message', lostListener)
+            }
             // a download that stops part way must fail the stream, otherwise the browser
             // sits on a part file for ever with no indication that anything went wrong
             let failed = false
@@ -208,19 +238,33 @@ module.exports = {
               if (failed)
                 return
               failed = true
+              clearTimeout(handshakeTimer)
               progress.show = false
               that.$toast.dismiss(filename)
               that.errorTitle = 'Error downloading file: ' + filename
               that.errorBody = message
               that.showError = true
               writer.abort(message).catch(() => {})
+              if (disposeFrame != null)
+                disposeFrame()
+              if (lostListener != null && navigator.serviceWorker != null) {
+                navigator.serviceWorker.removeEventListener('message', lostListener)
+                lostListener = null
+              }
               result.completeExceptionally(new Error(message))
             }
             let pump = () => {
               if (failed)
                 return
               if (blockSize == 0) {
-                writer.close().catch(err => fail('' + err))
+                writer.close().then(() => {
+                  if (disposeFrame != null)
+                    disposeFrame()
+                  if (lostListener != null && navigator.serviceWorker != null) {
+                    navigator.serviceWorker.removeEventListener('message', lostListener)
+                    lostListener = null
+                  }
+                }).catch(err => fail('' + err))
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))
                 reader

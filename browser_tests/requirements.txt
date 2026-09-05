@@ -1,5 +1,0 @@
-attrs==16.2.0
-py==1.10.0
-pytest==9.0.3
-selenium==3.14.0
-urllib3

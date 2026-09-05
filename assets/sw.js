@@ -1,6 +1,9 @@
 /* global self ReadableStream Response */
 
 const downloadMap = new Map()
+// urls already handed to the browser: the entry is removed as it is served, so a repeat
+// request for one is a duplicate, not a download this worker has lost
+const servedDownloads = new Set()
 var streamingMap
 
 // This should be called once per download
@@ -241,10 +244,27 @@ self.onfetch = event => {
                 }));
           } else {
                 const downloadEntry = downloadMap.get(url)
-                if (!downloadEntry) return;
+                if (!downloadEntry) {
+                    // A url this worker never had, rather than one it has already served: it was
+                    // restarted after the download was registered, so the stream it was going to
+                    // serve died with it. Falling through to the network saves nothing and says
+                    // nothing, so tell the pages instead - silently producing no file at all is
+                    // the worst of the ways this can fail.
+                    if (!servedDownloads.has(url)) {
+                        self.clients.matchAll().then(cs => cs.forEach(c =>
+                            c.postMessage({unknownDownload: url})))
+                    }
+                    return;
+                }
 
                 const [stream, headers] = downloadEntry
                 downloadMap.delete(url)
+                servedDownloads.add(url)
+                // The page has no other way to know the browser ever asked for the download it
+                // registered: a request that never arrives and one that arrives and saves
+                // nothing look exactly the same from there.
+                self.clients.matchAll().then(cs => cs.forEach(c =>
+                    c.postMessage({startedDownload: url})))
                 return event.respondWith(new Response(stream, { headers }))
           }
     }

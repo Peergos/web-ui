@@ -3,8 +3,36 @@ name: Browser Tests
 on: [push]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  browser-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        engine: [firefox, chromium, brave, webkit, safari]
+        exclude:
+          # WebKitGTK and its driver are linux only; safari and safaridriver are macos only
+          - os: windows-latest
+            engine: webkit
+          - os: macos-latest
+            engine: webkit
+          - os: ubuntu-latest
+            engine: safari
+          # brave is the same engine as chromium, so one platform is enough to catch what is
+          # brave specific - its shields defaults, which can affect storage and service workers
+          - os: windows-latest
+            engine: brave
+          - os: macos-latest
+            engine: brave
+          - os: windows-latest
+            engine: safari
+          # homebrew disabled the chromedriver cask on 2026-09-01 for failing the macos
+          # gatekeeper check, and the design rule here is not to download drivers by hand.
+          # Chromium is covered on linux and windows; macos is covered by safari, which is
+          # the engine that actually matters there anyway.
+          - os: macos-latest
+            engine: chromium
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.engine }} on ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - name: Set up JDK
@@ -12,18 +40,87 @@ jobs:
       with:
         distribution: temurin
         java-version: 25
-    - uses: actions/setup-python@v4
-      with:
-        python-version: '3.11.0'
-    - name: Build with Ant
-      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
-    - name: echo chrome
-      run: which google-chrome 
+
+    - name: Install ant
       shell: bash
-    - name: chrome-version
-      run: google-chrome --version
+      run: |
+        if command -v ant >/dev/null; then exit 0; fi
+        case "${{ runner.os }}" in
+          Windows) choco install ant -y --no-progress ;;
+          macOS)   brew install ant ;;
+          Linux)   sudo apt-get update && sudo apt-get install -y ant ;;
+        esac
+
+    - name: Build server and web ui
+      run: ant -noinput -buildfile build.xml peergos_submodule_sync dist
       shell: bash
-#    - name: browser-tests
-#      working-directory: browser_tests
-#      run: ./setup_and_run_browser_tests.sh
-#      timeout-minutes: 90
+
+    # No driver is ever downloaded by the tests. Firefox needs none at all - it is driven over
+    # marionette, which is built in. chromedriver comes from the runner image where there is one,
+    # and from the package manager otherwise, so it stays version matched to its browser.
+    - name: Install browsers and drivers (linux)
+      if: runner.os == 'Linux' && matrix.engine == 'webkit'
+      run: |
+        sudo apt-get update
+        # MiniBrowser has no headless mode, so it needs a virtual display
+        sudo apt-get install -y webkit2gtk-driver xvfb
+
+    - name: Install brave (linux)
+      if: runner.os == 'Linux' && matrix.engine == 'brave'
+      run: |
+        curl -fsSL https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg \
+          | sudo tee /usr/share/keyrings/brave-browser-archive-keyring.gpg > /dev/null
+        echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" \
+          | sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+        sudo apt-get update
+        sudo apt-get install -y brave-browser
+
+    - name: Install firefox (windows)
+      if: runner.os == 'Windows' && matrix.engine == 'firefox'
+      shell: bash
+      run: |
+        if [ ! -f "/c/Program Files/Mozilla Firefox/firefox.exe" ]; then
+          choco install firefox -y --no-progress
+        fi
+
+    - name: Install browsers and drivers (macos)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        case "${{ matrix.engine }}" in
+          firefox)
+            brew install --cask firefox ;;
+          safari)
+            # safaridriver ships with the os but refuses to serve until remote automation is on
+            sudo safaridriver --enable ;;
+        esac
+
+    - name: Show versions
+      shell: bash
+      run: |
+        java -version
+        case "${{ matrix.engine }}" in
+          firefox)  (firefox --version || "/Applications/Firefox.app/Contents/MacOS/firefox" --version || true) ;;
+          chromium) (google-chrome --version || chromium --version || true); (chromedriver --version || true) ;;
+          # chromedriver enforces a major version match, and the runner's is pinned to chrome,
+          # so a brave built on a different chromium will fail to start a session here
+          brave)    (brave-browser --version || true); (chromedriver --version || true) ;;
+          webkit)   WebKitWebDriver --version || true ;;
+          safari)   safaridriver --version || true ;;
+        esac
+
+    - name: Run browser tests
+      working-directory: browser_tests
+      # windows is several times slower on the sqlite backed server
+      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
+      shell: bash
+      env:
+        # safari has no headless mode, and the macos runner has a ui session for it to use
+        HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
+        # the windows and macos runners are slower, and safari cannot run headless so it is
+        # doing real rendering besides: the browser side sign in needs longer than the 300s
+        # that suffices on linux
+        PEERGOS_TEST_SLOW: ${{ (matrix.os == 'windows-latest' || matrix.os == 'macos-latest') && '1' || '0' }}
+        # only linux ships the browser under this name; elsewhere chromedriver finds it itself
+        CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
+      run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}

@@ -63,12 +63,56 @@ module.exports = {
             
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
+            let disposeFrame = null;
+            let interceptUrl = null;
+            // The same record the file downloader keeps: an archive that is being written to a
+            // stream nobody is reading looks exactly like one that is merely slow, and only
+            // whether the browser asked for it tells the two apart.
+            let lostListener = null;
+            if (navigator.serviceWorker != null) {
+                lostListener = e => {
+                    if (e.data == null || interceptUrl == null)
+                        return;
+                    if (e.data.startedDownload === interceptUrl && window.__downloads != null
+                        && window.__downloads[zipFilename] != null)
+                        window.__downloads[zipFilename].served = true;
+                    if (e.data.unknownDownload === interceptUrl)
+                        that.showToastError("The browser stopped the download before it started."
+                            + " Please try again.");
+                };
+                navigator.serviceWorker.addEventListener('message', lostListener);
+            }
+            // The service worker answers with a url to write the archive to, and zipping only
+            // starts once it has. When that answer never comes, nothing is zipped and nothing is
+            // saved, behind a progress bar that says otherwise.
+            let handshakeTimer = setTimeout(() => {
+                if (interceptUrl == null) {
+                    progress.show = false;
+                    that.$toast.dismiss(zipFilename);
+                    that.showToastError("The download could not be started."
+                        + " Please reload the page and try again.");
+                    zipFuture.complete(false);
+                }
+            }, 60000);
             let fileStream = streamSaver.createWriteStream(zipFilename, mimeType,
                 function (url) {
-                    downloadUrl.startDownload(url)
+                    interceptUrl = url
+                    clearTimeout(handshakeTimer)
+                    window.__downloads = window.__downloads || {}
+                    window.__downloads[zipFilename] = {url: url, framed: true, served: false}
+                    disposeFrame = downloadUrl.startDownload(url)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
+            zipFuture.thenApply(res => {
+                if (disposeFrame != null)
+                    disposeFrame();
+                if (lostListener != null && navigator.serviceWorker != null) {
+                    navigator.serviceWorker.removeEventListener('message', lostListener);
+                    lostListener = null;
+                }
+                return res;
+            });
             return zipFuture;
         },
         reduceZippingFiles(allFiles, index, future, progress, writer, zipFilename, state) {

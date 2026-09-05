@@ -1,8 +1,13 @@
 let parentWindow = null;
 let parentOrigin = null;
 let saveHookInstalled = false;
+// A viewer showing its chrome and no page looks the same however it got there, so keep a note
+// of how far it got: whether the file ever arrived, whether opening it was tried, and why the
+// last attempt failed.
+window.__pdfState = {messages: 0, opens: 0, lastError: ''};
 
 window.addEventListener('message', function (e) {
+    window.__pdfState.messages++;
     // You must verify that the origin of the message's sender matches your
     // expectations. In this case, we're only planning on accepting messages
     // from our own origin, so we can simply compare the message event's
@@ -15,15 +20,53 @@ window.addEventListener('message', function (e) {
     parentWindow = e.source;
     parentOrigin = e.origin;
 
-    var loadFile = (ev) => {
+    // The viewer is a module, so it runs after this classic script. At ping time it may not
+    // exist at all, and moments later it can exist and still be inside initialize(), which
+    // awaits storage a cross origin frame is not always granted promptly. open() is async, so
+    // a failure in that window came back as a rejected promise a try/catch never sees, and the
+    // viewer sat there with its chrome up and no page, for good.
+    var loadFile = (ev, waited, failures) => {
+        let rounds = waited || 0;
+        let failed = failures || 0;
+        let again = (f) => setTimeout(() => loadFile(ev, rounds + 1, f), 200);
+        if (! window.PDFViewerApplication) {
+            if (rounds < 1500)
+                again(failed);
+            else
+                console.log("the pdf viewer script never ran");
+            return;
+        }
+        if (! PDFViewerApplication.initialized) {
+            // The viewer's own signal, rather than polling to a deadline of our choosing:
+            // initialising awaits storage, which a loaded machine can be slow to hand a cross
+            // origin frame, and a deadline that runs out leaves the file never opened at all.
+            let ready = PDFViewerApplication.initializedPromise;
+            if (ready && typeof ready.then === 'function')
+                ready.then(() => loadFile(ev, rounds, failed), () => again(failed));
+            else
+                again(failed);
+            return;
+        }
         try {
+            window.__pdfState.opens++;
             PDFViewerApplication.setTitle(ev.data.name);
-            PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)});
-            if (ev.data.writable) {
-                installSaveHook();
-            }
+            PDFViewerApplication.open({data:new Uint8Array(ev.data.bytes)})
+                .then(() => {
+                    if (ev.data.writable) {
+                        installSaveHook();
+                    }
+                }, ex => {
+                    // Backed off rather than retried at once: opening fetches the pdf.js worker,
+                    // and a frame on a busy machine can be slow enough to fail an attempt that
+                    // would succeed a second later. Bounded, since a file that is simply broken
+                    // fails every time and the viewer says so itself.
+                    window.__pdfState.lastError = '' + ex;
+                    if (failed < 5)
+                        setTimeout(() => loadFile(ev, rounds + 1, failed + 1), 1000 * (failed + 1));
+                });
         } catch(ex) {
-            setTimeout(() => loadFile(ev), 200)
+            window.__pdfState.lastError = '' + ex;
+            again(failed);
         }
     }
 
