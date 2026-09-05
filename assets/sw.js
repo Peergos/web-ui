@@ -260,6 +260,11 @@ self.onfetch = event => {
                 const [stream, headers] = downloadEntry
                 downloadMap.delete(url)
                 servedDownloads.add(url)
+                // The page has no other way to know the browser ever asked for the download it
+                // registered: a request that never arrives and one that arrives and saves
+                // nothing look exactly the same from there.
+                self.clients.matchAll().then(cs => cs.forEach(c =>
+                    c.postMessage({startedDownload: url})))
                 return event.respondWith(new Response(stream, { headers }))
           }
     }

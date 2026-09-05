@@ -124,8 +124,3 @@ jobs:
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
-
-    - name: Server log on failure
-      if: failure()
-      shell: bash
-      run: tail -n 100 ${TMPDIR:-/tmp}/peergos-browser-test-*/server.log || true
