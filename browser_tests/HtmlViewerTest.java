@@ -230,10 +230,33 @@ public class HtmlViewerTest {
     }
 
     private static void requireText(WebDriver d, String expected) {
-        d.waitUntil("'" + expected + "' to render", () -> {
-            Object text = d.scriptQuiet("return document.body ? document.body.innerText : ''");
-            return text != null && String.valueOf(text).contains(expected);
-        }, 120_000);
+        try {
+            d.waitUntil("'" + expected + "' to render", () -> {
+                Object text = d.scriptQuiet("return document.body ? document.body.innerText : ''");
+                return text != null && String.valueOf(text).contains(expected);
+            }, 120_000);
+        } catch (RuntimeException e) {
+            // A page that rendered nothing and a page that was handed nothing to render look the
+            // same from in here, so say what the frame holds and what the drive handed it.
+            System.out.println("  frame holds: " + d.scriptQuiet("return ["
+                    + "'href=' + location.href,"
+                    + "'readyState=' + document.readyState,"
+                    + "'bodyLength=' + (document.body ? document.body.innerHTML.length : -1),"
+                    + "'text=' + (document.body ? document.body.innerText"
+                    + "   .replace(/\\s+/g, ' ').slice(0, 120) : '')"
+                    + "].join(' ')"));
+            d.switchToTop();
+            System.out.println("  the drive handed it: " + d.scriptQuiet("return (() => {"
+                    + "  const f = window.__drive.currentFile;"
+                    + "  if (! f) return 'no current file';"
+                    + "  try {"
+                    + "    const p = f.getFileProperties();"
+                    + "    return 'name=' + f.getName() + ' isWrapper=' + !!f.isWrapper"
+                    + "      + ' sizeLow=' + p.sizeLow() + ' sizeHigh=' + p.sizeHigh();"
+                    + "  } catch (ex) { return 'threw: ' + ex; }"
+                    + "})()"));
+            throw e;
+        }
     }
 
     /** naturalWidth is the only honest signal: a broken image still has a layout box. */
