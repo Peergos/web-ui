@@ -39,11 +39,21 @@ window.onmessage = event => {
 		// messageChannel.port2 to the service worker. The service worker can
 		// then use the transferred port to reply via postMessage(), which
 		// will in turn trigger the onmessage handler on messageChannel.port1.
-		let swRegTmp = swReg.installing || swReg.waiting
-
                 if (swReg.active) {
                     keepAlive(swReg.active)
                     return swReg.active.postMessage(data, [ports[0]])
+                }
+
+		let swRegTmp = swReg.installing || swReg.waiting
+                // A registration can have no worker in any of the three states, briefly, while
+                // one is being replaced. Reading onstatechange off nothing throws, and with no
+                // catch on this chain the port is simply never handed over: the download then
+                // waits for a url that cannot arrive, showing progress it is not making.
+                if (swRegTmp == null) {
+                    return navigator.serviceWorker.ready.then(ready => {
+                        keepAlive(ready.active)
+                        ready.active.postMessage(data, [ports[0]])
+                    })
                 }
 
 		swRegTmp.onstatechange = () => {
@@ -53,6 +63,9 @@ window.onmessage = event => {
                         keepAlive(swReg.active)
                 }
             }
+    }).catch(e => {
+        // Nothing downstream is watching this chain, so a failure here is otherwise invisible
+        console.log('could not hand the download to the service worker', e)
     })
 }
 
