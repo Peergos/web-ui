@@ -145,6 +145,47 @@ public class MarkdownLinksTest {
     /** Waits until the frame shows the heading, since the viewer keeps the old document up
      *  while the next one is being fetched. */
     private static void requireRendered(WebDriver d, String heading, long timeoutMillis) {
+        try {
+            requireRenderedOrThrow(d, heading, timeoutMillis);
+        } catch (RuntimeException e) {
+            // A document that never arrived and one that arrived and did not render look the
+            // same from outside, so say what the frame shows and what the viewer thinks it is
+            // showing.
+            if (d.find("#md-editor") != null) {
+                d.switchToFrame("#md-editor");
+                try {
+                    System.out.println("  frame shows: " + d.scriptQuiet("return ["
+                            + "'href=' + location.href,"
+                            + "'readyState=' + document.readyState,"
+                            + "'text=' + (document.body ? document.body.innerText"
+                            + "   .replace(/\\s+/g, ' ').slice(0, 120) : '')"
+                            + "].join(' ')"));
+                } finally {
+                    d.switchToTop();
+                }
+            }
+            // Searched from the drive rather than the dom: a viewer's root element can be
+            // shared with its parent, and only one component is recorded on an element.
+            System.out.println("  the viewer holds: " + d.scriptQuiet("return (() => {"
+                    + "  let v = null;"
+                    + "  const stack = [window.__drive];"
+                    + "  while (stack.length > 0 && v == null) {"
+                    + "    const c = stack.pop();"
+                    + "    if (! c) continue;"
+                    + "    if (typeof c.goToPage === 'function') { v = c; break; }"
+                    + "    if (c.$children) for (const kid of c.$children) stack.push(kid);"
+                    + "  }"
+                    + "  if (! v) return 'no markup viewer mounted';"
+                    + "  return ['file=' + v.currFilename, 'path=' + v.currPath,"
+                    + "          'spinner=' + v.showSpinner,"
+                    + "          'target=' + (v.targetFile ? v.targetFile.getName() : null)"
+                    + "         ].join(' ');"
+                    + "})()"));
+            throw e;
+        }
+    }
+
+    private static void requireRenderedOrThrow(WebDriver d, String heading, long timeoutMillis) {
         d.waitUntil("'" + heading + "' to render", () -> {
             Object f = d.find("#md-editor");
             if (f == null)
