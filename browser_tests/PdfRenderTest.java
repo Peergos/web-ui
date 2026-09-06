@@ -124,7 +124,6 @@ public class PdfRenderTest {
                         // from one whose load was started and never finished
                         + "'loadingTask=' + (window.PDFViewerApplication ?"
                         + "   !!PDFViewerApplication.pdfLoadingTask : 'n/a'),"
-                        + "'appState=' + JSON.stringify(window.__pdfState || null),"
                         + "'pages=' + document.querySelectorAll('#viewer .page').length,"
                         + "'error=' + (document.querySelector('#errorMessage') ?"
                         + "   document.querySelector('#errorMessage').textContent.trim() : ''),"

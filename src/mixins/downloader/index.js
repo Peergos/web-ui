@@ -205,8 +205,6 @@ module.exports = {
               function (url) {
                 interceptUrl = url
                 clearTimeout(handshakeTimer)
-                window.__downloads = window.__downloads || {}
-                window.__downloads[filename] = {url: url, framed: true, served: false}
                 disposeFrame = downloadUrl.startDownload(url)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
@@ -220,13 +218,9 @@ module.exports = {
             let lostListener = null
             if (navigator.serviceWorker != null) {
               lostListener = e => {
-                if (e.data == null)
-                  return
-                if (e.data.startedDownload === interceptUrl && interceptUrl != null
-                    && window.__downloads != null && window.__downloads[filename] != null)
-                  window.__downloads[filename].served = true
                 // only our own download: another one going wrong is not this one's problem
-                if (e.data.unknownDownload === interceptUrl && interceptUrl != null)
+                if (e.data != null && e.data.unknownDownload === interceptUrl
+                    && interceptUrl != null)
                   fail('The browser stopped the download before it started. Please try again.')
               }
               navigator.serviceWorker.addEventListener('message', lostListener)

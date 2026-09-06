@@ -73,9 +73,6 @@ module.exports = {
                 lostListener = e => {
                     if (e.data == null || interceptUrl == null)
                         return;
-                    if (e.data.startedDownload === interceptUrl && window.__downloads != null
-                        && window.__downloads[zipFilename] != null)
-                        window.__downloads[zipFilename].served = true;
                     if (e.data.unknownDownload === interceptUrl)
                         that.showToastError("The browser stopped the download before it started."
                             + " Please try again.");
@@ -98,8 +95,6 @@ module.exports = {
                 function (url) {
                     interceptUrl = url
                     clearTimeout(handshakeTimer)
-                    window.__downloads = window.__downloads || {}
-                    window.__downloads[zipFilename] = {url: url, framed: true, served: false}
                     disposeFrame = downloadUrl.startDownload(url)
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
