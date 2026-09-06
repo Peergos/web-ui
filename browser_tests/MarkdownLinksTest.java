@@ -176,9 +176,14 @@ public class MarkdownLinksTest {
                     + "    if (c.$children) for (const kid of c.$children) stack.push(kid);"
                     + "  }"
                     + "  if (! v) return 'no markup viewer mounted';"
+                    + "  const f = document.getElementById('md-editor');"
                     + "  return ['file=' + v.currFilename, 'path=' + v.currPath,"
                     + "          'spinner=' + v.showSpinner,"
-                    + "          'target=' + (v.targetFile ? v.targetFile.getName() : null)"
+                    + "          'target=' + (v.targetFile ? v.targetFile.getName() : null),"
+                    // the attribute, not the loaded url: a src never assigned and one assigned
+                    // but never fetched both leave the frame showing about:blank
+                    + "          'frameSrc=' + (f ? f.getAttribute('src') : 'no frame'),"
+                    + "          'frameReady=' + v.isIframeInitialised"
                     + "         ].join(' ');"
                     + "})()"));
             throw e;
