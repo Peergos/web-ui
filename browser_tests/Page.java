@@ -150,11 +150,21 @@ public class Page {
                 "return true;", name, direct);
     }
 
+    /** Open enough to work with: the flag and the frame the viewer lives in.
+     *
+     *  The flag alone is set the moment a viewer is asked for and can be cleared again before
+     *  anything is built - a refresh that routes back to the drive closes it - which leaves the
+     *  caller waiting for a frame that is never coming. Waiting for the frame instead means the
+     *  retry above can reopen a viewer that was closed underneath it.
+     */
     private static boolean viewerOpened(WebDriver d, long millis) {
         long end = System.currentTimeMillis() + millis;
         while (System.currentTimeMillis() < end) {
-            if (Boolean.TRUE.equals(d.scriptQuiet("return !!(window.__drive.showAppSandbox"
-                    + " || window.__drive.showMarkupViewer || window.__drive.showPdfViewer)")))
+            if (Boolean.TRUE.equals(d.scriptQuiet(
+                    "return !!((window.__drive.showAppSandbox"
+                    + "     && document.querySelector('iframe#sandboxId'))"
+                    + " || (window.__drive.showMarkupViewer && document.querySelector('#md-editor'))"
+                    + " || (window.__drive.showPdfViewer && document.querySelector('#pdf')))")))
                 return true;
             WebDriver.sleep(250);
         }
