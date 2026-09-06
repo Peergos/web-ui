@@ -99,7 +99,7 @@ public class Page {
         // the half finished open goes nowhere: no viewer, no error. Rounds are long so a retry
         // cannot restart an open that is merely slow.
         for (int round = 0; round < 4; round++) {
-            if (! Boolean.TRUE.equals(selectAndOpen(d, name)))
+            if (! Boolean.TRUE.equals(selectAndOpen(d, name, round > 0)))
                 throw new IllegalStateException("No entry called " + name + " in " + driveListing(d));
             if (viewerOpened(d, 30_000))
                 return;
@@ -126,8 +126,8 @@ public class Page {
      *  Both in one call deliberately: a listing refresh between selecting and opening clears
      *  selectedFiles, and openFile returns silently when nothing is selected.
      */
-    private static Object selectAndOpen(WebDriver d, String name) {
-        return d.script("const wanted = arguments[0];" +
+    private static Object selectAndOpen(WebDriver d, String name, boolean direct) {
+        return d.script("const wanted = arguments[0]; const direct = arguments[1];" +
                 "const f = (window.__drive.files || []).find(x =>" +
                 "  (x.getName ? x.getName() : (x.props ? x.props.name : null)) === wanted);" +
                 "if (! f) return false;" +
@@ -136,11 +136,18 @@ public class Page {
                 "let app;" +
                 "try { app = window.__drive.getApp(f, window.__drive.getPath, false); }" +
                 "catch (e) { app = 'threw: ' + e; }" +
-                "window.__drive.viewFile();" +
-                "window.__viewDebug = 'app=' + app + ' hashBefore=' + before" +
+                // The drive skips opening what it believes is already open, and skips a
+                // history entry naming what the url already names, so a second attempt after the
+                // viewer went away does nothing at all until that memory is cleared. The retry
+                // also opens the app directly, since the route it would otherwise take is the
+                // one that decides there is nothing to do.
+                "window.__drive.previouslyOpenedApp = {path: '', filename: '', app: ''};" +
+                "if (direct) window.__drive.openInApp({filename: wanted}, app);" +
+                "else window.__drive.viewFile();" +
+                "window.__viewDebug = 'app=' + app + ' direct=' + direct + ' hashBefore=' + before" +
                 "  + ' hashAfter=' + location.hash.length" +
                 "  + ' selectedAfter=' + (window.__drive.selectedFiles || []).length;" +
-                "return true;", name);
+                "return true;", name, direct);
     }
 
     private static boolean viewerOpened(WebDriver d, long millis) {
