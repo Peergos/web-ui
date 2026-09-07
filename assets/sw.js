@@ -260,6 +260,10 @@ self.onfetch = event => {
                 const [stream, headers] = downloadEntry
                 downloadMap.delete(url)
                 servedDownloads.add(url)
+                // A download the browser never asked for and one it asked for and then dropped
+                // both end with no file, and the page cannot tell them apart on its own.
+                self.clients.matchAll().then(cs => cs.forEach(c =>
+                    c.postMessage({startedDownload: url})))
                 return event.respondWith(new Response(stream, { headers }))
           }
     }
