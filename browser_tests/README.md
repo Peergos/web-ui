@@ -1,40 +1,72 @@
 # Peergos web-ui browser tests
 
-Runs selenium-based tests against a local Peergos web-server.
+## Java tests (current)
 
-### requirements
-* Python 3.6+
-* pip3
-* Chrome 84 (or Chromium) web browser
-NB: *it has to be chrome84 for the web-driver to work*
-> sudo apt-get install python-setuptools
-#####  chromedriver
-taken from https://sites.google.com/a/chromium.org/chromedriver/downloads
+Direct drivers, no third party libraries and no downloaded browser drivers. Run one engine:
 
-### install dependencies and python  v-env
->  . setup_browser_tests.sh
+```
+cd browser_tests
+java -cp ../server/Peergos.jar Suite.java firefox     # or chromium, brave, webkit, safari
+```
 
-### start server and run tests
-##### with  visible browser
-> ./run_browser_tests.sh 0 || true 
-##### headlessly 
-> ./run_browser_tests.sh || true 
+CI runs the matrix: firefox on linux, windows and macos; chromium on linux and windows; brave and
+webkitgtk on linux; safari on macos.
 
+Brave is chromium underneath, so chromedriver drives it once pointed at the brave executable with
+`BRAVE=`. It is worth its own job for what is brave specific - the shields defaults, which can
+affect storage and service workers - rather than for the engine.
 
-### test cases (X = done)
-(firefox, chromium) * (desktop, mobile) for all
+Each run starts its own Peergos server on a free port with its own PEERGOS_PATH, uploads its own
+fixtures, and stops the server afterwards. Nothing touches another Peergos on the machine.
+
+- `HEADLESS=0` to watch it. Neither WebKitGTK nor safari has a headless mode: webkitgtk needs a
+  real display or xvfb, which the launcher uses when it is installed, and safari always needs a
+  ui session.
+- `FIREFOX`, `CHROMIUM`, `CHROMEDRIVER`, `WEBKITWEBDRIVER` override binary locations.
+- `-Dfixture.size=` and `-Dlatency.ms=` tune the download test.
+
+Drivers: Firefox needs none, it is driven over marionette which is built in. Chromium needs
+`chromedriver` and WebKitGTK needs `WebKitWebDriver` (`apt install webkit2gtk-driver`), both from
+the distro so they stay version matched to their browser.
+
+Single file source programs, so there is no build step - `java` compiles them on the fly and
+`../server/Peergos.jar` supplies the json parser.
+
+## Coverage
+
+Covered: sign in and reach the drive, upload a file, upload a group of files in one go, upload a
+folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
+and into a subdirectory, render html with links and images from both its own directory and a
+subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
+as .ics. Every assertion is on the bytes - hashed
+against the source, unzipped and compared, or a rendered canvas with real dimensions - never on a
+file or an app merely appearing.
+
+The html viewer test signs up its own user. `/peergos/` is a magic prefix to the sandbox service
+worker, marking an absolute drive path of the form `/peergos/<username>/<rest>` which it redirects
+to `/<username>/<rest>`. The admin account is itself called `peergos`, so viewing html from it
+gets redirected as though the first directory name were the username, and renders nothing.
+
+The download tests are skipped on webkitgtk and safari: neither driver has a download directory
+capability, so there is nowhere to look for the file. safaridriver additionally has no remote file
+upload, so the upload tests hand the app the file list the picker would have produced, the same
+fallback the folder upload uses everywhere except chromium. Only chromedriver can drive the folder
+picker; marionette refuses a directory outright and WebKitWebDriver takes it as a single file, so
+elsewhere the folder upload hands the app the same flat webkitRelativePath list the browser would
+have built.
+
+Everything below is still to do, on each of firefox, chromium and webkitgtk.
 
 #### account stuff
-* sign up - X
+* sign up
 * sign up password warning for "123456"
 * sign up password warning for < 12 chars
-* sign in - X
+* sign in
 * change password
-* sign out - X
-
+* sign out
 #### single user stuff
 * upload file and read back (< 5mb, > 5mb)
-* create dir - X
+* create dir
 * rename file
 * delete file
 * rename dir

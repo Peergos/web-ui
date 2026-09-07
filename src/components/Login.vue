@@ -107,8 +107,9 @@ module.exports = {
 			let devLogin = false;
 		    if (loopback.isLoopbackHost(window.location.hostname)) {
 				var query = new URLSearchParams(window.location.search)
-				this.username = query.get("username")
-				if (this.username != null) {
+				let queryUsername = query.get("username")
+				if (queryUsername != null) {
+				    this.username = queryUsername
 				    this.password = query.get("password")
 				    devLogin = true;
 				    this.login()

@@ -1,0 +1,281 @@
+import java.io.*;
+import java.net.ServerSocket;
+import java.nio.file.*;
+import java.util.*;
+
+/** Launches a browser and returns a driver for it.
+ *
+ *  No binary is ever downloaded. chromedriver and WebKitWebDriver come from the distro, where
+ *  they are already version matched to their browser, and Firefox needs no driver at all.
+ */
+public class Browsers {
+
+    public enum Engine { FIREFOX, CHROMIUM, BRAVE, WEBKIT, SAFARI }
+
+    public static Engine engine(String name) {
+        switch (name.toLowerCase()) {
+            case "firefox": return Engine.FIREFOX;
+            case "chrome":
+            case "chromium": return Engine.CHROMIUM;
+            case "brave": return Engine.BRAVE;
+            case "webkit":
+            case "webkitgtk": return Engine.WEBKIT;
+            case "safari": return Engine.SAFARI;
+            default: throw new IllegalArgumentException("Unknown engine: " + name);
+        }
+    }
+
+    public static WebDriver launch(Engine engine, Path downloadDir, boolean headless) {
+        try {
+            Files.createDirectories(downloadDir);
+            switch (engine) {
+                case FIREFOX: return firefox(downloadDir, headless);
+                case CHROMIUM: return chromium(downloadDir, headless, env("CHROMIUM"));
+                case BRAVE: return chromium(downloadDir, headless, braveBinary());
+                case WEBKIT: return webkit(downloadDir, headless);
+                case SAFARI: return safari();
+            }
+            throw new IllegalStateException();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static int freePort() throws IOException {
+        try (ServerSocket s = new ServerSocket(0)) {
+            return s.getLocalPort();
+        }
+    }
+
+    private static WebDriver firefox(Path downloadDir, boolean headless) throws IOException {
+        Path profile = Files.createTempDirectory("peergos-ff-profile-");
+        int port = freePort();
+        // Marionette reads its port from the profile, so there is no race with a fixed one.
+        String prefs = String.join("\n",
+                "user_pref(\"marionette.port\", " + port + ");",
+                "user_pref(\"browser.download.folderList\", 2);",
+                "user_pref(\"browser.download.dir\", \"" + jsString(downloadDir) + "\");",
+                "user_pref(\"browser.download.useDownloadDir\", true);",
+                "user_pref(\"browser.download.always_ask_before_handling_new_types\", false);",
+                "user_pref(\"browser.download.alwaysOpenPanel\", false);",
+                "user_pref(\"browser.shell.checkDefaultBrowser\", false);",
+                "user_pref(\"browser.aboutwelcome.enabled\", false);",
+                "user_pref(\"browser.startup.homepage_override.mstone\", \"ignore\");",
+                "user_pref(\"datareporting.policy.dataSubmissionEnabled\", false);",
+                "user_pref(\"dom.serviceWorkers.testing.enabled\", true);",
+                // anything that can open a second window, or replace the first, loses the
+                // session's browsing context on a fresh profile
+                "user_pref(\"browser.startup.page\", 0);",
+                "user_pref(\"browser.migration.version\", 9999);",
+                "user_pref(\"browser.uitour.enabled\", false);",
+                "user_pref(\"browser.newtabpage.enabled\", false);",
+                "user_pref(\"browser.sessionstore.resume_from_crash\", false);",
+                "user_pref(\"toolkit.startup.max_resumed_crashes\", -1);",
+                "user_pref(\"browser.tabs.warnOnClose\", false);",
+                "user_pref(\"datareporting.healthreport.uploadEnabled\", false);",
+                "");
+        Files.writeString(profile.resolve("user.js"), prefs);
+
+        List<String> cmd = new ArrayList<>(List.of(
+                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString()));
+        if (headless)
+            cmd.add("--headless");
+        cmd.add("about:blank");
+        Process p = start(cmd);
+        return new MarionetteDriver(port, p, profile.toString());
+    }
+
+    /** user.js is javascript, so a windows path's backslashes have to be escaped or the pref
+     *  silently fails to parse and downloads go to the default directory instead. */
+    private static String jsString(Path path) {
+        return path.toAbsolutePath().toString().replace("\\", "\\\\");
+    }
+
+    private static String firefoxBinary() {
+        return binary("FIREFOX", "firefox",
+                "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+                "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe",
+                "/Applications/Firefox.app/Contents/MacOS/firefox");
+    }
+
+    /** Brave is chromium underneath, so chromedriver drives it - it just has to be pointed at
+     *  the right executable. The driver still has to match brave's chromium version, which is why
+     *  it comes from the same place the browser does rather than being fetched separately. */
+    private static String braveBinary() {
+        return binary("BRAVE", isWindows() ? "brave.exe" : "brave-browser",
+                "/usr/bin/brave-browser",
+                "/usr/bin/brave",
+                "/opt/brave.com/brave/brave-browser",
+                "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+                "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe");
+    }
+
+    private static WebDriver chromium(Path downloadDir, boolean headless, String browserBinary)
+            throws IOException {
+        int port = freePort();
+        Process driver = start(List.of(chromedriverBinary(), "--port=" + port));
+        awaitDriver("http://127.0.0.1:" + port + "/status");
+
+        Path userData = Files.createTempDirectory("peergos-chrome-profile-");
+        List<String> args = new ArrayList<>(List.of(
+                "--user-data-dir=" + userData,
+                "--no-first-run",
+                "--no-default-browser-check",
+                "--disable-features=DownloadBubble,DownloadBubbleV2"));
+        if (headless)
+            args.add("--headless=new");
+
+        Map<String, Object> chromeOptions = new LinkedHashMap<>();
+        if (browserBinary != null)
+            chromeOptions.put("binary", browserBinary);
+        chromeOptions.put("args", args);
+        chromeOptions.put("prefs", Map.of(
+                "download.default_directory", downloadDir.toAbsolutePath().toString(),
+                "download.prompt_for_download", false,
+                // chrome blocks a site's second automatic download behind a permission prompt,
+                // and a headless browser answers that prompt by dropping the download with no
+                // file and no error - which is indistinguishable from the bug under test
+                "profile.default_content_setting_values.automatic_downloads", 1,
+                "safebrowsing.enabled", false));
+
+        Map<String, Object> caps = Map.of("alwaysMatch",
+                Map.of("browserName", "chrome", "goog:chromeOptions", chromeOptions));
+        HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver, userData.toString());
+        d.setDownloadDirectory(downloadDir.toAbsolutePath().toString());
+        return d;
+    }
+
+    private static String chromedriverBinary() {
+        // the github windows and macos images put the driver in a directory named by this
+        return binary("CHROMEDRIVER", isWindows() ? "chromedriver.exe" : "chromedriver",
+                envPath("ChromeWebDriver", isWindows() ? "chromedriver.exe" : "chromedriver"));
+    }
+
+    /** Treats an empty variable as unset: a workflow matrix that only sets a value on some
+     *  platforms passes "" on the others, and "" as a browser path is not the same as no path. */
+    private static String env(String name) {
+        String value = System.getenv(name);
+        return value == null || value.isBlank() ? null : value;
+    }
+
+    private static String envPath(String dirVar, String name) {
+        String dir = env(dirVar);
+        return dir == null ? null : Paths.get(dir, name).toString();
+    }
+
+    public static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("win");
+    }
+
+    /** An explicit override wins, then any candidate that exists, then the bare name on PATH. */
+    private static String binary(String envVar, String onPath, String... candidates) {
+        String env = env(envVar);
+        if (env != null)
+            return env;
+        for (String candidate : candidates) {
+            if (candidate != null && Files.isExecutable(Paths.get(candidate)))
+                return candidate;
+        }
+        return onPath;
+    }
+
+    private static WebDriver webkit(Path downloadDir, boolean headless) throws IOException {
+        int port = freePort();
+        // MiniBrowser has no headless mode - it exits with "Unknown option --headless" - so
+        // headless here means running the driver, and the browser it spawns, under a virtual
+        // display. CI installs xvfb for this; a developer machine just uses the real display.
+        List<String> cmd = new ArrayList<>();
+        if (headless && hasXvfb()) {
+            cmd.add("xvfb-run");
+            cmd.add("-a");
+        } else if (headless && System.getenv("DISPLAY") == null) {
+            throw new IllegalStateException("WebKitGTK needs a display: install xvfb, or run with"
+                    + " HEADLESS=0 on a machine with one");
+        }
+        cmd.add(webkitDriverBinary());
+        cmd.add("--port=" + port);
+        Process driver = start(cmd);
+        awaitDriver("http://127.0.0.1:" + port + "/status");
+
+        // WebKitWebDriver has no download directory capability, so downloads land wherever the
+        // embedder puts them - which for MiniBrowser is not configurable from here. The download
+        // tests therefore run on the other two engines, and WebKit download coverage comes from
+        // the gtk host, which sets the destination in decide-destination exactly as
+        // packager/flatpak/peergos-window.py does. Browsing, uploads, video and the sandboxed
+        // apps are all fine on this driver.
+        Map<String, Object> caps = Map.of("alwaysMatch",
+                Map.of("browserName", "MiniBrowser",
+                        "webkitgtk:browserOptions", Map.of("args", List.of())));
+        return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+    }
+
+    /** Safari, driven by the safaridriver built into macos.
+     *
+     *  Closest engine there is to the WKWebView the mac desktop app embeds. Three things it does
+     *  not do: run headless, take a download directory, or allow more than one session at a time.
+     *  So the download tests skip it, exactly as they skip WebKitGTK.
+     *
+     *  Needs "Allow Remote Automation", which `sudo safaridriver --enable` turns on once.
+     */
+    private static WebDriver safari() throws IOException {
+        // a driver left over from the previous test can keep this one from starting, so give it
+        // a few goes on fresh ports rather than failing the test for a lifecycle race
+        RuntimeException last = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            int port = freePort();
+            Process driver = start(List.of(safariDriverBinary(), "-p", Integer.toString(port)));
+            try {
+                awaitDriver("http://127.0.0.1:" + port + "/status");
+                Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
+                return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+            } catch (RuntimeException e) {
+                last = e;
+                HttpDriver.stop(driver);
+                WebDriver.sleep(5_000);
+            }
+        }
+        throw last;
+    }
+
+    private static String safariDriverBinary() {
+        return binary("SAFARIDRIVER", "safaridriver", "/usr/bin/safaridriver");
+    }
+
+    private static boolean hasXvfb() {
+        if (isWindows())
+            return false;
+        try {
+            return new ProcessBuilder("which", "xvfb-run")
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                    .redirectError(ProcessBuilder.Redirect.DISCARD)
+                    .start().waitFor() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private static String webkitDriverBinary() {
+        String env = System.getenv("WEBKITWEBDRIVER");
+        return env != null ? env : "WebKitWebDriver";
+    }
+
+    private static Process start(List<String> cmd) throws IOException {
+        return new ProcessBuilder(cmd)
+                .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .start();
+    }
+
+    private static void awaitDriver(String statusUrl) {
+        long end = System.currentTimeMillis() + 30_000;
+        while (System.currentTimeMillis() < end) {
+            try (java.io.InputStream in = java.net.URI.create(statusUrl).toURL().openStream()) {
+                in.readAllBytes();
+                return;
+            } catch (IOException e) {
+                WebDriver.sleep(200);
+            }
+        }
+        throw new IllegalStateException("Driver never came up at " + statusUrl);
+    }
+}
