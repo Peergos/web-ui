@@ -35,10 +35,10 @@ public class PdfRenderTest {
         String url = own != null ? own.url() : given;
 
         String name = "render-" + System.currentTimeMillis() + ".pdf";
-        Path pdf = Files.createTempDirectory("peergos-pdf-").resolve(name);
+        Path pdf = Temp.directory("peergos-pdf-").resolve(name);
         Files.write(pdf, minimalPdf("Peergos browser test"));
 
-        Path downloads = Files.createTempDirectory("peergos-pdf-dl-");
+        Path downloads = Temp.directory("peergos-pdf-dl-");
         try {
             Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, pdf);
             Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, null, 120_000, name);

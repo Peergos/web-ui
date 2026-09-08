@@ -48,11 +48,15 @@ public class Browsers {
     }
 
     private static WebDriver firefox(Path downloadDir, boolean headless) throws IOException {
-        Path profile = Files.createTempDirectory("peergos-ff-profile-");
+        Path profile = Temp.directory("peergos-ff-profile-");
         int port = freePort();
         // Marionette reads its port from the profile, so there is no race with a fixed one.
         String prefs = String.join("\n",
                 "user_pref(\"marionette.port\", " + port + ");",
+                // a headless browser on a runner without a display reports no pointing device at
+                // all, and the calendar only turns on drag-to-move for a mouse: fine, hovering
+                "user_pref(\"ui.primaryPointerCapabilities\", 6);",
+                "user_pref(\"ui.allPointerCapabilities\", 6);",
                 "user_pref(\"browser.download.folderList\", 2);",
                 "user_pref(\"browser.download.dir\", \"" + jsString(downloadDir) + "\");",
                 "user_pref(\"browser.download.useDownloadDir\", true);",
@@ -76,8 +80,11 @@ public class Browsers {
                 "");
         Files.writeString(profile.resolve("user.js"), prefs);
 
+        // A desktop-sized window on every runner: headless browsers default to 800x600, in
+        // which the month grid does not fit, and a drop outside the visible grid is no drop.
         List<String> cmd = new ArrayList<>(List.of(
-                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString()));
+                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString(),
+                "--width=1400", "--height=1000"));
         if (headless)
             cmd.add("--headless");
         cmd.add("about:blank");
@@ -116,12 +123,15 @@ public class Browsers {
         Process driver = start(List.of(chromedriverBinary(), "--port=" + port));
         awaitDriver("http://127.0.0.1:" + port + "/status");
 
-        Path userData = Files.createTempDirectory("peergos-chrome-profile-");
+        Path userData = Temp.directory("peergos-chrome-profile-");
         List<String> args = new ArrayList<>(List.of(
                 "--user-data-dir=" + userData,
                 "--no-first-run",
                 "--no-default-browser-check",
-                "--disable-features=DownloadBubble,DownloadBubbleV2"));
+                "--disable-features=DownloadBubble,DownloadBubbleV2",
+                // the same mouse for chromium, whose headless mode reports no pointer either
+                "--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2",
+                "--window-size=1400,1000"));
         if (headless)
             args.add("--headless=new");
 

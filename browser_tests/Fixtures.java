@@ -137,7 +137,7 @@ public class Fixtures {
      */
     public static void installHtmlViewerApp(Path jar, String url, String username, String password) {
         try {
-            Path manifest = Files.createTempDirectory("peergos-app-").resolve("peergos-app.json");
+            Path manifest = Temp.directory("peergos-app-").resolve("peergos-app.json");
             Files.writeString(manifest, String.join("\n",
                     "{",
                     "  \"schemaVersion\": \"1\",",

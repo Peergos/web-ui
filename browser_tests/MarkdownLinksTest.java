@@ -36,7 +36,7 @@ public class MarkdownLinksTest {
         String url = own != null ? own.url() : given;
 
         String folder = "mdtest-" + System.currentTimeMillis();
-        Path dir = Files.createTempDirectory("peergos-md-");
+        Path dir = Temp.directory("peergos-md-");
         Path index = dir.resolve("index.md");
         Path sibling = dir.resolve("sibling.md");
         Path child = dir.resolve("child.md");
@@ -56,7 +56,7 @@ public class MarkdownLinksTest {
                 ""));
         Files.writeString(child, "# Child page\n\nreached the child in a subdirectory\n");
 
-        Path downloads = Files.createTempDirectory("peergos-md-dl-");
+        Path downloads = Temp.directory("peergos-md-dl-");
         try {
             Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
                     "mkdir " + folder,

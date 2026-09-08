@@ -32,7 +32,7 @@ public class UploadTest {
 
         String name = "uploaded-" + System.currentTimeMillis() + ".bin";
         Path source = Fixtures.patternFile(name, SIZE);
-        Path downloads = Files.createTempDirectory("peergos-upload-");
+        Path downloads = Temp.directory("peergos-upload-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
