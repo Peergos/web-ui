@@ -18,10 +18,15 @@ public class CalendarDragTest {
     static final String PLAIN = "Dragged across the month";
     static final String SERIES = "Dragged series";
 
+    /** The entry drawn anywhere on the grid, by its title, or null. */
+    static String chipByTitle(String title) {
+        return "Array.from(document.querySelectorAll('[data-search-event-id]'))"
+                + "  .find(e => e.textContent.indexOf(" + CalendarApp.quote(title) + ") !== -1) || null";
+    }
+
     /** Presses on an event, moves to a point, releases - the way FullCalendar sees a mouse drag. */
     static String drag(String title, String targetExpression) {
-        return "let el = Array.from(document.querySelectorAll('[data-search-event-id]'))"
-                + "  .find(e => e.textContent.indexOf(" + CalendarApp.quote(title) + ") !== -1);"
+        return "let el = " + chipByTitle(title) + ";"
                 + "if (!el) throw new Error('no event called ' + " + CalendarApp.quote(title) + ");"
                 + "let from = el.getBoundingClientRect();"
                 + "let to = " + targetExpression + ";"
@@ -35,7 +40,9 @@ public class CalendarDragTest {
                 + "}"
                 + "return new Promise(r => setTimeout(() => {"
                 + "  document.dispatchEvent(new MouseEvent('mouseup', Object.assign(at(to.x, to.y), {buttons: 0})));"
-                + "  setTimeout(() => r(1), 600); }, 120));";
+                + "  setTimeout(() => r('from ' + Math.round(sx) + ',' + Math.round(sy) + ' to '"
+                + "    + Math.round(to.x) + ',' + Math.round(to.y) + ' in a ' + window.innerWidth"
+                + "    + 'x' + window.innerHeight + ' window'), 600); }, 120));";
     }
 
     /** The centre of the day cell for a date, as drawn on the month grid. */
@@ -74,10 +81,14 @@ public class CalendarDragTest {
 
     /** Drags the entry in a day column down by a distance; a resize takes it by its bottom
      *  handle instead, which only appears while a real pointer rests on the entry and so is
-     *  shown by hand first. */
+     *  shown by hand first. The hours are a scroller, so the entry is brought into view before
+     *  anything is measured: a press or a drop below the fold lands on no hour at all. Returns
+     *  an account of what it did, which is all a failure after it has to go on.
+     */
     static String dragInColumn(String title, String isoDate, String distanceExpression, boolean resize) {
         return "let el = " + chipInColumn(isoDate, title) + ";"
                 + "if (!el) throw new Error('no ' + " + CalendarApp.quote(title) + " + ' on " + isoDate + "');"
+                + "el.scrollIntoView({block: 'center'});"
                 + "let handle = el;"
                 + (resize ? "handle = Array.from(el.querySelectorAll('*'))"
                         + "  .find(c => getComputedStyle(c).cursor.indexOf('resize') !== -1);"
@@ -90,7 +101,35 @@ public class CalendarDragTest {
                 + "for (let i = 1; i <= 12; i++) document.dispatchEvent(new MouseEvent('mousemove', at(sx, sy + dy * i / 12)));"
                 + "return new Promise(r => setTimeout(() => {"
                 + "  document.dispatchEvent(new MouseEvent('mouseup', Object.assign(at(sx, sy + dy), {buttons: 0})));"
-                + "  setTimeout(() => r(1), 600); }, 120));";
+                + "  setTimeout(() => r('from y=' + Math.round(sy) + ' by ' + Math.round(dy)"
+                + "    + 'px in a ' + window.innerWidth + 'x' + window.innerHeight + ' window'), 600); }, 120));";
+    }
+
+    /** Drags, then answers the dialog the change raises. A drag that took hold but asked nothing
+     *  and one that never took hold look the same from here, so the drag's own account of itself
+     *  goes in the message: these run where no one is watching them. */
+    static void dragThenChoose(WebDriver d, String dragScript, String scope) {
+        String did = String.valueOf(CalendarApp.inFrame(d, dragScript));
+        try {
+            CalendarApp.chooseScope(d, scope);
+        } catch (IllegalStateException noDialog) {
+            throw new AssertionError("A drag " + did + " raised no question about which occurrences"
+                    + " to change, so it did not take hold", noDialog);
+        }
+    }
+
+    /** Drags, then waits for the entry to be drawn in the day it was dropped on. Where it is
+     *  instead separates a drag that never took hold from one that landed somewhere else. */
+    static void dragThenLandIn(WebDriver d, String dragScript, String isoDate, String title) {
+        String did = String.valueOf(CalendarApp.inFrame(d, dragScript));
+        try {
+            CalendarApp.waitInFrame(d, "the event in the cell for " + isoDate,
+                    "document.querySelector('[data-date=\"" + isoDate + "\"]')"
+                            + ".textContent.indexOf(" + CalendarApp.quote(title) + ") !== -1", 10_000);
+        } catch (IllegalStateException notThere) {
+            throw new AssertionError("A drag " + did + " did not put " + title + " on " + isoDate
+                    + "; it is drawn on " + CalendarApp.occurrenceDates(d, title), notThere);
+        }
     }
 
     static String cellCentre(String isoDate) {
@@ -144,14 +183,11 @@ public class CalendarDragTest {
             String march = calendar + "/2027/3";
             String plainFile = CalendarApp.awaitFileSaying(d, march, "SUMMARY:" + PLAIN);
             CalendarApp.gotoMonth(d, from);
-            CalendarApp.waitInFrame(d, "the event on the grid", "Array.from(document.querySelectorAll('[data-search-event-id]'))"
-                    + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(PLAIN) + ") !== -1)", 60_000);
+            CalendarApp.waitInFrame(d, "the event on the grid", "!!(" + chipByTitle(PLAIN) + ")", 60_000);
 
             // The month grid shows the first days of April after the 31st, so the drop lands in
             // the next month and the file has to move directory.
-            CalendarApp.inFrame(d, drag(PLAIN, cellCentre(to)));
-            CalendarApp.waitInFrame(d, "the event in the next day's cell", "document.querySelector('[data-date=\"" + to + "\"]')"
-                    + ".textContent.indexOf(" + CalendarApp.quote(PLAIN) + ") !== -1", 10_000);
+            dragThenLandIn(d, drag(PLAIN, cellCentre(to)), to, PLAIN);
             String april = calendar + "/2027/4";
             String movedFile = CalendarApp.awaitFileSaying(d, april, "SUMMARY:" + PLAIN);
             String moved = CalendarApp.read(d, april, movedFile);
@@ -174,8 +210,7 @@ public class CalendarDragTest {
             String recurring = calendar + "/recurring";
             String seriesFile = CalendarApp.awaitFileSaying(d, recurring, "SUMMARY:" + SERIES);
             String before = CalendarApp.read(d, recurring, seriesFile);
-            CalendarApp.waitInFrame(d, "the series on the grid", "Array.from(document.querySelectorAll('[data-search-event-id]'))"
-                    + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(SERIES) + ") !== -1)", 60_000);
+            CalendarApp.waitInFrame(d, "the series on the grid", "!!(" + chipByTitle(SERIES) + ")", 60_000);
             CalendarApp.inFrame(d, drag(SERIES, cellCentre(to)));
             WebDriver.sleep(2000);
             List<String> stillOn = CalendarApp.occurrenceDates(d, SERIES);
@@ -196,8 +231,7 @@ public class CalendarDragTest {
                     + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
             weekShowing(d, from);
             CalendarApp.waitInFrame(d, "the occurrence in its week", inColumn(from, SERIES), 30_000);
-            CalendarApp.inFrame(d, dragInColumn(SERIES, from, slotDistance("09:00:00", "11:00:00"), false));
-            CalendarApp.chooseScope(d, "this");
+            dragThenChoose(d, dragInColumn(SERIES, from, slotDistance("09:00:00", "11:00:00"), false), "this");
             String excluded = CalendarApp.awaitStored(d, recurring, seriesFile, "EXDATE");
             CalendarApp.assertTimeIs(excluded, "EXDATE", lastDay.atTime(9, 0));
             String detachedFile = CalendarApp.awaitFileSaying(d, march, "SUMMARY:" + SERIES);
@@ -211,8 +245,7 @@ public class CalendarDragTest {
             String secondDay = second.format(DateTimeFormatter.ISO_LOCAL_DATE);
             weekShowing(d, secondDay);
             CalendarApp.waitInFrame(d, "the next occurrence", inColumn(secondDay, SERIES), 30_000);
-            CalendarApp.inFrame(d, dragInColumn(SERIES, secondDay, slotDistance("09:00:00", "11:00:00"), false));
-            CalendarApp.chooseScope(d, "following");
+            dragThenChoose(d, dragInColumn(SERIES, secondDay, slotDistance("09:00:00", "11:00:00"), false), "following");
             String cut = CalendarApp.awaitStored(d, recurring, seriesFile, "UNTIL=");
             CalendarApp.assertHas(cut, "RRULE", "UNTIL=" + lastDay.format(DateTimeFormatter.ofPattern("yyyyMM")));
             String fresh = d.waitUntil("a second series file for " + SERIES, () -> {
@@ -233,8 +266,7 @@ public class CalendarDragTest {
             weekShowing(d, thirdDay);
             CalendarApp.waitInFrame(d, "the new series' next occurrence", inColumn(thirdDay, SERIES), 30_000);
             int filesBefore = CalendarApp.list(d, recurring).size();
-            CalendarApp.inFrame(d, dragInColumn(SERIES, thirdDay, slotDistance("11:30:00", "13:00:00"), true));
-            CalendarApp.chooseScope(d, "all");
+            dragThenChoose(d, dragInColumn(SERIES, thirdDay, slotDistance("11:30:00", "13:00:00"), true), "all");
             String longer = d.waitUntil("the series to carry the new length", () -> {
                 String ics = CalendarApp.read(d, recurring, fresh);
                 String end = CalendarApp.property(ics, "DTEND");

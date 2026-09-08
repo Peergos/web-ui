@@ -10,6 +10,14 @@ import java.util.*;
  */
 public class Browsers {
 
+    /** The window every engine is given, whether it takes a size on its command line or has to
+     *  be told once it is up. A browser left to itself opens small - 800x600 headless, less on a
+     *  bare virtual display - and a month grid squeezed into that is too fine to aim at: the
+     *  entry lands a week from the day it was dropped on. The week view scrolls, so what a drag
+     *  needs there is brought into view by the test rather than by the size of the window.
+     */
+    static final int WIDTH = 1400, HEIGHT = 1000;
+
     public enum Engine { FIREFOX, CHROMIUM, BRAVE, WEBKIT, SAFARI }
 
     public static Engine engine(String name) {
@@ -80,11 +88,9 @@ public class Browsers {
                 "");
         Files.writeString(profile.resolve("user.js"), prefs);
 
-        // A desktop-sized window on every runner: headless browsers default to 800x600, in
-        // which the month grid does not fit, and a drop outside the visible grid is no drop.
         List<String> cmd = new ArrayList<>(List.of(
                 firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString(),
-                "--width=1400", "--height=1000"));
+                "--width=" + WIDTH, "--height=" + HEIGHT));
         if (headless)
             cmd.add("--headless");
         cmd.add("about:blank");
@@ -131,7 +137,7 @@ public class Browsers {
                 "--disable-features=DownloadBubble,DownloadBubbleV2",
                 // the same mouse for chromium, whose headless mode reports no pointer either
                 "--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2",
-                "--window-size=1400,1000"));
+                "--window-size=" + WIDTH + "," + HEIGHT));
         if (headless)
             args.add("--headless=new");
 
@@ -198,6 +204,11 @@ public class Browsers {
         if (headless && hasXvfb()) {
             cmd.add("xvfb-run");
             cmd.add("-a");
+            // A virtual display is 640x480 unless it is told otherwise, and no window is larger
+            // than the screen it is on: without this the browser is stuck at that size however
+            // it is sized afterwards, and a drop on a month grid lands a week off.
+            cmd.add("-s");
+            cmd.add("-screen 0 " + (WIDTH + 80) + "x" + (HEIGHT + 80) + "x24");
         } else if (headless && System.getenv("DISPLAY") == null) {
             throw new IllegalStateException("WebKitGTK needs a display: install xvfb, or run with"
                     + " HEADLESS=0 on a machine with one");
@@ -216,7 +227,9 @@ public class Browsers {
         Map<String, Object> caps = Map.of("alwaysMatch",
                 Map.of("browserName", "MiniBrowser",
                         "webkitgtk:browserOptions", Map.of("args", List.of())));
-        return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        d.setWindowRect(WIDTH, HEIGHT);
+        return d;
     }
 
     /** Safari, driven by the safaridriver built into macos.
@@ -237,7 +250,9 @@ public class Browsers {
             try {
                 awaitDriver("http://127.0.0.1:" + port + "/status");
                 Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
-                return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+                HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+                d.setWindowRect(WIDTH, HEIGHT);
+                return d;
             } catch (RuntimeException e) {
                 last = e;
                 HttpDriver.stop(driver);

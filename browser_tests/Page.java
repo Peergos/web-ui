@@ -59,6 +59,18 @@ public class Page {
         }
     }
 
+    /** Signs out through the app's own logout, which clears the cached root key and reloads.
+     *  What is left is a browser with no account in it, which is what opening someone else's
+     *  link as a stranger needs - without a second browser to open it in.
+     */
+    public static void logout(WebDriver d) {
+        if (! awaitComponent(d, "logout", "__settings", 60_000))
+            throw new IllegalStateException("Nothing on the page offers a logout");
+        d.scriptQuiet("window.__settings.logout();");
+        d.waitForScript("the login form after signing out",
+                "!!document.querySelector('input[name=username]')", 120_000);
+    }
+
     /** A bare expression, not a statement: waitForScript wraps what it is given in a return. */
     private static String signInEnabled() {
         return "[...document.querySelectorAll('button')]"
