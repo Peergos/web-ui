@@ -100,7 +100,11 @@ module.exports = {
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
             zipFuture.thenApply(res => {
-                if (disposeFrame != null)
+                // The frame is left in place on success: the archive has been written to the
+                // service worker, not yet read from it by the browser, and removing the frame
+                // mid transfer aborts the fetch. startDownload drops it when the worker reports
+                // the body read to the end. A failed zip still disposes of it explicitly.
+                if (! res && disposeFrame != null)
                     disposeFrame();
                 if (lostListener != null && navigator.serviceWorker != null) {
                     navigator.serviceWorker.removeEventListener('message', lostListener);

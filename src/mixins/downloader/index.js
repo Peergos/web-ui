@@ -206,7 +206,7 @@ module.exports = {
                 interceptUrl = url
                 clearTimeout(handshakeTimer)
                 window.__downloads = window.__downloads || {}
-                window.__downloads[filename] = {url: url, served: false}
+                window.__downloads[filename] = {url: url, served: false, written: false, read: false}
                 disposeFrame = downloadUrl.startDownload(url)
               },
               function (seekHi, seekLo, seekLength, uuid) {},
@@ -225,6 +225,18 @@ module.exports = {
                 if (e.data.startedDownload === interceptUrl && window.__downloads != null
                     && window.__downloads[filename] != null)
                   window.__downloads[filename].served = true
+                // Read to the end by the browser, which is later than written to the end by us:
+                // a download that fails between the two leaves no file and no error anywhere.
+                if (e.data.finishedDownload === interceptUrl) {
+                  if (window.__downloads != null && window.__downloads[filename] != null)
+                    window.__downloads[filename].read = true
+                  // nothing more to hear about this download
+                  if (lostListener != null && navigator.serviceWorker != null) {
+                    navigator.serviceWorker.removeEventListener('message', lostListener)
+                    lostListener = null
+                  }
+                  return
+                }
                 // only our own download: another one going wrong is not this one's problem
                 if (e.data.unknownDownload === interceptUrl)
                   fail('The browser stopped the download before it started. Please try again.')
@@ -257,13 +269,13 @@ module.exports = {
               if (failed)
                 return
               if (blockSize == 0) {
+                // The frame is not disposed here. Closing the writer only says the last byte has
+                // been handed to the service worker, and pulling the frame out from under a
+                // transfer the browser has not finished aborts it - the frame goes when the
+                // worker reports the body read to the end.
                 writer.close().then(() => {
-                  if (disposeFrame != null)
-                    disposeFrame()
-                  if (lostListener != null && navigator.serviceWorker != null) {
-                    navigator.serviceWorker.removeEventListener('message', lostListener)
-                    lostListener = null
-                  }
+                  if (window.__downloads != null && window.__downloads[filename] != null)
+                    window.__downloads[filename].written = true
                 }).catch(err => fail('' + err))
               } else {
                 var data = convertToByteArray(new Uint8Array(blockSize))
