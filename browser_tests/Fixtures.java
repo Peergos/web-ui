@@ -35,10 +35,20 @@ public class Fixtures {
         }
     }
 
+    /** Where the source files a test uploads are kept.
+     *
+     *  Downloads land in a sibling temp directory, so anything searching the temp tree for a
+     *  download has to skip this one: the source and the download share a name, and a 60MB
+     *  source reads exactly like a completed download that went to the wrong place.
+     */
+    public static Path fixtureDir() {
+        return Paths.get(System.getProperty("java.io.tmpdir"), "peergos-browser-fixtures");
+    }
+
     /** A file whose bytes can be regenerated in the browser, for drivers that cannot drive the
      *  file picker and have to be handed a File instead. Must match Page.handFiles. */
     public static Path patternFile(String name, int size) throws IOException {
-        Path dir = Paths.get(System.getProperty("java.io.tmpdir"), "peergos-browser-fixtures");
+        Path dir = fixtureDir();
         Files.createDirectories(dir);
         Path file = dir.resolve(name);
         byte[] bytes = new byte[size];
@@ -50,7 +60,7 @@ public class Fixtures {
 
     /** A deterministic pseudo random file, so a rerun reuses it rather than regenerating. */
     public static Path localFile(String name, long size) throws IOException {
-        Path dir = Paths.get(System.getProperty("java.io.tmpdir"), "peergos-browser-fixtures");
+        Path dir = fixtureDir();
         Files.createDirectories(dir);
         Path file = dir.resolve(name);
         if (Files.exists(file) && Files.size(file) == size)

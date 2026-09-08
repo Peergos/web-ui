@@ -166,6 +166,10 @@ public class Downloads {
      *  A browser decides for itself where to write a partial, and it is not obliged to be the
      *  directory it was told to save into. When the destination is empty the question is whether
      *  the file exists at all - so this asks that, rather than assuming the answer.
+     *
+     *  The fixture directory is skipped. It is a sibling of the download directory and holds the
+     *  very file the test uploaded, under the same name and at the full size, so reporting it
+     *  reads as a download that landed somewhere unexpected when it is only the source.
      */
     public static String findAnywhere(Path root, String namePrefix) {
         long deadline = System.currentTimeMillis() + 30_000;
@@ -173,8 +177,17 @@ public class Downloads {
         try {
             // A visitor rather than a stream walk: a temp directory holds things that are not
             // ours to read, and a walk gives up on the whole search the first time it meets one.
+            Path fixtures = Fixtures.fixtureDir();
             Files.walkFileTree(root, java.util.Set.of(), 4,
                     new java.nio.file.SimpleFileVisitor<Path>() {
+                @Override
+                public java.nio.file.FileVisitResult preVisitDirectory(Path dir,
+                        java.nio.file.attribute.BasicFileAttributes attrs) {
+                    return dir.equals(fixtures)
+                            ? java.nio.file.FileVisitResult.SKIP_SUBTREE
+                            : java.nio.file.FileVisitResult.CONTINUE;
+                }
+
                 @Override
                 public java.nio.file.FileVisitResult visitFile(Path p,
                         java.nio.file.attribute.BasicFileAttributes attrs) {
@@ -194,6 +207,7 @@ public class Downloads {
             return "could not search " + root + ": " + e;
         }
         return hits.isEmpty() ? "nothing named " + namePrefix + "* anywhere under " + root
+                + " (not counting the upload fixtures)"
                 : String.join(", ", hits);
     }
 
