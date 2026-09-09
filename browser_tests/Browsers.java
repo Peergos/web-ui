@@ -33,7 +33,33 @@ public class Browsers {
         }
     }
 
+    /** A browser, and a second one if the first came up with nothing a test can drive.
+     *
+     *  A session can be left bound to a browsing context that is already gone, which windows does
+     *  far more than linux: the browser is up, it has one window, and that window will neither
+     *  run a script nor open another. Every rung of the driver's own recovery works inside that
+     *  browser, so none of them can win against it - a second browser is the only move left, and
+     *  it is the one safari's launch already makes for its own startup race. A script is what
+     *  proves the window, since switching to a discarded one succeeds either way.
+     */
     public static WebDriver launch(Engine engine, Path downloadDir, boolean headless) {
+        WebDriver d = start(engine, downloadDir, headless);
+        try {
+            d.script("return 1;");
+            return d;
+        } catch (RuntimeException unusable) {
+            System.out.println("  note: the browser came up with no window to drive, starting"
+                    + " another (" + unusable.getMessage() + ")");
+        }
+        try {
+            d.close();
+        } catch (RuntimeException e) {
+            // it was already unusable, which is why there is a second one
+        }
+        return start(engine, downloadDir, headless);
+    }
+
+    private static WebDriver start(Engine engine, Path downloadDir, boolean headless) {
         try {
             Files.createDirectories(downloadDir);
             switch (engine) {
