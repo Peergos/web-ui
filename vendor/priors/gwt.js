@@ -123,7 +123,7 @@ function postProm(url, data, timeout) {
 		try {
             let trailer = req.getResponseHeader("Trailer");
             if (trailer == null) {
-                reject('Unexpected error from server');
+                reject('Unexpected error from server. Status code: ' + req.status);
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(decodeURIComponent(trailer)));
@@ -193,7 +193,7 @@ function postMultipartProm(url, dataArrays, timeout) {
 		try {
 		    let trailer = req.getResponseHeader("Trailer");
             if (trailer == null) {
-                reject('Unexpected error from server');
+                reject('Unexpected error from server. Status code: ' + req.status);
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(trailer));
@@ -750,7 +750,7 @@ function modifyCacheSize(newCacheSizeMiB) {
 		    try {
                         let trailer = req.getResponseHeader("Trailer");
                         if (trailer == null) {
-                            reject('Unexpected error from server');
+                            reject('Unexpected error from server. Status code: ' + req.status);
                         } else {
                             reject(trailer);
                         }
@@ -841,7 +841,7 @@ function getBrowserStorageQuota() {
 		    try {
                         let trailer = req.getResponseHeader("Trailer");
                         if (trailer == null) {
-                            reject('Unexpected error from server');
+                            reject('Unexpected error from server. Status code: ' + req.status);
                         } else {
                             reject(trailer);
                         }

@@ -16,7 +16,7 @@ module.exports = {
                         try {
                             let trailer = req.getResponseHeader("Trailer");
                             if (trailer == null) {
-                                reject('Unexpected error from server');
+                                reject('Unexpected error from server. Status code: ' + req.status);
                             } else {
                                 // the server form encodes the message, so spaces arrive as +
                                 reject(decodeURIComponent(trailer.replace(/\+/g, ' ')));
