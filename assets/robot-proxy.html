@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Fetch-Robot-Proxy</title>
+</head>
+<body>
+<script>
+var mainWindow;
+var origin;
+let msgHandler = function (e) {
+      mainWindow = e.source;
+      origin = e.origin;
+      if (e.data.type == "ping") {
+        mainWindow.postMessage({action:'pong'}, origin);
+      } else if (e.data.type == "getWithHeadersProm") {
+          getWithHeadersProm(e.data.id, e.data.url, e.data.headers);
+      } else if (e.data.type == "postProm") {
+          postProm(e.data.id, e.data.url, e.data.data, e.data.timeout);
+      } else if (e.data.type == "putProm") {
+          putProm(e.data.id, e.data.url, e.data.data, e.data.headers);
+      }
+};
+window.addEventListener('message', msgHandler);
+
+function getWithHeadersProm(id, url, headers) {
+    var req = new XMLHttpRequest();
+    req.open('GET', url);
+    req.responseType = 'arraybuffer';
+    var index = 0;
+    while (index < headers.length){
+	    var name = headers[index++];
+        var value = headers[index++];
+	    if (name != "Host" && name != "Content-Length")
+	        req.setRequestHeader(name, value);
+    }
+
+    req.onload = function() {
+        // This is called even on 404 etc
+        // so check the status
+        if (req.status == 200) {
+	        complete(id, 'getWithHeadersProm', req.status, req.response);
+        } else if (req.status == 404) {
+	        completeExceptionally(id, 'getWithHeadersProm', req.status, false);
+        } else if (req.status == 429) {
+	        completeExceptionally(id, 'getWithHeadersProm', req.status, false);
+        } else {
+	        completeExceptionally(id, 'getWithHeadersProm', req.status, req.getResponseHeader("Trailer"), true);
+        }
+    };
+
+    req.onerror = function(e) {
+        completeExceptionally(id, 'getWithHeadersProm', -1, "Network Error", true);
+    };
+
+    req.send();
+}
+function postProm(id, url, data, timeout) {
+	var req = new XMLHttpRequest();
+	req.open('POST', url);
+        if (timeout >= 0)
+            req.timeout = timeout;
+	req.responseType = 'arraybuffer';
+
+	req.onload = function() {
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+                complete(id, 'postProm', req.status, req.response);
+            }
+            else {
+		try {
+            let trailer = req.getResponseHeader("Trailer");
+            if (trailer == null) {
+                completeExceptionally(id, 'postProm', -1, 'Unexpected error from server', false);
+            } else {
+                completeExceptionally(id, 'postProm', -1, trailer, false);
+            }
+		} catch (e) {
+            completeExceptionally(id, 'postProm', -1, e, false);
+		}
+            }
+	};
+
+	req.onerror = function(e) {
+            completeExceptionally(id, 'postProm', -1, "Network Error", true);
+	};
+
+        req.ontimeout = function() {
+            completeExceptionally(id, 'postProm', -1, "Network timeout", true);
+        };
+
+	req.send(data);
+}
+function putProm(id, url, data, headers) {
+	var req = new XMLHttpRequest();
+	req.open('PUT', url);
+	req.responseType = 'arraybuffer';
+	var index = 0;
+	while (index < headers.length){
+	    var name = headers[index++];
+    	    var value = headers[index++];
+	    if (name != "Host" && name != "Content-Length")
+		req.setRequestHeader(name, value);
+	}
+
+	req.onload = function() {
+            // This is called even on 404 etc
+            // so check the status
+            if (req.status == 200) {
+                complete(id, 'putProm', req.status, req.response);
+            }
+            else {
+                completeExceptionally(id, 'putProm', -1, "HTTP " + req.status, false);
+            }
+	};
+
+	req.onerror = function(e) {
+        completeExceptionally(id, 'putProm', -1, "Network Error", true);
+	};
+
+	req.send(data);
+}
+function complete(id, action, status, response) {
+    mainWindow.postMessage({id: id, action:action, status: status, response: response}, origin);
+}
+function completeExceptionally(id, action, status, errMsg, wrapInError) {
+    mainWindow.postMessage({id: id, action:action, status: status, errMsg: errMsg, wrapInError: wrapInError}, origin);
+}
+</script>
+</body>
+</html>
