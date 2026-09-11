@@ -71,11 +71,23 @@ public class CalendarStoreTest {
                 }
                 return true;
             }, 90_000);
-            WebDriver.sleep(3000);
-            for (String name : CalendarApp.list(d, month)) {
-                String ics = CalendarApp.read(d, month, name);
-                if (ics.contains("SUMMARY:" + FIRST) || ics.contains("SUMMARY:" + SECOND))
-                    throw new AssertionError("A write that was queued behind the delete brought the entry back: " + name);
+            // The store has said the entry is gone once. Watched for a while rather than
+            // sampled once, and the whole timeline reported: an entry that returns after a
+            // pause was put back by a write that outlived the delete, while one that is
+            // there on the very first look was never really removed, and the two want
+            // different fixes.
+            List<String> timeline = new ArrayList<>();
+            for (int second = 1; second <= 6; second++) {
+                WebDriver.sleep(1000);
+                String found = null;
+                for (String name : CalendarApp.list(d, month)) {
+                    String ics = CalendarApp.read(d, month, name);
+                    if (ics.contains("SUMMARY:" + FIRST)) found = name + " holding " + FIRST;
+                    else if (ics.contains("SUMMARY:" + SECOND)) found = name + " holding " + SECOND;
+                }
+                timeline.add("t+" + second + "s " + (found == null ? "gone" : found));
+                if (found != null)
+                    throw new AssertionError("The entry came back after the delete: " + timeline);
             }
             System.out.println("  ok   a create, an edit and a delete fired together leave nothing behind");
 
