@@ -40,6 +40,7 @@ public class Suite {
             run(failures, "calendar repeat and reminder", () -> CalendarRepeatTest.run(args1));
             run(failures, "calendar task", () -> CalendarTaskTest.run(args1));
             run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
+            run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
             run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             run(failures, "calendar files read by another parser", () -> CalendarInteropTest.run(args1));

@@ -159,14 +159,29 @@ function rruleByweekdayFromByday(byday) {
     }).filter(Boolean);
 }
 
+// Which days a rule picks out, as rrule.js takes them. Both the spec the grid
+// renders from and the set this file computes its own dates with go through
+// here, so a rule cannot mean one thing on the grid and another in a reminder.
+function applyRRuleByParts(spec, recur) {
+    let byday = (recur.byday && recur.byday.length) ? recur.byday : recur.bydayFilter;
+    if (byday && byday.length) spec.byweekday = rruleByweekdayFromByday(byday);
+    // The list or the single day, never both: a rule naming several is kept out
+    // of the field the form's one box fills.
+    let monthday = recur.bymonthdayList || recur.bymonthday;
+    if (monthday) spec.bymonthday = monthday;
+    let month = recur.bymonthList || recur.bymonth;
+    if (month) spec.bymonth = month;
+    if (recur.bysetpos && recur.bysetpos.length) spec.bysetpos = recur.bysetpos;
+    if (recur.byweekno && recur.byweekno.length) spec.byweekno = recur.byweekno;
+    if (recur.byyearday && recur.byyearday.length) spec.byyearday = recur.byyearday;
+    if (recur.wkst) spec.wkst = rrule.RRule[recur.wkst];
+    return spec;
+}
+
 function rruleOptionsFor(recur, allDay) {
     let dtstart = allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-    let options = { freq: rrule.RRule[recur.freq.toUpperCase()], interval: recur.interval, dtstart: toFakeUtc(dtstart) };
-    if (recur.byday && recur.byday.length) options.byweekday = rruleByweekdayFromByday(recur.byday);
-    if (recur.bymonthday) options.bymonthday = recur.bymonthday;
-    if (recur.bymonth) options.bymonth = recur.bymonth;
-    if (recur.bysetpos && recur.bysetpos.length) options.bysetpos = recur.bysetpos;
-    return options;
+    return applyRRuleByParts({ freq: rrule.RRule[recur.freq.toUpperCase()],
+        interval: recur.interval, dtstart: toFakeUtc(dtstart) }, recur);
 }
 
 // Occurrence immediately before `date`, ignoring count/until/exdates -
@@ -517,8 +532,9 @@ function updateRepeatVisibility() {
     repeatUntilInput.style.display = (repeating && endMode === 'until') ? '' : 'none';
     repeatCountRow.style.display = (repeating && endMode === 'count') ? '' : 'none';
     repeatWeekdayRow.style.display = (freq === 'weekly') ? '' : 'none';
-    repeatMonthlyModeInput.style.display = (freq === 'monthly') ? '' : 'none';
-    let byWeekdayOfMonth = freq === 'monthly' && repeatMonthlyModeInput.value === 'nthWeekday';
+    let byMonth = freq === 'monthly' || freq === 'yearly';
+    repeatMonthlyModeInput.style.display = byMonth ? '' : 'none';
+    let byWeekdayOfMonth = byMonth && repeatMonthlyModeInput.value === 'nthWeekday';
     // The day of the month is the same control for monthly and yearly; the
     // month beside it is what makes it a yearly date.
     repeatMonthdayRow.style.display = (repeating && !byWeekdayOfMonth
@@ -533,12 +549,20 @@ function updateRepeatVisibility() {
      [repeatCountInput, repeating && endMode === 'count'],
      [repeatMonthdayInput, repeatMonthdayRow.style.display !== 'none'],
      [repeatOrdinalInput, byWeekdayOfMonth], [repeatNthWeekdayInput, byWeekdayOfMonth],
-     [repeatMonthInput, freq === 'yearly'], [repeatMonthlyModeInput, freq === 'monthly']
+     [repeatMonthInput, freq === 'yearly'], [repeatMonthlyModeInput, byMonth]
     ].forEach(function (pair) {
         if (!pair[1]) pair[0].disabled = true;
         else if (!isReadOnlyForm) pair[0].disabled = false;
     });
 }
+
+// What the repeat controls read back the moment they are filled in, before
+// anyone has touched them. A rule the dialog cannot show whole - several months,
+// a week number - does not come back out of these controls as the same thing
+// that went in, and measuring "did the user change the repeat?" against the rule
+// itself would call that difference a change nobody made, and rewrite a rule
+// that should have been left exactly as another client wrote it.
+let recurFormBaseline = null;
 
 function populateRecurForm(recur) {
     repeatFreqInput.value = recur ? recur.freq : '';
@@ -548,7 +572,7 @@ function populateRecurForm(recur) {
     repeatCountInput.value = (recur && recur.count) ? recur.count : 10;
     let byday = (recur && recur.byday) || [];
     setSelectedWeekdays(recur && recur.freq === 'weekly' ? byday : []);
-    let ordinal = (recur && recur.freq === 'monthly' && byday.length)
+    let ordinal = (recur && (recur.freq === 'monthly' || recur.freq === 'yearly') && byday.length)
         ? String(byday[0]).match(/^(-?\d+)(SU|MO|TU|WE|TH|FR|SA)$/) : null;
     repeatMonthlyModeInput.value = ordinal ? 'nthWeekday' : 'dayOfMonth';
     // Whatever the rule does not say is filled in from the start date, which
@@ -559,6 +583,7 @@ function populateRecurForm(recur) {
     repeatMonthdayInput.value = (recur && recur.bymonthday) || start.getDate();
     repeatMonthInput.value = (recur && recur.bymonth) || (start.getMonth() + 1);
     updateRepeatVisibility();
+    recurFormBaseline = (recur && recur.source) ? recurFormFields(readRecurFromForm()) : null;
 }
 
 function readRecurFromForm() {
@@ -577,8 +602,14 @@ function readRecurFromForm() {
     if (freq === 'weekly') {
         let days = selectedWeekdays();
         recur.byday = days.length ? days : [weekdayCodeOf(start)];
-    } else if (freq === 'monthly' && repeatMonthlyModeInput.value === 'nthWeekday') {
+    } else if ((freq === 'monthly' || freq === 'yearly') && repeatMonthlyModeInput.value === 'nthWeekday') {
         recur.byday = [repeatOrdinalInput.value + repeatNthWeekdayInput.value];
+        // A yearly rule needs its month named: without one, "the third Monday"
+        // is the third Monday of the year rather than of a month.
+        if (freq === 'yearly') {
+            let month = parseInt(repeatMonthInput.value, 10);
+            recur.bymonth = (month >= 1 && month <= 12) ? month : start.getMonth() + 1;
+        }
     } else if (freq === 'monthly' || freq === 'yearly') {
         // A rule with no BY part of its own repeats on the start date's own day,
         // so only a day that differs from it is worth writing down - that keeps
@@ -705,10 +736,7 @@ function buildRecurringEventPayload(id, title, allDay, extra, recur, durationMs)
     let rruleSpec = { freq: recur.freq, interval: recur.interval, dtstart: recur.dtstart };
     if (recur.end === 'until' && recur.until) rruleSpec.until = formatUntil(recur.until, recur.dtstart, allDay);
     if (recur.end === 'count' && recur.count) rruleSpec.count = recur.count;
-    if (recur.byday && recur.byday.length) rruleSpec.byweekday = rruleByweekdayFromByday(recur.byday);
-    if (recur.bymonthday) rruleSpec.bymonthday = recur.bymonthday;
-    if (recur.bymonth) rruleSpec.bymonth = recur.bymonth;
-    if (recur.bysetpos && recur.bysetpos.length) rruleSpec.bysetpos = recur.bysetpos;
+    applyRRuleByParts(rruleSpec, recur);
     let color = colorForCalendarId(extra.calendarId);
     let data = {
         id: id,
@@ -1059,9 +1087,16 @@ function sameRecurFields(a, b) {
 // form did not actually change any of it - saving an event after renaming it
 // must not rewrite its repeat.
 function carryRecurSource(from, to) {
-    if (!from || !to || !from.source || !sameRecurFields(to, from.sourceFields)) return;
+    if (!from || !to || !from.source) return;
+    // The baseline when the dialog filled itself in from this rule, the rule's
+    // own fields when it did not - an occurrence detached or excluded without
+    // the dialog ever opening still has to keep the series' text.
+    if (!sameRecurFields(to, recurFormBaseline || from.sourceFields)) return;
     to.source = from.source;
-    to.sourceFields = from.sourceFields;
+    // The fields this rule now reads as, not the ones the file parsed to: for a
+    // rule the dialog cannot show whole the two differ, and writing it out asks
+    // this same question again.
+    to.sourceFields = recurFormFields(to);
 }
 
 function recurToIcsRRuleLine(recur, allDay, tzid) {
@@ -1809,23 +1844,46 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
     let isOrdinalCode = function (c) { return /^-?\d+(SU|MO|TU|WE|TH|FR|SA)$/.test(c); };
     let bydaySupported =
         (freq === 'weekly' && codes.length && codes.every(isPlainCode)) ||
-        (freq === 'monthly' && codes.length === 1 && isOrdinalCode(codes[0]));
+        ((freq === 'monthly' || freq === 'yearly') && codes.length === 1 && isOrdinalCode(codes[0]));
     let single = function (raw, low, high) {
         if (raw == null || raw.indexOf(',') !== -1) return null;
         let n = parseInt(raw, 10);
         return n >= low && n <= high ? n : null;
     };
+    // Numbers, not the raw text: these are handed to the occurrence engine too,
+    // which rejects the whole rule if a value arrives as a string.
+    let numbers = function (raw) {
+        return (raw || '').split(',')
+            .map(function (p) { return parseInt(p, 10); })
+            .filter(function (n) { return isFinite(n) && n !== 0; });
+    };
+    let several = function (raw, low, high) {
+        let all = numbers(raw);
+        return all.length > 1 && all.every(function (n) { return n >= low && n <= high; }) ? all : null;
+    };
     let monthday = single(props.BYMONTHDAY, 1, 31);
     let month = single(props.BYMONTH, 1, 12);
     if (monthday != null && (freq === 'monthly' || freq === 'yearly')) recur.bymonthday = monthday;
     if (month != null && freq === 'yearly') recur.bymonth = month;
-    // No control of its own: kept only so a rule that uses one survives an edit.
-    // Numbers, not the raw text: this is handed to the occurrence engine too,
-    // which rejects the whole rule if a position arrives as a string.
-    let positions = (props.BYSETPOS || '').split(',')
-        .map(function (p) { return parseInt(p, 10); })
-        .filter(function (n) { return isFinite(n) && n !== 0; });
+    // The parts below have no control of their own. They are read out of the
+    // file so the entry is drawn on the days its rule actually names rather
+    // than on its start date, and kept apart from the fields the form
+    // round-trips so the rule is still written back from the file's own text.
+    // "The 1st and the 15th", "March, June and September": one number is all
+    // the form has a box for, so a rule naming several is kept beside it.
+    let monthdays = several(props.BYMONTHDAY, 1, 31);
+    if (monthdays) recur.bymonthdayList = monthdays;
+    let months = several(props.BYMONTH, 1, 12);
+    if (months) recur.bymonthList = months;
+    let positions = numbers(props.BYSETPOS);
     if (positions.length) recur.bysetpos = positions;
+    let weekNumbers = numbers(props.BYWEEKNO);
+    if (weekNumbers.length) recur.byweekno = weekNumbers;
+    let yearDays = numbers(props.BYYEARDAY);
+    if (yearDays.length) recur.byyearday = yearDays;
+    // Which day a week starts on, for a weekly rule that skips weeks: without
+    // it such a rule can land a week away from where the file meant.
+    if (/^(SU|MO|TU|WE|TH|FR|SA)$/.test(props.WKST || '')) recur.wkst = props.WKST;
     let hasOtherByParts = props.BYYEARDAY || props.BYWEEKNO || props.BYSETPOS
         || (props.BYMONTHDAY && recur.bymonthday == null)
         || (props.BYMONTH && recur.bymonth == null);
@@ -1836,6 +1894,15 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
         // parseIcsVevent strips it and re-stamps it on the event payload,
         // on its way to the import summary (formatImportSummary).
         recur.simplified = true;
+        // Plain weekday codes the dialog cannot offer for this frequency still
+        // limit which days the rule lands on: "every weekday" as some clients
+        // write it (daily, filtered), the weekday a week-number rule picks out,
+        // the days a BYSETPOS counts among. They have to reach the occurrence
+        // engine, or the entry is drawn on days its own rule excludes.
+        // Deliberately not one of the fields the form round-trips: a rule the
+        // dialog cannot show is written back exactly as it came, and that has
+        // to stay true.
+        if (codes.length && codes.every(isPlainCode)) recur.bydayFilter = codes;
     } else if (bydaySupported) {
         recur.byday = codes;
     }
@@ -3491,7 +3558,16 @@ startTimeInput.addEventListener('change', applyFormSpan);
 endDateInput.addEventListener('change', readFormSpan);
 endTimeInput.addEventListener('change', readFormSpan);
 
-repeatFreqInput.addEventListener('change', updateRepeatVisibility);
+repeatFreqInput.addEventListener('change', function () {
+    // A shortcut, not a frequency of its own: it resolves at once into the
+    // weekly rule it stands for, with the five days ticked where they can be
+    // seen and changed, so nothing past this point knows it was ever offered.
+    if (repeatFreqInput.value === 'weekday') {
+        repeatFreqInput.value = 'weekly';
+        setSelectedWeekdays(['MO', 'TU', 'WE', 'TH', 'FR']);
+    }
+    updateRepeatVisibility();
+});
 repeatMonthlyModeInput.addEventListener('change', updateRepeatVisibility);
 repeatEndInput.addEventListener('change', updateRepeatVisibility);
 

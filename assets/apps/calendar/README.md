@@ -234,10 +234,16 @@ addressed.
 
 ## Repeat rules
 
-The form covers frequency, interval, the weekdays of a weekly rule, a monthly
-rule on a chosen day of the month or a chosen weekday of it (`BYMONTHDAY`, or an
-ordinal `BYDAY` such as `-1FR`), a yearly rule on a chosen date (`BYMONTH` plus
-`BYMONTHDAY`), and an end of never / on a date / after N.
+The form covers frequency, interval, the weekdays of a weekly rule, a monthly or
+yearly rule on a chosen day of the month or a chosen weekday of it (`BYMONTHDAY`,
+or an ordinal `BYDAY` such as `-1FR` or `3MO`), the month a yearly rule falls in
+(`BYMONTH`), and an end of never / on a date / after N. Every shape the previous
+calendar's own editor could build has a control here.
+
+"Every weekday (Mon to Fri)" sits in the frequency list as a shortcut rather than
+a frequency of its own: choosing it selects Weekly with those five days ticked,
+where they can be seen and changed, and writes the ordinary
+`FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` the rest of the world reads.
 
 Two rules keep what is written stable:
 
@@ -246,13 +252,19 @@ Two rules keep what is written stable:
   rule this app has written unchanged. A yearly date writes both halves or
   neither, so it cannot drift with the start date.
 - A file written elsewhere may still say more than the form can show - a week
-  number, a day of the year, several ordinals, `BYSETPOS`. Those entries load and
-  expand on the rule they actually have, and the rule as the file wrote it is
-  kept beside the parsed model (`recur.source`, with the fields it produced).
-  Writing the entry back emits that text verbatim unless a field the form can set
-  has changed, so renaming such an event, moving it, or excluding one occurrence
-  leaves its rule alone. An import says how many entries it could only show
-  simplified.
+  number, a day of the year, several days of the month or several months, a week
+  start, `BYSETPOS`, or plain weekday codes on a frequency whose control cannot
+  offer them, as in the `FREQ=DAILY;BYDAY=` spelling of "every weekday". Those
+  parts reach the occurrence engine even though no control sets them, so such an
+  entry is drawn on the days its own rule names rather than on its start date.
+  They are kept apart from the fields the form round-trips, and the rule as the
+  file wrote it is kept beside the parsed model (`recur.source`, with the fields
+  it produced). Writing the entry back emits that text verbatim unless a control
+  was actually changed - what the controls read back when the dialog filled
+  itself in is the baseline that decides, since a rule the form cannot show
+  whole does not come back out of them unaltered. So renaming such an event,
+  moving it, or excluding one occurrence leaves its rule alone. An import says
+  how many entries it could only show simplified.
 
 Every date the app computes for itself - a reminder's occurrences, the boundary
 of a "this and following" split, a repeating task's next due date - goes through
