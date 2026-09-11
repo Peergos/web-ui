@@ -1460,12 +1460,18 @@ module.exports = {
            let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
            // uploadSubtree asks two questions as it goes - resume this partial
            // upload? replace this existing file? Drive puts both to the user;
-           // an import cannot, and the app has already dropped the entries it
-           // recognised as duplicates, so everything still in the batch is
-           // meant to be written, as the single-event save does. Both
-           // arguments are required: leave one out and commitWatcher lands in
-           // its slot and the upload fails on an undefined callback.
-           let yes = function() { return peergos.shared.util.Futures.of(true); };
+           // an import cannot. Resume yes: the partial upload is this import's
+           // own. Replace no: the app drops the duplicates it can see, but it
+           // only sees the months the grid has loaded, so an entry it takes for
+           // new can already be in the store - and answering yes there replaced
+           // a stored event with an imported copy of itself, silently, for
+           // events outside those months. Skipping is what the import already
+           // tells the user happens to a duplicate, and the store is the only
+           // place that knows. Both arguments are required: leave one out and
+           // commitWatcher lands in its slot and the upload fails on an
+           // undefined callback.
+           let resume = function() { return peergos.shared.util.Futures.of(true); };
+           let keepWhatIsThere = function() { return peergos.shared.util.Futures.of(false); };
            this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                // Resolved and empty is not the same as failed, and it is what happens when
                // this session has no calendar of its own to import into - opening an entry
@@ -1480,7 +1486,7 @@ module.exports = {
                }
                dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
                    that.context.crypto, that.context.getTransactionService(),
-                   yes, yes, commitWatcher).thenApply(res => {
+                   resume, keepWhatIsThere, commitWatcher).thenApply(res => {
                        uploadFuture.complete(true);
                }).exceptionally(function (throwable) {
                     that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));

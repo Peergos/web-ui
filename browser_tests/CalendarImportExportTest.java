@@ -104,6 +104,35 @@ public class CalendarImportExportTest {
                 throw new AssertionError("A second import of the same file left " + afterSecond);
             System.out.println("  ok   importing it twice stores it once");
 
+            // --- a duplicate the grid cannot see -----------------------------------------------
+            // The app skips an entry it already has drawn, but it only has the months around
+            // today. An entry years away is not in that memory, so the store is the only thing
+            // that knows it is a duplicate - and an import used to overwrite it with its own
+            // copy, silently losing whatever the stored one said.
+            String far = "2029/7";
+            String farUid = "far-away-entry";
+            String wasThere = String.join("\r\n",
+                    "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:" + farUid,
+                    "DTSTAMP:20290704T090000Z", "DTSTART:20290704T090000Z", "DTEND:20290704T100000Z",
+                    "SUMMARY:What the store already had", "END:VEVENT", "END:VCALENDAR", "");
+            CalendarApp.write(d, calendar + "/" + far, farUid + ".ics", wasThere);
+            // A second entry the store has never seen rides along, so there is something whose
+            // arrival proves the batch was written. Waiting a fixed moment instead would let
+            // this pass on a slow runner for the wrong reason: an import that had not happened
+            // yet leaves the first entry untouched too.
+            String companionUid = "far-away-companion";
+            String incoming = wasThere.replace("What the store already had", "What the import carried")
+                    .replace("END:VCALENDAR", String.join("\r\n",
+                            "BEGIN:VEVENT", "UID:" + companionUid,
+                            "DTSTAMP:20290704T090000Z", "DTSTART:20290705T090000Z", "DTEND:20290705T100000Z",
+                            "SUMMARY:Along for the ride", "END:VEVENT", "END:VCALENDAR"));
+            CalendarApp.inFrame(d, "importIcsText(arguments[0]); return 1;", incoming);
+            CalendarApp.awaitFileSaying(d, calendar + "/" + far, "SUMMARY:Along for the ride");
+            String after = CalendarApp.read(d, calendar + "/" + far, farUid + ".ics");
+            if (! after.equals(wasThere))
+                throw new AssertionError("An import overwrote an entry the grid had not loaded:\n" + after);
+            System.out.println("  ok   an import leaves an entry the grid never loaded exactly as it was");
+
             // --- out --------------------------------------------------------------------------
             CalendarApp.inFrame(d,
                     "document.getElementById('sidebar-toggle-button').click();"
