@@ -2275,16 +2275,24 @@ function parseIcsFile(text) {
     return { events: events, tasks: tasks, failed: failed };
 }
 
+// The series back on the grid and in the store under its own id, carrying a
+// rule that has just been changed: the length it was drawn with is the length
+// it keeps, since the occurrences move but the events do not get longer.
+function replaceMasterSeries(master, masterRecur) {
+    let durationMs = (master.end || master.start).getTime() - master.start.getTime();
+    let payload = buildRecurringEventPayload(master.id, master.title, master.allDay,
+        extraPropsOf(master), masterRecur, durationMs);
+    master.remove();
+    addAndPersist(payload);
+}
+
 // Shared by "delete this occurrence" and "edit this occurrence" (the
 // latter also adds a standalone replacement event for the edited data).
 function excludeOccurrenceFromMaster(master) {
     let masterRecur = Object.assign({}, master.extendedProps.recur);
     let occurrenceStr = toLocalInputValue(master.start, master.allDay);
     masterRecur.exdates = (masterRecur.exdates || []).concat([occurrenceStr]);
-    let durationMs = (master.end || master.start).getTime() - master.start.getTime();
-    let payload = buildRecurringEventPayload(master.id, master.title, master.allDay, extraPropsOf(master), masterRecur, durationMs);
-    master.remove();
-    addAndPersist(payload);
+    replaceMasterSeries(master, masterRecur);
 }
 
 // Shared by "delete this and following" and "edit this and following".
@@ -2300,10 +2308,7 @@ function truncateMasterSeries(master) {
     masterRecur.end = 'until';
     masterRecur.until = toDateInputValue(untilBoundary);
     masterRecur.count = null;
-    let durationMs = (master.end || master.start).getTime() - master.start.getTime();
-    let payload = buildRecurringEventPayload(master.id, master.title, master.allDay, extraPropsOf(master), masterRecur, durationMs);
-    master.remove();
-    addAndPersist(payload);
+    replaceMasterSeries(master, masterRecur);
 }
 
 // --- Drag to move ---------------------------------------------------------
