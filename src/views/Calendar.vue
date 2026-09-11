@@ -45,7 +45,7 @@
                 :displayName="shareDisplayName"
                 :allowReadWriteSharing="true"
                 :allowCreateSecretLink="true"
-                :autoOpenSecretLink="false"
+                :autoOpenSecretLink="true"
                 :files="filesToShare"
                 :path="pathToShare"
                 :followernames="followernames"
@@ -1467,7 +1467,18 @@ module.exports = {
            // its slot and the upload fails on an undefined callback.
            let yes = function() { return peergos.shared.util.Futures.of(true); };
            this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
-               uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+               // Resolved and empty is not the same as failed, and it is what happens when
+               // this session has no calendar of its own to import into - opening an entry
+               // through a link is the ordinary way to get here. Left unchecked the line
+               // below throws inside this callback, which settles nothing, and the spinner
+               // stays up for good.
+               let dir = uploadDir != null && uploadDir.isPresent() ? uploadDir.get() : null;
+               if (dir == null) {
+                   that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
+                   uploadFuture.complete(false);
+                   return null;
+               }
+               dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
                    that.context.crypto, that.context.getTransactionService(),
                    yes, yes, commitWatcher).thenApply(res => {
                        uploadFuture.complete(true);

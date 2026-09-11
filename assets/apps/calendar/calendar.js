@@ -3862,7 +3862,12 @@ function importIcsText(text) {
     if (importedTasks > 0) renderTaskList();
     if (batch.length > 0 && !isGuestSession) hostSend({ type: 'saveAll', items: batch });
     if (imported > 0 || importedTasks > 0) applyCalendarVisibility();
-    openImportSummaryModal(formatImportSummary(imported, importedTasks, duplicates, parsed.failed, simplified));
+    // A guest is reading a link, not importing: nothing was written, and there is no
+    // account here for it to have been written to. The entries are simply on the grid,
+    // so a summary counting what was "imported" would be telling them about a thing
+    // that did not happen.
+    if (!isGuestSession)
+        openImportSummaryModal(formatImportSummary(imported, importedTasks, duplicates, parsed.failed, simplified));
 }
 
 icsFileInput.addEventListener('change', function () {

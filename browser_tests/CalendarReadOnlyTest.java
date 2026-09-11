@@ -51,7 +51,7 @@ public class CalendarReadOnlyTest {
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
             java.time.LocalDate today = java.time.LocalDate.now();
             String month = calendar + "/" + today.getYear() + "/" + today.getMonthValue();
-            CalendarApp.awaitFileSaying(d, month, "SUMMARY:" + TITLE);
+            String stored = CalendarApp.awaitFileSaying(d, month, "SUMMARY:" + TITLE);
             List<String> before = CalendarApp.list(d, month);
             System.out.println("owner's entry stored under " + month);
 
@@ -146,6 +146,36 @@ public class CalendarReadOnlyTest {
                 throw new AssertionError("A save forged in the reader's frame changed the owner's month: "
                         + before + " became " + after);
             System.out.println("  ok   a save forged in the reader's frame writes nothing in the owner's calendar");
+
+            // --- and a link to one entry rather than the whole calendar ----------------------
+            // The share dialog offers this too, and it opens the entry rather than the drive it
+            // sits in. There is no account in a link, so it is shown and nothing is imported.
+            String entryPath = "/" + Server.USERNAME + "/.apps/calendar/data/" + month + "/" + stored;
+            d.script("window.__one = null; window.__oneErr = null;"
+                    + "let ctx = document.querySelector('#app').__vue__.$store.state.context;"
+                    + "ctx.createSecretLink(arguments[0], false, java.util.Optional.empty(), '', '', true)"
+                    + "  .thenApply(props => { window.__one = ctx.getLinkString(props); })"
+                    + "  .exceptionally(t => { window.__oneErr = String(t); });", entryPath);
+            d.waitForScript("the entry's own link", "window.__one || window.__oneErr", 120_000);
+            Object oneErr = d.script("return window.__oneErr");
+            if (oneErr != null)
+                throw new AssertionError("Could not make a link to a single entry: " + oneErr);
+            String entryLink = String.valueOf(d.script("return window.__one"));
+
+            Page.logout(d);
+            d.navigate(url + "/" + entryLink + "?open=true");
+            d.waitForScript("the calendar frame", "!!document.querySelector('" + CalendarApp.FRAME + "')", 120_000);
+            CalendarApp.waitInFrame(d, "the entry drawn from its own link",
+                    "Array.from(document.querySelectorAll('[data-search-event-id]'))"
+                            + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(TITLE) + ") !== -1)", 120_000);
+            System.out.println("  ok   a link to one entry opens it rather than the drive");
+            boolean summary = Boolean.TRUE.equals(CalendarApp.inFrame(d,
+                    "let m = document.getElementById('import-summary-modal-backdrop');"
+                            + "return !!m && m.classList.contains('open');"));
+            if (summary)
+                throw new AssertionError("A reader with no account was told what had been imported,"
+                        + " when nothing was written and there is nowhere it could have been written to");
+            System.out.println("  ok   and shows it without claiming to have imported anything");
             System.out.println("PASS");
         } finally {
             if (own != null)
