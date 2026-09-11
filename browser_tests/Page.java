@@ -218,11 +218,14 @@ public class Page {
      *  it is plainly there by the time the test gives up.
      */
     public static void gotoView(WebDriver d, String navLabel, String methodName, String handle) {
+        // The same allowance signing in makes: a windows runner having a bad day takes longer
+        // than a minute to mount a view, and giving up then reports a view that was on its way.
+        long perRound = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 180_000 : 60_000;
         for (int round = 0; round < 5; round++) {
             if (awaitComponent(d, methodName, handle, 0))
                 return;
             clickNav(d, navLabel);
-            if (awaitComponent(d, methodName, handle, 60_000))
+            if (awaitComponent(d, methodName, handle, perRound))
                 return;
         }
         throw new IllegalStateException("The " + navLabel + " view never appeared."
