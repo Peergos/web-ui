@@ -1077,16 +1077,18 @@ module.exports = {
 	    const that = this;
 	    that.displaySpinner();
 	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
+	        that.removeSpinner();
 	        return;
 	    }
-	    // Otherwise a delete that follows the create closely can land first, and the write
-	    // then puts the entry back.
-	    this.afterPendingWrite(item.Id, function() { that.removeStoredEvent(calendar, item); });
+	    // Queued like a write rather than only waiting for one: a delete that follows the
+	    // create closely would otherwise land first and the write put the entry back, and a
+	    // save arriving while this runs would race the removal of the file it is writing.
+	    this.queueForEntry(item.Id, function(done) { that.removeStoredEvent(calendar, item, done); });
     },
-    removeStoredEvent: function(calendar, item) {
+    removeStoredEvent: function(calendar, item, done) {
 	    const that = this;
         this.removeCalendarEvent(calendar, item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask).thenApply(function(res) {
-	        that.removeSpinner();
+	        done();
         }).exceptionally(function(throwable) {
             // Deleting is asking for the entry to be gone, so an entry that is
             // already gone is the outcome, not a failure. It happens in
@@ -1097,7 +1099,7 @@ module.exports = {
                 if (present) {
                     that.showMessage(true, that.translate(item.isTask ? "CALENDAR.ERROR.DELETE.TASK" : "CALENDAR.ERROR.DELETE.EVENT"));
                 }
-                that.removeSpinner();
+                done();
             });
         });
     },
@@ -1379,41 +1381,67 @@ module.exports = {
 	    const that = this;
 	    that.displaySpinner();
 	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
+	        that.removeSpinner();
 	        return;
 	    }
 	    // One write, wherever the item is addressed: a task goes to the
 	    // calendar's tasks/ folder, an event to its month, and a move arrives
 	    // as two messages - a delete of the old placement, then this.
 	    let failed = item.isTask ? 'CALENDAR.ERROR.SAVE.TASK' : 'CALENDAR.ERROR.SAVE.EVENT';
-	    // Registered before the write starts, so a share or a delete asked for in the
-	    // meantime finds it - and a second save of the same entry queues behind it rather
-	    // than racing it to the same file.
-	    let landed = peergos.shared.util.Futures.incomplete();
-	    let settled = function() {
-	        if (that.pendingWrites[item.Id] === landed) {
-	            delete that.pendingWrites[item.Id];
-	        }
-	        that.removeSpinner();
-	        landed.complete(true);
-	    };
-	    this.afterPendingWrite(item.Id, function() {
-	        that.pendingWrites[item.Id] = landed;
+	    this.queueForEntry(item.Id, function(done) {
 	        let write;
 	        try {
 	            write = that.updateCalendarEvent(calendar, item);
 	        } catch (e) {
-	            // Never left pending: everything queued behind this entry would wait for ever.
-	            settled();
+	            done();
 	            that.showMessage(true, that.translate(failed));
 	            return;
 	        }
 	        write.thenApply(function(res) {
-	            settled();
+	            done();
 	        }).exceptionally(function(throwable) {
-	            settled();
+	            done();
 	            that.showMessage(true, that.translate(failed));
 	        });
 	    });
+    },
+    // One lane per entry: `work` runs once everything already asked for that entry has
+    // finished, and the place in the lane is taken here, as the message arrives, rather
+    // than when the work starts. The order the frame asked for things in is the order the
+    // store sees, whatever the writes underneath take.
+    queueForEntry: function(id, work) {
+        let that = this;
+        let ahead = this.pendingWrites[id];
+        let mine = peergos.shared.util.Futures.incomplete();
+        this.pendingWrites[id] = mine;
+        let finished = false;
+        let done = function() {
+            if (finished) {
+                return;
+            }
+            finished = true;
+            // Only if nothing else has queued behind this one, or the entry would look free
+            // while the work that took its place is still running.
+            if (that.pendingWrites[id] === mine) {
+                delete that.pendingWrites[id];
+            }
+            that.removeSpinner();
+            mine.complete(true);
+        };
+        // A synchronous failure still has to free the entry, or everything behind it waits
+        // for ever. Saying what went wrong is the caller's job; this reopens the lane.
+        let run = function() {
+            try {
+                work(done);
+            } catch (e) {
+                done();
+            }
+        };
+        if (ahead == null) {
+            run();
+        } else {
+            ahead.thenApply(function() { run(); return true; });
+        }
     },
     // Runs `action` once any write this host has in flight for the entry has landed - at
     // once when there is none. A file is only ever read, replaced or removed after the
