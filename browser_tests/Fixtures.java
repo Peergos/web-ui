@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 
 /** Test files, created by the test rather than assumed to be sitting on the server.
  *
@@ -238,6 +239,10 @@ public class Fixtures {
             // readAllBytes for as long as the job was allowed to run, so one stuck upload spent
             // the entire ci budget and reported a timeout of the whole run rather than itself.
             StringBuilder collected = new StringBuilder();
+            // The shell says goodbye when it has run everything it was given, and that is the
+            // moment the work is done - which is not always the moment the process ends. On
+            // windows it can print this and then sit there with the upload long since stored.
+            AtomicBoolean saidGoodbye = new AtomicBoolean(false);
             Thread reader = new Thread(() -> {
                 try (BufferedReader r = new BufferedReader(
                         new InputStreamReader(p.getInputStream()))) {
@@ -246,9 +251,11 @@ public class Fixtures {
                         synchronized (collected) {
                             collected.append(line).append('\n');
                         }
+                        if (line.trim().endsWith("Exiting"))
+                            saidGoodbye.set(true);
                     }
                 } catch (IOException e) {
-                    // the process went away, which waitFor below reports properly
+                    // the process went away, which the wait below reports properly
                 }
             });
             reader.setDaemon(true);
@@ -259,7 +266,10 @@ public class Fixtures {
                 w.write("exit\n");
             }
             long minutes = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 15 : 8;
-            if (! p.waitFor(minutes, TimeUnit.MINUTES)) {
+            long end = System.currentTimeMillis() + minutes * 60_000;
+            while (p.isAlive() && ! saidGoodbye.get() && System.currentTimeMillis() < end)
+                Thread.sleep(250);
+            if (p.isAlive() && ! saidGoodbye.get()) {
                 p.destroyForcibly();
                 synchronized (collected) {
                     throw new IllegalStateException("The peergos shell did not finish within "
@@ -267,6 +277,11 @@ public class Fixtures {
                             + ". Output so far: " + collected);
                 }
             }
+            // Given a moment to end on its own, then taken down: a shell that has said goodbye
+            // has nothing left to do, and one that then refuses to exit used to fail the test
+            // that was waiting for it and starve the ones after it of the machine.
+            if (p.isAlive() && ! p.waitFor(30, TimeUnit.SECONDS))
+                p.destroyForcibly();
             reader.join(30_000);
             synchronized (collected) {
                 return collected.toString();
