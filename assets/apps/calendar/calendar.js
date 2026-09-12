@@ -2833,12 +2833,36 @@ function jumpToSearchResult(ev, jumpDate) {
         renderCalendarList();
     }
     gotoDateWithTransition(jumpDate);
-    let instance = calendar.getEvents().filter(function (e) { return e.id === ev.id; })
+    openPopoverNear(ev.id, jumpDate);
+}
+
+// Opens the occurrence nearest the date asked for, on the chip the grid drew for it. Says
+// whether it found one: a grid that has not drawn that day yet has nothing to hang a
+// popover off.
+function openPopoverNear(id, at) {
+    let instance = calendar.getEvents().filter(function (e) { return e.id === id; })
         .reduce(function (best, e) {
-            return !best || Math.abs(e.start - jumpDate) < Math.abs(best.start - jumpDate) ? e : best;
-        }, null) || ev;
-    let anchorEl = findEventAnchorEl(ev.id);
-    if (anchorEl) showEventPopover(instance, anchorEl);
+            return !best || Math.abs(e.start - at) < Math.abs(best.start - at) ? e : best;
+        }, null) || calendar.getEventById(id);
+    let anchorEl = findEventAnchorEl(id);
+    if (!instance || !anchorEl) return false;
+    showEventPopover(instance, anchorEl);
+    return true;
+}
+
+// A link to one entry is a link to that entry, not to whatever month it happens to fall in:
+// go to its day and open its detail. The chip is drawn a moment after the grid moves, so
+// this looks again rather than once - for ten seconds, which is a loaded machine's idea of
+// a moment - and then gives up rather than waiting for ever.
+function openLinkedEntry(id, tries) {
+    let ev = calendar.getEventById(id);
+    if (!ev) return;
+    // A series has no start of its own until an occurrence exists, and the nearest one to
+    // today is the one worth showing.
+    let at = ev.start || new Date();
+    if (!tries) gotoDateWithTransition(at);
+    if (openPopoverNear(id, at)) return;
+    if ((tries || 0) < 100) setTimeout(function () { openLinkedEntry(id, (tries || 0) + 1); }, 100);
 }
 
 function closeSearchResults() {
@@ -3819,7 +3843,7 @@ function importIcsText(text) {
     // Otherwise a wrong-file-type pick reads as a misleading "0 events".
     if (!text || text.indexOf('BEGIN:VCALENDAR') === -1) {
         openImportSummaryModal("This doesn't look like a valid .ics calendar file.");
-        return;
+        return [];
     }
     let parsed = parseIcsFile(text);
     let imported = 0;
@@ -3829,6 +3853,7 @@ function importIcsText(text) {
     // with hundreds of events would otherwise be hundreds of round trips to
     // the host, each its own write, with nothing on screen but a spinner.
     let batch = [];
+    let added = [];
     parsed.events.forEach(function (data) {
         let wasSimplified = !!data.__recurSimplified;
         delete data.__recurSimplified;
@@ -3841,6 +3866,7 @@ function importIcsText(text) {
         let placement = placementOf(ev);
         eventPlacements[ev.id] = placement;
         batch.push(eventSavePayload(ev, placement));
+        added.push(ev.id);
         imported++;
         if (wasSimplified) simplified++;
     });
@@ -3868,6 +3894,7 @@ function importIcsText(text) {
     // that did not happen.
     if (!isGuestSession)
         openImportSummaryModal(formatImportSummary(imported, importedTasks, duplicates, parsed.failed, simplified));
+    return added;
 }
 
 icsFileInput.addEventListener('change', function () {
@@ -5233,11 +5260,14 @@ let hostHandlers = Object.assign(Object.create(null), {
             isGuestSession = true;
             applyReadOnlyMode();
         }
-        importIcsText(data.contents);
+        let added = importIcsText(data.contents);
         // The host raises the spinner and only the frame takes it down, which a
         // normal load does from its load shell. A link with no account behind it
         // never gets one, so it says so here.
         hostSend({ type: 'removeSpinner' });
+        // And a link opened with no account behind it was sent to show one entry, so it
+        // is opened rather than left to be found on a month nobody asked for.
+        if (isGuestSession && added.length > 0) openLinkedEntry(added[0]);
     },
     respondAddCalendar: function (data) { respondToCalendarAdd(data.newName, data.newColor); },
     respondRenameCalendar: function (data) { respondToCalendarRename(data.calendar); },

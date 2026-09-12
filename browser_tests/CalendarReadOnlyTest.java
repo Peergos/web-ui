@@ -178,6 +178,13 @@ public class CalendarReadOnlyTest {
             d.waitForScript("the host's spinner to go",
                     CALENDAR_VIEW + " && !window.__cal.showSpinner", 60_000);
             System.out.println("  ok   and the spinner over it comes down");
+            // The link was sent to show one entry, so that entry's detail is what a reader
+            // should be looking at - not a month they have to hunt through for it.
+            CalendarApp.waitInFrame(d, "the entry's own detail",
+                    "document.getElementById('event-popover').classList.contains('open')"
+                            + " && document.getElementById('popover-title').textContent.indexOf("
+                            + CalendarApp.quote(TITLE) + ") !== -1", 60_000);
+            System.out.println("  ok   and its detail is open, without being asked for");
             boolean summary = Boolean.TRUE.equals(CalendarApp.inFrame(d,
                     "let m = document.getElementById('import-summary-modal-backdrop');"
                             + "return !!m && m.classList.contains('open');"));
