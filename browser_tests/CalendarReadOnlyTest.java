@@ -20,6 +20,21 @@ public class CalendarReadOnlyTest {
 
     static final String TITLE = "Read only there";
 
+    /** The calendar view, stashed as window.__cal. A guest has no nav to click: the view comes up
+     *  from the path alone, and its root element is its transition's, so it is found in the
+     *  mounted tree rather than on an element - the shortcut the shared helper takes for a
+     *  signed-in account. */
+    static final String CALENDAR_VIEW = "(() => {"
+            + "  let root = null;"
+            + "  for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+            + "  const stack = root ? [root] : [];"
+            + "  while (stack.length) {"
+            + "    const c = stack.pop();"
+            + "    if (typeof c.downloadIcsFile === 'function') { window.__cal = c; return true; }"
+            + "    (c.$children || []).forEach(k => stack.push(k));"
+            + "  }"
+            + "  return false; })()";
+
     public static void main(String[] args) throws Exception {
         try {
             run(args);
@@ -87,19 +102,7 @@ public class CalendarReadOnlyTest {
                     + "  (c.$children || []).forEach(k => stack.push(k));"
                     + "}"
                     + "throw new Error('no component that opens a path in an app');", shared);
-            // A guest has no nav to click: the view comes up from the path alone, and its root
-            // element is its transition's, so it is found in the mounted tree rather than on an
-            // element - the shortcut the shared helper takes for a signed-in account.
-            d.waitForScript("the calendar view", "(() => {"
-                    + "  let root = null;"
-                    + "  for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
-                    + "  const stack = root ? [root] : [];"
-                    + "  while (stack.length) {"
-                    + "    const c = stack.pop();"
-                    + "    if (typeof c.downloadIcsFile === 'function') { window.__cal = c; return true; }"
-                    + "    (c.$children || []).forEach(k => stack.push(k));"
-                    + "  }"
-                    + "  return false; })()", 120_000);
+            d.waitForScript("the calendar view", CALENDAR_VIEW, 120_000);
             d.waitForScript("the calendar frame", "!!document.querySelector('" + CalendarApp.FRAME + "')", 60_000);
             CalendarApp.waitInFrame(d, "the calendar app to load",
                     "!!document.getElementById('load-progress') && document.getElementById('load-progress').hidden"
@@ -169,6 +172,12 @@ public class CalendarReadOnlyTest {
                     "Array.from(document.querySelectorAll('[data-search-event-id]'))"
                             + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(TITLE) + ") !== -1)", 120_000);
             System.out.println("  ok   a link to one entry opens it rather than the drive");
+            // Checked on the page, not inside the frame: the host raises the spinner before the
+            // frame exists and only the frame can say the first paint is done, so an entry can be
+            // drawn correctly and still be sitting under a spinner nobody takes down.
+            d.waitForScript("the host's spinner to go",
+                    CALENDAR_VIEW + " && !window.__cal.showSpinner", 60_000);
+            System.out.println("  ok   and the spinner over it comes down");
             boolean summary = Boolean.TRUE.equals(CalendarApp.inFrame(d,
                     "let m = document.getElementById('import-summary-modal-backdrop');"
                             + "return !!m && m.classList.contains('open');"));

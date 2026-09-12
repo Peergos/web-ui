@@ -5234,6 +5234,10 @@ let hostHandlers = Object.assign(Object.create(null), {
             applyReadOnlyMode();
         }
         importIcsText(data.contents);
+        // The host raises the spinner and only the frame takes it down, which a
+        // normal load does from its load shell. A link with no account behind it
+        // never gets one, so it says so here.
+        hostSend({ type: 'removeSpinner' });
     },
     respondAddCalendar: function (data) { respondToCalendarAdd(data.newName, data.newColor); },
     respondRenameCalendar: function (data) { respondToCalendarRename(data.calendar); },
