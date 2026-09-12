@@ -30,13 +30,17 @@ static class Program
     [STAThread]
     static void Main()
     {
-        // Check WebView2 availability before showing any UI.
-        // Exit code 1 tells the Java launcher to fall back to Edge.
-        try { CoreWebView2Environment.GetAvailableBrowserVersionString(); }
-        catch { Environment.Exit(1); return; }
-
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
+
+        // No runtime means there is no window to put the app in. Say so and offer the
+        // download rather than exiting non-zero: the launcher reads a non-zero exit as
+        // "fall back to Edge", which drops the user in a browser with nothing to say
+        // what happened or how to fix it. Falling out of Main exits 0, so the server
+        // shuts down with us instead.
+        try { CoreWebView2Environment.GetAvailableBrowserVersionString(); }
+        catch { ShowWebView2Missing(); return; }
+
         string port = Environment.GetEnvironmentVariable("PEERGOS_PORT") ?? "7777";
         // Set by the server when it was started with -minimised true, which is what the
         // login item written by "Start on boot" does: come up as a tray icon, no window.
@@ -57,6 +61,73 @@ static class Program
             ListenForLaunches(port, window);
             Application.Run(window);
         }
+    }
+
+    // Microsoft's own link for the Evergreen bootstrapper, which installs the runtime.
+    private const string WEBVIEW2_DOWNLOAD = "https://go.microsoft.com/fwlink/p/?LinkId=2124703";
+
+    // Shown in place of the app when the WebView2 runtime is missing. Modal and on its
+    // own: there is no tray icon here, because there is nothing for one to restore.
+    private static void ShowWebView2Missing()
+    {
+        Form dialog = new Form
+        {
+            Text = "Peergos",
+            Icon = PeergosWindow.AppIcon(),
+            Font = SystemFonts.MessageBoxFont,
+            FormBorderStyle = FormBorderStyle.FixedDialog,
+            StartPosition = FormStartPosition.CenterScreen,
+            MaximizeBox = false,
+            MinimizeBox = false,
+            ShowInTaskbar = true,
+            ClientSize = new Size(470, 165)
+        };
+
+        Label message = new Label
+        {
+            Dock = DockStyle.Fill,
+            Padding = new Padding(16, 16, 16, 0),
+            Text = "Peergos needs the Microsoft Edge WebView2 runtime to open its window, "
+                 + "and it is not installed on this PC."
+                 + Environment.NewLine + Environment.NewLine
+                 + "Install the WebView2 runtime, then start Peergos again."
+        };
+
+        Button download = new Button { Text = "Download WebView2", AutoSize = true };
+        download.Click += (_, __) =>
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(WEBVIEW2_DOWNLOAD) { UseShellExecute = true });
+            }
+            catch (Exception e)
+            {
+                // No browser to open it with is not worth a second dialog on top of this one.
+                Console.Error.WriteLine("Peergos: could not open the WebView2 download page: " + e.Message);
+            }
+        };
+        Button close = new Button { Text = "Close", AutoSize = true, DialogResult = DialogResult.Cancel };
+
+        FlowLayoutPanel buttons = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Bottom,
+            FlowDirection = FlowDirection.RightToLeft,
+            Padding = new Padding(12),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink
+        };
+        buttons.Controls.Add(close);
+        buttons.Controls.Add(download);
+
+        // Docking runs back to front, so the filled label is added first to be laid out
+        // last - the other way round and it sits underneath the buttons.
+        dialog.Controls.Add(message);
+        dialog.Controls.Add(buttons);
+        dialog.AcceptButton = download;
+        dialog.CancelButton = close;
+        // ShowDialog, not Application.Run: a button's DialogResult only closes the form
+        // when it is modal, and Close is the only way out of this one.
+        dialog.ShowDialog();
     }
 
     // Hand this launch's intent to the host that holds the mutex, and let it do the showing.
@@ -754,7 +825,7 @@ class PeergosWindow : Form
     // and these are static methods.
     // Not disposed: the fallback is a shared static that must outlive us, and this is
     // called a handful of times at most.
-    private static Icon AppIcon()
+    internal static Icon AppIcon()
     {
         return System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Application;
     }
