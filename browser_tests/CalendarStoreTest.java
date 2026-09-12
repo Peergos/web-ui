@@ -51,6 +51,18 @@ public class CalendarStoreTest {
             CalendarApp.inFrame(d, CalendarApp.setField("event-title", FIRST) + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
             CalendarApp.waitInFrame(d, "the entry on the grid", drawn(FIRST), 30_000);
+            // The grid draws before the host has written anything, and on a slow runner the
+            // write is still queued for a long while after. Waiting for this entry's own file
+            // is what makes the check below mean something: a month holding no file that says
+            // either name is otherwise just as true before the entry was ever stored as it is
+            // after it was properly removed. This entry's own, not any file: the month is the
+            // one the tests before this shared, and it is not empty.
+            d.waitUntil("the entry to reach the store", () -> {
+                for (String name : CalendarApp.list(d, month))
+                    if (CalendarApp.read(d, month, name).contains("SUMMARY:" + FIRST))
+                        return true;
+                return null;
+            }, 120_000);
             CalendarApp.openPopover(d, FIRST);
             CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
             CalendarApp.waitInFrame(d, "the event dialog",
@@ -89,7 +101,7 @@ public class CalendarStoreTest {
                 if (found != null)
                     throw new AssertionError("The entry came back after the delete: " + timeline);
             }
-            System.out.println("  ok   a create, an edit and a delete fired together leave nothing behind");
+            System.out.println("  ok   an edit and a delete fired together leave nothing behind");
 
             // --- deleting a calendar takes only its own directory ----------------------------
             List<String> ownFiles = CalendarApp.list(d, month);
