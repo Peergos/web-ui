@@ -43,20 +43,34 @@ public class Browsers {
      *  proves the window, since switching to a discarded one succeeds either way.
      */
     public static WebDriver launch(Engine engine, Path downloadDir, boolean headless) {
-        WebDriver d = start(engine, downloadDir, headless);
-        try {
-            d.script("return 1;");
-            return d;
-        } catch (RuntimeException unusable) {
-            System.out.println("  note: the browser came up with no window to drive, starting"
-                    + " another (" + unusable.getMessage() + ")");
+        WebDriver d = null;
+        RuntimeException unusable = null;
+        // Every browser is probed, the replacements included: a loaded windows runner hands
+        // back a browser whose only window has already gone as readily the second time as the
+        // first, and returning that one unchecked only moves the failure into the test.
+        for (int attempt = 0; attempt < 3; attempt++) {
+            if (d != null) {
+                System.out.println("  note: the browser came up with no window to drive,"
+                        + " starting another (" + unusable.getMessage() + ")");
+                try {
+                    d.close();
+                } catch (RuntimeException e) {
+                    // it was already unusable, which is why there is another one
+                }
+            }
+            d = start(engine, downloadDir, headless);
+            try {
+                d.script("return 1;");
+                return d;
+            } catch (RuntimeException e) {
+                unusable = e;
+            }
         }
-        try {
-            d.close();
-        } catch (RuntimeException e) {
-            // it was already unusable, which is why there is a second one
-        }
-        return start(engine, downloadDir, headless);
+        // Handed back rather than thrown: every command recovers on its own, and a browser
+        // that would not answer here has come good by the time a test asks it for something.
+        System.out.println("  note: three browsers in a row came up with no window to drive,"
+                + " carrying on with the last (" + unusable.getMessage() + ")");
+        return d;
     }
 
     private static WebDriver start(Engine engine, Path downloadDir, boolean headless) {
