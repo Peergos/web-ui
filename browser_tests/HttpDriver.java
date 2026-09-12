@@ -82,6 +82,41 @@ public class HttpDriver implements WebDriver {
         }
     }
 
+    /** Sizes the browser's window. Engines that take their size from the command line are set
+     *  up at launch; the ones driven by a real window are sized here, once the session exists.
+     *
+     *  The request is read back rather than trusted. A driver can answer a resize before the
+     *  window it is resizing has been mapped, and the window then keeps the size it opened at -
+     *  which is small enough that a month grid has no room to be dropped on. Best effort still:
+     *  a window that will not take the size says so and the tests carry on, since the one that
+     *  cares says what it was given when it fails.
+     */
+    public void setWindowRect(int width, int height) {
+        String had = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                send("POST", session("/window/rect"),
+                        Map.of("x", 0, "y", 0, "width", width, "height", height));
+                Object rect = value(send("GET", session("/window/rect"), null), null);
+                had = String.valueOf(rect);
+                if (rect instanceof Map) {
+                    Map m = (Map) rect;
+                    if (number(m.get("width")) >= width && number(m.get("height")) >= height)
+                        return;
+                }
+            } catch (RuntimeException e) {
+                System.out.println("  note: this driver would not set the window size: " + e.getMessage());
+                return;
+            }
+            WebDriver.sleep(500);
+        }
+        System.out.println("  note: the window stayed at " + had + " rather than " + width + "x" + height);
+    }
+
+    private static int number(Object value) {
+        return value instanceof Number ? ((Number) value).intValue() : -1;
+    }
+
     private String session(String suffix) {
         return "/session/" + sessionId + suffix;
     }

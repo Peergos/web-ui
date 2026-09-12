@@ -38,9 +38,32 @@ Covered: sign in and reach the drive, upload a file, upload a group of files in 
 folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
 and into a subdirectory, render html with links and images from both its own directory and a
 subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
-as .ics. Every assertion is on the bytes - hashed
-against the source, unzipped and compared, or a rendered canvas with real dimensions - never on a
-file or an app merely appearing.
+as .ics, and the calendar itself: an event, a repeating event with a reminder, a task through
+completion, one occurrence taken out of a series and the rest of it ended, an .ics imported twice
+and exported again, a calendar left behind by the previous app opening unchanged and
+still workable by it afterwards, what this app writes read back by the server's own iCalendar
+parser rather than its own, an event dragged over a month boundary with its file following
+while a repeating occurrence dropped on another day snaps back and a same-day move asks this,
+this-and-following or all with each answer read off the files, a calendar shared read-only
+with a second account that sees it and cannot write into it, a create, edit and delete of one
+entry fired together leaving nothing behind and a deleted calendar taking only its own
+directory, and the boundary the calendar's sandbox is held to - including messages naming a
+place outside it. Every
+assertion is on the bytes -
+hashed against the source, unzipped and compared, a rendered canvas with real dimensions, or the
+stored .ics read back out of the store - never on a file or an app merely appearing.
+
+The calendar tests drive the app the way a person does, through the dialogs inside its sandboxed
+frame, and then read what was written with the same App handle the host itself uses (`CalendarApp`
+holds both halves). The app keeps its own state to itself, so nothing in these tests reaches into
+it: what the page shows comes from the document, what was stored comes from the store.
+
+Scratch directories - browser profiles, download directories, the server's own data - go
+through `Temp.directory`, which removes them when the JVM exits. A run leaves hundreds of
+megabytes of them otherwise, and where the system temp directory is a tmpfs that is enough,
+after a few runs, to fail the next one; the symptom is a page that never loads rather than
+anything naming the disk. The fixture cache under `peergos-browser-fixtures` is deliberately
+kept between runs.
 
 The html viewer test signs up its own user. `/peergos/` is a magic prefix to the sandbox service
 worker, marking an absolute drive path of the form `/peergos/<username>/<rest>` which it redirects

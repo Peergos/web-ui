@@ -59,6 +59,18 @@ public class Page {
         }
     }
 
+    /** Signs out through the app's own logout, which clears the cached root key and reloads.
+     *  What is left is a browser with no account in it, which is what opening someone else's
+     *  link as a stranger needs - without a second browser to open it in.
+     */
+    public static void logout(WebDriver d) {
+        if (! awaitComponent(d, "logout", "__settings", 60_000))
+            throw new IllegalStateException("Nothing on the page offers a logout");
+        d.scriptQuiet("window.__settings.logout();");
+        d.waitForScript("the login form after signing out",
+                "!!document.querySelector('input[name=username]')", 120_000);
+    }
+
     /** A bare expression, not a statement: waitForScript wraps what it is given in a return. */
     private static String signInEnabled() {
         return "[...document.querySelectorAll('button')]"
@@ -206,11 +218,14 @@ public class Page {
      *  it is plainly there by the time the test gives up.
      */
     public static void gotoView(WebDriver d, String navLabel, String methodName, String handle) {
+        // The same allowance signing in makes: a windows runner having a bad day takes longer
+        // than a minute to mount a view, and giving up then reports a view that was on its way.
+        long perRound = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 180_000 : 60_000;
         for (int round = 0; round < 5; round++) {
             if (awaitComponent(d, methodName, handle, 0))
                 return;
             clickNav(d, navLabel);
-            if (awaitComponent(d, methodName, handle, 60_000))
+            if (awaitComponent(d, methodName, handle, perRound))
                 return;
         }
         throw new IllegalStateException("The " + navLabel + " view never appeared."

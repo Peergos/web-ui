@@ -45,22 +45,21 @@ public class CalendarEventDownloadTest {
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
 
-        Path downloads = Files.createTempDirectory("peergos-ics-");
+        Path downloads = Temp.directory("peergos-ics-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, Server.USERNAME, Server.PASSWORD);
 
-            Page.gotoView(d, "Calendar", "downloadEvent", "__cal");
+            Page.gotoView(d, "Calendar", "downloadIcsFile", "__cal");
             System.out.println("calendar open");
 
-            // the name is built from a translated prefix, so read it rather than assume English
-            String prefix = String.valueOf(d.script("return window.__cal.translate('CALENDAR.EVENT')"));
-            String expectedName = prefix + " - " + TITLE + ".ics";
+            // The app names the file and the host writes it: the name is whatever was asked for,
+            // with the extension added if it is missing.
+            String expectedName = TITLE + ".ics";
             System.out.println("expecting " + expectedName);
 
-            d.script("window.__cal.downloadEvent('test-calendar', arguments[0], arguments[1]);",
-                    TITLE, ICS);
+            d.script("window.__cal.downloadIcsFile(arguments[0], arguments[1]);", TITLE, ICS);
 
             Downloads.Result ics = Downloads.await(downloads, expectedName, 120_000, 20_000);
             System.out.println("  " + ics);

@@ -35,10 +35,10 @@ public class PdfRenderTest {
         String url = own != null ? own.url() : given;
 
         String name = "render-" + System.currentTimeMillis() + ".pdf";
-        Path pdf = Files.createTempDirectory("peergos-pdf-").resolve(name);
+        Path pdf = Temp.directory("peergos-pdf-").resolve(name);
         Files.write(pdf, minimalPdf("Peergos browser test"));
 
-        Path downloads = Files.createTempDirectory("peergos-pdf-dl-");
+        Path downloads = Temp.directory("peergos-pdf-dl-");
         try {
             Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, pdf);
             Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, null, 120_000, name);
@@ -49,17 +49,20 @@ public class PdfRenderTest {
                 Page.login(d, Server.USERNAME, Server.PASSWORD);
                 // Retried once: if the browsing context is discarded mid test the app comes back
                 // without the viewer open, and the frame the assertions live in is genuinely
-                // gone. Opening it again is the only way to carry on, and one retry keeps a
-                // repeatable failure from being papered over.
+                // gone. A viewer that never opens at all wants the same second go - the drive
+                // drops an open it believes already happened - while one retry keeps a
+                // repeatable failure from being papered over. An assertion is an Error, so a
+                // pdf that renders wrongly still fails on the spot.
                 for (int attempt = 0; ; attempt++) {
                     try {
                         renderAndCheck(d, name);
                         break;
-                    } catch (WebDriver.FrameContextLost e) {
+                    } catch (RuntimeException e) {
                         d.switchToTop();
                         if (attempt > 0)
                             throw e;
-                        System.out.println("  the viewer's frame went away, opening it again");
+                        System.out.println("  the viewer did not come up, opening it again ("
+                                + e.getMessage() + ")");
                     }
                 }
             }
@@ -77,7 +80,10 @@ public class PdfRenderTest {
         System.out.println("opening " + name + " in the pdf app");
         d.script("window.__drive.openInApp({filename: arguments[0]}, 'pdf');", name);
 
-        d.waitUntil("the pdf app frame", () -> d.find("#pdf"), 60_000);
+        // The same allowance the rest of the suite gives a slow runner: the frame appearing
+        // is the app being launched and its bundle fetched, not a moment's rendering.
+        long frameTimeout = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 180_000 : 60_000;
+        d.waitUntil("the pdf app frame", () -> d.find("#pdf"), frameTimeout);
         String frameSrc = String.valueOf(d.script(
                 "return document.getElementById('pdf').getAttribute('src')"));
         System.out.println("  frame src " + frameSrc);

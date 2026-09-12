@@ -53,7 +53,7 @@ public class HtmlViewerTest {
         System.out.println("signed up " + user + " and installed the html viewer app");
 
         String folder = "htmltest-" + System.currentTimeMillis();
-        Path dir = Files.createTempDirectory("peergos-html-");
+        Path dir = Temp.directory("peergos-html-");
         Path index = dir.resolve("index.html");
         Path sibling = dir.resolve("sibling.html");
         Path child = dir.resolve("child.html");
@@ -76,7 +76,7 @@ public class HtmlViewerTest {
         writePng(same, SAME_W, SAME_H);
         writePng(nested, SUB_W, SUB_H);
 
-        Path downloads = Files.createTempDirectory("peergos-html-dl-");
+        Path downloads = Temp.directory("peergos-html-dl-");
         try {
             Fixtures.commands(jar, url, user, password,
                     "mkdir " + folder,

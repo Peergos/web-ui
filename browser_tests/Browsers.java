@@ -10,6 +10,14 @@ import java.util.*;
  */
 public class Browsers {
 
+    /** The window every engine is given, whether it takes a size on its command line or has to
+     *  be told once it is up. A browser left to itself opens small - 800x600 headless, less on a
+     *  bare virtual display - and a month grid squeezed into that is too fine to aim at: the
+     *  entry lands a week from the day it was dropped on. The week view scrolls, so what a drag
+     *  needs there is brought into view by the test rather than by the size of the window.
+     */
+    static final int WIDTH = 1400, HEIGHT = 1000;
+
     public enum Engine { FIREFOX, CHROMIUM, BRAVE, WEBKIT, SAFARI }
 
     public static Engine engine(String name) {
@@ -25,7 +33,47 @@ public class Browsers {
         }
     }
 
+    /** A browser, and a second one if the first came up with nothing a test can drive.
+     *
+     *  A session can be left bound to a browsing context that is already gone, which windows does
+     *  far more than linux: the browser is up, it has one window, and that window will neither
+     *  run a script nor open another. Every rung of the driver's own recovery works inside that
+     *  browser, so none of them can win against it - a second browser is the only move left, and
+     *  it is the one safari's launch already makes for its own startup race. A script is what
+     *  proves the window, since switching to a discarded one succeeds either way.
+     */
     public static WebDriver launch(Engine engine, Path downloadDir, boolean headless) {
+        WebDriver d = null;
+        RuntimeException unusable = null;
+        // Every browser is probed, the replacements included: a loaded windows runner hands
+        // back a browser whose only window has already gone as readily the second time as the
+        // first, and returning that one unchecked only moves the failure into the test.
+        for (int attempt = 0; attempt < 3; attempt++) {
+            if (d != null) {
+                System.out.println("  note: the browser came up with no window to drive,"
+                        + " starting another (" + unusable.getMessage() + ")");
+                try {
+                    d.close();
+                } catch (RuntimeException e) {
+                    // it was already unusable, which is why there is another one
+                }
+            }
+            d = start(engine, downloadDir, headless);
+            try {
+                d.script("return 1;");
+                return d;
+            } catch (RuntimeException e) {
+                unusable = e;
+            }
+        }
+        // Handed back rather than thrown: every command recovers on its own, and a browser
+        // that would not answer here has come good by the time a test asks it for something.
+        System.out.println("  note: three browsers in a row came up with no window to drive,"
+                + " carrying on with the last (" + unusable.getMessage() + ")");
+        return d;
+    }
+
+    private static WebDriver start(Engine engine, Path downloadDir, boolean headless) {
         try {
             Files.createDirectories(downloadDir);
             switch (engine) {
@@ -48,11 +96,15 @@ public class Browsers {
     }
 
     private static WebDriver firefox(Path downloadDir, boolean headless) throws IOException {
-        Path profile = Files.createTempDirectory("peergos-ff-profile-");
+        Path profile = Temp.directory("peergos-ff-profile-");
         int port = freePort();
         // Marionette reads its port from the profile, so there is no race with a fixed one.
         String prefs = String.join("\n",
                 "user_pref(\"marionette.port\", " + port + ");",
+                // a headless browser on a runner without a display reports no pointing device at
+                // all, and the calendar only turns on drag-to-move for a mouse: fine, hovering
+                "user_pref(\"ui.primaryPointerCapabilities\", 6);",
+                "user_pref(\"ui.allPointerCapabilities\", 6);",
                 "user_pref(\"browser.download.folderList\", 2);",
                 "user_pref(\"browser.download.dir\", \"" + jsString(downloadDir) + "\");",
                 "user_pref(\"browser.download.useDownloadDir\", true);",
@@ -77,7 +129,8 @@ public class Browsers {
         Files.writeString(profile.resolve("user.js"), prefs);
 
         List<String> cmd = new ArrayList<>(List.of(
-                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString()));
+                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString(),
+                "--width=" + WIDTH, "--height=" + HEIGHT));
         if (headless)
             cmd.add("--headless");
         cmd.add("about:blank");
@@ -116,12 +169,15 @@ public class Browsers {
         Process driver = start(List.of(chromedriverBinary(), "--port=" + port));
         awaitDriver("http://127.0.0.1:" + port + "/status");
 
-        Path userData = Files.createTempDirectory("peergos-chrome-profile-");
+        Path userData = Temp.directory("peergos-chrome-profile-");
         List<String> args = new ArrayList<>(List.of(
                 "--user-data-dir=" + userData,
                 "--no-first-run",
                 "--no-default-browser-check",
-                "--disable-features=DownloadBubble,DownloadBubbleV2"));
+                "--disable-features=DownloadBubble,DownloadBubbleV2",
+                // the same mouse for chromium, whose headless mode reports no pointer either
+                "--blink-settings=primaryPointerType=4,availablePointerTypes=4,primaryHoverType=2,availableHoverTypes=2",
+                "--window-size=" + WIDTH + "," + HEIGHT));
         if (headless)
             args.add("--headless=new");
 
@@ -188,6 +244,11 @@ public class Browsers {
         if (headless && hasXvfb()) {
             cmd.add("xvfb-run");
             cmd.add("-a");
+            // A virtual display is 640x480 unless it is told otherwise, and no window is larger
+            // than the screen it is on: without this the browser is stuck at that size however
+            // it is sized afterwards, and a drop on a month grid lands a week off.
+            cmd.add("-s");
+            cmd.add("-screen 0 " + (WIDTH + 80) + "x" + (HEIGHT + 80) + "x24");
         } else if (headless && System.getenv("DISPLAY") == null) {
             throw new IllegalStateException("WebKitGTK needs a display: install xvfb, or run with"
                     + " HEADLESS=0 on a machine with one");
@@ -206,7 +267,9 @@ public class Browsers {
         Map<String, Object> caps = Map.of("alwaysMatch",
                 Map.of("browserName", "MiniBrowser",
                         "webkitgtk:browserOptions", Map.of("args", List.of())));
-        return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+        d.setWindowRect(WIDTH, HEIGHT);
+        return d;
     }
 
     /** Safari, driven by the safaridriver built into macos.
@@ -227,7 +290,9 @@ public class Browsers {
             try {
                 awaitDriver("http://127.0.0.1:" + port + "/status");
                 Map<String, Object> caps = Map.of("alwaysMatch", Map.of("browserName", "safari"));
-                return new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+                HttpDriver d = new HttpDriver("http://127.0.0.1:" + port, caps, driver);
+                d.setWindowRect(WIDTH, HEIGHT);
+                return d;
             } catch (RuntimeException e) {
                 last = e;
                 HttpDriver.stop(driver);
