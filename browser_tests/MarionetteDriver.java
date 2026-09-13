@@ -48,7 +48,17 @@ public class MarionetteDriver implements WebDriver {
             this.in = s.getInputStream();
             this.out = s.getOutputStream();
             readFrame(); // the server's handshake
-            command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            // Eager: navigation is done once the document is parsed, not once every
+            // subresource has settled. Every navigate in this suite is followed by a wait for
+            // what the test actually needs, so the load event was only ever an extra thing to
+            // hang on - and on a loaded windows runner it has hung, taking a page that was
+            // there and usable for one that was never coming.
+            try {
+                command("WebDriver:NewSession", Map.of("capabilities",
+                        Map.of("alwaysMatch", Map.of("pageLoadStrategy", "eager"))));
+            } catch (RuntimeException unsupported) {
+                command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            }
             // Long enough that a page which is merely slow is not read as a page that will
             // never come. Two minutes covers an ordinary machine; the runners flagged as slow
             // have been seen to spend six and a half minutes on a single test, and a load

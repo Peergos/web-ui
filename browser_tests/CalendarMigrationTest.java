@@ -334,9 +334,21 @@ public class CalendarMigrationTest {
 
     static void signIn(WebDriver d, String url, String user) {
         d.navigate(url + "/");
-        if (Boolean.TRUE.equals(d.scriptQuiet("return (() => { for (const el of"
-                + " document.querySelectorAll('*')) { const c = el.__vue__;"
-                + " if (c && typeof c.logout === 'function') return true; } return false; })()")))
+        // Asked of the page rather than assumed from what has rendered so far: the app boots
+        // after the document is parsed, so a check made the moment navigation returns finds
+        // neither the form nor anyone signed in, and signing in over a live session hangs
+        // waiting for a form that is never coming.
+        d.waitUntil("the page to say whether anyone is signed in", () -> {
+            if (Boolean.TRUE.equals(d.scriptQuiet(
+                    "return !!document.querySelector('input[name=username]')")))
+                return "signed out";
+            if (Boolean.TRUE.equals(d.scriptQuiet("return (() => { for (const el of"
+                    + " document.querySelectorAll('*')) { const c = el.__vue__;"
+                    + " if (c && typeof c.logout === 'function') return true; } return false; })()")))
+                return "signed in";
+            return null;
+        }, 120_000);
+        if (Boolean.TRUE.equals(d.scriptQuiet("return !document.querySelector('input[name=username]')")))
             Page.logout(d);
         d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
         Page.login(d, user, PASSWORD);
