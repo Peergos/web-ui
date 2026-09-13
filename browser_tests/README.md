@@ -45,10 +45,12 @@ still workable by it afterwards, what this app writes read back by the server's 
 parser rather than its own, an event dragged over a month boundary with its file following
 while a repeating occurrence dropped on another day snaps back and a same-day move asks this,
 this-and-following or all with each answer read off the files, a calendar shared read-only
-with a second account that sees it and cannot write into it, a create, edit and delete of one
-entry fired together leaving nothing behind and a deleted calendar taking only its own
-directory, and the boundary the calendar's sandbox is held to - including messages naming a
-place outside it. Every
+with a second account that sees it and cannot write into it, an entry shared between two
+accounts staying live at both ends, a whole calendar shared from the directory every account
+starts with being taken in and written to, everything one account holds carried into another
+with nothing lost on the way, a create, edit and delete of one entry fired together leaving
+nothing behind and a deleted calendar taking only its own directory, and the boundary the
+calendar's sandbox is held to - including messages naming a place outside it. Every
 assertion is on the bytes -
 hashed against the source, unzipped and compared, a rendered canvas with real dimensions, or the
 stored .ics read back out of the store - never on a file or an app merely appearing.

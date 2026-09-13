@@ -535,7 +535,6 @@ module.exports = {
                 }
                 //create directory
                 that.displaySpinner();
-                let newId = String(that.calendarProperties.calendars.length + 1);
                 let dirName = that.generateDirectoryName();
                 let entry = {name:newName, directory:dirName, color: newColor, shareable: true};
                 that.calendarProperties.calendars.push(entry);
@@ -550,7 +549,7 @@ module.exports = {
                 that.createCalendarFile(calendar, dirName, {name:newName, color: newColor}).thenApply(done => {
                     that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                         that.removeSpinner();
-                        that.postMessage({type: 'respondAddCalendar', newId: newId, newName: newName, newColor: newColor});
+                        that.postMessage({type: 'respondAddCalendar', newName: newName, newColor: newColor});
                     }).exceptionally(failed);
                 }).exceptionally(failed);
             });
@@ -893,11 +892,12 @@ module.exports = {
     importSharedCalendar: function(calendar, year, month) {
         let that = this;
         let calendarDirectory = this.importCalendarPath.substring(this.importCalendarPath.lastIndexOf('/') +1);
-        let existingCalendar = this.getCalendarForDirectory(calendarDirectory);
+        let existingCalendar = this.getCalendarForDirectory(calendarDirectory, this.owner);
+        // However the import ends, the calendar still has to be loaded: only a load shell
+        // fills the frame, and without one it has nothing to put an entry in.
         if (existingCalendar != null) {
             that.showMessage(true, that.translate("CALENDAR.ALREADY.IMPORTED").replace("$NAME", existingCalendar.name));
-            that.removeSpinner();
-            that.close();
+            that.load(calendar, year, month);
         } else {
             this.readCalendarFile(calendar, this.owner, calendarDirectory).thenApply(function(json) {
                that.removeSpinner();
@@ -906,8 +906,13 @@ module.exports = {
                         that.showConfirm = false;
                         that.importCalendar(calendar, year, month, calendarDirectory, json.name, json.color);
                    },
-                   () => { that.showConfirm = false; that.close();}
+                   () => { that.showConfirm = false; that.load(calendar, year, month); }
                );
+               return null;
+            }).exceptionally(function(throwable) {
+               that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD'));
+               that.load(calendar, year, month);
+               return null;
             });
         }
     },
@@ -1022,7 +1027,10 @@ module.exports = {
         this.cancelSweeps();
         this.postMessage({type: 'load', yearMonth: year * 12 + (month - 1), username: username,
             calendars: calendars, pendingBuckets: pendingBuckets,
-            importCalendarEventParams: importCalendarEventParams, isReadOnly: this.isCalendarReadOnly});
+            importCalendarEventParams: importCalendarEventParams, isReadOnly: this.isCalendarReadOnly,
+            // Carried with the state rather than left to the handshake alone, which only
+            // ran once - a later load would otherwise paint a light calendar in a dark app.
+            currentTheme: this.$store.getters.currentTheme});
     },
     postDeleteCalendar: function(calendar, data) {
         let that = this;
@@ -1160,7 +1168,6 @@ module.exports = {
 	    const that = this;
 	    that.displaySpinner();
 	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
-	        that.removeSpinner();
 	        return;
 	    }
 	    // Queued like a write rather than only waiting for one: a delete that follows the
@@ -1297,7 +1304,11 @@ module.exports = {
         if (props.calendars == null)
             props.calendars = [];
         calendar.dirInternal(null, null).thenApply(function(filenames) {
-            let listed = props.calendars.map(c => c.directory);
+            // Ours alone: this lists our own app directory, and somebody else's calendar
+            // in a directory of the same name says nothing about it.
+            let listed = props.calendars
+                .filter(c => c.owner == null || c.owner == that.context.username)
+                .map(c => c.directory);
             let unlisted = filenames.toArray([]).filter(name =>
                 name != that.CONFIG_FILENAME && listed.indexOf(name) < 0);
             if (unlisted.length == 0) {
@@ -1372,10 +1383,13 @@ module.exports = {
         }
         return false;
     },
-    getCalendarForDirectory: function(calendarDirectory) {
+    // Whose calendar it is counts as much as where it is kept: every account starts with
+    // one in `default`, so the directory alone does not identify it.
+    getCalendarForDirectory: function(calendarDirectory, owner) {
         for (var i=0; i < this.calendarProperties.calendars.length; i++) {
             let calendar = this.calendarProperties.calendars[i];
-            if (calendar.directory == calendarDirectory) {
+            let its = calendar.owner == null ? this.context.username : calendar.owner;
+            if (calendar.directory == calendarDirectory && its == owner) {
                 return calendar;
             }
         }
@@ -1487,7 +1501,6 @@ module.exports = {
 	    const that = this;
 	    that.displaySpinner();
 	    if (!this.isValidEventRequest(item.calendarName, item.year, item.month, item.Id, item.isRecurring, item.isTask)) {
-	        that.removeSpinner();
 	        return;
 	    }
 	    // One write, wherever the item is addressed: a task goes to the
@@ -1713,11 +1726,20 @@ module.exports = {
         if (items.length == 0) {
             return;
         }
+        // One import fills one calendar, written under whoever owns it: a calendar shared
+        // with us lives under their name, not ours.
+        let owner = this.findCalendarOwner(items[0].calendarName) || this.context.username;
+        if (items.some(function(each) {
+                return (that.findCalendarOwner(each.calendarName) || that.context.username) !== owner;
+            })) {
+            this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
+            return;
+        }
         let name = 'bulkImport';
         let title = this.translate("CALENDAR.IMPORT.MSG").replace("$ITEMS", items.length);
         let progress = {title: title, done: 0, max: items.length, name: name};
         let uploads = {
-            directoryPath: this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/",
+            directoryPath: owner + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/",
             uploadPaths: [],
             fileUploadProperties: [],
             progress: progress,
@@ -1985,6 +2007,14 @@ module.exports = {
             if (pointer == null) {
                 return;
             }
+            // Marking an entry detached writes to the store, so every way of getting there
+            // asks the same question the success path asks: is this still the current load?
+            let giveUp = function() {
+                if (token === that.loadToken) {
+                    that.detachShared(entry, pointer);
+                }
+                return null;
+            };
             that.context.getByPath(that.sharedSourcePath(pointer)).thenApply(function(fileOpt) {
                 if (token !== that.loadToken) {
                     return null;
@@ -1993,8 +2023,7 @@ module.exports = {
                     // Offline, revoked and deleted look the same through a capability on one
                     // file, so the snapshot stays and is marked rather than taken away on
                     // what may be nothing worse than a bad connection.
-                    that.detachShared(entry, pointer);
-                    return null;
+                    return giveUp();
                 }
                 let file = fileOpt.get();
                 let stamp = that.sharedStamp(file.getFileProperties());
@@ -2004,15 +2033,9 @@ module.exports = {
                     return null;
                 }
                 that.refreshSnapshotFrom(entry.calendarName, pointer, file, writable)
-                    .exceptionally(function(throwable) {
-                        that.detachShared(entry, pointer);
-                        return null;
-                    });
+                    .exceptionally(giveUp);
                 return null;
-            }).exceptionally(function(throwable) {
-                that.detachShared(entry, pointer);
-                return null;
-            });
+            }).exceptionally(giveUp);
         });
     },
     detachShared: function(entry, pointer) {
@@ -2180,6 +2203,12 @@ module.exports = {
                 return null;
             }
             feed.getShared(from, size, that.context.crypto, that.context.network).thenApply(function(items) {
+                // The load this belongs to may be over by now, and the list it was given
+                // with it - a reload reads the snapshots again from scratch.
+                if (token !== that.loadToken) {
+                    future.complete(entries);
+                    return null;
+                }
                 items.toArray([]).forEach(function(item) {
                     let moved = that.sharedPointerFromPath(String(item.path), '');
                     if (moved == null) {
@@ -2275,15 +2304,18 @@ module.exports = {
         }
         let settle = function(currentCalendar, present, writable) {
             if (!present && currentCalendar.owner != null) { //unshared or deleted
-                calendarsToDelete.push(currentCalendar.directory);
+                calendarsToDelete.push(currentCalendar);
                 modified[0] = true;
             }
             currentCalendar.writable = writable;
             processed.push(currentCalendar.name);
             if (processed.length == that.calendarProperties.calendars.length) {
-                calendarsToDelete.forEach(directory => {
-                    let index = that.calendarProperties.calendars.findIndex(v => v.directory === directory);
-                    that.calendarProperties.calendars.splice(index, 1);
+                // The entry itself rather than its directory: ours and a shared one can sit
+                // in directories of the same name, and the first match is not always this.
+                calendarsToDelete.forEach(entry => {
+                    let index = that.calendarProperties.calendars.indexOf(entry);
+                    if (index !== -1)
+                        that.calendarProperties.calendars.splice(index, 1);
                 });
                 future.complete(modified[0]);
             }
@@ -2569,7 +2601,10 @@ module.exports = {
             this.showMessage(true, this.translate('CALENDAR.ERROR.LOAD.FILE'));
             return;
         }
-        let path = this.context.username + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + sub;
+        // Whose app directory it is kept in, not ours: an entry in a calendar somebody
+        // shared lives under their name, and the file is only there.
+        let owner = this.findCalendarOwner(req.calendarName) || this.context.username;
+        let path = owner + "/.apps/" + this.CALENDAR_DIR_NAME + '/' + this.DATA_DIR_NAME + "/" + sub;
         this.openFileOrDir("Email", path, {filename: req.id + this.CALENDAR_FILE_EXTENSION});
     },
     showMessage: function(isError, message) {
@@ -2578,9 +2613,6 @@ module.exports = {
         } else {
             this.$toast(message)
         }
-    },
-    close: function () {
-        //this.$emit("hide-calendar");
     }
     }
 }

@@ -1502,7 +1502,7 @@ function emailEvent(ev) {
         hostSend(Object.assign({ type: 'emailEvent' }, hostEventRef(ev)));
         return;
     }
-    if (isGuestSession) {
+    if (isGuestSession || !isOursToShare(ev)) {
         emailEventAsMailto(ev);
         return;
     }
@@ -2490,13 +2490,17 @@ function showEventPopover(ev, anchorEl) {
     popoverDescriptionRow.style.display = description ? '' : 'none';
     if (description) popoverDescription.textContent = description;
 
+    // Each action asks its own question rather than the row asking one for all of them:
+    // copying or mailing an entry changes nothing in anyone's store, so a reader keeps those.
     let writable = isEntryWritable(ev);
-    // Only our own is ours to pass on: the host refuses anything else, and a button that
-    // always refuses is worse than no button.
-    popoverShareButton.style.display = (isGuestSession || isSharedEntry(ev)) ? 'none' : '';
-    popoverActions.style.display = writable ? '' : 'none';
+    popoverEditButton.style.display = writable ? '' : 'none';
+    popoverDeleteButton.style.display = (writable && !isGuestSession) ? '' : 'none';
+    popoverShareButton.style.display = isOursToShare(ev) ? '' : 'none';
+    let anyAction = Array.prototype.some.call(popoverActions.querySelectorAll('button'),
+        function (button) { return button.style.display !== 'none'; });
+    popoverActions.style.display = anyAction ? '' : 'none';
     // See .event-popover.has-actions in calendar.css
-    popover.classList.toggle('has-actions', writable);
+    popover.classList.toggle('has-actions', anyAction);
 
     anchorEl.classList.add('fc-event-selected');
     popover.classList.add('open');
@@ -3111,8 +3115,8 @@ function renderCalendarList() {
         let menu = document.createElement('div');
         menu.className = 'calendar-menu';
 
-        // Editing and sharing are the owner's, even when they have let us
-        // write entries into the calendar.
+        // Renaming a calendar and passing it on are both the owner's, even when they have
+        // let us write entries into it. The one the account came with is no exception.
         if (isCalendarWritable(cal.id) && isOwnCalendar(cal)) {
             let editBtn = document.createElement('button');
             editBtn.type = 'button';
@@ -3124,11 +3128,6 @@ function renderCalendarList() {
             });
             menu.appendChild(editBtn);
 
-        }
-
-        // No Share for the primary calendar (not shared) or a read-only
-        // one (can't re-share access you don't own).
-        if (isCalendarWritable(cal.id) && isOwnCalendar(cal) && !cal.primary) {
             let shareBtn = document.createElement('button');
             shareBtn.type = 'button';
             shareBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M15 6a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M15 18a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M8.7 10.7l6.6 -3.4"/><path d="M8.7 13.3l6.6 3.4"/></svg> Share';
@@ -5199,12 +5198,9 @@ function applyReadOnlyMode() {
     // write is skipped, and the summary still claims they were imported.
     overflowImportButton.style.display = canCreate ? '' : 'none';
     addCalendarButton.style.display = isGuestSession ? 'none' : '';
-    // A link is one file, with no calendar to delete into or copy into. Editing is the one
-    // thing a writable one can do; passing it on is decided per entry when the popover
-    // opens, because an entry someone shared with us is not ours to pass on either.
-    let linkOnly = isGuestSession ? 'none' : '';
-    popoverDeleteButton.style.display = linkOnly;
-    popoverDuplicateButton.style.display = linkOnly;
+    // A link is one file, with no calendar of our own to copy an entry into. What can be
+    // done to the entry itself is decided per entry when the popover opens.
+    popoverDuplicateButton.style.display = isGuestSession ? 'none' : '';
 }
 
 function applyHostCalendars(hostCalendars) {
@@ -5295,6 +5291,7 @@ function noteLoadBucket(data) {
 
 function handleHostLoad(data) {
     deletedSinceLoad = Object.create(null);
+    applyHostTheme(data.currentTheme);
     hostUsername = data.username;
     isGuestSession = data.isReadOnly != null ? data.isReadOnly : (data.username == null);
     applyReadOnlyMode();
@@ -5417,6 +5414,13 @@ function handleSharedReconciled(data) {
 
 function isSharedEntry(ev) {
     return !!(ev && ev.extendedProps && ev.extendedProps.sharedOwner);
+}
+
+// Only our own is ours to pass on - a single entry somebody shared and one sitting in a
+// whole calendar of theirs alike. The host refuses to resolve anything else.
+function isOursToShare(ev) {
+    return !!ev && !isGuestSession && !isSharedEntry(ev)
+        && isOwnCalendar(getCalendarById(ev.extendedProps.calendarId));
 }
 
 // What decides whether an entry can be changed: a shared one answers for itself, anything

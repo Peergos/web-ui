@@ -55,6 +55,9 @@ public class Suite {
             // runs it, which is where most of the matrix is.
             if (canPlaceDownloads && ! "1".equals(System.getenv("PEERGOS_TEST_SLOW"))) {
                 run(failures, "calendar entries shared between accounts", () -> CalendarLiveShareTest.run(args1));
+                // A whole calendar rather than one entry, and the one people actually share:
+                // the calendar their account came with, which the recipient has a namesake of.
+                run(failures, "whole calendar shared between accounts", () -> CalendarWholeShareTest.run(args1));
                 // Leaving has to be as complete as arriving: this one exports a calendar,
                 // imports it into an account that has never seen it, and exports that.
                 run(failures, "calendar moved to another account", () -> CalendarMigrationTest.run(args1));
