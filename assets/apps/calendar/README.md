@@ -198,9 +198,41 @@ Under the host's app data directory, per calendar directory:
 <calendar-dir>/<year>/<month>/<event-id>.ics   # non-recurring, by start month (UTC)
 <calendar-dir>/recurring/<event-id>.ics        # recurring series
 <calendar-dir>/tasks/<task-id>.ics             # one VTODO each, dated or not
+<calendar-dir>/shared/<owner>-<uid>.ics        # an entry someone shared, kept live
 <calendar-dir>/calendar.inf                    # name + colour
 App.config                                     # the calendar list
 ```
+
+`shared/` holds entries other people own. Taking one in does not copy it into a
+month: a copy never hears from the owner again, so what is stored is a snapshot
+of their file beside a pointer back to it, and the host follows that pointer on
+every load to catch up with their changes. Named for the owner as well as the
+entry, because two people can share entries carrying the same `UID`.
+
+The pointer is a block of `X-` properties written directly after `BEGIN:VEVENT`,
+which any other client carries through untouched:
+
+```
+X-PEERGOS-SRC-OWNER:<their username>
+X-PEERGOS-SRC-DIR:<their calendar directory>
+X-PEERGOS-SRC-UID:<their entry's UID>
+X-PEERGOS-SRC-PATH:<year>/<month>, or `recurring`, under that directory
+X-PEERGOS-SRC-MODIFIED:<their file's modified stamp when we last read it>
+X-PEERGOS-SRC-DETACHED:true    # only when their file is out of reach
+```
+
+`MODIFIED` is what decides whether to refresh, and what a write-through checks
+before it lands: a save onto a file that has changed since is refused and the
+snapshot brought up to date instead. `DETACHED` is set when the owner's file
+cannot be reached - revoked, deleted, or simply offline, which look the same
+through a capability on one file - and the snapshot stays either way, so an
+entry never disappears on a bad connection. Deleting one deletes the snapshot
+and nothing of the owner's.
+
+A whole calendar shared with you is not stored here at all. It is listed in
+`App.config` with the owner's name beside its directory, and read from their app
+directory in place - so their months, `recurring/` and `tasks/` are read where
+they keep them, and a write goes back to the same file when the share allows it.
 
 Tasks are `VTODO`, the iCalendar sibling of `VEVENT`, so one written here
 opens in any other client that reads `.ics`. They get a directory of their

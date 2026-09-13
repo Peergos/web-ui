@@ -262,28 +262,46 @@ public class CalendarLiveShareTest {
     static void openSharedEntry(WebDriver d, String directory, String filename) {
         RuntimeException last = null;
         for (int attempt = 0; attempt < 3; attempt++) {
+            // By way of the drive, the way a person reaches it, rather than by reloading
+            // what is on screen: a reload repeats whatever state the page is already in, so
+            // it cannot recover a route that never took. Coming from somewhere else also
+            // makes every attempt a real transition - asking for the route the page is
+            // already on changes no hash and re-renders nothing.
             if (attempt > 0)
-                d.script("window.location.reload(); return 1;");
-            else
-                d.script("let root = null;"
-                        + "for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
-                        + "const stack = root ? [root] : [];"
-                        + "while (stack.length) { const c = stack.pop();"
-                        + "  if (typeof c.updateHistory === 'function') { window.__router = c; break; }"
-                        + "  (c.$children || []).forEach(k => stack.push(k)); }"
-                        + "if (!window.__router) throw new Error('no component that routes');"
-                        + "window.__router.updateHistory('Calendar', arguments[0], {filename: arguments[1]}, false);"
-                        + "return 1;", directory, filename);
+                Page.gotoDrive(d);
+            d.script("let root = null;"
+                    + "for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+                    + "const stack = root ? [root] : [];"
+                    + "while (stack.length) { const c = stack.pop();"
+                    + "  if (typeof c.updateHistory === 'function') { window.__router = c; break; }"
+                    + "  (c.$children || []).forEach(k => stack.push(k)); }"
+                    + "if (!window.__router) throw new Error('no component that routes');"
+                    + "window.__router.updateHistory('Calendar', arguments[0], {filename: arguments[1]}, false);"
+                    + "return 1;", directory, filename);
             try {
+                // The same allowance the rest of this test gives a step: bringing the view
+                // and its framed app up is the app being launched, not a moment's rendering,
+                // and a loaded runner has been seen to take minutes over work that usually
+                // takes seconds. The wait ends as soon as it is there.
                 d.waitForScript("the calendar frame",
-                        "!!document.querySelector('" + CalendarApp.FRAME + "')", 60_000);
-                d.waitForScript("the calendar view", CalendarReadOnlyTest.CALENDAR_VIEW, 60_000);
+                        "!!document.querySelector('" + CalendarApp.FRAME + "')", 120_000);
+                d.waitForScript("the calendar view", CalendarReadOnlyTest.CALENDAR_VIEW, 120_000);
                 return;
             } catch (RuntimeException notYet) {
                 last = notYet;
                 System.out.println("  the calendar did not come up from the url, asking again");
             }
         }
+        // A page that never routed and one whose view never mounted look the same from the
+        // wait, so say which it is before giving up.
+        System.out.println("  the page is on: " + d.scriptQuiet("return location.hash.slice(0, 60)"));
+        System.out.println("  signed in: " + d.scriptQuiet(
+                "return !document.querySelector('input[name=username]')"));
+        System.out.println("  frames on the page: " + d.scriptQuiet(
+                "return Array.from(document.querySelectorAll('iframe')).map(function(f) {"
+                        + "  return f.id || '(no id)'; }).join(', ') || 'none'"));
+        System.out.println("  the page shows: " + d.scriptQuiet(
+                "return document.body.innerText.replace(/\\s+/g, ' ').slice(0, 200)"));
         throw last;
     }
 
