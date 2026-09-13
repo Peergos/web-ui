@@ -91,7 +91,7 @@ public class MarkdownLinksTest {
                 System.out.println("opening index.md in the markup viewer");
                 d.script("window.__drive.openFileOrDir('markdown', window.__drive.getPath,"
                         + " {filename: 'index.md'}, true);");
-                requireRendered(d, "Index page", 120_000);
+                requireRendered(d, "Index page", RENDER_TIMEOUT);
                 System.out.println("  index.md rendered");
 
                 follow(d, "go to the sibling", "Sibling page", "reached the sibling");
@@ -125,7 +125,7 @@ public class MarkdownLinksTest {
             d.switchToTop();
         }
         // the parent tears the iframe down and rebuilds it for each document
-        requireRendered(d, heading, 120_000);
+        requireRendered(d, heading, RENDER_TIMEOUT);
         frame(d);
         d.switchToFrame("#md-editor");
         try {
@@ -138,8 +138,15 @@ public class MarkdownLinksTest {
         }
     }
 
+    /** The same allowance the rest of the suite gives a slow runner: the viewer tears its
+     *  frame down and builds a new one for every document, and on a loaded runner fetching
+     *  the app's bundle again has been seen to take minutes rather than seconds. The wait
+     *  ends as soon as the page is there, so the ceiling costs a healthy run nothing. */
+    private static final long RENDER_TIMEOUT =
+            "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 360_000 : 120_000;
+
     private static Object frame(WebDriver d) {
-        return d.waitUntil("the markup viewer frame", () -> d.find("#md-editor"), 60_000);
+        return d.waitUntil("the markup viewer frame", () -> d.find("#md-editor"), RENDER_TIMEOUT);
     }
 
     /** Waits until the frame shows the heading, since the viewer keeps the old document up
