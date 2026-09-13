@@ -800,6 +800,15 @@ module.exports = {
             let years = names.toArray([]).map(function(n) { return String(n); })
                 .filter(that.isSweepYear)
                 .sort(function(a, b) { return parseInt(b, 10) - parseInt(a, 10); });
+            // An export is a copy of everything kept, so it reads the folders beside the
+            // years too. A search leaves them alone: they are already in the app's memory,
+            // and what the walk is for there is the months that are not. Reading them makes
+            // an export say what is stored rather than what this session happens to hold -
+            // an entry another device wrote since it opened is in one and not the other.
+            if (job.reason === 'export') {
+                months.push({cal: cal, dir: 'recurring'});
+                months.push({cal: cal, dir: 'tasks'});
+            }
             that.sweepListYears(job, cal, years, 0, months, next);
         }).exceptionally(function(t) { job.failed++; next(); });
     },
@@ -843,7 +852,8 @@ module.exports = {
             return;
         }
         let entry = months[index];
-        let dirStr = entry.cal.directory + "/" + entry.year + "/" + entry.month;
+        let dirStr = entry.dir != null ? entry.cal.directory + "/" + entry.dir
+            : entry.cal.directory + "/" + entry.year + "/" + entry.month;
         let path = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
         let next = function() { that.sweepReadMonths(job, months, index + 1); };
         job.calendar.dirInternal(path, entry.cal.owner).thenApply(function(filenames) {
@@ -857,10 +867,14 @@ module.exports = {
                     job.events += items.length;
                     // Sent even when empty: an empty month is how the app
                     // learns that entries another device deleted are gone.
-                    that.postMessage({type: 'sweepBatch', requestId: job.requestId,
-                        calendarName: entry.cal.name,
-                        yearMonth: parseInt(entry.year, 10) * 12 + (parseInt(entry.month, 10) - 1),
-                        items: items});
+                    let batch = {type: 'sweepBatch', requestId: job.requestId,
+                        calendarName: entry.cal.name, items: items};
+                    // The folders beside the years belong to no month, and saying they did
+                    // would have the app mark a month read that was never looked at.
+                    if (entry.dir == null) {
+                        batch.yearMonth = parseInt(entry.year, 10) * 12 + (parseInt(entry.month, 10) - 1);
+                    }
+                    that.postMessage(batch);
                     next();
                 }).exceptionally(function(t) { job.failed++; next(); });
         }).exceptionally(function(t) { job.failed++; next(); });

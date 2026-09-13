@@ -1343,7 +1343,9 @@ function eventToIcsLines(ev) {
         // TZID, not UTC - see icsDtLine().
         let tzid = ev.allDay ? null : LOCAL_TZ;
         let dtstart = ev.allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-        let durationMs = ev.start ? (ev.end || ev.start).getTime() - ev.start.getTime() : recurringDurationMs(ev.id);
+        let durationMs = ev.start ? (ev.end || ev.start).getTime() - ev.start.getTime()
+            : (ev.duration && typeof ev.duration.milliseconds === 'number'
+                ? ev.duration.milliseconds : recurringDurationMs(ev.id));
         lines.push(icsDtLine('DTSTART', dtstart, ev.allDay, tzid));
         lines.push(icsDtLine('DTEND', new Date(dtstart.getTime() + durationMs), ev.allDay, tzid));
         lines.push(recurToIcsRRuleLine(recur, ev.allDay, tzid));
@@ -1367,7 +1369,16 @@ function eventToIcsLines(ev) {
     reminderToIcsLines(ev.extendedProps.reminder, ev.title).forEach(function (line) { lines.push(line); });
     lines.push('END:VEVENT');
     let source = ev.extendedProps.sourceLines;
-    return source ? patchIcsBlock(source, lines) : lines;
+    return withoutSharedPointer(source ? patchIcsBlock(source, lines) : lines);
+}
+
+// This calendar's own note of whose entry a snapshot is. It is how the app finds the file
+// again; it means nothing to anyone we hand the entry to, so it is dropped from anything
+// that leaves here - a download, an email attachment, a write back to the owner's file.
+function withoutSharedPointer(lines) {
+    return lines.filter(function (line) {
+        return icsPropertyName(line).indexOf('X-PEERGOS-SRC-') !== 0;
+    });
 }
 
 // --- Tasks ---
@@ -1389,6 +1400,10 @@ function taskToIcsLines(task) {
         lines.push('COMPLETED:' + icsUtcStamp(task.completedAt || new Date()));
     } else {
         lines.push('STATUS:NEEDS-ACTION');
+        // Whatever another client last said about how far along it is. This app has only
+        // done and not done, so it passes that through rather than erasing it.
+        if (task.percentComplete != null && parseInt(task.percentComplete, 10) !== 100)
+            lines.push('PERCENT-COMPLETE:' + task.percentComplete);
     }
     lines.push('LAST-MODIFIED:' + icsUtcStamp(new Date()));
     // Both of these count from the due date, so an undated task carries
@@ -1433,6 +1448,9 @@ function parseIcsVtodo(rawLines, tzResolver) {
     let completed = (statusLine && statusLine.value.toUpperCase() === 'COMPLETED')
         || !!completedLine
         || (!!percentLine && parseInt(percentLine.value, 10) === 100);
+    // Kept as written. This app has no notion of a task being part done, and erasing what
+    // another client tracked would lose it on the way through.
+    let percentComplete = percentLine ? percentLine.value : null;
     let completedAt = null;
     if (completedLine) {
         let parsedDone = parseIcsDateValue(completedLine.value, completedLine.params, tzResolver);
@@ -1452,7 +1470,8 @@ function parseIcsVtodo(rawLines, tzResolver) {
         reminder: parseIcsAlarms(rawLines.alarms),
         recur: recur,
         completed: completed,
-        completedAt: completed ? (completedAt || new Date()) : null
+        completedAt: completed ? (completedAt || new Date()) : null,
+        percentComplete: percentComplete
     };
 }
 
@@ -1548,7 +1567,7 @@ function tzidOfIcsLine(line) {
     return match ? match[2] : null;
 }
 
-function buildIcsDocument(veventLines) {
+function buildIcsDocument(veventLines, calendarName) {
     // Every TZID named in the document gets its zone defined in the same
     // document. This app writes LOCAL_TZ, but a property it preserved rather
     // than wrote can name another zone, and dropping that zone's definition
@@ -1567,7 +1586,11 @@ function buildIcsDocument(veventLines) {
             // on its property either way; only the definition can't be written.
         }
     });
-    let lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Peergos//Calendar 0.0.1//EN', 'CALSCALE:GREGORIAN']
+    let lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Peergos//Calendar 0.0.1//EN', 'CALSCALE:GREGORIAN'];
+    // What every other calendar writes into a file it exports and reads back out of one it
+    // is given. A file without it arrives elsewhere as an unnamed pile of entries.
+    if (calendarName) lines.push('X-WR-CALNAME:' + escapeIcsText(calendarName));
+    lines = lines
         .concat(definitions)
         .concat(veventLines)
         .concat(['END:VCALENDAR']);
@@ -1577,8 +1600,9 @@ function buildIcsDocument(veventLines) {
 // The host writes the file, not this frame: inside the Android app a blob:
 // URL never reaches the download listener, and the native bridge that takes
 // the text instead only exists in the host's frame.
-function downloadIcsFile(filename, veventLines) {
-    hostSend({ type: 'downloadIcs', filename: filename, item: buildIcsDocument(veventLines) });
+function downloadIcsFile(filename, veventLines, calendarName) {
+    hostSend({ type: 'downloadIcs', filename: filename,
+        item: buildIcsDocument(veventLines, calendarName) });
 }
 
 // Walks event-store defs, not calendar.getEvents() - a recurring series
@@ -1615,19 +1639,24 @@ function exportCalendarAsIcs(calendarId) {
     }
     exportInFlight = cal.id;
     let stored = Object.create(null);
+    let storedTasks = Object.create(null);
     let asked = requestSweep({
         reason: 'export',
         calendarName: cal.id,
         onBatch: function (batch) {
             forEachParsedEntry(batch.items, function (parsed, entry) {
                 parsed.events.forEach(function (payload) {
-                    stored[payload.id] = eventShapeFromPayload(payload, entry.calendarName);
+                    stored[payload.id] = eventShapeFromPayload(payload, entry.calendarName, true);
+                });
+                parsed.tasks.forEach(function (task) {
+                    task.calendarId = entry.calendarName;
+                    storedTasks[task.id] = task;
                 });
             });
         },
         onDone: function (done) {
             exportInFlight = null;
-            finishCalendarExport(cal, stored, done);
+            finishCalendarExport(cal, stored, storedTasks, done);
         }
     });
     if (!asked) {
@@ -1636,7 +1665,7 @@ function exportCalendarAsIcs(calendarId) {
     }
 }
 
-function finishCalendarExport(cal, stored, done) {
+function finishCalendarExport(cal, stored, storedTasks, done) {
     if (done.error === 'busy') {
         showToast('Still finishing the last export - try again in a moment', 4000);
         return;
@@ -1653,18 +1682,27 @@ function finishCalendarExport(cal, stored, done) {
         // The grid copy of a task is not an event - it would export as a
         // VEVENT and come back from any other client as one.
         if (ev.extendedProps.isTask) return;
+        // Entries other people own are theirs, and stay in their calendars whatever this
+        // user does with their own. Exporting them would also write this app's own id for
+        // them as the UID, which is no UID at all.
+        if (isSharedEntry(ev)) return;
         if (ev.extendedProps.calendarId === cal.id) stored[ev.id] = ev;
     });
     let lines = [];
     Object.keys(stored).forEach(function (id) { lines = lines.concat(eventToIcsLines(stored[id])); });
+    // The same rule as events: what is stored, with anything this session has changed
+    // since laid over it.
     tasks.forEach(function (task) {
-        if (task.calendarId === cal.id) lines = lines.concat(taskToIcsLines(task));
+        if (task.calendarId === cal.id) storedTasks[task.id] = task;
+    });
+    Object.keys(storedTasks).forEach(function (id) {
+        if (storedTasks[id].calendarId === cal.id) lines = lines.concat(taskToIcsLines(storedTasks[id]));
     });
     if (!lines.length) {
         showToast('There is nothing in ' + cal.name + ' to export');
         return;
     }
-    downloadIcsFile(icsFileNameFor(cal.name), lines);
+    downloadIcsFile(icsFileNameFor(cal.name), lines, cal.name);
 }
 
 function unfoldIcsLines(text) {
@@ -2540,7 +2578,10 @@ function resetSweepState() {
 
 // A stored payload in the shape the grid's own events have, which is all
 // both search rows and eventToIcsLines() need.
-function eventShapeFromPayload(payload, calendarName) {
+// `whole` keeps what an export needs and a search does not: the entry's original lines and
+// the length of a repeating one. The search index holds every entry in the calendar at once,
+// and carrying raw lines through it would cost megabytes to no end.
+function eventShapeFromPayload(payload, calendarName, whole) {
     let extra = payload.extendedProps || {};
     return {
         id: payload.id,
@@ -2548,12 +2589,20 @@ function eventShapeFromPayload(payload, calendarName) {
         allDay: !!payload.allDay,
         start: toStoredDate(payload.start),
         end: toStoredDate(payload.end),
+        // A repeating entry has no start or end of its own - the rule and this are what say
+        // how long each occurrence runs. Without it one read from the store writes itself
+        // out as an entry that ends the moment it begins.
+        duration: whole ? payload.duration : undefined,
         extendedProps: {
             calendarId: calendarName,
             location: extra.location || '',
             description: extra.description || '',
             status: extra.status || '',
-            recur: extra.recur || null
+            recur: extra.recur || null,
+            // What the file said that this app has no field for - an organiser, attendees,
+            // categories, anyone else's X- properties. Without it an entry read from the
+            // store rather than from the grid exports as less than it is.
+            sourceLines: whole ? extra.sourceLines : undefined
         }
     };
 }
@@ -3879,6 +3928,11 @@ function importIcsText(text) {
             duplicates++;
             return;
         }
+        // An entry imported from a file - one exported from a snapshot, say - is the user's
+        // own from here on, and carries none of the bookkeeping that made it a snapshot.
+        if (data.extendedProps && data.extendedProps.sourceLines) {
+            data.extendedProps.sourceLines = withoutSharedPointer(data.extendedProps.sourceLines);
+        }
         let ev = calendar.addEvent(data);
         if (!ev) return;
         let placement = placementOf(ev);
@@ -4680,6 +4734,9 @@ function toggleTaskCompleted(task) {
     }
     task.completed = !task.completed;
     task.completedAt = task.completed ? new Date() : null;
+    // Ticking it off, or un-ticking it, is this app saying how far along it is - so what
+    // another client said no longer holds.
+    task.percentComplete = task.completed ? '100' : null;
     persistTask(task);
     syncTaskEvent(task);
     renderTaskList();

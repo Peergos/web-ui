@@ -53,8 +53,12 @@ public class Suite {
             // calendar up for an account opening it for the first time, which is the driver
             // rather than the app, and the same reason downloads skip it. Every other engine
             // runs it, which is where most of the matrix is.
-            if (canPlaceDownloads && ! "1".equals(System.getenv("PEERGOS_TEST_SLOW")))
+            if (canPlaceDownloads && ! "1".equals(System.getenv("PEERGOS_TEST_SLOW"))) {
                 run(failures, "calendar entries shared between accounts", () -> CalendarLiveShareTest.run(args1));
+                // Leaving has to be as complete as arriving: this one exports a calendar,
+                // imports it into an account that has never seen it, and exports that.
+                run(failures, "calendar moved to another account", () -> CalendarMigrationTest.run(args1));
+            }
             run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
             if (canPlaceDownloads) {
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
