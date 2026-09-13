@@ -474,100 +474,81 @@ module.exports = {
         return true;
     },
 
-    renameCalendarRequest: function(calendar, calendarItem, suppliedName) {
+    // Both calendar prompts ask the same question under the same rules: a name that is
+    // allowed, not the one it already had, and not one another calendar is using.
+    // `accepted` runs on the tick after the prompt closes, with the name it settled on.
+    askForCalendarName: function(startingFrom, suppliedName, accepted) {
         let that = this;
-        this.preparePrompt(calendarItem.name);
-        this.prompt_consumer_func = function(prompt_result) {
-            if (prompt_result === null)
+        this.preparePrompt(startingFrom);
+        this.prompt_consumer_func = function(answer) {
+            if (answer === null || answer === startingFrom)
                 return;
-            if (prompt_result === calendarItem.name)
-                return;
-            let newName = that.acceptableCalendarName(prompt_result);
+            let newName = that.acceptableCalendarName(answer);
             if (newName == null)
                 return;
-            setTimeout(function(){
-                //make sure names are unique
-                if (that.calendarNameTaken(newName)) {
-                    return;
-                }
-                var calendarToChange = null;
-                for (var i=0;i < that.calendarProperties.calendars.length; i++) {
-                    let calendar = that.calendarProperties.calendars[i];
-                    if (calendar.name == calendarItem.name) {
-                        calendarToChange = calendar;
-                        break;
-                    }
-                }
-                let previousName = calendarItem.name;
-                calendarToChange.name = newName;
-                calendarItem.name = newName;
-                that.displaySpinner();
-                that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
-                    that.removeSpinner();
-                    that.postMessage({type: 'respondRenameCalendar', calendar: calendarItem});
-                }).exceptionally(function(throwable) {
-                    calendarToChange.name = previousName;
-                    calendarItem.name = previousName;
-                    that.removeSpinner();
-                    that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
-                    return null;
-                });
+            setTimeout(function() {
+                if (! that.calendarNameTaken(newName))
+                    accepted(newName);
             });
         };
         this.askOrUseName(suppliedName);
+    },
+    renameCalendarRequest: function(calendar, calendarItem, suppliedName) {
+        let that = this;
+        this.askForCalendarName(calendarItem.name, suppliedName, function(newName) {
+            let calendarToChange = that.findCalendar(calendarItem.name);
+            if (calendarToChange == null)
+                return;
+            let previousName = calendarItem.name;
+            calendarToChange.name = newName;
+            calendarItem.name = newName;
+            that.displaySpinner();
+            that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
+                that.removeSpinner();
+                that.postMessage({type: 'respondRenameCalendar', calendar: calendarItem});
+            }).exceptionally(function(throwable) {
+                calendarToChange.name = previousName;
+                calendarItem.name = previousName;
+                that.removeSpinner();
+                that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+                return null;
+            });
+        });
     },
     addCalendarRequest: function(calendar, newColor, suppliedName) {
         let that = this;
         if (!this.isHexColor(newColor)) {
             return;
         }
-        this.preparePrompt("");
-        this.prompt_consumer_func = function(prompt_result) {
-            if (prompt_result === null)
-                return;
-            let newName = that.acceptableCalendarName(prompt_result);
-            if (newName == null)
-                return;
-            setTimeout(function(){
-                //make sure names are unique
-                if (that.calendarNameTaken(newName)) {
-                    return;
-                }
-                //create directory
-                that.displaySpinner();
-                let dirName = that.generateDirectoryName();
-                let entry = {name:newName, directory:dirName, color: newColor, shareable: true};
-                that.calendarProperties.calendars.push(entry);
-                let failed = function(throwable) {
-                    that.dropCalendarEntry(entry);
+        this.askForCalendarName("", suppliedName, function(newName) {
+            that.displaySpinner();
+            let dirName = that.generateDirectoryName();
+            let entry = {name: newName, directory: dirName, color: newColor, shareable: true};
+            that.calendarProperties.calendars.push(entry);
+            let failed = function(throwable) {
+                that.dropCalendarEntry(entry);
+                that.removeSpinner();
+                that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+                return null;
+            };
+            // Both chains are guarded rather than one: the inner future is
+            // not returned, so a failure there never reaches the outer one.
+            that.createCalendarFile(calendar, dirName, {name: newName, color: newColor}).thenApply(done => {
+                that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.removeSpinner();
-                    that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
-                    return null;
-                };
-                // Both chains are guarded rather than one: the inner future is
-                // not returned, so a failure there never reaches the outer one.
-                that.createCalendarFile(calendar, dirName, {name:newName, color: newColor}).thenApply(done => {
-                    that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
-                        that.removeSpinner();
-                        that.postMessage({type: 'respondAddCalendar', newName: newName, newColor: newColor});
-                    }).exceptionally(failed);
+                    that.postMessage({type: 'respondAddCalendar', newName: newName, newColor: newColor});
                 }).exceptionally(failed);
-            });
-        };
-        this.askOrUseName(suppliedName);
+            }).exceptionally(failed);
+        });
     },
-    // Both calendar prompts ask the same question under the same limit; only
-    // the name they start from differs.
     preparePrompt: function(value) {
         this.prompt_placeholder = this.translate('CALENDAR.NEW.NAME');
         this.prompt_value = value;
         this.prompt_message = this.translate('CALENDAR.ENTER.NAME');
         this.prompt_max_input_size = 20;
     },
-    // Both calendar prompts end the same way: the app collects the name in
-    // its own modal, so the consumer just set (validation and uniqueness live
-    // in it) runs on that name rather than asking a second time. Only a name
-    // that never arrived falls back to the prompt.
+    // The app collects the name in its own modal, so a name that arrived with the request
+    // runs straight through the checks rather than being asked for a second time.
     askOrUseName: function(suppliedName) {
         if (suppliedName != null && suppliedName.length > 0) {
             this.prompt_consumer_func(suppliedName);

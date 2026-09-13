@@ -118,6 +118,9 @@ App to host:
 | `deleteCalendar` | delete a calendar directory - the host asks the user first, every time |
 | `requestAddCalendar` / `requestRenameCalendar` / `requestCalendarColorChange` | calendar CRUD, host owns validation and uniqueness |
 | `openShare` | ask the host to open its own share dialog for this calendar or event |
+| `saveShared` | write an entry someone shared back to *their* file, and re-snapshot what landed |
+| `deleteShared` | drop our snapshot of an entry someone shared; their file is untouched |
+| `saveLinked` | write the one file a secret link carries, when that link is writable |
 
 Each calendar in `load` carries `writable`. Ownership alone cannot answer it:
 a calendar shared with us is writable only if the share said so, so the host
@@ -132,9 +135,12 @@ A load is a shell plus buckets, not one message. `load` carries only what
 the first paint needs — identity, calendars, the month on screen — and says
 how many buckets are still to come in `pendingBuckets`. The host then reads
 the three months around the one on screen, the recurring folder and the
-tasks folder at the same time and posts each as it lands: months and
-recurring entries as `loadAdditional` (flagged `loadBucket`, so a month the
-grid asked for on its own is not miscounted), tasks as `loadTasks`. The grid
+tasks folder and the `shared/` folder at the same time and posts each as it
+lands: months and recurring entries as `loadAdditional` (flagged `loadBucket`,
+so a month the grid asked for on its own is not miscounted), tasks as
+`loadTasks`, and entries other people own as `loadShared` - drawn from their
+snapshots alone, with the host catching up with the owners' files afterwards
+and sending each result as `sharedReconciled`. The grid
 is interactive from the shell and fills in behind a progress line; a bucket
 read for a load the app has already replaced is dropped by the host, which
 tracks the same generation counter the sweep does.
