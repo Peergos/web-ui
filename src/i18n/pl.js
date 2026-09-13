@@ -457,7 +457,7 @@ module.exports = {
     "CALENDAR.INVALID.NAME":"Nieprawidłowa nazwa kalendarza. Używaj tylko znaków alfanumerycznych oraz spacji, myślnika i podkreślenia",
     "CALENDAR.ALREADY.IMPORTED":"Kalendarz: $NAME został już zaimportowany",
     "CALENDAR.ERROR.SAVE":"Nie można zapisać kalendarza",
-    "CALENDAR.SHARED.CHANGED":"Ktoś inny zmienił ten wpis, więc został ponownie wczytany zamiast nadpisany",
+    "CALENDAR.SHARED.CHANGED":"Ktoś inny zmienił ten wpis, więc został on ponownie wczytany zamiast nadpisany",
     "CALENDAR.ERROR.SAVE.TASK":"Nie można zapisać zadania",
     "CALENDAR.ERROR.DELETE.TASK":"Nie można usunąć zadania",
     "CALENDAR.NAME.EXISTS":"Kalendarz o nazwie $NAME już istnieje",
