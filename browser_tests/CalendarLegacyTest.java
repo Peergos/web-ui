@@ -27,6 +27,24 @@ public class CalendarLegacyTest {
     // A second series, left alone until one of its occurrences is deleted.
     static final String UNTOUCHED = "Never edited series";
     static final String DOOMED = "The occurrence to delete";
+    static final String BIRTHDAY = "Zero length birthday";
+
+    /** An all-day series the old app wrote with DTEND equal to DTSTART - every birthday it made. */
+    static final String ZERO_LENGTH = String.join("\r\n",
+            "BEGIN:VCALENDAR",
+            "PRODID:-//peergos.v1",
+            "VERSION:2.0",
+            "BEGIN:VEVENT",
+            "UID:legacy-birthday",
+            "SUMMARY:" + BIRTHDAY,
+            "DTSTART;TZID=Europe/London;VALUE=DATE:20210120",
+            "DTEND;TZID=Europe/London;VALUE=DATE:20210120",
+            "X-OWNER:" + Server.USERNAME,
+            "DTSTAMP:20210104T150641Z",
+            "RRULE:FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=20",
+            "END:VEVENT",
+            "END:VCALENDAR",
+            "");
 
     static final String SECOND = String.join("\r\n",
             "BEGIN:VCALENDAR",
@@ -130,7 +148,8 @@ public class CalendarLegacyTest {
             String recurring = calendar + "/recurring";
             CalendarApp.write(d, recurring, "legacy-series.ics", LEGACY);
             CalendarApp.write(d, recurring, "legacy-two.ics", SECOND);
-            System.out.println("wrote two series into " + recurring + " as the old app would have");
+            CalendarApp.write(d, recurring, "legacy-birthday.ics", ZERO_LENGTH);
+            System.out.println("wrote three series into " + recurring + " as the old app would have");
 
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
@@ -157,6 +176,15 @@ public class CalendarLegacyTest {
                             + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(OVERRIDE) + ") !== -1)",
                     30_000);
             System.out.println("  ok   the series and its one changed occurrence both show, once each");
+
+            CalendarApp.waitInFrame(d, "the zero length all-day series",
+                    "Array.from(document.querySelectorAll('[data-search-event-id]'))"
+                            + ".some(el => el.textContent.indexOf(" + CalendarApp.quote(BIRTHDAY) + ") !== -1)",
+                    30_000);
+            List<String> birthday = CalendarApp.occurrenceDates(d, BIRTHDAY);
+            if (! birthday.equals(List.of("2026-01-20")))
+                throw new AssertionError("The zero length all-day series is drawn on " + birthday);
+            System.out.println("  ok   an all-day series whose DTEND is its DTSTART is drawn on its day");
 
             // Nothing was touched on the way in: opening a calendar is a read.
             String afterOpening = CalendarApp.read(d, recurring, "legacy-series.ics");

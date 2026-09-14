@@ -2151,8 +2151,9 @@ function parseIcsVevent(rawLines, tzResolver) {
     let end;
     if (dtendLine) {
         let endParsed = parseIcsDateValue(dtendLine.value, dtendLine.params, tzResolver);
-        end = endParsed ? endParsed.date : start;
-    } else {
+        end = endParsed ? endParsed.date : null;
+    }
+    if (!end || end.getTime() <= start.getTime()) {
         end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);
     }
 
