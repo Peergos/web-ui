@@ -34,7 +34,7 @@ public class ZipFolderDownloadTest {
 
         // unique per run: the suite shares one server across tests
         String folder = "tozip-" + System.currentTimeMillis();
-        Path local = Files.createTempDirectory("peergos-tozip-");
+        Path local = Temp.directory("peergos-tozip-");
         Map<String, byte[]> expected = new LinkedHashMap<>();
         expected.put("small.txt", "a small entry\n".getBytes());
         expected.put("big.bin", bytes(6 * 1024 * 1024));   // over the chunk size
@@ -45,7 +45,7 @@ public class ZipFolderDownloadTest {
             locals.add(f);
         }
 
-        Path downloads = Files.createTempDirectory("peergos-zip-dl-");
+        Path downloads = Temp.directory("peergos-zip-dl-");
         try {
             Fixtures.uploadInto(jar, url, Server.USERNAME, Server.PASSWORD, folder, locals);
             Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder,

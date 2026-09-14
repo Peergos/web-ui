@@ -57,7 +57,7 @@ public class ConcurrentDownloadTest {
         String url = "http://localhost:" + proxy.port() + "/";
         System.out.println("proxy " + url + " -> " + upstream);
 
-        Path downloads = Files.createTempDirectory("peergos-dl-");
+        Path downloads = Temp.directory("peergos-dl-");
         int failures = 0;
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url);

@@ -48,12 +48,24 @@ public class MarionetteDriver implements WebDriver {
             this.in = s.getInputStream();
             this.out = s.getOutputStream();
             readFrame(); // the server's handshake
-            command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
-            // Five minutes of waiting on one page is most of a test's budget spent learning
-            // nothing. Two minutes is still far longer than this app takes to load even on a
-            // labouring runner, and failing sooner leaves room to simply try again.
+            // Eager: navigation is done once the document is parsed, not once every
+            // subresource has settled. Every navigate in this suite is followed by a wait for
+            // what the test actually needs, so the load event was only ever an extra thing to
+            // hang on - and on a loaded windows runner it has hung, taking a page that was
+            // there and usable for one that was never coming.
             try {
-                command("WebDriver:SetTimeouts", Map.of("pageLoad", 120_000));
+                command("WebDriver:NewSession", Map.of("capabilities",
+                        Map.of("alwaysMatch", Map.of("pageLoadStrategy", "eager"))));
+            } catch (RuntimeException unsupported) {
+                command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            }
+            // Long enough that a page which is merely slow is not read as a page that will
+            // never come. Two minutes covers an ordinary machine; the runners flagged as slow
+            // have been seen to spend six and a half minutes on a single test, and a load
+            // that overran two of them there failed a test with nothing wrong with it.
+            long pageLoad = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 300_000 : 120_000;
+            try {
+                command("WebDriver:SetTimeouts", Map.of("pageLoad", pageLoad));
             } catch (RuntimeException e) {
                 // an older marionette without the command; the default stands
             }
@@ -278,10 +290,14 @@ public class MarionetteDriver implements WebDriver {
     public void navigate(String url) {
         // Loading a page is idempotent, and a server too busy to answer is usually busy for a
         // moment rather than for the rest of the run - so try a few times rather than once.
+        // Fewer attempts where each one waits longer: the point is to survive a moment's
+        // trouble, not to spend a quarter of an hour proving the browser is not coming back.
         IllegalStateException last = null;
-        for (int attempt = 0; attempt < 3; attempt++) {
+        int attempts = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 2 : 3;
+        for (int attempt = 0; attempt < attempts; attempt++) {
             try {
                 commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+                settle();
                 return;
             } catch (IllegalStateException e) {
                 if (! String.valueOf(e.getMessage()).contains("timed out"))
@@ -291,6 +307,29 @@ public class MarionetteDriver implements WebDriver {
             }
         }
         throw last;
+    }
+
+    /** Waits for the document the navigation landed on to finish loading.
+     *
+     *  Navigation itself is eager, so it comes back while the page is still arriving. That is
+     *  what keeps a straggling subresource from hanging the whole run, but it also hands the
+     *  next step a document that can still be replaced under it - and a context replaced while
+     *  the driver is holding it is discarded, after which every later script quietly answers
+     *  nothing. Waiting here for the load to finish costs a healthy page almost nothing and
+     *  leaves a slow one settled rather than half arrived. A page that never finishes is not
+     *  an error: the caller waits for what it actually needs next.
+     */
+    private void settle() {
+        long end = System.currentTimeMillis()
+                + ("1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 120_000 : 60_000);
+        while (System.currentTimeMillis() < end) {
+            if ("complete".equals(scriptQuiet("return document.readyState"))) {
+                stillAnimations();
+                return;
+            }
+            WebDriver.sleep(250);
+        }
+        stillAnimations();
     }
 
     @Override

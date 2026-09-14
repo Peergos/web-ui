@@ -27,11 +27,47 @@ public class Suite {
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
             // download coverage belongs with the gtk host, which sets the destination itself.
+            // The two downloads that predate the calendar keep their place near the start of
+            // the run: they are timing-sensitive on the slower runners, and the calendar tests
+            // are minutes of extra load on the shared server that they should not run behind.
             boolean canPlaceDownloads = ! engine.startsWith("webkit") && ! engine.equals("safari");
             if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
+            }
+
+            run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
+            run(failures, "calendar repeat and reminder", () -> CalendarRepeatTest.run(args1));
+            run(failures, "calendar task", () -> CalendarTaskTest.run(args1));
+            run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
+            run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
+            run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
+            run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
+            run(failures, "calendar files read by another parser", () -> CalendarInteropTest.run(args1));
+            run(failures, "calendar drag to move", () -> CalendarDragTest.run(args1));
+            run(failures, "calendar shared read-only", () -> CalendarReadOnlyTest.run(args1));
+            run(failures, "calendar writable link", () -> CalendarLinkWriteTest.run(args1));
+            // Two accounts, a friendship and four sign-ins: minutes rather than seconds, and
+            // the slow runners already spend most of their hour on the rest of this. WebKit
+            // is left out for a different reason - it cannot be relied on here to bring the
+            // calendar up for an account opening it for the first time, which is the driver
+            // rather than the app, and the same reason downloads skip it. Every other engine
+            // runs it, which is where most of the matrix is.
+            if (canPlaceDownloads && ! "1".equals(System.getenv("PEERGOS_TEST_SLOW"))) {
+                run(failures, "calendar entries shared between accounts", () -> CalendarLiveShareTest.run(args1));
+                // A whole calendar rather than one entry, and the one people actually share:
+                // the calendar their account came with, which the recipient has a namesake of.
+                run(failures, "whole calendar shared between accounts", () -> CalendarWholeShareTest.run(args1));
+                // Leaving has to be as complete as arriving: this one exports a calendar,
+                // imports it into an account that has never seen it, and exports that.
+                run(failures, "calendar moved to another account", () -> CalendarMigrationTest.run(args1));
+            }
+            run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
+            if (canPlaceDownloads) {
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
+                // The export half of this one downloads a file, so it belongs with the group
+                // that can say where downloads land.
+                run(failures, "calendar import and export", () -> CalendarImportExportTest.run(args1));
             } else {
                 System.out.println("\nSKIP the download tests on " + engine
                         + ": its driver has no download directory capability");

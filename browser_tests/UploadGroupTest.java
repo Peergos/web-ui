@@ -42,7 +42,7 @@ public class UploadGroupTest {
         for (Map.Entry<String, Integer> e : sizes.entrySet())
             locals.add(Fixtures.patternFile(e.getKey(), e.getValue()));
 
-        Path downloads = Files.createTempDirectory("peergos-group-dl-");
+        Path downloads = Temp.directory("peergos-group-dl-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);

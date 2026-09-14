@@ -53,7 +53,7 @@ public class HtmlViewerTest {
         System.out.println("signed up " + user + " and installed the html viewer app");
 
         String folder = "htmltest-" + System.currentTimeMillis();
-        Path dir = Files.createTempDirectory("peergos-html-");
+        Path dir = Temp.directory("peergos-html-");
         Path index = dir.resolve("index.html");
         Path sibling = dir.resolve("sibling.html");
         Path child = dir.resolve("child.html");
@@ -76,7 +76,7 @@ public class HtmlViewerTest {
         writePng(same, SAME_W, SAME_H);
         writePng(nested, SUB_W, SUB_H);
 
-        Path downloads = Files.createTempDirectory("peergos-html-dl-");
+        Path downloads = Temp.directory("peergos-html-dl-");
         try {
             Fixtures.commands(jar, url, user, password,
                     "mkdir " + folder,
@@ -152,12 +152,31 @@ public class HtmlViewerTest {
 
     /** Descends to the page itself, two frames down.
      *
-     *  #sandboxId holds sandbox.html on a content addressed subdomain, and the user's file is in
-     *  #appSandboxId inside that. Stopping at the first frame - or worse, at "the first iframe on
-     *  the page", which is the streamsaver worker or the hidden print container - lands on an
-     *  empty body and every assertion then fails for the wrong reason.
+     *  Either frame can be rebuilt from under us on the way in - the inner one is handed its
+     *  url by the service worker, and asked for again if that worker loses its port - and a
+     *  climb interrupted that way leaves every later script running against the parent page,
+     *  where the wait simply never comes true. Asked again rather than measured there.
      */
     private static void descend(WebDriver d) {
+        RuntimeException wentAway = null;
+        for (int attempt = 0; attempt < 3; attempt++) {
+            d.switchToTop();
+            try {
+                enter(d);
+                return;
+            } catch (RuntimeException notThere) {
+                wentAway = notThere;
+                System.out.println("  the sandbox went away while climbing into it, asking again");
+            }
+        }
+        throw wentAway;
+    }
+
+    /** #sandboxId holds sandbox.html on a content addressed subdomain, and the user's file is
+     *  in #appSandboxId inside that. Stopping at the first frame - or worse, at "the first
+     *  iframe on the page", which is the streamsaver worker or the hidden print container -
+     *  lands on an empty body and every assertion then fails for the wrong reason. */
+    private static void enter(WebDriver d) {
         try {
             d.waitUntil("the sandbox frame", () -> d.find("iframe#sandboxId"), 120_000);
         } catch (RuntimeException e) {
@@ -169,6 +188,9 @@ public class HtmlViewerTest {
         d.waitUntil("the page frame inside the sandbox",
                 () -> d.find("iframe#appSandboxId"), 120_000);
         d.switchToFrame("iframe#appSandboxId");
+        // Standing in the parent page and standing in an app that rendered nothing look the
+        // same to every wait after this one, so this is where they are told apart.
+        d.waitForScript("to be inside the app's own document", "window.top !== window.self", 30_000);
     }
 
     /** What the page looks like when the sandbox never opens, so a CI failure is readable. */

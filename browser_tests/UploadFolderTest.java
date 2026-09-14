@@ -41,13 +41,13 @@ public class UploadFolderTest {
         String url = own != null ? own.url() : given;
 
         String folder = "folder-" + System.currentTimeMillis();
-        Path local = Files.createTempDirectory("peergos-folder-").resolve(folder);
+        Path local = Temp.directory("peergos-folder-").resolve(folder);
         Files.createDirectories(local.resolve("nested"));
         Files.write(local.resolve("one.txt"), "first file\n".getBytes());
         Files.write(local.resolve("two.bin"), pattern(3 * 1024 * 1024));
         Files.write(local.resolve("nested").resolve("three.txt"), "in a subfolder\n".getBytes());
 
-        Path downloads = Files.createTempDirectory("peergos-folder-dl-");
+        Path downloads = Temp.directory("peergos-folder-dl-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);

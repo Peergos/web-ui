@@ -45,7 +45,7 @@ public class Server implements AutoCloseable {
         // 127.0.0.1:8003 - so without its own port a test server collides with any other Peergos
         // already running on the machine, including a developer's.
         int p2pPort = freePort();
-        Path dataDir = Files.createTempDirectory("peergos-browser-test-");
+        Path dataDir = Temp.directory("peergos-browser-test-");
         List<String> cmd = List.of("java", "-jar", "Peergos.jar", "pki-init",
                 "-port", Integer.toString(port),
                 "-proxy-target", "/ip4/127.0.0.1/tcp/" + p2pPort,
@@ -157,20 +157,6 @@ public class Server implements AutoCloseable {
             Thread.currentThread().interrupt();
             process.destroyForcibly();
         }
-        deleteRecursive(dataDir);
-    }
-
-    private static void deleteRecursive(Path dir) {
-        try (var paths = Files.walk(dir)) {
-            paths.sorted(Comparator.reverseOrder()).forEach(p -> {
-                try {
-                    Files.deleteIfExists(p);
-                } catch (IOException e) {
-                    // best effort; it is under the system temp directory
-                }
-            });
-        } catch (IOException e) {
-            // ditto
-        }
+        Temp.deleteRecursive(dataDir);
     }
 }

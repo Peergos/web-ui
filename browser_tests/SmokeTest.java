@@ -11,7 +11,7 @@ public class SmokeTest {
         String url = args.length > 1 ? args[1] : "http://localhost:8080/";
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
 
-        Path downloads = Files.createTempDirectory("peergos-smoke-downloads-");
+        Path downloads = Temp.directory("peergos-smoke-downloads-");
         long start = System.currentTimeMillis();
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             System.out.println("launched " + engine + (headless ? " headless" : "") + " in "
