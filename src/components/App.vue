@@ -291,7 +291,8 @@ module.exports = {
         ...Vuex.mapActions([
 	    'updateQuota',
 	    'updateUsage',
-	    'updatePayment'
+	    'updatePayment',
+	    'updateMirrorBatId'
 	]),
         formatNetworkError(throwable) {
             let message = "";
@@ -348,6 +349,7 @@ module.exports = {
 	    if (this.context != null && this.context.username == null) {
 		// App.vue from a secret link
 	    } else {
+            this.updateMirrorBatId();
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
                     that.$store.commit("SET_SHORTCUTS", shortcutsMap);

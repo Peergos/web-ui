@@ -8,6 +8,7 @@ function shallow(val) {
     }
     return val;
 }
+let mirrorBatIdLookup = null;
 module.exports = new Vuex.Store({
 	state: {
 		windowWidth: null,
@@ -292,11 +293,23 @@ module.exports = new Vuex.Store({
 
 		updateMirrorBatId({ commit, state }) {
 			if (state.isSecretLink)
-				return;
-
-			return state.context.ensureMirrorId().thenApply(u => {
-				commit('SET_MIRROR_BAT_ID', u);
-			});
+				return Promise.resolve(java.util.Optional.empty());
+			if (state.mirrorBatId != null)
+				return Promise.resolve(state.mirrorBatId);
+			// shared by every caller until it lands: an account without a mirror bat gets one made here
+			if (mirrorBatIdLookup == null) {
+				mirrorBatIdLookup = new Promise((resolve, reject) => {
+					state.context.ensureMirrorId().thenApply(id => {
+						commit('SET_MIRROR_BAT_ID', id);
+						resolve(id);
+					}).exceptionally(t => {
+						mirrorBatIdLookup = null;
+						reject(t);
+						return null;
+					});
+				});
+			}
+			return mirrorBatIdLookup;
 		},
 
 		updatePayment({ commit, state }, callback) {

@@ -162,7 +162,6 @@ module.exports = {
 		...Vuex.mapState([
 			'context',
 			'socialData',
-			'mirrorBatId',
 			'isDark',
 		]),
 		...Vuex.mapGetters([
@@ -1443,7 +1442,8 @@ module.exports = {
                 return failed(new Error("No such user: " + root));
             }
             let userRoot = rootOpt.get();
-            userRoot.getOrMkdirs(subPath, that.context.network, false, that.getMirrorBatId(userRoot), that.context.crypto)
+            that.getMirrorBatId(userRoot)
+                .thenCompose(mirrorBatId => userRoot.getOrMkdirs(subPath, that.context.network, false, mirrorBatId, that.context.crypto))
                 .thenApply(function(dir) {
                     dir.uploadOrReplaceFile(filename, new peergos.shared.user.fs.AsyncReader.build(bytes),
                         0, bytes.length, that.context.network, that.context.crypto, function(x) {})
@@ -1563,7 +1563,13 @@ module.exports = {
         pending.thenApply(function() { that.afterPendingWrite(id, action); });
     },
     getMirrorBatId(file) {
-        return file.getOwnerName() == this.context.username ? this.mirrorBatId : java.util.Optional.empty()
+        let future = peergos.shared.util.Futures.incomplete();
+        if (file.getOwnerName() != this.context.username) {
+            future.complete(java.util.Optional.empty());
+        } else {
+            this.$store.dispatch('updateMirrorBatId').then(id => future.complete(id), t => future.completeExceptionally(t));
+        }
+        return future;
     },
     bulkUpload: function(uploadParams) {
        let that = this;
@@ -1615,9 +1621,9 @@ module.exports = {
                    uploadFuture.complete(false);
                    return null;
                }
-               dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
+               that.getMirrorBatId(dir).thenCompose(mirrorBatId => dir.uploadSubtree(folderStream, mirrorBatId, that.context.network,
                    that.context.crypto, that.context.getTransactionService(),
-                   resume, keepWhatIsThere, commitWatcher).thenApply(res => {
+                   resume, keepWhatIsThere, commitWatcher)).thenApply(res => {
                        uploadFuture.complete(true);
                }).exceptionally(function (throwable) {
                     that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
