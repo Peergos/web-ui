@@ -32,6 +32,24 @@ public interface WebDriver extends AutoCloseable {
     @Override
     void close();
 
+    /** Takes the time out of css transitions and animations, for the page just navigated to.
+     *
+     *  The app swaps its views inside a `transition` with `mode="out-in"`, which holds the
+     *  incoming view out of the document until the outgoing one's transition has finished. A
+     *  transition that never finishes - a headless browser under load need not paint, and then
+     *  need not end one - leaves the new view built but never inserted: mounted, findable in
+     *  the component tree, and absent from the dom for as long as the test cares to wait.
+     *  Zero durations end them immediately instead, which is what the tests want anyway: they
+     *  assert on what was stored and what is on screen, never on the way it got there.
+     */
+    default void stillAnimations() {
+        scriptQuiet("let style = document.createElement('style');"
+                + "style.textContent = '*, *::before, *::after { transition-duration: 0s !important;"
+                + " transition-delay: 0s !important; animation-duration: 0s !important;"
+                + " animation-delay: 0s !important; }';"
+                + "document.head.appendChild(style); return 1;");
+    }
+
     default Object scriptQuiet(String body, Object... args) {
         try {
             return script(body, args);

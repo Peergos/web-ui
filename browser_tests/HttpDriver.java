@@ -124,6 +124,7 @@ public class HttpDriver implements WebDriver {
     @Override
     public void navigate(String url) {
         send("POST", session("/url"), Map.of("url", url));
+        stillAnimations();
     }
 
     @Override

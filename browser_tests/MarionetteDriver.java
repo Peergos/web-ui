@@ -297,6 +297,7 @@ public class MarionetteDriver implements WebDriver {
         for (int attempt = 0; attempt < attempts; attempt++) {
             try {
                 commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
+                settle();
                 return;
             } catch (IllegalStateException e) {
                 if (! String.valueOf(e.getMessage()).contains("timed out"))
@@ -306,6 +307,29 @@ public class MarionetteDriver implements WebDriver {
             }
         }
         throw last;
+    }
+
+    /** Waits for the document the navigation landed on to finish loading.
+     *
+     *  Navigation itself is eager, so it comes back while the page is still arriving. That is
+     *  what keeps a straggling subresource from hanging the whole run, but it also hands the
+     *  next step a document that can still be replaced under it - and a context replaced while
+     *  the driver is holding it is discarded, after which every later script quietly answers
+     *  nothing. Waiting here for the load to finish costs a healthy page almost nothing and
+     *  leaves a slow one settled rather than half arrived. A page that never finishes is not
+     *  an error: the caller waits for what it actually needs next.
+     */
+    private void settle() {
+        long end = System.currentTimeMillis()
+                + ("1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 120_000 : 60_000);
+        while (System.currentTimeMillis() < end) {
+            if ("complete".equals(scriptQuiet("return document.readyState"))) {
+                stillAnimations();
+                return;
+            }
+            WebDriver.sleep(250);
+        }
+        stillAnimations();
     }
 
     @Override
