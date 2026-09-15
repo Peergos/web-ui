@@ -2,6 +2,7 @@ const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const loopback = require("../loopback/index.js");
 const downloadUrl = require("../download-url/index.js");
 const storage = require("../storage/index.js");
+const transfers = require("../transfers/index.js");
 module.exports = {
 	data() {
 		return {
@@ -57,9 +58,13 @@ module.exports = {
                 return result;
             }
         },
+        // progress.toastId names the toast showing this zip, and progress.transfer, when there is one,
+        // is how its Cancel reaches the loop writing it
         zipFiles(zipFilename, allFiles, progress) {
             let that = this;
             let mimeType = "application/zip";
+            let toastId = progress.toastId != null ? progress.toastId : zipFilename;
+            let transfer = progress.transfer;
             
             let writerContainer = {};
             let zipFuture = peergos.shared.util.Futures.incomplete();
@@ -76,6 +81,11 @@ module.exports = {
                     if (e.data.unknownDownload === interceptUrl)
                         that.showToastError("The browser stopped the download before it started."
                             + " Please try again.");
+                    // cancelled from the browser's own downloads list rather than from our toast
+                    if (e.data.cancelledDownload === interceptUrl && transfer != null && transfers.cancel(toastId) != null) {
+                        that.$toast.dismiss(toastId);
+                        that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000});
+                    }
                 };
                 navigator.serviceWorker.addEventListener('message', lostListener);
             }
@@ -85,7 +95,8 @@ module.exports = {
             let handshakeTimer = setTimeout(() => {
                 if (interceptUrl == null) {
                     progress.show = false;
-                    that.$toast.dismiss(zipFilename);
+                    transfers.finish(transfer);
+                    that.$toast.dismiss(toastId);
                     that.showToastError("The download could not be started."
                         + " Please reload the page and try again.");
                     zipFuture.complete(false);
@@ -99,7 +110,15 @@ module.exports = {
                     that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
+            if (transfer != null) {
+                transfer.onCancel(() => {
+                    clearTimeout(handshakeTimer);
+                    writerContainer.writer.abort('Download cancelled').catch(() => {});
+                    zipFuture.complete(false);
+                });
+            }
             zipFuture.thenApply(res => {
+                transfers.finish(transfer);
                 // The frame is left in place on success: the archive has been written to the
                 // service worker, not yet read from it by the browser, and removing the frame
                 // mid transfer aborts the fetch. startDownload drops it when the worker reports
@@ -116,7 +135,9 @@ module.exports = {
         },
         reduceZippingFiles(allFiles, index, future, progress, writer, zipFilename, state) {
             let that = this;
-            if (index == allFiles.length) {
+            if (transfers.isCancelled(progress.transfer)) {
+                future.complete(false);
+            } else if (index == allFiles.length) {
                 future.complete(true);
             } else {
                 let fileEntry = allFiles[index];
@@ -124,7 +145,7 @@ module.exports = {
                     that.reduceZippingFiles(allFiles, ++index, future, progress, writer, zipFilename, state);
                 }).exceptionally(function(throwable) {
                     console.log(throwable);
-                    that.showToastError("Unable to process file: " + file.getName());
+                    that.showToastError("Unable to process file: " + fileEntry.file.getName());
                     future.complete(false);
                 });
             }
@@ -134,6 +155,10 @@ module.exports = {
             this.precalcCrc32();
             let writer = writerContainer.writer;
             let future = peergos.shared.util.Futures.incomplete();
+            if (transfers.isCancelled(progress.transfer)) {
+                completedZipping.complete(false);
+                return;
+            }
             let state = {centralRecord: [], offset: BigInt(0), fileCount: 0, archiveNeedsZip64: false};
             this.reduceZippingFiles(allFiles, 0, future, progress, writer, zipFilename, state);
             future.thenApply(done => {
@@ -189,7 +214,9 @@ module.exports = {
                         });
                     });
                 } else {
-                    writer.close()
+                    // a cancelled zip's writer is already aborted, and closing it too only rejects
+                    if (! transfers.isCancelled(progress.transfer))
+                        writer.close()
                     completedZipping.complete(done);
                 }
             });
@@ -200,6 +227,7 @@ module.exports = {
             let path = fileEntry.path == '' ? '' : fileEntry.path + '/';
             var props = file.getFileProperties()
             var that = this;
+            let toastId = progress.toastId != null ? progress.toastId : zipFilename;
             file.getInputStream(this.context.network, this.context.crypto, props.sizeHigh(), props.sizeLow(),
                 function (read) {
                     progress.done += read.value_0;
@@ -207,7 +235,7 @@ module.exports = {
                     if (now - (progress.lastUpdateTime || 0) > 500) {
                         progress.lastUpdateTime = now;
                         const stats = storage.formatTransferStats(progress.done, progress.max, progress.startTime);
-                        that.$toast.update(zipFilename, {
+                        that.$toast.update(toastId, {
                             content: {
                                 component: ProgressBar,
                                 props: {
@@ -221,7 +249,7 @@ module.exports = {
                     }
                     if (progress.done >= progress.max) {
                         setTimeout(function () {
-                            that.$toast.dismiss(zipFilename);
+                            that.$toast.dismiss(toastId);
                         }, 100);
                     }
                 }
@@ -236,7 +264,10 @@ module.exports = {
                     var maxBlockSize = 1024 * 1024 * 5;
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
                     let pump = () => {
-                        if (blockSize == 0) {
+                        if (transfers.isCancelled(progress.transfer)) {
+                            reader.close();
+                            future.complete(false);
+                        } else if (blockSize == 0) {
                             crc = (crc ^ -1) >>> 0; // Apply binary NOT
 
                             const bigFile = fileSize >= 0xffffffffn;
@@ -268,6 +299,10 @@ module.exports = {
                                 crc = that.crc32(data, crc);
                                 writer.write(data).then(() => {
                                     setTimeout(pump);
+                                }).catch(err => {
+                                    // an aborted writer, which is what a cancel leaves
+                                    reader.close();
+                                    future.complete(false);
                                 })
                             })
                         }

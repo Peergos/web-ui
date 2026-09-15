@@ -34,7 +34,7 @@ module.exports = {
         let grace = null;
         if (navigator.serviceWorker != null) {
             listener = function (e) {
-                if (e.data != null && e.data.finishedDownload === url && grace == null)
+                if (e.data != null && (e.data.finishedDownload === url || e.data.cancelledDownload === url) && grace == null)
                     grace = setTimeout(remove, 5000);
             };
             navigator.serviceWorker.addEventListener('message', listener);

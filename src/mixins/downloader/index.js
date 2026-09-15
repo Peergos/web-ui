@@ -2,6 +2,7 @@ const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const loopback = require("../loopback/index.js");
 const storage = require("../storage/index.js");
 const downloadUrl = require("../download-url/index.js");
+const transfers = require("../transfers/index.js");
 module.exports = {
 
   methods: {
@@ -146,10 +147,24 @@ module.exports = {
         lastUpdateTime: 0
       }
         var that = this
+        // unique, so two downloads of the same name each keep their own toast and Cancel
+        let toastId = 'download-' + filename + '-' + Date.now() + '-' + Math.random()
+        let transfer = transfers.start(toastId, 'download')
         that.$toast({
 	    component: ProgressBar,
 	    props:  progress,
-	} , { icon: false , timeout:false, id: filename})
+	} , { icon: false , timeout:false, id: toastId})
+      let failNonStreaming = function (throwable) {
+          transfers.finish(transfer)
+          progress.show = false
+          that.$toast.dismiss(toastId)
+          if (! transfer.cancelled) {
+            that.errorTitle = 'Error downloading file: ' + filename
+            that.errorBody = throwable.getMessage()
+            that.showError = true
+          }
+          result.complete(false);
+      }
     //   var context = this.getContext()
       file
         .getBufferedInputStream(
@@ -164,7 +179,7 @@ module.exports = {
             if (now - progress.lastUpdateTime > 500) {
               progress.lastUpdateTime = now
               progress.stats = storage.formatTransferStats(progress.done, progress.max, progress.startTime)
-              that.$toast.update(filename, {
+              that.$toast.update(toastId, {
                 content: {
                   component: ProgressBar,
                   props: {
@@ -178,7 +193,7 @@ module.exports = {
             }
               if (progress.done >= progress.max) {
                 setTimeout(function () {
-                    that.$toast.dismiss(filename);
+                    that.$toast.dismiss(toastId);
                 }, 100)
               }
           }
@@ -240,6 +255,11 @@ module.exports = {
                 // only our own download: another one going wrong is not this one's problem
                 if (e.data.unknownDownload === interceptUrl)
                   fail('The browser stopped the download before it started. Please try again.')
+                // cancelled from the browser's own downloads list rather than from our toast
+                if (e.data.cancelledDownload === interceptUrl && transfers.cancel(toastId) != null) {
+                  that.$toast.dismiss(toastId)
+                  that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000})
+                }
               }
               navigator.serviceWorker.addEventListener('message', lostListener)
             }
@@ -250,12 +270,15 @@ module.exports = {
               if (failed)
                 return
               failed = true
+              transfers.finish(transfer)
               clearTimeout(handshakeTimer)
               progress.show = false
-              that.$toast.dismiss(filename)
-              that.errorTitle = 'Error downloading file: ' + filename
-              that.errorBody = message
-              that.showError = true
+              that.$toast.dismiss(toastId)
+              if (! transfer.cancelled) {
+                that.errorTitle = 'Error downloading file: ' + filename
+                that.errorBody = message
+                that.showError = true
+              }
               writer.abort(message).catch(() => {})
               if (disposeFrame != null)
                 disposeFrame()
@@ -263,8 +286,14 @@ module.exports = {
                 navigator.serviceWorker.removeEventListener('message', lostListener)
                 lostListener = null
               }
-              result.completeExceptionally(new Error(message))
+              if (transfer.cancelled) {
+                reader.close()
+                result.complete(false)
+              } else
+                result.completeExceptionally(new Error(message))
             }
+            // stopping the pump stops the reads, and with them the chunks fetched ahead of it
+            transfer.onCancel(() => fail('Download cancelled'))
             let pump = () => {
               if (failed)
                 return
@@ -287,10 +316,12 @@ module.exports = {
                     writer.write(data).then(() => {
                       setTimeout(pump)
                     }).catch((err) => {
-                        console.error(err);
+                        if (! transfer.cancelled)
+                            console.error(err);
                         fail('' + err);
                     });
                     if (size == 0) {
+                        transfers.finish(transfer);
                         result.complete(true);
                     }
                   }).exceptionally(t => {
@@ -303,20 +334,31 @@ module.exports = {
           } else {
             var size = that.getFileSize(props)
             var data = convertToByteArray(new Int8Array(size))
-            reader
-              .readIntoArray(data, 0, data.length)
-              .thenApply(function (read) {
-                that.openItem(filename, data, props.mimeType);
-                result.complete(true);
+            var blockSize = 1024 * 1024 * 5
+            let readFrom = (offset) => {
+              if (transfer.cancelled) {
+                reader.close()
+                result.complete(false)
+                return
+              }
+              if (offset >= size) {
+                transfers.finish(transfer)
+                that.openItem(filename, data, props.mimeType)
+                result.complete(true)
+                return
+              }
+              let length = Math.min(blockSize, size - offset)
+              reader.readIntoArray(data, offset, length).thenApply(function (read) {
+                readFrom(offset + read)
+              }).exceptionally(function (throwable) {
+                failNonStreaming(throwable)
               })
+            }
+            readFrom(0)
           }
         })
         .exceptionally(function (throwable) {
-          progress.show = false
-          that.errorTitle = 'Error downloading file: ' + filename
-          that.errorBody = throwable.getMessage()
-          that.showError = true
-          result.complete(false);
+          failNonStreaming(throwable)
         })
       return result;
     },

@@ -95,6 +95,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE":"파일 암호화 및 업로드 중",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"암호화 중",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"업로드 중",
+    "DRIVE.UPLOAD.CANCELLED":"업로드가 취소되었습니다",
+    "DRIVE.DOWNLOAD.CANCELLED":"다운로드가 취소되었습니다",
     "DRIVE.UPLOAD.COMPLETE":"업로드 완료 및 폴더 새로고침 중...",
     "DRIVE.UPLOAD.ERROR":"파일 업로드 오류",
     "DRIVE.UPLOAD.RESUME.TITLE":"실패한 파일 업로드를 재개하시겠습니까?",

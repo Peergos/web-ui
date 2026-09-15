@@ -106,6 +106,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE":"Bestand(en) versleutelen en uploaden",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Versleutelen",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"Uploaden",
+    "DRIVE.UPLOAD.CANCELLED":"Upload geannuleerd",
+    "DRIVE.DOWNLOAD.CANCELLED":"Download geannuleerd",
     "DRIVE.UPLOAD.COMPLETE":"Upload aan het afronden en folder refreshen...",
     "DRIVE.UPLOAD.ERROR":"Fout bij het uploaden van bestanden",
     "DRIVE.UPLOAD.RESUME.TITLE":"Wil je de gefaalde bestandsupload voortzetten??",

@@ -103,33 +103,34 @@ function setupStreamingEntry(port, entry) {
  *  browser having taken what was written - the chunks can still be sitting in the stream's
  *  queue. Pulling means a chunk only leaves here because the consumer asked for it, so
  *  reaching the end is evidence the download itself got that far, and the page can stop
- *  holding the frame open. onDone runs once, on the end of the body or on a cancel.
+ *  holding the frame open. onDone runs once, on the end of the body or on a cancel, and is told
+ *  which: a download cancelled in the browser has to stop the page decrypting the rest of it.
  */
 function withCompletion (stream, onDone) {
   const reader = stream.getReader()
   let finished = false
-  const done = () => {
+  const done = (cancelled) => {
     if (finished)
       return
     finished = true
-    onDone()
+    onDone(cancelled)
   }
   return new ReadableStream({
     pull (controller) {
       return reader.read().then(({done: atEnd, value}) => {
         if (atEnd) {
           controller.close()
-          done()
+          done(false)
           return
         }
         controller.enqueue(value)
       }).catch(e => {
         controller.error(e)
-        done()
+        done(false)
       })
     },
     cancel (reason) {
-      done()
+      done(true)
       return reader.cancel(reason)
     }
   })
@@ -305,9 +306,9 @@ self.onfetch = event => {
                 // The page keeps the frame that is fetching this alive until it hears the body
                 // has been read to the end, because taking the frame away first aborts the
                 // fetch and the browser throws away what it had written.
-                const body = withCompletion(stream, () =>
+                const body = withCompletion(stream, cancelled =>
                     self.clients.matchAll().then(cs => cs.forEach(c =>
-                        c.postMessage({finishedDownload: url}))))
+                        c.postMessage(cancelled ? {cancelledDownload: url} : {finishedDownload: url}))))
                 return event.respondWith(new Response(body, { headers }))
           }
     }

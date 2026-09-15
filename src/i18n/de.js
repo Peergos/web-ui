@@ -95,6 +95,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE": "Datei(en) werden verschlüsselt und hochgeladen.",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING": "Verschlüsselung läuft.",
     "DRIVE.UPLOAD.TITLE.UPLOADING": "Hochladen läuft.",
+    "DRIVE.UPLOAD.CANCELLED": "Hochladen abgebrochen",
+    "DRIVE.DOWNLOAD.CANCELLED": "Herunterladen abgebrochen",
     "DRIVE.UPLOAD.COMPLETE": "Upload abgeschlossen und Ordner aktualisiert...",
     "DRIVE.UPLOAD.ERROR": "Fehler beim Hochladen der Dateien.",
     "DRIVE.UPLOAD.RESUME.TITLE": "Möchten Sie den fehlgeschlagenen Dateiupload fortsetzen?",

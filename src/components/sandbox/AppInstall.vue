@@ -88,6 +88,7 @@ const mixins = require("../../mixins/mixins.js");
 const downloaderMixin = require("../../mixins/downloader/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const i18n = require("../../i18n/index.js");
+const transfers = require("../../mixins/transfers/index.js");
 
 module.exports = {
     components: {
@@ -581,7 +582,9 @@ module.exports = {
                 this.context.getByPath(destinationPath).thenApply(appDirOpt => {
                     appDirOpt.ref.uploadSubtree(folderStream, that.getMirrorBatId(appDirOpt.ref), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
-                        f => resumeFileUpload(f),commitWatcher).thenApply(res => {
+                        f => resumeFileUpload(f),
+                        f => peergos.shared.util.Futures.of(true),
+                        commitWatcher, transfers.never).thenApply(res => {
                             future.complete(true);
                         }).exceptionally(function (throwable) {
                             console.log('Unable to install App. Error: ' +  + throwable.getMessage());
@@ -617,7 +620,8 @@ module.exports = {
                     that.context.getByPath("/" + that.context.username + "/.apps/" + appName).thenApply(appDirOpt => {
                           appDirOpt.get().uploadFileJS(filename, reader, 0, bytes.byteLength,
                               true, that.getMirrorBatId(appDirOpt.get()), that.context.network, that.context.crypto, function (len) { },
-                              that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
+                              that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true),
+                              transfers.never
                           ).thenApply(function (res) {
                               future.complete(props);
                           }).exceptionally(function (throwable) {

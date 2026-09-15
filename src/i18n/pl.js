@@ -93,6 +93,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE": "Szyfrowanie i przesyłanie pliku(ów)",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Szyfrowania",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"Przesyłanie",
+    "DRIVE.UPLOAD.CANCELLED":"Przesyłanie anulowane",
+    "DRIVE.DOWNLOAD.CANCELLED":"Pobieranie anulowane",
     "DRIVE.UPLOAD.COMPLETE": "Kończenie przesyłania i odświeżanie folderu...",
     "DRIVE.UPLOAD.ERROR": "Błąd przesyłania plików",
     "DRIVE.UPLOAD.RESUME.TITLE": "Czy chcesz wznowić nieudane przesyłanie pliku?",

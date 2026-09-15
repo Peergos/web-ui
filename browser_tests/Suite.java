@@ -23,6 +23,7 @@ public class Suite {
             run(failures, "render a pdf in the pdf app", () -> PdfRenderTest.run(args1));
             run(failures, "follow markdown links", () -> MarkdownLinksTest.run(args1));
             run(failures, "html viewer links and images", () -> HtmlViewerTest.run(args1));
+            run(failures, "cancel an upload", () -> CancelUploadTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
@@ -61,6 +62,8 @@ public class Suite {
                 // Leaving has to be as complete as arriving: this one exports a calendar,
                 // imports it into an account that has never seen it, and exports that.
                 run(failures, "calendar moved to another account", () -> CalendarMigrationTest.run(args1));
+                // Four downloads of a 200MiB file, each left 30s to show it stopped.
+                run(failures, "cancel downloads", () -> CancelDownloadTest.run(args1));
             }
             run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
             if (canPlaceDownloads) {

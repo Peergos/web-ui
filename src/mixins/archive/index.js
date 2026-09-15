@@ -11,6 +11,7 @@
 
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const storage = require("../storage/index.js");
+const transfers = require("../transfers/index.js");
 
 const ZIP_MIMETYPE = "application/zip";
 
@@ -294,7 +295,9 @@ module.exports = {
                 max: total,
                 startTime: Date.now()
             };
-            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: zipFilename});
+            progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+            progress.transfer = transfers.start(progress.toastId, 'download');
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: progress.toastId});
             this.zipFiles(zipFilename, files, progress).thenApply(function(res) {
                 that.selectedFiles = [];
                 return res;
@@ -336,7 +339,7 @@ module.exports = {
                 return;
             }
 
-            const toastId = 'archive-copy-' + entry.getName();
+            const toastId = 'archive-copy-' + entry.getName() + '-' + Date.now();
             const progress = {
                 show: true,
                 title: this.translate("DRIVE.COPYING.TITLE"),
@@ -346,18 +349,23 @@ module.exports = {
                 startTime: Date.now(),
                 lastUpdateTime: 0
             };
+            progress.transfer = transfers.start(toastId, 'upload');
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
             const future = peergos.shared.util.Futures.incomplete();
             this.copyNextArchiveFile(archive, targetPath, files, 0, progress, toastId, future);
             future.thenApply(function(res) {
+                transfers.finish(progress.transfer);
                 that.$toast.dismiss(toastId);
                 that.selectedFiles = [];
                 that.updateUsage();
                 that.updateCurrentDir();
                 return res;
             }).exceptionally(function(throwable) {
+                transfers.finish(progress.transfer);
                 that.$toast.dismiss(toastId);
-                that.$toast.error(throwable.getMessage(), {timeout: false});
+                if (! transfers.isCancelled(progress.transfer))
+                    that.$toast.error(throwable.getMessage(), {timeout: false});
+                that.updateUsage();
                 that.updateCurrentDir();
                 return null;
             });
@@ -367,6 +375,10 @@ module.exports = {
             const that = this;
             if (index == files.length) {
                 future.complete(true);
+                return;
+            }
+            if (transfers.isCancelled(progress.transfer)) {
+                future.completeExceptionally(new Error("Upload cancelled!"));
                 return;
             }
             const item = files[index];
@@ -409,7 +421,8 @@ module.exports = {
                     that.context.getTransactionService(),
                     function(f) {
                         return peergos.shared.util.Futures.of(false);
-                    });
+                    },
+                    progress.transfer != null ? progress.transfer.isCancelled : transfers.never);
             });
         },
 

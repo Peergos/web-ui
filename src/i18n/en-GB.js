@@ -108,6 +108,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE":"Encrypting and uploading file(s)",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Encrypting",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"Uploading",
+    "DRIVE.UPLOAD.CANCELLED":"Upload cancelled",
+    "DRIVE.DOWNLOAD.CANCELLED":"Download cancelled",
     "DRIVE.UPLOAD.COMPLETE":"Completing upload and refreshing folder...",
     "DRIVE.UPLOAD.ERROR":"Error Uploading files",
     "DRIVE.UPLOAD.RESUME.TITLE":"Do you wish to resume failed file upload?",

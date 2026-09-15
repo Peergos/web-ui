@@ -7,13 +7,27 @@
 		<div role="progressbar" class="progress__bar">
 			<div :style="{width: progress + '%'}"></div>
 		</div>
-		<!-- <AppButton class="progress__close" size="small" @click="closeMessage">Dismiss</AppButton> -->
+		<div v-if="cancellable()" class="progress__actions">
+			<AppButton class="progress__cancel" size="small" @click.native="cancel">{{ translate("PROMPT.CANCEL") }}</AppButton>
+		</div>
 	</div>
 </template>
 
 <script>
+const AppButton = require("../AppButton.vue");
+const i18n = require("../../i18n/index.js");
+const transfers = require("../../mixins/transfers/index.js");
 module.exports = {
+	components: {
+		AppButton,
+	},
+	mixins: [i18n],
 	props: {
+		// set by vue-toastification on whatever it renders inside a toast
+		toastId: {
+			type: [String, Number],
+			default: null
+		},
 		title: {
 			type: String,
 			default: ''
@@ -42,8 +56,20 @@ module.exports = {
 		}
 	},
 	methods: {
+		// a method rather than computed: the registry isn't reactive, and every progress update re-renders
+		cancellable() {
+			return this.toastId != null && transfers.get(this.toastId) != null;
+		},
 		closeMessage() {
 			this.$emit('close-toast')
+		},
+		cancel() {
+			const transfer = transfers.cancel(this.toastId);
+			this.closeMessage();
+			if (transfer == null)
+				return;
+			const message = transfer.kind == 'upload' ? "DRIVE.UPLOAD.CANCELLED" : "DRIVE.DOWNLOAD.CANCELLED";
+			this.$toast(this.translate(message), {timeout: 4000});
 		}
 	}
 }
@@ -76,11 +102,18 @@ module.exports = {
 	transition: width 2s ease;
 	background-color: white;
 }
-/* .app-progressbar .progress__close{
-	position: absolute;
-	bottom: 8px;
-	right: 8px;
+.progress-toast .Vue-Toastification__close-button{
+	align-self: flex-start;
+	opacity: 0.7;
+}
+
+.app-progressbar .progress__actions{
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+}
+.app-progressbar .progress__cancel{
 	background-color:rgba(255,255,255,0.4);
-} */
+}
 
 </style>

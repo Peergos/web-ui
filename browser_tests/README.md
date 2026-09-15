@@ -50,7 +50,9 @@ accounts staying live at both ends, a whole calendar shared from the directory e
 starts with being taken in and written to, everything one account holds carried into another
 with nothing lost on the way, a create, edit and delete of one entry fired together leaving
 nothing behind and a deleted calendar taking only its own directory, and the boundary the
-calendar's sandbox is held to - including messages naming a place outside it. Every
+calendar's sandbox is held to - including messages naming a place outside it - and an upload,
+a download and a folder zip each cancelled part way, from the toast and (firefox) from the
+browser's downloads list, with nothing left behind and nothing more fetched. Every
 assertion is on the bytes -
 hashed against the source, unzipped and compared, a rendered canvas with real dimensions, or the
 stored .ics read back out of the store - never on a file or an app merely appearing.

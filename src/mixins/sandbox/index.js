@@ -1,5 +1,6 @@
 const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const i18n = require("../../i18n/index.js");
+const transfers = require("../transfers/index.js");
 
 module.exports = {
     data() {
@@ -377,7 +378,8 @@ module.exports = {
                 let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
                 dir.uploadFileJS("peergos-app.json", reader, 0, bytes.byteLength,
                     true, that.mirrorBatId, that.context.network, that.context.crypto, function (len) { },
-                    that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true)
+                    that.context.getTransactionService(), f => peergos.shared.util.Futures.of(true),
+                    transfers.never
                 ).thenApply(function (res) {
                     future.complete(props);
                 })

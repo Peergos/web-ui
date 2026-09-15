@@ -65,6 +65,7 @@ const Prompt = require("../components/prompt/Prompt.vue");
 const Share = require("../components/drive/DriveShare.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
+const transfers = require("../mixins/transfers/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -1621,12 +1622,17 @@ module.exports = {
                    uploadFuture.complete(false);
                    return null;
                }
+               let transfer = uploadParams.transfer;
                that.getMirrorBatId(dir).thenCompose(mirrorBatId => dir.uploadSubtree(folderStream, mirrorBatId, that.context.network,
                    that.context.crypto, that.context.getTransactionService(),
-                   resume, keepWhatIsThere, commitWatcher)).thenApply(res => {
+                   resume, keepWhatIsThere, commitWatcher,
+                   transfer != null ? transfer.isCancelled : transfers.never)).thenApply(res => {
+                       transfers.finish(transfer);
                        uploadFuture.complete(true);
                }).exceptionally(function (throwable) {
-                    that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
+                    transfers.finish(transfer);
+                    if (! transfers.isCancelled(transfer))
+                        that.showMessage(true, that.translate('CALENDAR.ERROR.UPLOAD'));
                     uploadFuture.complete(false);
                });
            // Without this the future never settles when the upload directory
@@ -1736,6 +1742,7 @@ module.exports = {
         // A single file finishes before a progress bar could be read, and
         // one that flashes and vanishes reads as a glitch.
         if (items.length > 1) {
+            uploads.transfer = transfers.start(name, 'upload');
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name});
         }
         items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
@@ -1748,6 +1755,18 @@ module.exports = {
             // The bar dismisses itself on the last file; an upload that
             // failed never reaches it and would otherwise stay on screen.
             that.$toast.dismiss(name);
+            // the app already shows every entry it sent, and only some of them were stored
+            if (transfers.isCancelled(uploads.transfer)) {
+                let now = new Date();
+                that.displaySpinner();
+                that.getPropertiesFile(calendar).thenApply(function(props) {
+                    that.calendarProperties = props;
+                    that.load(calendar, now.getFullYear(), now.getMonth() + 1);
+                }).exceptionally(function(t) {
+                    that.removeSpinner();
+                    return null;
+                });
+            }
         }).exceptionally(function(throwable) {
             that.$toast.dismiss(name);
             that.removeSpinner();

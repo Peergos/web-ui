@@ -88,6 +88,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE":"正在加密并上传文件",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"加密",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"上传",
+    "DRIVE.UPLOAD.CANCELLED":"上传已取消",
+    "DRIVE.DOWNLOAD.CANCELLED":"下载已取消",
     "DRIVE.UPLOAD.COMPLETE":"正在完成上传并刷新文件夹...",
     "DRIVE.UPLOAD.ERROR":"上传文件时出错",
     "DRIVE.UPLOAD.RESUME.TITLE":"您是否希望继续上传没传成功的文件?",

@@ -165,6 +165,7 @@ const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
 const i18n = require("../i18n/index.js");
+const transfers = require("../mixins/transfers/index.js");
 module.exports = {
     components: {
         AppInstall,
@@ -461,7 +462,8 @@ module.exports = {
                 dir.uploadFileJS(filename, reader, 0, fileData.length,
                     true, that.getMirrorBatId(dir), that.context.network, that.context.crypto, function (len) { },
                     that.context.getTransactionService(),
-                    f => peergos.shared.util.Futures.of(false)
+                    f => peergos.shared.util.Futures.of(false),
+                    transfers.never
                 ).thenApply(function (res) {
                     that.showMessage(false, that.translate("LAUNCHER.CREATED.SUCCESS"));
                     that.showSpinner = false;

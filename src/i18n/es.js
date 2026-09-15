@@ -93,6 +93,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE": "Encriptando y cargando archivo(s)",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Cifrado",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"Cargar",
+    "DRIVE.UPLOAD.CANCELLED":"Carga cancelada",
+    "DRIVE.DOWNLOAD.CANCELLED":"Descarga cancelada",
     "DRIVE.UPLOAD.COMPLETE": "Completando la carga y actualizando la carpeta...",
     "DRIVE.UPLOAD.ERROR": "Error al cargar archivos",
     "DRIVE.UPLOAD.RESUME.TITLE": "¿Desea reanudar la carga de archivos fallida?",

@@ -438,6 +438,7 @@ const Spinner = require("../components/spinner/Spinner.vue");
 const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
+const transfers = require("../mixins/transfers/index.js");
 const downloaderMixins = require("../mixins/downloader/index.js");
 const zipMixin = require("../mixins/zip/index.js");
 const archiveMixin = require("../mixins/archive/index.js");
@@ -1931,11 +1932,13 @@ module.exports = {
                 let accumulator = {directoryMap: new Map(), files: []};
                 let future = peergos.shared.util.Futures.incomplete();
                 let allFilesList = [];
-                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: zipFilename});
+                progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                progress.transfer = transfers.start(progress.toastId, 'download');
+                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: progress.toastId});
                 that.reduceCollectFilesToZip(0, path, files, allFilesList, future);
                 future.thenApply(res => {
                     that.showSpinner = false;
-                    if (res) {
+                    if (res && ! progress.transfer.cancelled) {
                         that.zipFiles(zipFilename, allFilesList, progress).thenApply(res2 => {
                             console.log('zip complete');
                             that.selectedFiles = [];
@@ -1992,8 +1995,10 @@ module.exports = {
                             that.collectFilesToZip(that.getPath, file,
                                 that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
+                                progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                                progress.transfer = transfers.start(progress.toastId, 'download');
                                 that.$toast({component: ProgressBar,props: progress}
-                                    , { icon: false , timeout:false, id: zipFilename});
+                                    , { icon: false , timeout:false, id: progress.toastId});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
@@ -2237,6 +2242,7 @@ module.exports = {
                             total: files.length,
                             startTime: Date.now(),
                         };
+                        let transfer = transfers.start(name, 'upload');
                         that.$toast(
                             {component: ProgressBar,props:  progress} ,
                             { icon: false , timeout:false, id: name})
@@ -2253,6 +2259,7 @@ module.exports = {
                             title: title,
                             lastTitle: title,
                             lastSubtitle: '',
+                            transfer: transfer,
                         }
                         uploadParams.progressInterval = setInterval(() => {
                             const stats = helpers.formatTransferStats(uploadParams.progress.done, uploadParams.progress.max, uploadParams.progress.startTime);
@@ -2276,6 +2283,10 @@ module.exports = {
                         };
                         that.reduceAllUploads(0, sortedFiles, prepareFuture, uploadParams, previousDirectoryHolder);
                         prepareFuture.thenApply(preparationDone => {
+                            if (transfer.cancelled) {
+                                clearInterval(uploadParams.progressInterval);
+                                return;
+                            }
                             that.bulkUpload(uploadParams).thenApply(res => {
                                 console.log("upload complete");
                             });
@@ -2330,6 +2341,14 @@ module.exports = {
                     if (uploadParams.applyReplaceToAll) {
                         future.complete(uploadParams.replaceFile);
                     } else {
+                        // cancelling while the question is up answers it, so the upload can stop
+                        if (uploadParams.transfer != null) {
+                            uploadParams.transfer.onCancel(() => {
+                                if (that.showReplace && that.replace_message.indexOf(filename) >= 0)
+                                    that.showReplace = false;
+                                future.complete(false);
+                            });
+                        }
                         that.confirmReplaceFile({name: filename},
                             (applyToAll) => {
                                 uploadParams.applyReplaceToAll = applyToAll;
@@ -2347,14 +2366,26 @@ module.exports = {
                     }
                     return future;
                 }
+                let transfer = uploadParams.transfer;
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                     uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
                         f => resumeFileUpload(f),
                         f => replaceFileUpload(f),
-                        commitWatcher).thenApply(res => {
+                        commitWatcher,
+                        transfer != null ? transfer.isCancelled : transfers.never).thenApply(res => {
+                            transfers.finish(transfer);
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
+                        transfers.finish(transfer);
+                        clearInterval(uploadParams.progressInterval);
+                        if (transfers.isCancelled(transfer)) {
+                            // whatever finished before the cancel is in the folder now
+                            that.updateCurrentDirectory();
+                            that.updateUsage();
+                            uploadFuture.complete(false);
+                            return;
+                        }
                         that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
@@ -2388,7 +2419,9 @@ module.exports = {
         },
         reduceAllUploads: function(index, files, future, uploadParams, previousDirectoryHolder) {
             let that = this;
-            if (index == files.length) {
+            if (transfers.isCancelled(uploadParams.transfer)) {
+                future.complete(false);
+            } else if (index == files.length) {
                 if (uploadParams.progress.total == 0) {
                     that.addUploadProgressMessage(uploadParams, that.translate("DRIVE.UPLOAD.EMPTY"), '', '', '', true);
                 }
@@ -3503,7 +3536,7 @@ module.exports = {
                 this.context.crypto, this.context.getTransactionService(),
                 f => alwaysResumeFileUpload(f),
                 f => peergos.shared.util.Futures.of(true),
-                commitWatcher).thenApply(res => {
+                commitWatcher, transfers.never).thenApply(res => {
                     that.showSpinner = false;
                     that.updateCurrentDir();
                     that.updateFiles();
@@ -3561,7 +3594,8 @@ module.exports = {
 			this.currentDir.uploadFileJS(filename, reader, 0, fileData.length,
 				false, that.getMirrorBatId(that.currentDir), this.context.network, this.context.crypto, function (len) { },
 				this.context.getTransactionService(),
-				f => peergos.shared.util.Futures.of(false)
+				f => peergos.shared.util.Futures.of(false),
+				transfers.never
 			).thenApply(function (res) {
 				that.currentDir = res;
 				that.updateFiles();

@@ -13,12 +13,21 @@ Vue.config.productionTip = false;
 
 Vue.use(Vuex);
 var store = require('./store/index.js');
+const ProgressBar = require('./components/drive/ProgressBar.vue');
 
 const ToastOptions = {
 	hideProgressBar: true,
 	maxToasts: 3,
 	showCloseButtonOnHover: true,
-	position: 'bottom-right'
+	position: 'bottom-right',
+	filterBeforeCreate: toast => {
+		if (toast.content != null && toast.content.component === ProgressBar) {
+			toast.closeOnClick = false;
+			toast.showCloseButtonOnHover = false;
+			toast.toastClassName = 'progress-toast';
+		}
+		return toast;
+	}
 };
 
 Vue.use( VueToastification.default, ToastOptions);

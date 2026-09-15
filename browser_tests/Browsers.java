@@ -129,7 +129,8 @@ public class Browsers {
         Files.writeString(profile.resolve("user.js"), prefs);
 
         List<String> cmd = new ArrayList<>(List.of(
-                firefoxBinary(), "--marionette", "--no-remote", "--profile", profile.toString(),
+                // system access lets a test reach the browser's own ui, such as its downloads list
+                firefoxBinary(), "--marionette", "-remote-allow-system-access", "--no-remote", "--profile", profile.toString(),
                 "--width=" + WIDTH, "--height=" + HEIGHT));
         if (headless)
             cmd.add("--headless");

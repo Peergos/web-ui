@@ -338,6 +338,17 @@ public class MarionetteDriver implements WebDriver {
                 Map.of("script", body, "args", Arrays.asList(args))));
     }
 
+    /** Runs a script in the browser's own chrome rather than in the page: how a test reaches what
+     *  a person does outside the page, such as cancelling a download in the downloads list. */
+    public Object chromeScript(String body) {
+        command("Marionette:SetContext", Map.of("value", "chrome"));
+        try {
+            return value(command("WebDriver:ExecuteScript", Map.of("script", body, "args", List.of())));
+        } finally {
+            command("Marionette:SetContext", Map.of("value", "content"));
+        }
+    }
+
     @Override
     public void switchToFrame(String css) {
         enterFrame(css);

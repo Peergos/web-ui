@@ -93,6 +93,8 @@ module.exports = {
     "DRIVE.UPLOAD.TITLE": "Cryptage et téléchargement du/des fichier(s)",
     "DRIVE.UPLOAD.TITLE.ENCRYPTING":"Cryptage",
     "DRIVE.UPLOAD.TITLE.UPLOADING":"Téléchargement",
+    "DRIVE.UPLOAD.CANCELLED":"Envoi annulé",
+    "DRIVE.DOWNLOAD.CANCELLED":"Téléchargement annulé",
     "DRIVE.UPLOAD.COMPLETE": "Fin du téléchargement et actualisation du dossier...",
     "DRIVE.UPLOAD.ERROR": "Erreur lors du téléchargement des fichiers",
     "DRIVE.UPLOAD.RESUME.TITLE": "Souhaitez-vous reprendre le téléchargement du fichier ayant échoué?",
