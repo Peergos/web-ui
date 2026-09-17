@@ -6,8 +6,13 @@ body {
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-font-smoothing: antialiased;
 	max-width: 100%;
+	/* hidden makes the body a scroll container, and a sticky descendant then pins to its
+	   box rather than the viewport. clip hides the same overflow without that; engines
+	   that do not know it keep the pair below */
 	overflow-x: hidden;
 	overflow-y: auto;
+	overflow-x: clip;
+	overflow-y: visible;
 
 	color: var(--color);
 	background-color: var(--bg);

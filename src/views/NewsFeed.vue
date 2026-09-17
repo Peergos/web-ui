@@ -1842,7 +1842,9 @@ module.exports = {
 }
 .newsfeed__container{
 	width:100%;
-	min-height: 100vh;
+	/* the view around it is already a screenful; asking for another one here put the
+	   header, the bar and this margin past the bottom and left the page scrolling
+	   with nothing under the fold */
 	padding: 0 32px;
 	margin-top: 32px;
 }

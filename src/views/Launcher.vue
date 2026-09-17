@@ -248,8 +248,14 @@ module.exports = {
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn],
 	watch: {
+		/* the shell loads the shortcuts after the page does, so a view mounted before that
+		   answer arrives - which is what a reload on this view is - read an empty map and
+		   never looked again */
+		"shortcuts.shortcutsMap": function (shortcutsMap) {
+			this.setShortcutList(new Map(shortcutsMap));
+		},
 		forceAppDisplayUpdate(newUpdateCounter, oldUpdateCounter) {
 		    let that = this;
             this.showAppGrid = false;

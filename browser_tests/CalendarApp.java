@@ -15,10 +15,18 @@ public class CalendarApp {
     /** Opens the calendar view and waits for the app inside the frame to finish its first load. */
     public static void open(WebDriver d) {
         Page.gotoView(d, "Calendar", "downloadIcsFile", "__cal");
+        // The host first: it is what answers the app's saves, and it is still fetching the
+        // calendar's properties while the frame is already drawing an empty grid. A save sent
+        // into that window is one nothing replies to, and the dialog then never closes.
+        d.waitForScript("the host to finish opening the calendar",
+                "!!window.__cal && !window.__cal.busy", 120_000);
         d.waitForScript("the calendar frame", "document.querySelector('" + FRAME + "')", 60_000);
+        // data-pending is the app's own count of reads still outstanding, and it is only
+        // set once a load has begun - the bar's own hidden/shown is a delayed presentation
+        // of the same thing and is no answer to "has it loaded".
         d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
-                "return !!document.getElementById('load-progress')"
-                        + " && document.getElementById('load-progress').hidden"
+                "const bar = document.getElementById('load-progress');"
+                        + "return !!bar && bar.dataset.pending === '0'"
                         + " && !!document.querySelector('[role=\"gridcell\"]')"), 120_000);
     }
 

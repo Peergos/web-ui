@@ -274,6 +274,12 @@ module.exports = {
 	this.updateNetwork();
 
 	window.addEventListener("hashchange", this.onUrlChange, false);
+	window.addEventListener("resize", this.onWindowResize, { passive: true });
+    },
+
+    beforeDestroy() {
+	window.removeEventListener("hashchange", this.onUrlChange);
+	window.removeEventListener("resize", this.onWindowResize);
     },
 
     mounted() {
@@ -288,6 +294,12 @@ module.exports = {
     },
 
 	methods: {
+        /* the sidebar is a panel below this width and a rail above it, and the views that
+           ask are not all mounted at once, so the shell keeps the answer */
+        onWindowResize() {
+            if (window.innerWidth !== this.$store.state.windowWidth)
+                this.$store.commit("SET_WINDOW_WIDTH", window.innerWidth);
+        },
         ...Vuex.mapActions([
 	    'updateQuota',
 	    'updateUsage',

@@ -1,5 +1,5 @@
 <template>
-<div style="width:100%; left:0; top:0; z-index:100;" >
+<div style="width:100%; left:0; top:0;">
     <div id="spinner" style="width:100%; height:100%; ">
         <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
     </div>
@@ -64,6 +64,13 @@ module.exports = {
 };
 </script>
 <style>
+/* above every overlay the app can raise: a spinner that says the view is busy is no use
+   behind the thing it is describing */
+.spinner-absolute-position,
+.spinner-fixed-position {
+    z-index: 10000;
+}
+
 .spinner-absolute-position {
   height:100%;
   position:absolute;

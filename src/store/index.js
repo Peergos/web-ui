@@ -11,7 +11,7 @@ function shallow(val) {
 let mirrorBatIdLookup = null;
 module.exports = new Vuex.Store({
 	state: {
-		windowWidth: null,
+		windowWidth: window.innerWidth,
 		currentView: null,
 		isDark: false,
 		isSidebarOpen: false,

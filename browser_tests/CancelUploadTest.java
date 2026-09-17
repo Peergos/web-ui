@@ -56,10 +56,10 @@ public class CancelUploadTest {
             proxy.configure(LATENCY_MILLIS, 0, 0);
             upload(d, engine, source, name, SIZE);
             d.waitForScript("the upload to be part way",
-                    "(() => { const bar = document.querySelector('.Vue-Toastification__toast .progress__bar div');"
+                    "(() => { const bar = document.querySelector('.Vue-Toastification__toast .progress__bar span');"
                             + " return bar != null && parseFloat(bar.style.width) >= 10"
                             + "   && !!document.querySelector('.progress__cancel'); })()", 300_000);
-            System.out.println("  progress " + d.script("return document.querySelector('.progress__bar div').style.width"));
+            System.out.println("  progress " + d.script("return document.querySelector('.progress__bar span').style.width"));
             d.script("document.querySelector('.progress__cancel').click(); return 1;");
 
             d.waitForScript("the cancelled message",
