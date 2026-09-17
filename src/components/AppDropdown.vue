@@ -60,8 +60,12 @@ module.exports = {
 	        },        
                 closeMenu(){
                     this.isActive = false;
-                    this.$el.blur();
-                }, 
+                    // the trigger inside $el holds the focus, not $el itself, so blurring $el
+                    // leaves it focused and the next focusin reopens the menu
+                    let focused = document.activeElement;
+                    if (focused != null && this.$el.contains(focused))
+                        focused.blur();
+                },
 
 	},
 };
