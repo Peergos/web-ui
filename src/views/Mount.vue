@@ -3,7 +3,7 @@
 	<article class="app-view pg-view mount-view">
 		<AppHeader>
 			<template #primary>
-				<h1>{{ translate("MOUNT.TITLE") }}</h1>
+				<h1>{{ translate("APPNAV.MOUNT") }}</h1>
 			</template>
 		</AppHeader>
 		<main>
@@ -141,8 +141,8 @@
 
 					<div class="mount-field">
 						<label for="mount-user">{{ translate("MOUNT.PEERGOS_USER") }}</label>
-						<input id="mount-user" class="pg-input" type="text" autocomplete="username"
-								:value="context.username" readonly />
+						<input id="mount-user" class="pg-input pg-input--static" type="text"
+								autocomplete="username" tabindex="-1" :value="context.username" readonly />
 					</div>
 					<div class="mount-field">
 						<label for="mount-pass">{{ translate("MOUNT.PEERGOS_PASSWORD") }}</label>
@@ -559,16 +559,14 @@ module.exports = {
 </script>
 
 <style>
-.mount-view main {
-	display: flex;
-	flex-direction: column;
-	gap: 18px;
-	max-width: 900px;
-	padding: 20px;
-}
-
+/* the form and the row that heads it share one narrow column: the pending tone carries no
+   fill, so a full width row above a narrow card marked nothing and the card read as adrift.
+   Only while not mounted - capping the mounted row squeezed its own buttons */
+.mount-view .pg-tone--pending.pg-summary,
 .mount-setup {
+	width: 100%;
 	max-width: 520px;
+	margin: 0 auto;
 }
 
 .mount-setup .pg-switch {

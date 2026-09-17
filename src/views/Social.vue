@@ -2,7 +2,7 @@
    	<article class="app-view social-view">
 	   	<AppHeader>
 			<template #primary>
-				<h1>{{ translate("SOCIAL.TITLE") }}</h1>
+				<h1>{{ translate("APPNAV.SOCIAL") }}</h1>
 			</template>
 		</AppHeader>
 		<main>
@@ -23,20 +23,19 @@
                 </ViewProfile>
                 <section>
 			<h3>{{ translate("SOCIAL.SEND.TITLE") }}:</h3>
-			<FormAutocomplete
-			    is-multiple
-			    v-model="targetUsernames"
-			    :options="usernames"
-                :maxitems="5"
-			    :placeholder="translate('SOCIAL.SELECT')"
-			/>
-			<AppButton
-				accent
-				aria-label="Send"
-				@click.native="sendInitialFollowRequest()"
-			>
-				{{ translate("SOCIAL.SEND") }}
-			</AppButton>
+			<div class="social-invite">
+				<FormAutocomplete
+				    class="social-invite__field"
+				    is-multiple
+				    v-model="targetUsernames"
+				    :options="usernames"
+				    :maxitems="5"
+				    :placeholder="translate('SOCIAL.SELECT')"
+				/>
+				<button type="button" class="pg-btn pg-btn--primary" @click="sendInitialFollowRequest()">
+					{{ translate("SOCIAL.SEND") }}
+				</button>
+			</div>
 		</section>
 
             <div>
@@ -46,13 +45,13 @@
                     <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
-			<button class="btn btn-success" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
+			<button type="button" class="pg-btn pg-btn--primary" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
                       </div>
                       <div class="hspace-5">
-			<button class="btn btn-info" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
+			<button type="button" class="pg-btn" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
                       </div>
                       <div class="hspace-5">
-			<button class="btn btn-danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
+			<button type="button" class="pg-btn pg-btn--danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
                       </div>
 		    </div>
 		  </div>
@@ -69,13 +68,13 @@
 		    </div>
 		    <div class="flex-container" style="justify-content:space-evenly;">
                       <div class="hspace-5">
-			<button class="btn btn-danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
+			<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
 		      </div>
 		      <div class="hspace-5">
-			<button class="btn btn-danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+			<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
 		      </div>
 		      <div class="hspace-5">
-			<button class="btn btn-success" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
+			<button type="button" class="pg-btn" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
 		      </div>
 		    </div>
                   </div>
@@ -90,7 +89,7 @@
 		      {{ username }}
 		    </div>
                     <div>
-		      <button class="btn btn-danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+		      <button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
 		    </div>
                   </div>
                 </div>
@@ -104,7 +103,7 @@
                         <a v-on:click="displayProfile(user)" style="cursor: pointer">{{ user }}</a>
 		    </div>
                     <div>
-		      <button class="btn btn-danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
+		      <button type="button" class="pg-btn pg-btn--danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
 		    </div>
                   </tr>
 		</div>
@@ -117,7 +116,7 @@
                             {{ user }}
             		    </div>
                         <div>
-            		      <button class="btn btn-danger" @click="unblock(user)">{{ translate("SOCIAL.UNBLOCK") }}</button>
+            		      <button type="button" class="pg-btn" @click="unblock(user)">{{ translate("SOCIAL.UNBLOCK") }}</button>
             		    </div>
                   </tr>
                 </div>
@@ -402,12 +401,48 @@ module.exports = {
 </script>
 
 <style>
+/* the field and the action that sends it belong on one line, with the field taking the
+   room: stacked, with the component's own bottom margin between them, they read as two
+   unrelated controls */
+.social-invite {
+	display: flex;
+	/* the action takes the field's height, whatever the field's own line height makes it */
+	align-items: stretch;
+	gap: 10px;
+	max-width: 560px;
+	margin-bottom: var(--app-margin);
+}
+
+.social-invite__field {
+	flex: 1 1 auto;
+	min-width: 0;
+	margin-bottom: 0;
+}
+
+
+/* the view is the screenful and its main fills what the header leaves, as the drive
+   and the status card views do: asking for 100vh here as well put the header's height
+   past the bottom and left the page scrolling over nothing */
+.social-view {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
 .social-view main{
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    min-height: 100vh;
-    padding: var(--app-margin);
+    flex: 1 1 auto;
+    /* the sides take the gutter the title keeps rather than the wider page margin,
+       so the view's first word sits under its name */
+    padding: var(--app-margin) 32px;
+}
+
+@media (max-width: 1024px) {
+    .social-view main{
+        padding: var(--app-margin) 16px;
+    }
 }
 
 </style>

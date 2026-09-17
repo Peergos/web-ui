@@ -717,19 +717,6 @@ module.exports = {
 	font-weight: 600;
 }
 
-/*
-.toggle-button--mobile {
-	background-color: var(--bg-2) !important;
-	position: fixed;
-	top: 16px;
-	right: 16px;
-	opacity: 1;
-}
-.toggle-button--mobile svg {
-	width: 24px;
-	height: 24px;
-} */
-
 section.login-register {
 	min-height: 100vh;
 	padding: var(--app-margin);
@@ -764,7 +751,11 @@ section.content.sidebar-margin {
 }
 
 @media screen and (max-width: 1024px) {
-	section.content {
+	/* the menu is a panel over the view here, so the view keeps its full width:
+	   without the second selector .sidebar-margin's 240px wins and the header
+	   behind the panel wraps */
+	section.content,
+	section.content.sidebar-margin {
 		padding-left: 0;
 	}
 

@@ -2,11 +2,11 @@
 <div>
     <div class="app-grid-flex-container">
         <transition name="app-grid-context-menu">
-            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" @mouseleave="menuLeave($event)" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
-                <li v-if="selectedApp.template.length > 0" class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateAccessToApp($event)" @click="updateAccessToApp($event)">Share</li>
-                <li v-if="selectedApp.updateAvailable" class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="updateApp($event)" @click="updateApp($event)">Update</li>
-                <li class="app-menu-item" @mouseover="contextMenuHoverOver($event)" @mouseout="contextMenuHoverOut($event)" @keyup.enter="removeApp($event)" @click="removeApp($event)">Remove</li>
+            <ul id="appMenu" v-if="showAppMenu" class="pg-menu" @mouseleave="menuLeave($event)" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                <li @keyup.enter="showDetails($event)" @click="showDetails($event)">Details</li>
+                <li v-if="selectedApp.template.length > 0" @keyup.enter="updateAccessToApp($event)" @click="updateAccessToApp($event)">Share</li>
+                <li v-if="selectedApp.updateAvailable" @keyup.enter="updateApp($event)" @click="updateApp($event)">Update</li>
+                <li @keyup.enter="removeApp($event)" @click="removeApp($event)">Remove</li>
             </ul>
         </transition>
         <div v-for="app in apps">
@@ -51,12 +51,6 @@ module.exports = {
       	menuLeave: function(event) {
             this.showAppMenu = false;
       	},
-      	contextMenuHoverOver: function(event) {
-        	event.currentTarget.style.backgroundColor = "lightgrey";
-        },
-        contextMenuHoverOut: function(event) {
-            event.currentTarget.style.backgroundColor = "";
-        },
         getPosition: function(e) {
             var posx = 0;
             var posy = 0;
@@ -129,19 +123,15 @@ module.exports = {
 };
 </script>
 <style>
-.app-menu-item {
-    padding-bottom: 5px;
-    color: black;
-}
-
+/* the apps share the width they are given, as the drive's cards do: fixed cells packed
+   from the left left a ragged gap down the right of every screen wider than their sum */
 .app-grid-flex-container {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 12px;
 }
 
 .app-grid-flex-container > div {
-    width: 130px;
-    margin: 10px;
     text-align: center;
 }
 
