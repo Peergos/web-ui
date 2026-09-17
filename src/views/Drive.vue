@@ -1933,8 +1933,9 @@ module.exports = {
                 let future = peergos.shared.util.Futures.incomplete();
                 let allFilesList = [];
                 progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                progress.kind = 'download';
                 progress.transfer = transfers.start(progress.toastId, 'download');
-                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: progress.toastId});
+                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: progress.toastId, closeButton: false});
                 that.reduceCollectFilesToZip(0, path, files, allFilesList, future);
                 future.thenApply(res => {
                     that.showSpinner = false;
@@ -1996,9 +1997,10 @@ module.exports = {
                                 that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
                                 progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                                progress.kind = 'download';
                                 progress.transfer = transfers.start(progress.toastId, 'download');
                                 that.$toast({component: ProgressBar,props: progress}
-                                    , { icon: false , timeout:false, id: progress.toastId});
+                                    , { icon: false , timeout:false, id: progress.toastId, closeButton: false});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
@@ -2235,6 +2237,7 @@ module.exports = {
                         let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
                         let progress = {
                             title: title,
+                            kind: 'upload',
                             done:0,
                             max:totalSize * 2,
                             name:name,
@@ -2245,7 +2248,7 @@ module.exports = {
                         let transfer = transfers.start(name, 'upload');
                         that.$toast(
                             {component: ProgressBar,props:  progress} ,
-                            { icon: false , timeout:false, id: name})
+                            { icon: false , timeout:false, id: name, closeButton: false})
                         let uploadDirectoryPath = that.getPath;
                         const uploadParams = {
                             applyReplaceToAll: false,
@@ -2270,8 +2273,11 @@ module.exports = {
                                         title: uploadParams.lastTitle,
                                         subtitle: uploadParams.lastSubtitle,
                                         stats: stats,
+                                        kind: 'upload',
                                         done: uploadParams.progress.done,
-                                        max: uploadParams.progress.max
+                                        max: uploadParams.progress.max,
+                                        current: uploadParams.progress.current,
+                                        total: uploadParams.progress.total
                                     }
                                 }
                             });
@@ -2549,8 +2555,11 @@ module.exports = {
                             title: title,
                             subtitle: subtitle,
                             stats: stats,
+                            kind: 'upload',
                             done: uploadParams.progress.done,
-                            max: uploadParams.progress.max
+                            max: uploadParams.progress.max,
+                            current: uploadParams.progress.current,
+                            total: uploadParams.progress.total
                             },
                         }
                     });

@@ -3,6 +3,7 @@
 	<div class="app-dropdown"
 		@focusin="expanded(true)"
     	@focusout="expanded(false)"
+		@keydown.esc="expanded(false)"
         tabindex="-1"
 	>
 		<AppButton
@@ -10,13 +11,15 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click.native="expanded(true)"
+			@mousedown.native="remember()"
+			@keydown.native="remember()"
+			@click.native="toggle()"
 		>
 			<slot name="trigger"></slot>
 		</AppButton>
 		<transition name="drop">
 			<div v-if="isActive"
-				class="dropdown__content"
+				class="dropdown__content pg-menu"
                                 @mousedown.prevent
                                 @click="closeMenu"
 			>
@@ -50,9 +53,22 @@ module.exports = {
 	data() {
 		return {
 			isActive: false,
+			// whether the menu was already open when the pointer went down
+			wasOpen: false,
 		};
 	},
 	methods: {
+		// focusin opens the menu before the click on the trigger arrives, so isActive
+		// is already true by then. This runs before focus moves, so it catches the
+		// state the click is actually toggling.
+		remember(){
+			this.wasOpen = this.isActive;
+		},
+		toggle(){
+			// focus stays on the trigger, so focusin does not fire again and reopen it
+			this.isActive = ! this.wasOpen;
+			this.wasOpen = false;
+		},
 		expanded(value){
 			// close on focus-out
 			// https://codepen.io/autumnwoodberry/pen/NvjJWm
@@ -60,11 +76,7 @@ module.exports = {
 	        },        
                 closeMenu(){
                     this.isActive = false;
-                    // the trigger inside $el holds the focus, not $el itself, so blurring $el
-                    // leaves it focused and the next focusin reopens the menu
-                    let focused = document.activeElement;
-                    if (focused != null && this.$el.contains(focused))
-                        focused.blur();
+                    this.$el.blur();
                 },
 
 	},
@@ -79,41 +91,16 @@ module.exports = {
 	border-radius: 4px;
 }
 
+/* the surface is .pg-menu in 2_status-cards.css; this is only where it opens */
 .app-dropdown .dropdown__content {
-
 	position: absolute;
 	top: calc(100% + 8px);
 	left: 0;
-
-	/* padding: 16px; */
-	min-width: 200px;
-	border-radius: 4px;
-	color: var(--color);
-	background-color:var(--bg);
-	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-.app-dropdown ul {
-	list-style: none;
-	padding-left: 0;
-	margin: 0;
-}
-.app-dropdown li {
-	padding: 8px  16px;
-	cursor: pointer;
-	font-size: var(--text-small);
-	transition: background-color 0.5s;
-}
-.app-dropdown li:hover {
-	background-color: var(--bg-2);
+	min-width: 220px;
 }
 .app-dropdown li:hover a{
 	color: var(--color);
 	text-decoration: none;
-}
-.app-dropdown li.divider{
-	border-top: 1px solid var(--border-color);
-	height: 1px;
-	padding: 0;
 }
 
 .drop-enter-active, .drop-leave-active  {

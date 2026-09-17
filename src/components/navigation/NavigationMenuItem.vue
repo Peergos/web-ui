@@ -51,7 +51,9 @@ module.exports = {
 	methods: {
 		setView(view) {
 			if(this.isMobile){
-				this.$store.commit("TOGGLE_SIDEBAR");
+				// closed, not flipped: picking a view is never a reason to open the panel,
+				// and a selection that did not come from a tap on it opened it before
+				this.$store.commit("SET_SIDEBAR", false);
 			}
 			this.openFileOrDir(view, this.context.username, {filename:""});
 		},

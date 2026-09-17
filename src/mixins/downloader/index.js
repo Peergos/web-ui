@@ -143,6 +143,7 @@ module.exports = {
         stats: '',
         done: 0,
         max: resultingSize,
+        kind: 'download',
         startTime: Date.now(),
         lastUpdateTime: 0
       }
@@ -153,7 +154,7 @@ module.exports = {
         that.$toast({
 	    component: ProgressBar,
 	    props:  progress,
-	} , { icon: false , timeout:false, id: toastId})
+	} , { icon: false , timeout:false, id: toastId, closeButton: false})
       let failNonStreaming = function (throwable) {
           transfers.finish(transfer)
           progress.show = false
@@ -184,6 +185,7 @@ module.exports = {
                   component: ProgressBar,
                   props: {
                     title: progress.title,
+                    kind: 'download',
                     stats: progress.stats,
                     done: progress.done,
                     max: progress.max

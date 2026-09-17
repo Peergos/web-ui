@@ -297,7 +297,7 @@ module.exports = {
             };
             progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
             progress.transfer = transfers.start(progress.toastId, 'download');
-            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: progress.toastId});
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: progress.toastId, closeButton: false});
             this.zipFiles(zipFilename, files, progress).thenApply(function(res) {
                 that.selectedFiles = [];
                 return res;
@@ -350,7 +350,7 @@ module.exports = {
                 lastUpdateTime: 0
             };
             progress.transfer = transfers.start(toastId, 'upload');
-            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId});
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: toastId, closeButton: false});
             const future = peergos.shared.util.Futures.incomplete();
             this.copyNextArchiveFile(archive, targetPath, files, 0, progress, toastId, future);
             future.thenApply(function(res) {

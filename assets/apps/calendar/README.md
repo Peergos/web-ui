@@ -143,7 +143,11 @@ snapshots alone, with the host catching up with the owners' files afterwards
 and sending each result as `sharedReconciled`. The grid
 is interactive from the shell and fills in behind a progress line; a bucket
 read for a load the app has already replaced is dropped by the host, which
-tracks the same generation counter the sweep does.
+tracks the same generation counter the sweep does. How many are outstanding
+is on `#load-progress` as `data-pending`, which is the state; the line itself
+waits before appearing and lingers once up, so that a read finishing inside a
+few hundred milliseconds does not flash a bar. Anything asking whether the
+calendar has loaded reads the attribute, not the line.
 
 Every task is sent whatever its date, unlike events, because an open task
 matters whichever month is on screen and an undated one has no month to be
