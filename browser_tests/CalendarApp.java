@@ -12,13 +12,48 @@ public class CalendarApp {
 
     public static final String FRAME = "#calendar-iframe";
 
+    /** The host, not the frame: it is what answers the app's saves and what sends it the
+     *  calendars, and it is still fetching the calendar's properties while the frame is
+     *  already drawing an empty grid. Anything entering the view waits here first - a save
+     *  sent into that window is one nothing replies to, and the dialog never closes. */
+    static void awaitHost(WebDriver d) {
+        d.waitForScript("the host to finish opening the calendar",
+                "!!window.__cal && !window.__cal.busy", 120_000);
+    }
+
+    /** What the app inside the frame has to say for itself, for a failure that would
+     *  otherwise be a bare timeout. */
+    static String appState(WebDriver d) {
+        d.switchToFrame(FRAME);
+        try {
+            return String.valueOf(d.scriptQuiet(
+                    "const sel = document.getElementById('event-calendar');"
+                            + "return 'select=' + !!sel + ' options=' + (sel ? sel.options.length : -1)"
+                            + " + ' gridcells=' + document.querySelectorAll('[role=\"gridcell\"]').length"
+                            + " + ' pending=' + ((document.getElementById('load-progress') || {}).dataset || {}).pending"));
+        } finally {
+            d.switchToTop();
+        }
+    }
+
+    /** And the host, likewise. */
+    static String hostState(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return !window.__cal ? 'no handle on the view'"
+                + " : 'busy=' + window.__cal.busy + ' spinner=' + window.__cal.showSpinner"
+                + " + ' calendars=' + (((window.__cal.calendarProperties || {}).calendars || []).length)"));
+    }
+
     /** Opens the calendar view and waits for the app inside the frame to finish its first load. */
     public static void open(WebDriver d) {
         Page.gotoView(d, "Calendar", "downloadIcsFile", "__cal");
+        awaitHost(d);
         d.waitForScript("the calendar frame", "document.querySelector('" + FRAME + "')", 60_000);
+        // data-pending is the app's own count of reads still outstanding, and it is only
+        // set once a load has begun - the bar's own hidden/shown is a delayed presentation
+        // of the same thing and is no answer to "has it loaded".
         d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
-                "return !!document.getElementById('load-progress')"
-                        + " && document.getElementById('load-progress').hidden"
+                "const bar = document.getElementById('load-progress');"
+                        + "return !!bar && bar.dataset.pending === '0'"
                         + " && !!document.querySelector('[role=\"gridcell\"]')"), 120_000);
     }
 

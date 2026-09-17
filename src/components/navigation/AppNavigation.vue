@@ -54,6 +54,12 @@ module.exports = {
 	},
         mixins:[i18n],
         mounted: function() {
+                // a phone's panel starts closed however the last desktop session left it:
+                // restoring "open" here reopened it every time picking a view remounted this
+                if (this.$store.getters.isMobile) {
+                    this.$store.commit("SET_SIDEBAR", false);
+                    return;
+                }
                 let open = localStorage.getItem("side-bar-open");
                 if (open != null)
                     this.$store.commit("SET_SIDEBAR", "true" === open);
