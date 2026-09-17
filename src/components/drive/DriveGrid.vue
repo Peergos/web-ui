@@ -13,21 +13,28 @@ module.exports = {
 <style>
 .drive-grid {
 	display: grid;
-	grid-gap: 32px;
-	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	grid-gap: 12px;
+	grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
 
 	width: 100%;
-	height: 100%;
-	padding: 0 32px;
-	margin-top: 32px;
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 16px 32px 24px;
+	margin-top: 0;
+	align-content: start;
+}
+
+/* when the drop target stands in for the folder's contents there is no grid to draw */
+.drive-grid--empty {
+	display: none;
 }
 
 @media (max-width: 1024px) {
-	.drive-grid  {
+	.drive-grid {
 		width: 100%;
-		grid-template-columns: 1fr 1fr;
-		grid-gap: 16px;
-		padding: 0 16px;
+		grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+		grid-gap: 10px;
+		padding: 10px 16px 16px;
 	}
 }
 </style>

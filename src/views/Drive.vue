@@ -1,5 +1,5 @@
 <template>
-  <article class="drive-view">
+  <article class="drive-view" :class="{ 'drive-view--selecting': selectedFiles.length > 1 }">
     <input
       type="file"
       id="uploadFileInput"
@@ -21,6 +21,12 @@
     <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
     <a id="downloadAnchor" style="display: none"></a>
+
+    <AppHeader>
+      <template #primary>
+        <h1>{{ translate("APPNAV.DRIVE") }}</h1>
+      </template>
+    </AppHeader>
 
     <DriveHeader
       :gridView="isGrid"
@@ -76,13 +82,14 @@
     <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
-      <li id="delete" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
         {{ translate("DRIVE.DESELECT") }}
       </li>
+      <li class="divider" v-if="isWritable || canEditArchive" aria-hidden="true"></li>
+      <li id="delete" class="is-danger" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
     </DriveSelected>
     </transition>
     <transition name="drop">
@@ -97,45 +104,47 @@
       id="dnd"
       @drop="dndDrop($event)"
       @dragover.prevent
+      @click="clearSelectionOnEmptySpace($event)"
       :class="{ not_owner: isNotMe, dnd: 'dnd' }"
     >
-      <transition name="fade" mode="out-in" appear>
-        <DriveGrid v-if="isGrid" appear>
-          <DriveGridCard
-            v-for="(file, index) in sortedFiles"
-            :class="{ shared: isShared(file) }"
-            :key="file.getFileProperties().name"
-            :filename="file.getFileProperties().name"
-            :src="getThumbnailURL(file)"
-            :type="file.getFileProperties().getType()"
-            @click.native="navigateDrive(file)"
-            @openMenu="openMenu(file)"
-            :dragstartFunc="dragStart"
-            :dropFunc="drop"
-            :file="file"
-            :itemIndex="index"
-            :selected="isSelected(file)"
-            @toggleSelection="toggleSelection(file, $event)"
-          />
-          <DriveGridDrop
-            v-if="
-              getPath.length > 1 &&
-              sortedFiles.length == 0 &&
-              currentDir != null &&
-              currentDir.isWritable()
-            "
-          >
-          </DriveGridDrop>
-        </DriveGrid>
+      <transition name="drive-swap" mode="out-in" appear>
+        <div class="drive-content" :key="isGrid ? 'grid' : 'list'">
+          <DriveGrid v-if="isGrid" appear :class="{ 'drive-grid--empty': isEmptyWritableFolder }">
+            <DriveGridCard
+              v-for="(file, index) in sortedFiles"
+              :shared="shareKinds[file.getFileProperties().name]"
+              :key="file.getFileProperties().name"
+              :filename="file.getFileProperties().name"
+              :src="getThumbnailURL(file)"
+              :type="file.getFileProperties().getType()"
+              @click.native="navigateDrive(file)"
+              @openMenu="openMenu(file)"
+              :dragstartFunc="dragStart"
+              :dropFunc="drop"
+              :file="file"
+              :itemIndex="index"
+              :selected="isSelected(file)"
+              @toggleSelection="toggleSelection(file, $event)"
+            />
+          </DriveGrid>
 
-        <DriveTable
-          v-else
-          :files="sortedFiles"
-          :selectedFiles.sync="selectedFiles"
-          @sortBy="setSortBy"
-          @openMenu="openMenu"
-          @navigateDrive="navigateDrive"
-        />
+          <DriveTable
+            v-else
+            :files="sortedFiles"
+            :selectedFiles.sync="selectedFiles"
+            :sortBy="sortBy"
+            :normalSortOrder="normalSortOrder"
+            :shareKinds="shareKinds"
+            @sortBy="setSortBy"
+            @openMenu="openMenu"
+            @navigateDrive="navigateDrive"
+          />
+
+          <!-- opening an empty folder swaps no view, so the target arrives on its own -->
+          <transition name="drive-swap">
+            <DriveGridDrop v-if="isEmptyWritableFolder"></DriveGridDrop>
+          </transition>
+        </div>
       </transition>
     </div>
 
@@ -194,14 +203,6 @@
         </li>
         <li id="rename-file" v-if="isWritable || canEditArchive" @keyup.enter="rename" @click="rename">
           {{ translate("DRIVE.RENAME") }}
-        </li>
-        <li
-          id="delete-file"
-          v-if="isWritable || canEditArchive"
-          @keyup.enter="deleteFile"
-          @click="deleteFile"
-        >
-          {{ translate("DRIVE.DELETE") }}
         </li>
         <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
         <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
@@ -266,6 +267,16 @@
           @click="installApp()"
         >
           {{ translate("DRIVE.INSTALL") }}
+        </li>
+        <li class="divider" v-if="isWritable || canEditArchive" aria-hidden="true"></li>
+        <li
+          id="delete-file"
+          class="is-danger"
+          v-if="isWritable || canEditArchive"
+          @keyup.enter="deleteFile"
+          @click="deleteFile"
+        >
+          {{ translate("DRIVE.DELETE") }}
         </li>
       </DriveMenu>
     </transition>
@@ -406,6 +417,7 @@
 
 <script>
 
+const AppHeader = require("../components/AppHeader.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
@@ -451,6 +463,7 @@ const errorsMixin = require("../mixins/errors/index.js");
 
 module.exports = {
 	components: {
+	    AppHeader,
 	    AppInstall,
 	    AppRunner,
 	    AppSandbox,
@@ -615,6 +628,26 @@ module.exports = {
 			'isSecretLink',
 			'getPath'
 		]),
+
+        // an empty folder you can write to: the one place the drop target belongs,
+        // in either view
+        isEmptyWritableFolder() {
+            return this.getPath.length > 1
+                && this.sortedFiles.length == 0
+                && this.currentDir != null
+                && this.currentDir.isWritable();
+        },
+
+        shareKinds() {
+            const kinds = {};
+            if (this.sharedWithState == null)
+                return kinds;
+            for (const file of this.files) {
+                const name = file.getFileProperties().name;
+                kinds[name] = this.shareKind(file);
+            }
+            return kinds;
+        },
 
         sortedFiles() {
 			if (this.files == null) {
@@ -3797,15 +3830,30 @@ module.exports = {
 		},
 
 
-		isShared(file) {
-			if (this.currentDir == null || this.archive != null)
-				return false;
-			if (this.sharedWithState == null)
-				return false;
-			return this.sharedWithState.isShared(file.getFileProperties().name);
+		// "" | "people" | "link" | "people link" - the two are marked apart, and
+		// isShared() counts people alone, so a secret link is asked for separately
+		shareKind(file) {
+			if (this.currentDir == null || this.archive != null || this.sharedWithState == null)
+				return "";
+			let filename = file.getFileProperties().name;
+			let kind = this.sharedWithState.isShared(filename) ? "people" : "";
+			if (this.sharedWithState.hasLink(filename))
+				kind = kind == "" ? "link" : "people link";
+			return kind;
 		},
 
 
+
+		// clicking the empty space around the files clears the selection, as every
+		// other file manager does. A row, a tile or any control inside one is not
+		// empty space, and neither is a menu opened over it.
+		clearSelectionOnEmptySpace(event) {
+			if (this.selectedFiles.length == 0)
+				return;
+			if (event.target.closest(".grid-card, .table__item, thead, .drive-menu, .app-dropdown, button, input, label, a") != null)
+				return;
+			this.selectedFiles = [];
+		},
 
 		closePrompt() {
 			this.showPrompt = false;
@@ -3858,7 +3906,32 @@ module.exports = {
   flex-direction: column;
 }
 
+/* the view and an empty folder's drop target cross-fade as one: outside the transition
+   the target held its old place through the fade, then jumped when the view swapped */
+.drive-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* quick enough that the two fades read as one change: the shared half second each way
+   left the area blank for a second */
+.drive-swap-enter-active,
+.drive-swap-leave-active {
+  transition: opacity .18s ease;
+}
+
+.drive-swap-enter,
+.drive-swap-leave-to {
+  opacity: 0;
+}
+
+/* a column of its own, so the view below the header can take the height it is
+   given: an empty folder's drop target fills it */
 .dnd {
+  display: flex;
+  flex-direction: column;
   flex-grow: 1;
 }
 

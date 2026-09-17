@@ -1,6 +1,6 @@
 <template>
   <div class="drive-selected">
-      <div style="display: ruby">
+      <div class="drive-selected__inner">
         <AppButton v-if="selectedFiles.length" round outline
             class="card__select"
             :class="{selected: totalFiles == selectedFiles.length}"
@@ -9,8 +9,8 @@
             @click.native="$emit('selectAllOrNone', 0 )">
         </AppButton>
         <AppDropdown
-          accent
           v-if="selectedFiles.length"
+          icon="chevron-down"
           aria-expanded="true"
           aria-label="Multi selection menu"
         >
@@ -49,12 +49,86 @@ module.exports = {
 };
 </script>
 <style>
+/* The count is the one thing you need while working through a long list, so it
+   stays at the top of the view rather than scrolling away with the first rows. */
 .drive-selected {
-  margin: 16px 32px;
+  position: sticky;
+  /* under the header, which pins above it */
+  top: 56px;
+  z-index: 20;
+  margin: 0;
+  padding: 0 32px;
+  background-color: var(--bg);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.drive-selected .count {
-  margin-right: 32px;
-  cursor: pointer;
+.drive-selected__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 56px;
+}
+
+.drive-selected .card__select {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  padding: 0;
+  color: var(--green-500);
+}
+
+/* the count reads as a state, not as the page's main action: the pill and the
+   ok tone the status cards use, rather than a filled accent button */
+.drive-selected .app-dropdown .app-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 14px;
+  font-size: var(--text-small);
+  font-weight: var(--bold);
+  line-height: 1.2;
+  color: var(--pg-on-ok);
+  background-color: var(--pg-tint-ok);
+  border-radius: var(--radius-pill);
+}
+
+/* the caret says the count opens the actions for the selection */
+.drive-selected .app-dropdown .app-button svg {
+  width: 14px;
+  height: 14px;
+  margin-left: 8px;
+}
+
+/* --pg-on-ok and --green-200 are the same #63e3bd in dark mode, so a tint-and-ink
+   hover erased the label. The primary pair is contrast-checked in both themes, and
+   going tinted-to-solid on hover is what .pg-btn--pause already does. */
+.drive-selected .app-dropdown .app-button:hover {
+  color: var(--pg-on-primary) !important;
+  background-color: var(--pg-primary);
+}
+
+@media (max-width: 1024px) {
+  .drive-selected {
+    top: 0;
+    padding: 0 16px;
+  }
+
+  .drive-selected .app-dropdown .app-button {
+    min-height: 44px;
+  }
+
+  /* a 24px ring with a 44px target around it */
+  .drive-selected .card__select {
+    position: relative;
+  }
+
+  .drive-selected .card__select:after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    bottom: -10px;
+    left: -10px;
+  }
 }
 </style>

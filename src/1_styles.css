@@ -39,11 +39,6 @@ a {
 	bottom: 0;
 }
 
-.toggle-button--mobile {
-	background-color: var(--bg-2);
-}
-
-
 h1, h2, h3{
 	font-size: var(--title);
 	font-weight: var(--bold);

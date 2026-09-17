@@ -1,18 +1,12 @@
 <template>
 	<nav class="app-navigation" :class="{ expanded: isOpen }">
 
+		<div class="nav-dismiss" @click="toggleSidebar()" aria-hidden="true"></div>
+
 		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click.native="toggleSidebar()"/>
 
 		<AppButton
-			class="toggle-button--mobile desktop-hidden"
-			round
-			size="small"
-			icon="dot-menu"
-			@click.native="toggleSidebar"
-		/>
-
-		<AppButton
-			class="toggle-theme--mobile desktop-hidden"
+			class="toggle-theme"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
 			@click.native="toggleTheme()"
@@ -132,30 +126,47 @@ module.exports = {
 
 
 
-.app-navigation .toggle-button--mobile svg,
-.app-navigation .toggle-theme--mobile svg {
+.app-navigation .toggle-theme svg {
 	width: 24px;
 	height: 24px;
 }
 
-.app-navigation .toggle-button--mobile {
-	/* background-color: var(--bg); */
-	position: fixed;
+/* nothing to dismiss beside a sidebar that is always there */
+.nav-dismiss {
+	display: none;
+}
+
+/* in the sidebar's own corner, not the screen's: at the screen's it would land on the
+   header buttons of the view showing beside the panel */
+.app-navigation .toggle-theme {
+	position: absolute;
 	top: 16px;
 	right: 16px;
 	opacity: 1;
 }
 
-.app-navigation .toggle-theme--mobile {
-	position: fixed;
-	top: 16px;
-	right: 56px;
-	opacity: 1;
+@media (min-width: 1025px) {
+	/* the rail has no room beside the crest, so the theme arrives with the labels */
+	.app-navigation .toggle-theme {
+		display: none;
+	}
+
+	.app-navigation.expanded .toggle-theme {
+		display: block;
+	}
 }
 
 @media (max-width: 1024px) {
+	/* a panel beside the view, not a sheet in place of it: as wide as its own content,
+	   and the same shape open or closed, so closing is a fade with nothing moving */
+	.app-navigation,
+	.app-navigation.expanded {
+		width: max-content;
+		max-width: 85vw;
+	}
+
 	.app-navigation {
-		/* width: 100%; */
+		border-right: 1px solid var(--border-color);
 		opacity: 0;
 		pointer-events: none;
 		transition: opacity 0.3s, padding 0s 0.3s;
@@ -163,11 +174,37 @@ module.exports = {
 
 	.app-navigation.expanded {
 		visibility: visible;
-		width: 100%;
 		opacity: 1;
 		transition: opacity 0.3s;
 		pointer-events: all;
 	}
 
+	/* labels and figure stay visible while the panel fades; a tooltip only earns its
+	   place beside a rail of bare icons */
+	.app-navigation .menu-item .menu__name,
+	.app-navigation .navigation-storage .storage {
+		opacity: 1;
+	}
+
+	.app-navigation .menu-item .menu__name {
+		margin-left: 4px;
+	}
+
+	.app-navigation .menu-item .menu__tooltip {
+		display: none;
+	}
+
+	/* a tap on the view dismisses the panel, without dimming what is under it: the
+	   layer starts at the panel's own edge, so a tap on the panel itself is not one */
+	.app-navigation.expanded .nav-dismiss {
+		display: block;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 100%;
+		width: 100vw;
+		z-index: -1;
+		background-color: transparent;
+	}
 }
 </style>
