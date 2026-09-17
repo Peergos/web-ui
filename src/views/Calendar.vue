@@ -7,7 +7,7 @@
 		</AppHeader>
 		<main>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-	    <iframe id="calendar-iframe" :src="frameUrl()" allow="clipboard-write" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
+	    <iframe id="calendar-iframe" :src="frameSrc" allow="clipboard-write" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
             <Choice
                 v-if="showChoice"
                 v-on:hide-choice="showChoice = false"
@@ -89,6 +89,9 @@ module.exports = {
 	},
 	data: function() {
         return {
+            // read once: rebinding it on a theme change would reload the app and lose
+            // whatever is open in it, and the host's ping carries later changes
+            frameSrc: null,
             APPS_DIR_NAME: '.apps',
             CALENDAR_DIR_NAME: 'calendar',
             DATA_DIR_NAME: 'data',
@@ -119,6 +122,13 @@ module.exports = {
             pendingWrites: Object.create(null),
             listenerRetry: null,
             showSpinner: false,
+            // Whether the view is working, apart from whether it is saying so: the spinner
+            // waits before appearing and lingers once up, so it answers "is anything on
+            // screen", not "has this finished". Anything that needs the second one - the
+            // browser tests wait here before signing out mid-write - reads this.
+            busy: false,
+            spinnerTimer: null,
+            spinnerShownAt: 0,
             spinnerMessage: "",
             calendarProperties: null,
             showPrompt: false,
@@ -190,6 +200,7 @@ module.exports = {
 	mixins:[routerMixins, i18n],
     created() {
         let that = this;
+        this.frameSrc = this.frameUrl();
         this.displaySpinner();
         this.getInputParameters().thenApply(inputParameters => {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
@@ -222,6 +233,7 @@ module.exports = {
         this.cancelSweeps();
         clearTimeout(this.listenerRetry);
         clearTimeout(this.shareRetry);
+        clearTimeout(this.spinnerTimer);
         if (this.messageListener != null) {
             window.removeEventListener('message', this.messageListener);
             this.messageListener = null;
@@ -303,7 +315,9 @@ module.exports = {
             return low + (props.sizeHigh() * Math.pow(2, 32));
     },
     frameUrl: function() {
-        return this.frameDomain() + "/apps/calendar/index.html";
+        let theme = this.$store.getters.currentTheme;
+        return this.frameDomain() + "/apps/calendar/index.html"
+            + (theme ? "?theme=" + encodeURIComponent(theme) : "");
     },
     frameDomain: function() {
         return window.location.protocol + "//calendar." + window.location.host;
@@ -1195,11 +1209,45 @@ module.exports = {
         });
         return future;
     },
+    /* A spinner that arrives and leaves inside half a second reads as a flicker rather
+       than as progress. It waits to see whether the work is slow enough to be worth
+       saying so, and once it is up it stays long enough to be read. */
     displaySpinner: function() {
-        this.showSpinner = true;
+        this.busy = true;
+        if (this.showSpinner) {
+            // up already: call off a hide that is waiting out its minimum
+            window.clearTimeout(this.spinnerTimer);
+            this.spinnerTimer = null;
+            return;
+        }
+        // a show already on its way is left to run rather than restarted
+        if (this.spinnerTimer != null)
+            return;
+        let that = this;
+        this.spinnerTimer = window.setTimeout(function() {
+            that.spinnerTimer = null;
+            that.spinnerShownAt = Date.now();
+            that.showSpinner = true;
+        }, 300);
     },
     removeSpinner: function() {
-        this.showSpinner = false;
+        this.busy = false;
+        window.clearTimeout(this.spinnerTimer);
+        this.spinnerTimer = null;
+        if (! this.showSpinner)
+            return;
+        let shown = Date.now() - this.spinnerShownAt;
+        if (shown >= 400) {
+            this.showSpinner = false;
+            return;
+        }
+        // held in the same field as the other direction, so leaving the view cancels it
+        // and a load starting inside the minimum keeps the spinner it needs
+        let that = this;
+        this.spinnerTimer = window.setTimeout(function() {
+            that.spinnerTimer = null;
+            that.showSpinner = false;
+        }, 400 - shown);
     },
     getPropertiesFile: function(calendar) {
         let that = this;
@@ -1743,7 +1791,7 @@ module.exports = {
         // one that flashes and vanishes reads as a glitch.
         if (items.length > 1) {
             uploads.transfer = transfers.start(name, 'upload');
-            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name});
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name, closeButton: false});
         }
         items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
         this.bulkUpload(uploads).thenApply(function(done) {
