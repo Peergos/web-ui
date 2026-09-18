@@ -447,6 +447,7 @@ const i18n = require("../i18n/index.js");
 const router = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const errorsMixin = require("../mixins/errors/index.js");
 
 module.exports = {
 	components: {
@@ -585,7 +586,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -1033,6 +1034,10 @@ module.exports = {
                     if (that.download || that.open) {
                         that.context.getByPath(path)
                             .thenApply(function (file) {
+                            if (file == null || ! file.isPresent()) {
+                                that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                                return null;
+                            }
                             if (! file.get().isDirectory()) {
                                 if (that.download) {
                                 that.downloadFile(file.get());
@@ -1050,6 +1055,10 @@ module.exports = {
                                 let app = that.getApp(file.get(), linkPath);
                                 that.openFileOrDir(app, linkPath, {path:path});
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     } else if(path.startsWith("/peergos/recommended-apps")) {
                         let appPath = "/peergos/recommended-apps/";
@@ -1065,6 +1074,10 @@ module.exports = {
                                 };
                                 that.onUpdateCompletion.push(openRecApps);
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     }
 				} else {
@@ -2395,6 +2408,16 @@ module.exports = {
                         commitWatcher,
                         transfer != null ? transfer.isCancelled : transfers.never).thenApply(res => {
                             transfers.finish(transfer);
+                            // The watcher below says "complete" once every file's bytes are
+                            // through, which a file that was skipped because it is already
+                            // there never reaches - and the same message is what takes the
+                            // progress bar down. Said here too, the bar cannot outlive the
+                            // upload it reports on.
+                            if (! commitContext.completed) {
+                                commitContext.completed = true;
+                                that.addUploadProgressMessage(uploadParams,
+                                    that.translate("DRIVE.UPLOAD.COMPLETE"), '', '', '', true);
+                            }
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         transfers.finish(transfer);
@@ -2413,11 +2436,10 @@ module.exports = {
                         uploadFuture.complete(false);
                     });
                     return null;
-                // this one also catches whatever the callback above throws, which is not
-                // always a java throwable, so the message is read defensively
+                // this also catches whatever the callback above throws, which is not always
+                // a java throwable
                 }).exceptionally(function (throwable) {
-                    uploadUnavailable(throwable != null && throwable.getMessage != null ?
-                        throwable.getMessage() : String(throwable));
+                    uploadUnavailable(that.cleanError(that.errText(throwable)));
                     return null;
                 });
             }
