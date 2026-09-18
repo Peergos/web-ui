@@ -372,7 +372,6 @@ module.exports = {
         });
     },
     methods: {
-
         extractChatOwner: function(chatUuid) {
             let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
             return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));

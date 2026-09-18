@@ -952,7 +952,6 @@ module.exports = {
 
 	created() {
 	    let that = this;
-		this.onResize();
 		let illegalFilenames = [
                                     'constructor',
                                     '__defineGetter__',
@@ -968,7 +967,6 @@ module.exports = {
                                     'toLocaleString'
                                   ];
 		illegalFilenames.forEach(item => that.disallowedFilenames.set(item, ""));
-		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
         // Straight to init: listing a folder needs no launcher app, and only adding a
         // shortcut does - which asks for it then. Starting up behind it raced the same
@@ -1240,7 +1238,6 @@ module.exports = {
 
 		onResize() {
 			this.closeMenu()
-			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
         installApp() {
             this.closeMenu();

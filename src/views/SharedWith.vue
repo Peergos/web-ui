@@ -168,7 +168,6 @@ module.exports = {
         this.findShared();
     },
     methods: {
-
         addSharedItem: function(fileSharingState, file, path) {
             let props = file.getFileProperties();
             let name = props.name;
@@ -539,11 +538,6 @@ module.exports = {
 	.shared-table thead th.shared-table__date,
 	.shared-table thead th.shared-table__access {
 		width: auto;
-	}
-
-	.shared-table thead th.shared-table__action,
-	.shared-table thead th.shared-table__glyph {
-		display: none;
 	}
 
 	.shared-table tbody tr {

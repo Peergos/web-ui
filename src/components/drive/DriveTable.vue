@@ -147,7 +147,6 @@ module.exports = {
         }
     },
     methods: {
-
         clickShiftHandler() {
             this.isShiftModifierOn = true;
         },
@@ -383,12 +382,6 @@ module.exports = {
 	.drive-table thead th.type,
 	.drive-table thead th.date {
 		width: auto;
-	}
-
-	.drive-table thead th.select,
-	.drive-table thead th.glyph,
-	.drive-table thead th.menu {
-		display: none;
 	}
 
 	.drive-table tbody tr {
