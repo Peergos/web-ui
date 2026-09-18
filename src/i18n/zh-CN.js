@@ -67,6 +67,7 @@ module.exports = {
     "DRIVE.EDIT":"编辑",
     "DRIVE.RENAME":"重命名",
     "DRIVE.SHARE":"分享",
+    "DRIVE.SHARED":"已共享",
     "DRIVE.DOWNLOAD.ZIP":"打包成Zip格式下载",
     "DRIVE.THUMB":"创建缩略图",
     "DRIVE.PROPS":"特性",
@@ -347,9 +348,11 @@ module.exports = {
     "VERIFY.UNVERIFIED":"未验证",
     "LAUNCHER.CUSTOM":"定制应用程序",
     "LAUNCHER.UPDATE":"检查更新",
-    "LAUNCHER.NONE":"当前没有安装自定义应用程序。从绿色加号的“创建应用程序”菜单项创建应用程序。",
+    "LAUNCHER.NONE":"尚未安装任何应用",
+    "LAUNCHER.NONE.BODY":"在云盘中点击绿色加号，选择“新应用”即可创建。已安装的应用会显示在这里，随时可以启动。",
+    "LAUNCHER.NOSHORTCUT":"尚未固定任何内容",
     "LAUNCHER.SHORTCUTS":"快捷方式",
-    "LAUNCHER.ADD.SHORTCUT":"可以通过上下文菜单项“添加到启动器”添加条目",
+    "LAUNCHER.ADD.SHORTCUT":"在云盘中打开文件菜单，选择“添加到启动器”，即可将其保留在这里。",
     "LAUNCHER.ADDED":"已添加",
     "LAUNCHER.NAME":"名称",
     "LAUNCHER.FOLDER":"文件夹",
@@ -470,5 +473,10 @@ module.exports = {
     "PROMPT.SET":"设定",
     "SAVE.CONFLICT.TITLE":"该文件已被其他用户更新",
     "SAVE.CONFLICT.DETAIL":"是否要将更改保存到另一个文件",
-    "SHAREDWITH.TITLE": "共享对象"
+    "SOCIAL.NOTFOUND": "无匹配项",
+    "SHAREDWITH.TITLE": "共享对象",
+    "SHAREDWITH.FOLDER": "文件夹",
+    "SHAREDWITH.ACCESS": "访问权限",
+    "SHAREDWITH.EMPTY.TITLE": "尚未共享任何内容",
+    "SHAREDWITH.EMPTY.BODY": "在云盘中共享文件或文件夹后，会显示在这里，包括共享对象及其权限。"
 }
