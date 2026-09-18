@@ -138,7 +138,6 @@ module.exports = {
         this.selectedDate = new Date().toISOString().split('T')[0];
     },
     methods: {
-
     convertBytesToHumanReadable:function(bytes) {
         if (bytes == "")
             return "0 Bytes";
