@@ -70,6 +70,7 @@ module.exports = {
     "DRIVE.EDIT":"Modifica",
     "DRIVE.RENAME":"Rinomina",
     "DRIVE.SHARE":"Condividi",
+    "DRIVE.SHARED":"Condiviso",
     "DRIVE.DOWNLOAD.ZIP":"Scarica come Zip",
     "DRIVE.THUMB":"Crea miniatura",
     "DRIVE.PROPS":"Proprietà",
@@ -369,9 +370,11 @@ module.exports = {
     "VERIFY.UNVERIFIED":"Non verificato",
     "LAUNCHER.CUSTOM":"App personalizzate",
     "LAUNCHER.UPDATE":"Controlla aggiornamenti",
-    "LAUNCHER.NONE":"Nessuna app personalizzata attualmente installata. Crea un'app dalla voce di menu 'crea app' del più verde.",
+    "LAUNCHER.NONE":"Nessuna app installata",
+    "LAUNCHER.NONE.BODY":"Creane una dal più verde nel tuo Drive, alla voce 'Nuova app'. Le app installate compaiono qui, pronte all'uso.",
+    "LAUNCHER.NOSHORTCUT":"Ancora nessun elemento aggiunto",
     "LAUNCHER.SHORTCUTS":"Scorciatoie",
-    "LAUNCHER.ADD.SHORTCUT":"Le voci possono essere aggiunte tramite la voce di menu contestuale 'Aggiungi a Launcher'",
+    "LAUNCHER.ADD.SHORTCUT":"Apri il menu di un file nel tuo Drive e scegli 'Aggiungi al launcher' per tenerlo qui.",
     "LAUNCHER.ADDED":"Aggiunto",
     "LAUNCHER.NAME":"Nome",
     "LAUNCHER.FOLDER":"Cartella",
@@ -496,5 +499,10 @@ module.exports = {
     "DRIVE.MOVING.COMPLETE":"Completamento spostamento e aggiornamento cartella...",
     "DRIVE.COPYING.TITLE":"Copia file",
     "DRIVE.COPYING.COMPLETE":"Completamento copia e aggiornamento cartella...",
-    "SHAREDWITH.TITLE": "Condiviso con"
+    "SOCIAL.NOTFOUND": "Nessun risultato",
+    "SHAREDWITH.TITLE": "Condiviso con",
+    "SHAREDWITH.FOLDER": "Cartella",
+    "SHAREDWITH.ACCESS": "Accesso",
+    "SHAREDWITH.EMPTY.TITLE": "Non hai ancora condiviso nulla",
+    "SHAREDWITH.EMPTY.BODY": "Condividi un file o una cartella dal tuo Drive e comparirà qui, con chi l'hai condiviso e cosa può farci."
 }

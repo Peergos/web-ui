@@ -70,6 +70,7 @@ module.exports = {
     "DRIVE.EDIT": "Editar",
     "DRIVE.RENAME": "Cambiar nombre",
     "DRIVE.SHARE": "Compartir",
+    "DRIVE.SHARED": "Compartido",
     "DRIVE.DOWNLOAD.ZIP": "Descargar como archivo Zip",
     "DRIVE.THUMB": "Crear miniatura",
     "DRIVE.PROPS": "Propiedades",
@@ -369,9 +370,11 @@ module.exports = {
     "VERIFY.UNVERIFIED": "Sin verificar",
     "LAUNCHER.CUSTOM": "Aplicaciones personalizadas",
     "LAUNCHER.UPDATE": "Buscar actualizaciones",
-    "LAUNCHER.NONE": "No hay aplicaciones personalizadas instaladas actualmente. Cree una aplicación desde el elemento de menú 'crear aplicación' del signo más verde.",
+    "LAUNCHER.NONE": "Aún no hay aplicaciones instaladas",
+    "LAUNCHER.NONE.BODY": "Cree una desde el signo más verde de su Unidad, en 'Nueva aplicación'. Las aplicaciones instaladas aparecen aquí, listas para abrirse.",
+    "LAUNCHER.NOSHORTCUT": "Aún no hay nada anclado",
     "LAUNCHER.SHORTCUTS": "Accesos directos",
-    "LAUNCHER.ADD.SHORTCUT": "Se pueden agregar entradas mediante el elemento de menú contextual 'Agregar al iniciador'",
+    "LAUNCHER.ADD.SHORTCUT": "Abra el menú de un archivo en su Unidad y elija 'Añadir al lanzador' para conservarlo aquí.",
     "LAUNCHER.ADDED": "Agregado",
     "LAUNCHER.NAME": "Nombre",
     "LAUNCHER.FOLDER": "Carpeta",
@@ -496,5 +499,10 @@ module.exports = {
     "DRIVE.MOVING.COMPLETE": "Completando movimiento y actualizando carpeta...",
     "DRIVE.COPYING.TITLE": "Copiando archivo(s)",
     "DRIVE.COPYING.COMPLETE": "Completando copia y actualizando carpeta...",
-    "SHAREDWITH.TITLE": "Compartido con"
+    "SOCIAL.NOTFOUND": "Sin coincidencias",
+    "SHAREDWITH.TITLE": "Compartido con",
+    "SHAREDWITH.FOLDER": "Carpeta",
+    "SHAREDWITH.ACCESS": "Acceso",
+    "SHAREDWITH.EMPTY.TITLE": "Aún no se ha compartido nada",
+    "SHAREDWITH.EMPTY.BODY": "Comparta un archivo o una carpeta desde su Unidad y aparecerá aquí, con quién lo compartió y qué puede hacer esa persona."
 }
