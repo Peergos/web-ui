@@ -2404,8 +2404,28 @@ module.exports = {
                     return future;
                 }
                 let transfer = uploadParams.transfer;
+                // Anything that stops an upload before it starts ends up here: the folder
+                // moved or deleted by another session since these files were chosen, or the
+                // lookup failing outright. Left alone the progress bar ticks on over an
+                // upload that will never happen, and the future never settles.
+                let uploadUnavailable = function(message) {
+                    transfers.finish(transfer);
+                    clearInterval(uploadParams.progressInterval);
+                    that.$toast.dismiss(uploadParams.progress.name);
+                    that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
+                    that.errorBody = message;
+                    that.showError = true;
+                    uploadFuture.complete(false);
+                };
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
-                    uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+                    // resolved and empty is not the same as failed, and it is what a folder
+                    // that has gone looks like from here
+                    let dir = uploadDir != null && uploadDir.isPresent() ? uploadDir.ref : null;
+                    if (dir == null) {
+                        uploadUnavailable(that.translate("DRIVE.MISSING.FOLDER"));
+                        return null;
+                    }
+                    dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
                         f => resumeFileUpload(f),
                         f => replaceFileUpload(f),
@@ -2427,7 +2447,15 @@ module.exports = {
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.$toast.clear();
+                        uploadFuture.complete(false);
                     });
+                    return null;
+                // this one also catches whatever the callback above throws, which is not
+                // always a java throwable, so the message is read defensively
+                }).exceptionally(function (throwable) {
+                    uploadUnavailable(throwable != null && throwable.getMessage != null ?
+                        throwable.getMessage() : String(throwable));
+                    return null;
                 });
             }
             return uploadFuture;
