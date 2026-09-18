@@ -75,7 +75,11 @@ module.exports = {
 	methods: {
 		toggleSidebar() {
 			this.$store.commit("TOGGLE_SIDEBAR");
-                        localStorage.setItem("side-bar-open", this.isOpen ? "true" : "false");
+			// only a desktop's rail is a preference worth keeping: a phone's panel opens
+			// and closes with the view, and writing it here decided how the next desktop
+			// session started - the same reason mounted() does not read it on a phone
+			if (! this.$store.getters.isMobile)
+				localStorage.setItem("side-bar-open", this.isOpen ? "true" : "false");
 		},
 		toggleTheme() {
 			this.$store.commit("TOGGLE_THEME");
