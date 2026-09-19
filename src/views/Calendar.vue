@@ -935,6 +935,13 @@ module.exports = {
             if (modified) {
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.loadCalendars(calendar, year, month);
+                    return null;
+                }).exceptionally(t => {
+                    // The list in memory is already right, and the write that failed is of the
+                    // record of it. Loading anyway is what keeps a conflict on that one file
+                    // from costing the whole view.
+                    that.loadCalendars(calendar, year, month);
+                    return null;
                 });
             } else {
                 that.loadCalendars(calendar, year, month);
@@ -2344,6 +2351,13 @@ module.exports = {
             let directoryPath = peergos.client.PathUtils.directoryToPath(currentCalendar.directory.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 settle(currentCalendar, !filenames.isEmpty() || currentCalendar.owner == null, true);
+            }).exceptionally(t => {
+                // One of our own, and a listing that failed is no reason to drop it. Without
+                // this the count below never comes in, the future never completes, and the
+                // load waiting on it never happens - leaving the app on an empty grid with no
+                // calendar to save into, no spinner, and nothing on screen saying why.
+                settle(currentCalendar, true, true);
+                return null;
             });
         });
         return future;
