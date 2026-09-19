@@ -295,6 +295,8 @@ public class MarionetteDriver implements WebDriver {
         IllegalStateException last = null;
         int attempts = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 2 : 3;
         for (int attempt = 0; attempt < attempts; attempt++) {
+            String mark = "nav" + System.nanoTime();
+            boolean marked = markDocument(mark);
             try {
                 commandWithRecovery("WebDriver:Navigate", Map.of("url", url));
                 settle();
@@ -303,10 +305,63 @@ public class MarionetteDriver implements WebDriver {
                 if (! String.valueOf(e.getMessage()).contains("timed out"))
                     throw e;
                 last = e;
-                System.out.println("  page load timed out, navigating again: " + url);
+                if (marked && arrivedAt(url, mark))
+                    return;
+                if (attempt + 1 < attempts)
+                    System.out.println("  page load timed out, navigating again: " + url);
             }
         }
         throw last;
+    }
+
+    /** Stamps the document we are leaving, so a navigation that times out can be told apart
+     *  from one that never happened at all.
+     *
+     *  Best effort, and deliberately without the recovery every other command gets: this is
+     *  worth no time on a context that has already gone, and a document we could not even
+     *  write to is one arrivedAt below would rather not vouch for - so it says whether the
+     *  mark is there to be trusted instead of leaving it to guess.
+     */
+    private boolean markDocument(String mark) {
+        try {
+            command("WebDriver:ExecuteScript",
+                    Map.of("script", "window.__leaving = '" + mark + "';", "args", List.of()));
+            return true;
+        } catch (RuntimeException cannotReachTheDocument) {
+            return false;
+        }
+    }
+
+    /** Whether the document in front of us now is the one the navigation was going to.
+     *
+     *  A navigation that timed out is not the same as a page that never came: marionette gives
+     *  up on the load, and what it was loading is usually there and usable. Asked between the
+     *  attempts rather than after them, because navigating again is what costs another five
+     *  minutes on a slow runner - and is itself what discards the context.
+     *
+     *  Asked through the recovering path rather than quietly: a navigation that times out often
+     *  leaves the context discarded, where a bare script answers nothing at all and a page that
+     *  is perfectly good reads as one that never came.
+     *
+     *  The mark left on the document we were leaving is what tells those two apart. A test
+     *  navigating to where it already is wears the same url either way, so the url alone would
+     *  accept the document that never left, and every assertion after it would be made against
+     *  the page the test before it finished on.
+     */
+    private boolean arrivedAt(String url, String mark) {
+        Object landed;
+        try {
+            landed = script("return document.readyState + ' left=' + (window.__leaving !== '"
+                    + mark + "') + ' ' + location.href");
+        } catch (RuntimeException nothingLeftToAsk) {
+            return false;
+        }
+        String where = String.valueOf(landed);
+        if (! where.contains("left=true") || ! where.contains(url))
+            return false;
+        System.out.println("  the page is there despite the timeout: " + where);
+        settle();
+        return true;
     }
 
     /** Waits for the document the navigation landed on to finish loading.

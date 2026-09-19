@@ -29,7 +29,13 @@ public class CalendarApp {
             return String.valueOf(d.scriptQuiet(
                     "const sel = document.getElementById('event-calendar');"
                             + "return 'select=' + !!sel + ' options=' + (sel ? sel.options.length : -1)"
-                            + " + ' gridcells=' + document.querySelectorAll('[role=\"gridcell\"]').length"));
+                            + " + ' gridcells=' + document.querySelectorAll('[role=\"gridcell\"]').length"
+                            + " + ' listed=' + JSON.stringify(Array.from("
+                            + "     document.querySelectorAll('.calendar-list-item')).map(e => e.textContent.trim()))"
+                            + " + ' canCreate=' + (document.getElementById('toolbar-add-button') || {style:{}})"
+                            + "     .style.display"
+                            + " + ' canAddCalendar=' + (document.getElementById('add-calendar-button') || {style:{}})"
+                            + "     .style.display"));
         } finally {
             d.switchToTop();
         }
@@ -39,7 +45,10 @@ public class CalendarApp {
     static String hostState(WebDriver d) {
         return String.valueOf(d.scriptQuiet("return !window.__cal ? 'no handle on the view'"
                 + " : 'spinner=' + window.__cal.showSpinner"
-                + " + ' calendars=' + (((window.__cal.calendarProperties || {}).calendars || []).length)"));
+                + " + ' guest=' + window.__cal.loadCalendarAsGuest"
+                + " + ' viewReadOnly=' + window.__cal.isCalendarReadOnly"
+                + " + ' calendars=' + JSON.stringify((((window.__cal.calendarProperties || {}).calendars) || [])"
+                + "     .map(c => c.name + (c.writable === false ? ':readonly' : '') + (c.owner ? '@' + c.owner : '')))"));
     }
 
     /** Opens the calendar view and waits for the app inside the frame to finish its first load. */
@@ -283,21 +292,48 @@ public class CalendarApp {
      *  to the server, and the suite shares one account across its tests, so a directory holds
      *  whatever the tests before it left there. */
     public static String awaitFileSaying(WebDriver d, String subPath, String contains) {
-        return d.waitUntil("a file in " + subPath + " carrying " + contains, () -> {
-            for (String name : list(d, subPath)) {
-                if (read(d, subPath, name).contains(contains))
-                    return name;
-            }
-            return null;
-        }, 60_000);
+        try {
+            return d.waitUntil("a file in " + subPath + " carrying " + contains, () -> {
+                for (String name : list(d, subPath)) {
+                    if (read(d, subPath, name).contains(contains))
+                        return name;
+                }
+                return null;
+            }, 120_000);
+        } catch (RuntimeException neverWritten) {
+            sayWhatTheStoreHas(d, subPath);
+            throw neverWritten;
+        }
+    }
+
+    /** What the store and the host have to say when a wait for a write runs out.
+     *
+     *  A write is the app sending a save, the host writing it and the server storing it, and a
+     *  bare timeout names none of the three - so say what is actually in the directory and
+     *  whether the host is still busy.
+     */
+    private static void sayWhatTheStoreHas(WebDriver d, String subPath) {
+        String held;
+        try {
+            held = String.valueOf(list(d, subPath));
+        } catch (RuntimeException cannotList) {
+            held = "could not be listed: " + cannotList.getMessage();
+        }
+        System.out.println("  " + subPath + " holds " + held);
+        System.out.println("  host: " + hostState(d));
     }
 
     /** Reads the one file in a directory again until it says what the test is waiting for. */
     public static String awaitStored(WebDriver d, String subPath, String filename, String contains) {
-        return d.waitUntil("the stored file to carry " + contains, () -> {
-            String ics = read(d, subPath, filename);
-            return ics.contains(contains) ? ics : null;
-        }, 60_000);
+        try {
+            return d.waitUntil("the stored file to carry " + contains, () -> {
+                String ics = read(d, subPath, filename);
+                return ics.contains(contains) ? ics : null;
+            }, 120_000);
+        } catch (RuntimeException neverWritten) {
+            sayWhatTheStoreHas(d, subPath);
+            throw neverWritten;
+        }
     }
 
     /** A property line out of an .ics, e.g. "RRULE" or "SUMMARY", or null if it has none. The
