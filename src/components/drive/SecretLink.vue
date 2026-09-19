@@ -11,26 +11,42 @@
                 <div class="modal-body">
                     <div class="secret-link-container scrollable"><p style="word-wrap;break-all;">
                             <div>
-                                <div v-if="link.isFile">
+                                <div class="link-members">
+                                    <h4 style="margin-bottom: 4px;">{{ translate("DRIVE.LINK.MEMBERS") }}</h4>
+                                    <div v-for="(m, i) in members" :key="m.path" class="link-member">
+                                        <span class="link-member__path" :title="m.path">{{ m.path }}</span>
+                                        <label class="checkbox__group link-member__writable" :title="m.writableReason">
+                                            {{ translate("DRIVE.LINK.WRITABLE") }}
+                                            <input type="checkbox" :disabled="!m.canBeWritable" v-model="m.writable" @change="onChange()"/>
+                                            <span class="checkmark"></span>
+                                        </label>
+                                        <button class="fa fa-times link-member__remove"
+                                                :disabled="members.length < 2"
+                                                :title="translate('DRIVE.LINK.MEMBER.REMOVE.HINT')"
+                                                @click="removeMember(i)"></button>
+                                    </div>
+                                    <div style="margin: 6px 0;">
+                                        <button class="btn btn-success" :disabled="members.length >= maxMembers" @click="showPicker = true">
+                                            {{ translate("DRIVE.LINK.MEMBER.ADD") }}
+                                        </button>
+                                        <span v-if="members.length >= maxMembers - 10" style="margin-left: 8px; font-size: 0.9em;">
+                                            {{ members.length }} / {{ maxMembers }}
+                                        </span>
+                                    </div>
+                                    <p v-if="currentProps != null" class="link-members__note">
+                                        {{ translate("DRIVE.LINK.MEMBERS.SAME.URL") }}
+                                    </p>
+                                    <p v-if="spansDirectories" class="link-members__note">
+                                        {{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}
+                                    </p>
+                                </div>
+                                <div v-if="link.isFile && members.length < 2">
                                     <label class="checkbox__group">
                                         {{ translate("DRIVE.LINK.OPEN") }}
                                         <input
                                             type="checkbox"
                                             name=""
                                             v-model="autoOpen"
-                                            @change="onChange()"
-                                        />
-                                        <span class="checkmark"></span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <label class="checkbox__group">
-                                        {{ translate("DRIVE.LINK.WRITABLE") }}
-                                        <input
-                                            :disabled="currentProps != null"
-                                            type="checkbox"
-                                            name=""
-                                            v-model="isLinkWritable"
                                             @change="onChange()"
                                         />
                                         <span class="checkmark"></span>
@@ -117,15 +133,24 @@
                 </div>
             </div>
         </div>
+        <FilePicker
+            v-if="showPicker"
+            :baseFolder="'/' + username"
+            :pickerAllowWriteMode="true"
+            :pickerSelectFolders="true"
+            :selectedFile_func="addMember"
+        />
     </transition>
 </template>
 
 <script>
 const Spinner = require("../spinner/Spinner.vue");
+const FilePicker = require("../picker/FilePicker.vue");
 const i18n = require("../../i18n/index.js");
 module.exports = {
     components:{
-        Spinner
+        Spinner,
+        FilePicker
     },
 	data() {
 	    return {
@@ -143,12 +168,21 @@ module.exports = {
                 baseUrl:null,
                 href:null,
                 base64QrCode: "",
+                members: [],
+                showPicker: false,
+                maxMembers: 100,
             };
 	},
     computed: {
         ...Vuex.mapState([
             'context',
         ]),
+        // every member's full path is visible to whoever opens the link, including the
+        // directories above it, which is easy to forget when the items are scattered
+        spansDirectories: function() {
+            let dirs = new Set(this.members.map(m => m.path.substring(0, m.path.lastIndexOf('/'))));
+            return dirs.size > 1;
+        },
     },
     mixins:[i18n],
 	props: [
@@ -162,6 +196,7 @@ module.exports = {
             let that = this;
             this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen || (this.currentProps != null && this.currentProps.autoOpen());
+            this.members = this.initialMembers();
             if (this.currentProps != null) {
                 Vue.nextTick(function() {
                     that.isLinkWritable = that.currentProps.isLinkWritable;
@@ -190,6 +225,53 @@ module.exports = {
             }
         },
         methods: {
+            /**
+             * A link that already exists knows its own members; a new one starts with the file
+             * the modal was opened from.
+             */
+            initialMembers: function() {
+                if (this.currentProps != null && this.currentProps.memberCount() > 0) {
+                    // a gwt List is not indexable from js; toArray is how the rest of the app reads one
+                    return this.currentProps.getMembers().toArray().map(m => ({
+                        path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
+                    }));
+                }
+                return [{
+                    path: this.getLinkPath(),
+                    writable: this.currentProps != null && this.currentProps.isLinkWritable,
+                    canBeWritable: true,
+                    writableReason: "",
+                }];
+            },
+            addMember: function(path, openForEditing) {
+                this.showPicker = false;
+                if (path == null)
+                    return;
+                if (this.members.some(m => m.path == path)) {
+                    this.$toast.error(this.translate("DRIVE.LINK.MEMBER.DUPLICATE"));
+                    return;
+                }
+                if (this.members.length >= this.maxMembers) {
+                    this.$toast.error(this.translate("DRIVE.LINK.MEMBER.TOO.MANY"));
+                    return;
+                }
+                this.members.push({path: path, writable: openForEditing === true, canBeWritable: true, writableReason: ""});
+                this.onChange();
+            },
+            removeMember: function(i) {
+                // removing is not revoking: anyone who already opened the link keeps that
+                // capability, and only rotating the item's keys takes it back
+                if (! confirm(this.translate("DRIVE.LINK.MEMBER.REMOVE.CONFIRM").replace("%s", this.members[i].path)))
+                    return;
+                this.members.splice(i, 1);
+                this.onChange();
+            },
+            memberPaths: function() {
+                return peergos.client.JsUtil.asList(this.members.map(m => m.path));
+            },
+            writableMemberPaths: function() {
+                return peergos.client.JsUtil.asList(this.members.filter(m => m.writable).map(m => m.path));
+            },
             buildHref: function (link, autoOpenOverride) {
                 let args = "";
                 if (autoOpenOverride || this.autoOpen) {
@@ -213,28 +295,42 @@ module.exports = {
                 this.showSpinner = true;
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
-                    this.context.createSecretLink(this.getLinkPath(), this.isLinkWritable, this.getExpiry(),
+                    this.context.createSecretLinkTo(this.memberPaths(), this.writableMemberPaths(), this.getExpiry(),
                         maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
+                          that.members = that.initialMembers();
                           that.updateHref();
                           that.showSpinner = false;
                     }).exceptionally(t => {
                         console.log(t);
-                        that.$toast.error(that.translate("DRIVE.LINK.ERROR.CREATE"), {timeout:false});
+                        that.$toast.error(that.linkError(t, "DRIVE.LINK.ERROR.CREATE"), {timeout:false});
                         that.showSpinner = false;
                     });
                 } else {
                     let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen);
-                    this.context.updateSecretLink(this.getLinkPath(), newLinkProps).thenApply(props => {
+                    this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
+                        that.members = that.initialMembers();
                         that.updateHref();
                         that.showSpinner = false;
                     }).exceptionally(t => {
                         console.log(t);
-                        that.$toast.error(that.translate("DRIVE.LINK.ERROR.UPDATE"), {timeout:false});
+                        that.$toast.error(that.linkError(t, "DRIVE.LINK.ERROR.UPDATE"), {timeout:false});
                         that.showSpinner = false;
                     });
                 }
+            },
+            /**
+             * The server side refusals here are things the user can act on - someone else's file,
+             * too many items, a file that cannot be made writable - so show what it said rather
+             * than a generic failure.
+             */
+            linkError: function(t, fallbackKey) {
+                let msg = t == null ? null : ("" + (t.message || t));
+                if (msg != null && (msg.indexOf("your own files") >= 0 || msg.indexOf("at most") >= 0
+                        || msg.indexOf("writing space") >= 0 || msg.indexOf("too large") >= 0))
+                    return msg.substring(msg.lastIndexOf(":") + 1).trim();
+                return this.translate(fallbackKey);
             },
             getExpiry: function() {
                 let dateExpiry = document.getElementById("expiry-date-picker");
@@ -306,6 +402,34 @@ module.exports = {
 {
     max-height: 450px;
     overflow-y: scroll;
+}
+.link-member {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+}
+.link-member__path {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;
+    text-align: left;
+}
+.link-member__writable {
+    flex: 0 0 auto;
+    margin: 0;
+}
+.link-member__remove {
+    flex: 0 0 auto;
+    background-color: var(--bg);
+    padding: 4px 8px;
+}
+.link-members__note {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin: 4px 0;
 }
 .secret-link-container{
     padding-right:15px;

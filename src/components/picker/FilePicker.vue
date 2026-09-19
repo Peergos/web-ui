@@ -67,7 +67,7 @@ module.exports = {
             spinnerMessage: 'Loading folders...',
             treeData: {},
             selectedFile: null,
-            selectLeafOnly: true,
+            selectLeafOnly: this.pickerSelectFolders !== true,
             fileThumbnail : '',
             selectedDrive: "",
             driveOptions: [],
@@ -76,7 +76,7 @@ module.exports = {
             openForEditing: this.pickerDefaultWriteMode === true,
         }
     },
-    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters', 'noDriveSelection', 'pickerAllowWriteMode', 'pickerDefaultWriteMode'],
+    props: ['baseFolder', 'selectedFile_func', 'pickerFileExtension', 'pickerFilterMedia', 'pickerShowThumbnail', 'pickerFilters', 'noDriveSelection', 'pickerAllowWriteMode', 'pickerDefaultWriteMode', 'pickerSelectFolders'],
     mixins:[folderTreeMixin],
     computed: {
         ...Vuex.mapState([

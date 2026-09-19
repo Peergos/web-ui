@@ -20,6 +20,7 @@ public class Suite {
             // Before anything uploads: if the browser's BLAKE3 disagreed with the Java one,
             // every later hash in the run is built on it, and the failure to look at is this.
             run(failures, "browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));
+            run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
             run(failures, "upload file", () -> UploadTest.run(args1));
             run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));
             run(failures, "upload folder", () -> UploadFolderTest.run(args1));
