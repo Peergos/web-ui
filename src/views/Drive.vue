@@ -2523,7 +2523,7 @@ module.exports = {
                             jsModifiedDate.getUTCMinutes(), jsModifiedDate.getUTCSeconds(), jsModifiedDate.getMilliseconds());
             let fileModifiedDateTime = peergos.client.JsUtil.fromUtcMillis(utcJsModifiedDate);
             peergos.shared.user.fs.HashTree.buildParallel(x => new peergos.shared.user.fs.BrowserFileReader(new browserio.JSFileReader(file)), (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32),
-            file.size, that.context.crypto.hasher, 8).thenCompose(function(hashtree) {
+            file.size, peergos.shared.user.fs.FileProperties.chunkSizeForNewFiles(), that.context.crypto.hasher, 8).thenCompose(function(hashtree) {
 
                 return java_reader.reset().thenApply(function(resetReader) {
                     let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => resetReader},
