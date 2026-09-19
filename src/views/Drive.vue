@@ -576,7 +576,6 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             progressBarUpdateFrequency: 15,
@@ -938,10 +937,11 @@ module.exports = {
 		illegalFilenames.forEach(item => that.disallowedFilenames.set(item, ""));
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
-        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
-            that.launcherApp = launcher;
-            that.init();
-        });
+        // Straight to init: listing a folder needs no launcher app, and only adding a
+        // shortcut does - which asks for it then. Starting up behind it raced the same
+        // init at sign in, and on a new account the loser of that race came back with a
+        // CAS conflict that nothing caught, leaving the view behind its spinner for good.
+        this.init();
 	},
 
 	beforeDestroy() {
@@ -3095,18 +3095,28 @@ module.exports = {
 		refreshAndAddShortcutLink(link, created) {
 		    let that = this;
             this.showSpinner = true;
-            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
-                if (shortcutsMap.get(link) == null) {
-                    let entry = {added: new Date(), created: created};
-                    shortcutsMap.set(link, entry)
-                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+            // Each step is a future of its own, and a failure inside one is not one the
+            // chain around it sees: without a handler on each, a shortcut that could not
+            // be read or written left the view under a spinner with nothing said.
+            let failed = function (throwable) {
+                that.showSpinner = false;
+                that.$toast.error(that.cleanError(that.errText(throwable)));
+                return null;
+            };
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcherApp => {
+                that.loadShortcutsFile(launcherApp).thenApply(shortcutsMap => {
+                    if (shortcutsMap.get(link) == null) {
+                        let entry = {added: new Date(), created: created};
+                        shortcutsMap.set(link, entry)
+                        that.updateShortcutsFile(launcherApp, shortcutsMap).thenApply(res => {
+                            that.showSpinner = false;
+                            that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                        }).exceptionally(failed);
+                    } else {
                         that.showSpinner = false;
-                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
+                    }
+                }).exceptionally(failed);
+            }).exceptionally(failed);
 		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)
