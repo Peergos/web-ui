@@ -1,11 +1,12 @@
 <template>
 	<article 
-        class="grid-card" >
+        class="grid-card" :class="{selected: selected}" >
 
         <AppButton 
             class="card__select" 
             :class="{selected: selected}" 
             :accent="selected" 
+            :icon="selected ? 'check' : null"
             round 
             outline 
             @click.stop.native="toggleSelection($event)"
@@ -26,7 +27,10 @@
 				:alt="alt"
 			/>
 			<AppIcon v-else class="card__icon" :icon="cardIcon" />
-			<figcaption> {{ filename }}</figcaption>
+			<figcaption :title="filename">
+				<span class="card__name">{{ filename }}</span>
+				<ShareMark :kind="shared"/>
+			</figcaption>
 		</figure>
 
 	</article>
@@ -35,12 +39,17 @@
 <script>
 const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
+const ShareMark = require("./ShareMark.vue");
+const i18n = require("../../i18n/index.js");
+const fileIcon = require("../../mixins/fileicon/index.js");
 
 module.exports = {
     components: {
         AppButton,
 	    AppIcon,
+	    ShareMark,
     },
+    mixins: [i18n, fileIcon],
 	props: [
 		'filename',
 		'src',
@@ -51,23 +60,12 @@ module.exports = {
 		'dropFunc',
 		'file',
 		'itemIndex',
-        'selected'
+        'selected',
+        'shared'
 	],
 	computed:{
 		cardIcon(){
-			if (this.type == 'dir') 	return 'folder--72';
-			if (this.type == 'image') 	return 'file-image--72';
-			if (this.type == 'text') 	return 'file-text--72';
-			if (this.type == 'audio') 	return 'file-audio--72';
-			if (this.type == 'video') 	return 'file-video--72';
-			if (this.type == 'pdf') 	return 'file-pdf--72';
-			if (this.type == 'zip') 	return 'file-zip--72';
-			if (this.type == 'calendar') 	return 'calendar--72';
-			if (this.type == 'contact file') 	return 'file-card--72';
-			if (this.type == 'powerpoint presentation' || this.type == 'presentation') 	return 'file-powerpoint--72';
-			if (this.type == 'word document' || this.type == 'text document') 	return 'file-word--72';
-		        if (this.type == 'excel spreadsheet' || this.type == 'spreadsheet') 	return 'file-excel--72';
-                        return 'file-generic--72';
+			return this.fileIcon(this.type);
 		}
 	},
 	methods:{
@@ -140,110 +138,172 @@ module.exports = {
 </script>
 
 <style>
+/* A contact sheet: the whole folder on one screen. Flat tiles on hairline
+   borders, the preview in its own band and the name in a strip under it,
+   rather than a caption floated over the picture. */
 .grid-card {
 	position: relative;
 	display: flex;
+	flex-direction: column;
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	overflow: hidden;
+}
+
+.grid-card:hover {
+	background-color: var(--bg-2);
+	border-color: var(--pg-border-strong);
+}
+
+.grid-card.selected {
+	background-color: var(--pg-tint-ok);
+	border-color: var(--green-500);
+}
+
+.grid-card figure {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+	margin: 0;
+}
+
+.grid-card .cover,
+.grid-card .card__icon {
+	display: block;
+	width: 100%;
+	height: 136px;
+	flex: none;
+	background-color: var(--pg-surface-2);
+}
+
+.grid-card .cover {
+	object-fit: cover;
+	object-position: center center;
+}
+
+.grid-card .card__icon {
+	padding: 40px 0;
+	color: var(--pg-muted);
+}
+
+.grid-card figcaption {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	height: 40px;
+	padding: 0 34px 0 10px;
+	font-size: 13px;
+	font-weight: var(--regular);
+	color: var(--color);
+}
+
+/* the name takes the squeeze, so the mark beside it is never the part that is cut */
+.grid-card .card__name {
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* both controls appear for the tile under the pointer, as they always have */
+.grid-card .card__select {
+	position: absolute;
+	top: 8px;
+	left: 8px;
+	z-index: 10;
+	display: flex;
 	align-items: center;
 	justify-content: center;
-
-	/* padding-bottom: 75%; */
-	background-color: var(--bg-2);
-	cursor: pointer;
-	border-radius: 4px;
-	overflow:hidden;
-}
-.grid-card:before {
- 	content: "";
-	position: relative;
-    padding-top: 75%;
-}
-
-.grid-card .card__select {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    z-index: 10;
-    opacity: 0;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background-color: var(--bg-50);
-    color: var(--color);
-}
-
-.card__select.app-button.accent:focus{
-	background-color: var(--green-500);
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	opacity: 0;
+	color: var(--pg-muted);
+	background-color: var(--bg);
+	border: 1px solid var(--pg-muted);
 }
 
 .grid-card:hover .card__select,
 .grid-card .card__select.selected {
-    opacity: 1;
+	opacity: 1;
 }
 
-.grid-card figure{
-	position: absolute;
-	top: 0;
-	left: 0;
-	right:0;
-	bottom:0;
+/* the selection bar's select-all circle is the same control, and wears this too */
+.card__select.app-button.accent,
+.card__select.app-button.accent:focus {
+	border-color: var(--green-500);
+}
 
+.grid-card .card__select svg {
+	width: 16px;
+	height: 16px;
+}
+
+.grid-card .card__menu {
+	position: absolute;
+	right: 4px;
+	bottom: 4px;
+	z-index: 5;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	opacity: 0;
+	color: var(--pg-muted);
+	border-radius: var(--radius-control);
+	background-color: transparent;
 }
 
-.grid-card .cover {
-
-	width:100%;
-	height:100%;
-	object-fit: cover;
-	object-position: center center;
-	transform: scale(1);
-	transition: transform 0.2s;
+.grid-card .card__menu svg {
+	width: 18px;
+	height: 18px;
 }
 
-
-.grid-card .card__icon {
-	width:72px;
-	height: 72px;
-	color: var(--color-2);
-	transform: scale(1);
-	transition: transform 0.2s;
+.grid-card:hover .card__menu,
+.grid-card:focus-within .card__menu {
+	opacity: 1;
 }
 
-.grid-card figcaption {
-	position: absolute;
-	bottom: 8px;
-	left: 0;
+@media (max-width: 1024px) {
+	.grid-card .cover,
+	.grid-card .card__icon {
+		height: 104px;
+	}
 
-	margin: 0 8px;
-	padding: 2px 6px;
+	.grid-card .card__icon {
+		padding: 26px 0;
+	}
 
+	/* no hover on a touch screen, so both controls stay put */
+	.grid-card .card__select,
+	.grid-card .card__menu {
+		opacity: 1;
+	}
 
-	font-size: var(--text-small);
-	font-weight: var(--regular);
-	color: var(--color);
+	/* the circle keeps its size and the target around it reaches a thumb */
+	.grid-card .card__select:after {
+		content: "";
+		position: absolute;
+		top: -9px;
+		right: -9px;
+		bottom: -9px;
+		left: -9px;
+	}
 
+	.grid-card .card__menu {
+		width: 44px;
+		height: 44px;
+	}
 
-}
-.grid-card .cover ~ figcaption{
-	border-radius: 2px;
-	background-color: var(--bg);
-}
-.grid-card .card__menu{
-	position: absolute;
-	top:8px;
-	right:8px;
-	z-index: 5;
-	opacity:0;
-	background-color: var(--bg-50);
-}
-.grid-card:hover .card__menu {
-	opacity:1;
-}
-.grid-card:hover .cover {
-	transform: scale(1.05);
-}
-.grid-card:focus{
+	.grid-card figcaption {
+		height: 44px;
+		padding-right: 44px;
+	}
 }
 </style>

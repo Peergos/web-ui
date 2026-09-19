@@ -5274,9 +5274,55 @@ let pendingLoadImport = null;
 // this it would come back as a ghost the store no longer has.
 let deletedSinceLoad = Object.create(null);
 
+// A bar that arrives and leaves inside half a second reads as a flicker rather than as
+// progress, and a calendar with few entries loads in about that. It waits to see whether
+// the read is slow enough to be worth saying so, and once up it stays long enough to be
+// read. One timer for both directions, so a new load cancels a pending hide and the other
+// way round.
+let loadProgressTimer = null;
+let loadProgressShownAt = 0;
+
+function showLoadProgress(show) {
+    const waiting = loadProgressTimer != null;
+    if (show) {
+        if (! loadProgressEl.hidden) {
+            // up already: call off a hide that was waiting out its minimum
+            clearTimeout(loadProgressTimer);
+            loadProgressTimer = null;
+            return;
+        }
+        // A show already on its way is left to run. Restarting the wait on every bucket
+        // that arrives would hold the bar back for the whole of a long load - the one
+        // load it is there for.
+        if (waiting) return;
+        loadProgressTimer = setTimeout(() => {
+            loadProgressTimer = null;
+            loadProgressShownAt = Date.now();
+            loadProgressEl.hidden = false;
+        }, 300);
+        return;
+    }
+    clearTimeout(loadProgressTimer);
+    loadProgressTimer = null;
+    if (loadProgressEl.hidden) return;
+    const shown = Date.now() - loadProgressShownAt;
+    if (shown >= 400) {
+        loadProgressEl.hidden = true;
+        return;
+    }
+    loadProgressTimer = setTimeout(() => {
+        loadProgressTimer = null;
+        loadProgressEl.hidden = true;
+    }, 400 - shown);
+}
+
 function setPendingLoadBuckets(count) {
     pendingLoadBuckets = count > 0 ? count : 0;
-    loadProgressEl.hidden = pendingLoadBuckets === 0;
+    // The state, kept apart from the bar's own coming and going: whether a read is
+    // outstanding is exact, while the bar waits before showing and lingers once shown.
+    // The attribute only exists from the first load onwards, so "0" means loaded.
+    loadProgressEl.dataset.pending = pendingLoadBuckets;
+    showLoadProgress(pendingLoadBuckets > 0);
     if (pendingLoadBuckets > 0) return;
     let contents = pendingLoadImport;
     pendingLoadImport = null;

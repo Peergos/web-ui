@@ -32,10 +32,22 @@
 	--pg-tint-error: #fdecec;
 	--pg-border-error: #f0b4b4;
 	--pg-track: #e6ebef;
+	/* a border that has to read as more than the hairline between rows: what is
+	   hovered, and which column a list is sorted by */
+	--pg-border-strong: var(--gray-3);
+	/* a filled action: white on --green-500 is 2.47:1, under the 3:1 a glyph needs and
+	   well under the 4.5:1 its label needs, so the fill is the darker green the summary
+	   disc already uses. Hover darkens, as the pause pair does. */
+	--pg-primary: var(--pg-disc-ok);
+	--pg-primary-hover: var(--green-900);
+	--pg-on-primary: #ffffff;
 	--pg-shadow: 0 1px 2px rgba(44, 62, 80, .07);
 	/* a dialog sits above the cards, so it casts further; on a dark page a black shadow
 	   fades out, so that one is deeper rather than the same value reused */
 	--pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .4);
+	/* a sheet rises from the bottom of the screen, so its shadow is the dialog's
+	   cast the other way */
+	--pg-shadow-sheet: 0 -18px 48px rgba(0, 0, 0, .28);
 	--pg-scrim: rgba(8, 15, 20, .55);
 	--pg-gap: 16px;
 }
@@ -63,8 +75,15 @@
 	--pg-tint-error: #4d2b2e;
 	--pg-border-error: #7c4348;
 	--pg-track: #1f2c37;
+	--pg-border-strong: var(--pg-muted);
+	/* a dark fill recedes into a dark page, so the pair inverts: the light green
+	   carries the fill and the darkest blue the label */
+	--pg-primary: var(--green-200);
+	--pg-primary-hover: var(--green-accent);
+	--pg-on-primary: var(--blue-900);
 	--pg-shadow: 0 1px 2px rgba(0, 0, 0, .25);
 	--pg-shadow-dialog: 0 18px 48px rgba(0, 0, 0, .55);
+	--pg-shadow-sheet: 0 -18px 48px rgba(0, 0, 0, .55);
 	--pg-scrim: rgba(0, 0, 0, .65);
 }
 
@@ -142,14 +161,14 @@ a.pg-btn {
 }
 
 .pg-btn--primary {
-	color: #ffffff;
-	background-color: var(--green-500);
-	border-color: var(--green-500);
+	color: var(--pg-on-primary);
+	background-color: var(--pg-primary);
+	border-color: var(--pg-primary);
 }
 
 .pg-btn--primary:not(:disabled):hover {
-	background-color: var(--green-200);
-	border-color: var(--green-200);
+	background-color: var(--pg-primary-hover);
+	border-color: var(--pg-primary-hover);
 }
 
 .pg-btn--quiet {
@@ -157,8 +176,10 @@ a.pg-btn {
 	color: var(--pg-muted);
 }
 
+/* --alert is 3.48:1 on the page, under what a label needs; --pg-on-error is the
+   same red at 6.54:1, and is already the error text colour here */
 .pg-btn--danger {
-	color: var(--alert);
+	color: var(--pg-on-error);
 	border-color: transparent;
 }
 
@@ -252,6 +273,9 @@ a.pg-btn {
 	align-items: center;
 	gap: 16px;
 	padding: 18px 20px;
+	/* the card it stacks with is bordered, so without the same allowance the two boxes
+	   line up while everything inside them sits a pixel apart */
+	border: 1px solid transparent;
 	border-radius: var(--radius-container);
 }
 
@@ -370,6 +394,9 @@ a.pg-btn {
 }
 
 .pg-card__head .pg-pill {
+	/* the second column, whether or not the first one has anything in it: as the only
+	   item it fell into the first and stopped a column short of the card's edge */
+	grid-column: 2;
 	justify-self: end;
 	/* half the difference between the pill and the icon box beside it, so the two
 	   sit on one line while both stay anchored to the top of the row */
@@ -900,6 +927,203 @@ a.pg-btn {
 	background-color: var(--pg-surface-2);
 }
 
+/* Tables. A list with a header that stays while its rows scroll under it: the
+   uppercase labels of .pg-endpoint__label, hairline rules and tabular figures.
+   A table sets its own columns and row height; this is everything else. */
+.pg-table {
+	width: 100%;
+	margin: 0;
+	border-collapse: collapse;
+	color: var(--color);
+	font-size: var(--text-small);
+}
+
+.pg-table thead tr {
+	position: sticky;
+	top: 0;
+	z-index: 10;
+	background-color: var(--pg-surface-2);
+}
+
+.pg-table thead th {
+	/* ruled above as well as below: the band reads the same under a view's own bar as it
+	   does directly under the title row, where there is no bar to rule it off */
+	border-top: 1px solid var(--border-color);
+	height: 38px;
+	padding: 0 12px;
+	font-size: var(--text-mini);
+	font-weight: var(--bold);
+	letter-spacing: .07em;
+	text-transform: uppercase;
+	text-align: left;
+	white-space: nowrap;
+	color: var(--pg-muted);
+	border-bottom: 1px solid var(--border-color);
+	cursor: pointer;
+}
+
+.pg-table thead th.sorted {
+	color: var(--color);
+}
+
+.pg-table .sort-caret {
+	width: 12px;
+	height: 12px;
+	margin-left: 4px;
+	vertical-align: -1px;
+}
+
+.pg-table .sort-caret--asc {
+	transform: rotate(180deg);
+}
+
+.pg-table td {
+	padding: 0 12px;
+}
+
+.pg-table tbody tr {
+	border-bottom: 1px solid var(--border-color);
+}
+
+.pg-table tbody tr:hover {
+	background-color: var(--bg-2);
+}
+
+/* On a phone no table fits five columns, and its head is the only way to sort: the
+   rows lay out over lines (each table says how) and the head becomes a strip of chips
+   that scrolls, rather than disappearing with the rest of the table. */
+@media (max-width: 1024px) {
+	.pg-table,
+	.pg-table thead,
+	.pg-table tbody {
+		display: block;
+	}
+
+	.pg-table thead tr {
+		position: static;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 8px 12px;
+		overflow-x: auto;
+		/* a chip strip scrolls without a bar of its own */
+		scrollbar-width: none;
+		background-color: transparent;
+		border-bottom: 1px solid var(--border-color);
+	}
+
+	.pg-table thead tr::-webkit-scrollbar {
+		height: 0;
+	}
+
+	/* a column with no heading - an action, a glyph - has nothing to sort by and
+	   nothing to say, so it takes no chip of its own in the strip */
+	.pg-table thead th:empty {
+		display: none;
+	}
+
+	.pg-table thead th {
+		display: flex;
+		align-items: center;
+		flex: none;
+		width: auto;
+		height: auto;
+		min-height: 44px;
+		padding: 0 12px;
+		color: var(--pg-muted);
+		background-color: var(--bg);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-pill);
+	}
+
+	.pg-table thead th.sorted {
+		color: var(--color);
+		border-color: var(--pg-border-strong);
+		background-color: var(--bg-2);
+	}
+}
+
+@media (max-width: 1024px) {
+	/* a finger needs more room than a pointer, whichever menu it lands on */
+	.pg-menu li:not(.divider) {
+		min-height: 44px;
+	}
+}
+
+/* Menus. A list of actions on the dialog surface: the row menu in the drive and
+   every AppDropdown wear this, so the two that open side by side in a toolbar
+   cannot drift apart again. Each keeps its own positioning and its own way of
+   opening - this is the look, nothing else. */
+.pg-menu {
+	/* the surface is sometimes the list itself rather than a box around one, and a
+	   ul that is not reset carries markers and an indent of its own */
+	list-style: none;
+	margin: 0;
+	padding: 6px;
+	/* a folder with apps, a thumbnail and sharing runs to a dozen entries, and the
+	   account menu is longer still: past the window it scrolls. Measured from the
+	   window rather than as a share of it - these open below a toolbar, and 70vh
+	   put a scrollbar on a menu with room to stand */
+	max-height: calc(100vh - 80px);
+	overflow-y: auto;
+	color: var(--color);
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow-dialog);
+}
+
+.pg-menu ul {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.pg-menu li {
+	display: flex;
+	align-items: center;
+	min-height: 36px;
+	margin: 0;
+	padding: 9px 12px;
+	font-size: var(--text-small);
+	/* its own rhythm rather than the line-height of whatever it opens over: the same
+	   list stood 50px tall in a toolbar and 38px in the drive's row menu */
+	line-height: 20px;
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	transition: background-color .15s;
+}
+
+.pg-menu li:hover {
+	background-color: var(--pg-surface-2);
+}
+
+/* the entry that cannot be undone reads as itself. --alert is 3.48:1 on the page;
+   --pg-on-error is the same red at 6.54:1 */
+.pg-menu li.is-danger {
+	color: var(--pg-on-error);
+}
+
+.pg-menu li.is-danger:hover {
+	background-color: var(--pg-tint-error);
+}
+
+.pg-menu li.divider {
+	display: block;
+	height: 1px;
+	min-height: 0;
+	margin: 6px 12px;
+	padding: 0;
+	background-color: var(--border-color);
+	border: 0;
+	border-radius: 0;
+	cursor: default;
+}
+
+.pg-menu li.divider:hover {
+	background-color: var(--border-color);
+}
+
 /* Dialogs. A card centred on both axes at every width, sharing the surface of the
    status cards. Used by every modal in the app so they all have the same shape. */
 /* while a dialog is up, the page behind it stays put */
@@ -1054,6 +1278,22 @@ input.pg-input {
 	font-family: inherit;
 	font-size: 15px;
 }
+/* a field that cannot be typed in is not a field: it keeps the surface so the value still
+   reads as data, and gives up the border and the caret so it does not offer a box to type
+   in. .pg-input[readonly] set the same fill as an editable one, which is no difference */
+input.pg-input[readonly] {
+	border-color: transparent;
+	color: var(--pg-muted);
+	cursor: default;
+}
+
+/* shown rather than asked for: no caret, no tab stop, nothing to click. Read-only fields
+   that exist to be copied - the webdav address and its credentials - keep all three */
+input.pg-input--static {
+	pointer-events: none;
+	user-select: none;
+}
+
 input.pg-input:focus {
 	outline: none;
 	border-color: var(--green-500);

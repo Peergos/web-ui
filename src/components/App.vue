@@ -274,6 +274,12 @@ module.exports = {
 	this.updateNetwork();
 
 	window.addEventListener("hashchange", this.onUrlChange, false);
+	window.addEventListener("resize", this.onWindowResize, { passive: true });
+    },
+
+    beforeDestroy() {
+	window.removeEventListener("hashchange", this.onUrlChange);
+	window.removeEventListener("resize", this.onWindowResize);
     },
 
     mounted() {
@@ -288,6 +294,12 @@ module.exports = {
     },
 
 	methods: {
+        /* the sidebar is a panel below this width and a rail above it, and the views that
+           ask are not all mounted at once, so the shell keeps the answer */
+        onWindowResize() {
+            if (window.innerWidth !== this.$store.state.windowWidth)
+                this.$store.commit("SET_WINDOW_WIDTH", window.innerWidth);
+        },
         ...Vuex.mapActions([
 	    'updateQuota',
 	    'updateUsage',
@@ -705,19 +717,6 @@ module.exports = {
 	font-weight: 600;
 }
 
-/*
-.toggle-button--mobile {
-	background-color: var(--bg-2) !important;
-	position: fixed;
-	top: 16px;
-	right: 16px;
-	opacity: 1;
-}
-.toggle-button--mobile svg {
-	width: 24px;
-	height: 24px;
-} */
-
 section.login-register {
 	min-height: 100vh;
 	padding: var(--app-margin);
@@ -752,7 +751,11 @@ section.content.sidebar-margin {
 }
 
 @media screen and (max-width: 1024px) {
-	section.content {
+	/* the menu is a panel over the view here, so the view keeps its full width:
+	   without the second selector .sidebar-margin's 240px wins and the header
+	   behind the panel wraps */
+	section.content,
+	section.content.sidebar-margin {
 		padding-left: 0;
 	}
 

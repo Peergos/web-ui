@@ -1,103 +1,86 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close"> 
-    <div class="modal-container search full-height" @click.stop style="overflow-y:auto">
-      <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-        <div class="modal-header">
-            <h2>{{ translate("SEARCH.SEARCH") }}: {{ path }}</h2>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog search-dialog" @click.stop>
+        <div class="pg-dialog__head">
+            <h2 class="pg-dialog__title">{{ translate("SEARCH.SEARCH") }}: {{ path }}</h2>
+            <button type="button" class="pg-dialog__close" @click="close" aria-label="close">
+                <AppIcon icon="close"/>
+            </button>
         </div>
-        <div class="modal-body">
-            <div v-bind:class="errorClass">
+        <div class="pg-dialog__body">
+            <div class="search-error" v-bind:class="errorClass">
                 <label v-if="isError">{{ error }}</label>
             </div>
             <Spinner v-if="showSpinner"
             :absolutePosition="spinnerAbsolutePosition"></Spinner>
-            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+            <ul id="appMenu" v-if="showAppMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                <li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
             </ul>
-                <div class="flex-container">
-                    <div class="flex-item search" style="margin: 10px; border-width: 1px; border-style: solid;">
-                        <select v-model="selectedSearchType">
-                            <option value="contains">{{ translate("SEARCH.NAME.CONTAINS") }}</option>
-                            <option value="textContents">{{ translate("SEARCH.TEXT.CONTAINS") }}</option>
-                            <option value="modifiedAfter">{{ translate("SEARCH.MODIFIED.AFTER") }}</option>
-                            <option value="modifiedBefore">{{ translate("SEARCH.MODIFIED.BEFORE") }}</option>
-                            <option value="createdAfter">{{ translate("SEARCH.CREATED.AFTER") }}</option>
-                            <option value="createdBefore">{{ translate("SEARCH.CREATED.BEFORE") }}</option>
-                            <option value="fileSizeGreaterThan">{{ translate("SEARCH.SIZE.GREATER") }}</option>
-                            <option value="fileSizeLessThan">{{ translate("SEARCH.SIZE.LESS") }}</option>
-                            <option value="mimeType">{{ translate("SEARCH.TYPE") }}</option>
-                        </select>
-                    </div>
-                    <div class="flex-item" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" style="margin: 10px;">
-                        <input v-model="selectedDate" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
-                    </div>
-                    <div class="flex-item" v-if="selectedSearchType=='contains' || selectedSearchType=='textContents'" style="margin: 10px;">
-                        <input v-focus v-on:keyup.enter="search" v-model="searchContains" placeholder=""type="text" maxlength="60" style="width: 200px;" ></input>
-                    </div>
-                    <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
-                        <input v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" style="width: 100px;" ></input>
-                    </div>
-                    <div class="flex-item" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" style="margin: 10px;">
-                        <select v-model="selectedSizeUnit">
-                            <option value="K">KiB</option>
-                            <option value="M">MiB</option>
-                            <option value="G">GiB</option>
-                        </select>
-                    </div>
-                    <div class="flex-item" v-if="selectedSearchType=='mimeType'" style="margin: 10px;">
-                        <select v-model="selectedMimeType">
-                            <option value="audio">{{ translate("SEARCH.AUDIO") }}</option>
-                            <option value="image">{{ translate("SEARCH.IMAGE") }}</option>
-                            <option value="application/pdf">PDF</option>
-                            <option value="text/plain">{{ translate("SEARCH.TEXT") }}</option>
-                            <option value="video">{{ translate("SEARCH.VIDEO") }}</option>
-                        </select>
-                    </div>
-                    <div class="flex-item" style="margin: 10px;">
-                        <button id='submit-search' class="btn btn-success" @click="search()">{{ translate("SEARCH.SEARCH") }}</button>
-                    </div>
+                <div class="search-query">
+                    <select class="pg-input search-query__type" v-model="selectedSearchType">
+                        <option value="contains">{{ translate("SEARCH.NAME.CONTAINS") }}</option>
+                        <option value="textContents">{{ translate("SEARCH.TEXT.CONTAINS") }}</option>
+                        <option value="modifiedAfter">{{ translate("SEARCH.MODIFIED.AFTER") }}</option>
+                        <option value="modifiedBefore">{{ translate("SEARCH.MODIFIED.BEFORE") }}</option>
+                        <option value="createdAfter">{{ translate("SEARCH.CREATED.AFTER") }}</option>
+                        <option value="createdBefore">{{ translate("SEARCH.CREATED.BEFORE") }}</option>
+                        <option value="fileSizeGreaterThan">{{ translate("SEARCH.SIZE.GREATER") }}</option>
+                        <option value="fileSizeLessThan">{{ translate("SEARCH.SIZE.LESS") }}</option>
+                        <option value="mimeType">{{ translate("SEARCH.TYPE") }}</option>
+                    </select>
+                    <input class="pg-input search-query__value" v-model="selectedDate" v-if="selectedSearchType=='modifiedAfter' || selectedSearchType=='modifiedBefore' || selectedSearchType=='createdAfter' || selectedSearchType=='createdBefore'" type="date" min="1900-01-01" max="3000-01-01" maxlength="12" ></input>
+                    <input class="pg-input search-query__value" v-if="selectedSearchType=='contains' || selectedSearchType=='textContents'" v-focus v-on:keyup.enter="search" v-model="searchContains" placeholder="" type="text" maxlength="60" ></input>
+                    <input class="pg-input search-query__value search-query__value--number" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" v-focus v-on:keyup.enter="search" v-model="searchFileSize" placeholder="1" type="number" min="1" ></input>
+                    <select class="pg-input search-query__unit" v-if="selectedSearchType=='fileSizeGreaterThan' || selectedSearchType=='fileSizeLessThan'" v-model="selectedSizeUnit">
+                        <option value="K">KiB</option>
+                        <option value="M">MiB</option>
+                        <option value="G">GiB</option>
+                    </select>
+                    <select class="pg-input search-query__type" v-if="selectedSearchType=='mimeType'" v-model="selectedMimeType">
+                        <option value="audio">{{ translate("SEARCH.AUDIO") }}</option>
+                        <option value="image">{{ translate("SEARCH.IMAGE") }}</option>
+                        <option value="application/pdf">PDF</option>
+                        <option value="text/plain">{{ translate("SEARCH.TEXT") }}</option>
+                        <option value="video">{{ translate("SEARCH.VIDEO") }}</option>
+                    </select>
+                    <button id='submit-search' class="pg-btn pg-btn--primary" @click="search()">{{ translate("SEARCH.SEARCH") }}</button>
                 </div>
-            </div>
 
-            <div>
-                <h3>{{ translate("SEARCH.RESULTS") }}: {{ matches.length }}</h3>
-                <div v-if="showCancel" style="margin: 10px;">
-                    <button class="btn btn-danger" @click="stopSearch()">Cancel Search</button>
+            <div class="search-results">
+                <div class="pg-sectionhead">
+                    <h2>{{ translate("SEARCH.RESULTS") }}</h2>
+                    <span>{{ matches.length }}</span>
+                    <button v-if="showCancel" class="pg-btn pg-btn--danger search-cancel" @click="stopSearch()">Cancel Search</button>
                 </div>
                 <div v-if="matches!=0" class="table-responsive">
-                    <table class="table">
+                    <table class="search-table pg-table">
                         <thead>
-                        <tr  v-if="matches!=0" style="cursor:pointer;">
-                            <th @click="setSortBy('name')">{{ translate("DRIVE.NAME") }}<span v-if="sortBy=='name'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('path')">{{ translate("SEARCH.DIR") }}<span v-if="sortBy=='path'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('size')">{{ translate("DRIVE.SIZE") }}<span v-if="sortBy=='size'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('modified')">{{ translate("DRIVE.MODIFIED") }} <span v-if="sortBy=='modified'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setSortBy('created')">{{ translate("DRIVE.CREATED") }}<span v-if="sortBy=='created'" v-bind:class="['fas', normalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-
+                        <tr  v-if="matches!=0">
+                            <th v-for="col in columns" :key="col.key" :class="[col.cls, {sorted: sortBy==col.key}]"
+                                :aria-sort="ariaSortOf(sortBy, col.key, normalSortOrder)" @click="setSortBy(col.key)">{{ translate(col.label) }}<AppIcon
+                                v-if="sortBy==col.key" class="sort-caret" :class="{'sort-caret--asc': normalSortOrder}" icon="chevron-down"/></th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="match in sortedItems">
-                            <td v-on:click="view($event, match)" style="cursor:pointer;">{{ match.name }}</td>
-                            <td v-on:click="navigateTo(match)" style="cursor:pointer;">
+                            <td class="search-table__name" :title="match.name" v-on:click="view($event, match)">{{ match.name }}</td>
+                            <td class="search-table__path" :title="match.path" v-on:click="navigateTo(match)">
                                 {{ match.path }}
                             </td>
-                            <td>
+                            <td class="search-table__size">
                                 {{ convertBytesToHumanReadable(match.size) }}
                             </td>
-                            <td>
+                            <td class="search-table__date search-table__modified">
                                 {{ formatDateTime(match.lastModified) }}
                             </td>
-                            <td>
+                            <td class="search-table__date search-table__created">
                                 {{ formatDateTime(match.created) }}
                             </td>
                         </tr>
                         </tbody>
                     </table>
                 </div>
-
-
             </div>
         </div>
     </div>
@@ -108,13 +91,16 @@
 <script>
 const routerMixins = require("../mixins/router/index.js");
 const Spinner = require("./spinner/Spinner.vue");
+const AppIcon = require("./AppIcon.vue");
 const i18n = require("../i18n/index.js");
+const sortColumn = require("../mixins/sortcolumn/index.js");
 
 module.exports = {
 	components: {
-	    Spinner
+	    Spinner,
+	    AppIcon
 	},
-    mixins:[i18n, routerMixins],
+    mixins:[i18n, routerMixins, sortColumn],
     data: function() {
         return {
             searchContains: "",
@@ -131,6 +117,13 @@ module.exports = {
             errorClass: "",
             sortBy: "name",
             normalSortOrder: true,
+            columns: [
+                {key: "name", cls: "search-table__name", label: "DRIVE.NAME"},
+                {key: "path", cls: "search-table__path", label: "SEARCH.DIR"},
+                {key: "size", cls: "search-table__size", label: "DRIVE.SIZE"},
+                {key: "modified", cls: "search-table__date", label: "DRIVE.MODIFIED"},
+                {key: "created", cls: "search-table__date", label: "DRIVE.CREATED"},
+            ],
             cancelSearch: false,
 	        showCancel: false,
             availableApps: [],
@@ -589,12 +582,189 @@ module.exports = {
 </script>
 
 <style>
-.search {
-    color: var(--color);
-    background-color: var(--bg);
+/* Search on the dialog shell every other modal in the app uses, with its results
+   wearing the drive list's table. Only the look changes: the query, the sorting
+   and the results are the same ones the component always produced. */
+.search-dialog {
+	width: 1040px;
+	max-height: 92vh;
 }
-.search select {
-    color: var(--color);
-    background-color: var(--bg);
+
+.search-dialog .pg-dialog__body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	padding: 8px 20px 20px;
+}
+
+/* ---------- the query ---------- */
+
+.search-query {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+}
+
+.search-dialog select.pg-input {
+	width: auto;
+	min-width: 200px;
+	height: 44px;
+	margin: 0;
+	padding: 0 12px;
+	line-height: normal;
+	cursor: pointer;
+}
+
+/* input.pg-input in 2_status-cards.css is width:100% and outranks a bare class,
+   so these qualify the element too - otherwise the value field takes the row and
+   pushes the type select onto a line of its own */
+.search-dialog input.search-query__value {
+	width: 240px;
+}
+
+.search-dialog input.search-query__value--number {
+	width: 120px;
+}
+
+.search-dialog select.search-query__unit {
+	min-width: 100px;
+}
+
+/* the fields in this row stand 44px, and the button that submits them reads as one
+   of the row rather than as something floating in it */
+.search-query .pg-btn {
+	min-height: 44px;
+}
+
+.search-dialog .pg-btn {
+	flex: none;
+}
+
+/* the component sets bootstrap's alert classes on this from its own code, so the
+   box is styled here rather than by renaming anything it sets */
+.search-error:not(:empty) {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 10px 12px;
+	font-size: var(--text-small);
+	color: var(--pg-on-error);
+	background-color: var(--pg-tint-error);
+	border-radius: 9px;
+	overflow-wrap: anywhere;
+}
+
+/* ---------- the results ---------- */
+
+.search-results {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	min-width: 0;
+}
+
+.search-results .pg-sectionhead {
+	margin-top: 0;
+}
+
+.search-results .search-cancel {
+	margin-left: auto;
+}
+
+/* the wrapper is bootstrap's and brings a hard-coded #ddd box at phone widths, which
+   ignores the theme. The rows carry their own hairlines, so it goes - from these
+   results alone, since other views still want their own */
+.search-results .table-responsive {
+	border: 0;
+}
+
+/* the shared parts are .pg-table; these are this table's own cells */
+.search-table tbody tr {
+	height: 44px;
+}
+
+.search-table td {
+	color: var(--pg-muted);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.search-table td.search-table__name {
+	font-size: 15px;
+	color: var(--color);
+	cursor: pointer;
+}
+
+.search-table td.search-table__path {
+	color: var(--pg-link);
+	cursor: pointer;
+	max-width: 320px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.search-table td.search-table__path:hover {
+	text-decoration: underline;
+}
+
+.search-table .search-table__size {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.search-table .search-table__date {
+	font-variant-numeric: tabular-nums;
+}
+
+/* ---------- phone ---------- */
+
+/* the rows lay out over lines from the same width at which .pg-table turns its head
+   into a chip strip: left to a narrower breakpoint of its own, the head was already a
+   strip while the rows were still a table, and the table ran off the side of the dialog */
+@media (max-width: 1024px) {
+	/* five columns do not fit: the rows lay out over lines, and the head
+	   becomes the chip strip .pg-table gives every table */
+	.search-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"name name"
+			"path size"
+			"mod  created";
+		gap: 2px 10px;
+		height: auto;
+		padding: 10px 2px;
+	}
+
+	.search-table td {
+		padding: 0;
+		white-space: normal;
+		overflow-wrap: anywhere;
+	}
+
+	.search-table td.search-table__name { grid-area: name; }
+	.search-table td.search-table__path { grid-area: path; max-width: none; }
+	.search-table td.search-table__size { grid-area: size; text-align: right; }
+	.search-table td.search-table__modified { grid-area: mod; }
+	.search-table td.search-table__created { grid-area: created; text-align: right; }
+}
+
+/* the query row has room for its field, its unit and its button side by side until a
+   phone, where each takes a line of its own */
+@media (max-width: 700px) {
+	.search-dialog .pg-dialog__body {
+		padding: 8px 12px 16px;
+	}
+
+	.search-dialog input.search-query__value,
+	.search-dialog select.pg-input {
+		width: 100%;
+		flex: 1 1 100%;
+	}
+
+	.search-dialog .pg-btn {
+		width: 100%;
+	}
 }
 </style>

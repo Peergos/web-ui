@@ -70,6 +70,7 @@ module.exports = {
     "DRIVE.EDIT": "Modifier",
     "DRIVE.RENAME": "Renommer",
     "DRIVE.SHARE": "Partager",
+    "DRIVE.SHARED": "Partagé",
     "DRIVE.DOWNLOAD.ZIP": "Télécharger en tant que ZIP",
     "DRIVE.THUMB": "Créer une miniature",
     "DRIVE.PROPS": "Propriétés",
@@ -369,9 +370,11 @@ module.exports = {
     "VERIFY.UNVERIFIED": "Non vérifié",
     "LAUNCHER.CUSTOM": "Applications personnalisées",
     "LAUNCHER.UPDATE": "Rechercher les mises à jour",
-    "LAUNCHER.NONE": "Aucune application personnalisée n'est actuellement installée. Créez une application à partir de l'élément de menu «Créer une application» du signe plus vert.",
+    "LAUNCHER.NONE": "Aucune application installée pour l'instant",
+    "LAUNCHER.NONE.BODY": "Créez-en une depuis le plus vert de votre Drive, via «Nouvelle application». Les applications installées apparaissent ici, prêtes à être lancées.",
+    "LAUNCHER.NOSHORTCUT": "Rien d'épinglé pour l'instant",
     "LAUNCHER.SHORTCUTS":"Raccourcis",
-    "LAUNCHER.ADD.SHORTCUT":"Les entrées peuvent être ajoutées via l'élément de menu contextuel «Ajouter au lanceur»",
+    "LAUNCHER.ADD.SHORTCUT":"Ouvrez le menu d'un fichier dans votre Drive et choisissez «Ajouter au lanceur» pour le conserver ici.",
     "LAUNCHER.ADDED":"Ajouté",
     "LAUNCHER.NAME":"Nom",
     "LAUNCHER.FOLDER":"Dossier",
@@ -496,5 +499,10 @@ module.exports = {
     "DRIVE.MOVING.COMPLETE": "Fin du déplacement et actualisation du dossier...",
     "DRIVE.COPYING.TITLE": "Copie de fichiers",
     "DRIVE.COPYING.COMPLETE": "Fin de la copie et actualisation du dossier...",
-    "SHAREDWITH.TITLE": "Partagé avec"
+    "SOCIAL.NOTFOUND": "Aucun résultat",
+    "SHAREDWITH.TITLE": "Partagé avec",
+    "SHAREDWITH.FOLDER": "Dossier",
+    "SHAREDWITH.ACCESS": "Accès",
+    "SHAREDWITH.EMPTY.TITLE": "Rien n'est encore partagé",
+    "SHAREDWITH.EMPTY.BODY": "Partagez un fichier ou un dossier depuis votre Drive et il apparaîtra ici, avec les personnes concernées et ce qu'elles peuvent en faire."
 }

@@ -96,7 +96,7 @@ public class CalendarLinkWriteTest {
             // file is still on its way. Signing out here would take the page away mid-write,
             // which is a race the test would lose on a slow engine rather than a fault.
             d.waitForScript("the host to finish writing it",
-                    CalendarReadOnlyTest.CALENDAR_VIEW + " && !window.__cal.showSpinner", 120_000);
+                    CalendarReadOnlyTest.CALENDAR_VIEW + " && !window.__cal.busy", 120_000);
             System.out.println("  ok   and the dialog it opens can be typed into and saved");
 
             // --- the owner again, to say what is in their own store --------------------------

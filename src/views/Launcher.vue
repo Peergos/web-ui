@@ -1,6 +1,9 @@
 <template>
-<Article class="app-view launcher-view">
+<article class="app-view launcher-view">
 	<AppHeader>
+		<template #primary>
+			<h1>{{ translate("APPNAV.LAUNCHER") }}</h1>
+		</template>
 	</AppHeader>
         <div class="modal-body">
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
@@ -76,22 +79,26 @@
                     :existingGroups="existingGroups"
                     :isTemplateApp="isTemplateApp">
             </Group>
-            <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+            <ul id="appMenu" v-if="showAppMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                <li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
             </ul>
             <div>
-                <h3>
-                    <button class="btn btn-success" @click="navigateToRecommendedApps()" style="margin-left: 10px;">
-                        <svg class="white-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1728 1098q0 81-44.5 135t-123.5 54q-41 0-77.5-17.5t-59-38-56.5-38-71-17.5q-110 0-110 124 0 39 16 115t15 115v5q-22 0-33 1-34 3-97.5 11.5t-115.5 13.5-98 5q-61 0-103-26.5t-42-83.5q0-37 17.5-71t38-56.5 38-59 17.5-77.5q0-79-54-123.5t-135-44.5q-84 0-143 45.5t-59 127.5q0 43 15 83t33.5 64.5 33.5 53 15 50.5q0 45-46 89-37 35-117 35-95 0-245-24-9-2-27.5-4t-27.5-4l-13-2q-1 0-3-1-2 0-2-1v-1024q2 1 17.5 3.5t34 5 21.5 3.5q150 24 245 24 80 0 117-35 46-44 46-89 0-22-15-50.5t-33.5-53-33.5-64.5-15-83q0-82 59-127.5t144-45.5q80 0 134 44.5t54 123.5q0 41-17.5 77.5t-38 59-38 56.5-17.5 71q0 57 42 83.5t103 26.5q64 0 180-15t163-17v2q-1 2-3.5 17.5t-5 34-3.5 21.5q-24 150-24 245 0 80 35 117 44 46 89 46 22 0 50.5-15t53-33.5 64.5-33.5 83-15q82 0 127.5 59t45.5 143z"/></svg>
+                <div class="launcher-bar">
+                    <button type="button" class="pg-btn pg-btn--primary" @click="navigateToRecommendedApps()">
+                        <svg viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1728 1098q0 81-44.5 135t-123.5 54q-41 0-77.5-17.5t-59-38-56.5-38-71-17.5q-110 0-110 124 0 39 16 115t15 115v5q-22 0-33 1-34 3-97.5 11.5t-115.5 13.5-98 5q-61 0-103-26.5t-42-83.5q0-37 17.5-71t38-56.5 38-59 17.5-77.5q0-79-54-123.5t-135-44.5q-84 0-143 45.5t-59 127.5q0 43 15 83t33.5 64.5 33.5 53 15 50.5q0 45-46 89-37 35-117 35-95 0-245-24-9-2-27.5-4t-27.5-4l-13-2q-1 0-3-1-2 0-2-1v-1024q2 1 17.5 3.5t34 5 21.5 3.5q150 24 245 24 80 0 117-35 46-44 46-89 0-22-15-50.5t-33.5-53-33.5-64.5-15-83q0-82 59-127.5t144-45.5q80 0 134 44.5t54 123.5q0 41-17.5 77.5t-38 59-38 56.5-17.5 71q0 57 42 83.5t103 26.5q64 0 180-15t163-17v2q-1 2-3.5 17.5t-5 34-3.5 21.5q-24 150-24 245 0 80 35 117 44 46 89 46 22 0 50.5-15t53-33.5 64.5-33.5 83-15q82 0 127.5 59t45.5 143z"/></svg>
                         {{ translate("LAUNCHER.CUSTOM") }}
                         </button>
-                    <button class="btn btn-info" @click="checkForAppUpdates()" style="margin-left: 10px;">{{ translate("LAUNCHER.UPDATE") }}</button>
-                    <span style="margin-left: 40px;">{{updateMessage}}</span>
-                </h3>
-                <div v-if="appsList.length ==0" class="table-responsive">
-                    {{ translate("LAUNCHER.NONE") }}
+                    <button type="button" class="pg-btn" @click="checkForAppUpdates()">{{ translate("LAUNCHER.UPDATE") }}</button>
+                    <span class="launcher-bar__message">{{updateMessage}}</span>
                 </div>
-                <div v-if="appsList!=0">
+                <section v-if="appsList.length ==0" class="pg-empty">
+                    <span class="pg-empty__mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14v7M14 17.5h7"/></svg>
+                    </span>
+                    <h2>{{ translate("LAUNCHER.NONE") }}</h2>
+                    <p>{{ translate("LAUNCHER.NONE.BODY") }}</p>
+                </section>
+                <div v-if="appsList.length > 0">
                     <AppGrid
                         v-if="showAppGrid"
                         :launchAppFunc="launchAppFromUI"
@@ -105,37 +112,42 @@
             </div>
             <div>
                 <h3>{{ translate("LAUNCHER.SHORTCUTS") }}</h3>
-                <div v-if="shortcutList.length ==0" class="table-responsive">
-                    {{ translate("LAUNCHER.ADD.SHORTCUT") }}
-                </div>
-                <div v-if="shortcutList!=0" class="table-responsive">
-                    <table class="table">
+                <section v-if="shortcutList.length ==0" class="pg-empty">
+                    <span class="pg-empty__mark" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 19.5 9 17 11.5l-1-1-3.5 3.5.5 3-1.5 1.5-6-6L7 11l3-.5L13.5 7l-1-1z"/><path d="m7 17-3 3"/></svg>
+                    </span>
+                    <h2>{{ translate("LAUNCHER.NOSHORTCUT") }}</h2>
+                    <p>{{ translate("LAUNCHER.ADD.SHORTCUT") }}</p>
+                </section>
+                <div v-if="shortcutList.length > 0" class="table-responsive shortcut-list">
+                    <table class="shortcut-table pg-table">
                         <thead>
-                        <tr  v-if="shortcutList.length!=0" style="cursor:pointer;">
-                            <th @click="setShortcutsSortBy('added')">{{ translate("LAUNCHER.ADDED") }} <span v-if="shortcutsSortBy=='added'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('name')">{{ translate("LAUNCHER.NAME") }} <span v-if="shortcutsSortBy=='name'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('path')">{{ translate("LAUNCHER.FOLDER") }} <span v-if="shortcutsSortBy=='path'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('modified')">{{ translate("DRIVE.MODIFIED") }} <span v-if="shortcutsSortBy=='modified'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th @click="setShortcutsSortBy('created')">{{ translate("DRIVE.CREATED") }} <span v-if="shortcutsSortBy=='created'" v-bind:class="['fas', shortcutsNormalSortOrder ? 'fa-angle-down' : 'fa-angle-up']"/></th>
-                            <th></th>
+                        <tr>
+                            <th v-for="col in shortcutColumns" :key="col.key"
+                                :class="[col.cls, {sorted: shortcutsSortBy==col.key}]" :aria-sort="ariaSortOf(shortcutsSortBy, col.key, shortcutsNormalSortOrder)"
+                                @click="setShortcutsSortBy(col.key)">{{ translate(col.label) }}<AppIcon
+                                v-if="shortcutsSortBy==col.key" class="sort-caret"
+                                :class="{'sort-caret--asc': shortcutsNormalSortOrder}" icon="chevron-down"/></th>
+                            <th class="shortcut-table__action"/>
                         </tr>
                         </thead>
                         <tbody>
                         <tr v-for="shortcut in sortedShortcuts">
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
-                                {{ formatJSDate(shortcut.added) }}
-                            </td>
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" v-on:click="view($event, shortcut)" style="cursor:pointer;">{{ shortcut.name }}</td>
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']"  v-on:click="navigateTo(shortcut)" style="cursor:pointer;">
+                            <td class="shortcut-table__name" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" :title="shortcut.name" v-on:click="view($event, shortcut)">{{ shortcut.name }}</td>
+                            <td class="shortcut-table__path" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" :title="shortcut.path" v-on:click="navigateTo(shortcut)">
                                 {{ shortcut.path }}
                             </td>
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
+                            <td class="shortcut-table__date" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
+                                {{ formatJSDate(shortcut.added) }}
+                            </td>
+                            <td class="shortcut-table__date" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatDateTime(shortcut.lastModified) }}
                             </td>
-                            <td v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
+                            <td class="shortcut-table__date" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']">
                                 {{ formatJSDate(shortcut.created) }}
                             </td>
-                            <td> <button class="btn btn-danger" @click="removeShortcut(shortcut)">{{ translate("LAUNCHER.REMOVE") }}</button>
+                            <td class="shortcut-table__action">
+                                <button type="button" class="pg-btn pg-btn--danger" @click="removeShortcut(shortcut)">{{ translate("LAUNCHER.REMOVE") }}</button>
                             </td>
                         </tr>
                         </tbody>
@@ -164,10 +176,13 @@ const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const AppIcon = require("../components/AppIcon.vue");
 const i18n = require("../i18n/index.js");
+const sortColumn = require("../mixins/sortcolumn/index.js");
 const transfers = require("../mixins/transfers/index.js");
 module.exports = {
     components: {
+        AppIcon,
         AppInstall,
 		AppHeader,
 		AppDetails,
@@ -183,6 +198,13 @@ module.exports = {
     },
     data: function() {
         return {
+            shortcutColumns: [
+                {key: "name", cls: "shortcut-table__name", label: "LAUNCHER.NAME"},
+                {key: "path", cls: "shortcut-table__path", label: "LAUNCHER.FOLDER"},
+                {key: "added", cls: "shortcut-table__date", label: "LAUNCHER.ADDED"},
+                {key: "modified", cls: "shortcut-table__date", label: "DRIVE.MODIFIED"},
+                {key: "created", cls: "shortcut-table__date", label: "DRIVE.CREATED"},
+            ],
             showSpinner: false,
             spinnerMessage: '',
             launcherApp: null,
@@ -248,8 +270,14 @@ module.exports = {
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn],
 	watch: {
+		/* the shell loads the shortcuts after the page does, so a view mounted before that
+		   answer arrives - which is what a reload on this view is - read an empty map and
+		   never looked again */
+		"shortcuts.shortcutsMap": function (shortcutsMap) {
+			this.setShortcutList(new Map(shortcutsMap));
+		},
 		forceAppDisplayUpdate(newUpdateCounter, oldUpdateCounter) {
 		    let that = this;
             this.showAppGrid = false;
@@ -1119,13 +1147,138 @@ module.exports = {
 </script>
 
 <style>
+/* the view's own column, on the gutter the title above it keeps: the container is a
+   modal body left over from this view's past and brings a 10px inset of its own */
+.launcher-view .modal-body {
+	padding-left: 32px;
+	padding-right: 32px;
+}
+
+/* the two actions were inline in a heading with no words of its own, where a button with
+   a glyph and one without sat on different baselines */
+.launcher-bar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 16px 0;
+}
+
+.launcher-bar__message {
+	color: var(--pg-muted);
+}
+
+/* a name or a folder longer than its column is cut with a tooltip carrying the whole of
+   it, as the drive's and the shared view's rows do */
+.shortcut-table td.shortcut-table__name,
+.shortcut-table td.shortcut-table__path {
+	max-width: 320px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	cursor: pointer;
+}
+
+.shortcut-table td.shortcut-table__path {
+	color: var(--pg-link);
+}
+
+.shortcut-table td.shortcut-table__path:hover,
+.shortcut-table td.shortcut-table__name:hover {
+	text-decoration: underline;
+}
+
+/* the list runs the width of the view, as the drive's and the shared view's lists do: it
+   steps back out of the column's gutter, and its outermost cells carry that gutter instead */
+.launcher-view .shortcut-list {
+	margin-left: -32px;
+	margin-right: -32px;
+	/* the wrapper is bootstrap's and brings a hard-coded #ddd box at phone widths, which
+	   ignores the theme; the rows carry their own hairlines, as in the other two lists */
+	border: 0;
+}
+
+.shortcut-table th:first-child,
+.shortcut-table td:first-child {
+	padding-left: 32px;
+}
+
+.shortcut-table th:last-child,
+.shortcut-table td:last-child {
+	padding-right: 32px;
+}
+
+/* the three dates are what a phone has no room for, as the drive drops type and
+   created: what is left is the name, where it lives, and how to remove it */
+@media (max-width: 1024px) {
+	.launcher-view .modal-body {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+
+	.launcher-view .shortcut-list {
+		/* the wrapper is bootstrap's, and it takes width:100% at this size: left at that
+		   the negative margins slide it sideways instead of widening it */
+		width: auto;
+		margin-left: -16px;
+		margin-right: -16px;
+	}
+
+	/* the row carries the inset here, so the outer cells give theirs up: kept, the name
+	   sat a cell's padding further in than the folder under it */
+	.shortcut-table td:first-child {
+		padding-left: 0;
+	}
+
+	.shortcut-table td:last-child {
+		padding-right: 0;
+	}
+
+	/* the row lays out over lines, as the shared view's and the search results' do: left
+	   as table rows in a block table they shrank to their contents instead of filling
+	   the width the list was given */
+	.shortcut-table tbody tr {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas:
+			"name   action"
+			"folder action";
+		align-items: center;
+		gap: 2px 10px;
+		padding: 10px 12px;
+	}
+
+	.shortcut-table tbody td {
+		padding: 0;
+		max-width: none;
+	}
+
+	.shortcut-table td.shortcut-table__name { grid-area: name; }
+	.shortcut-table td.shortcut-table__path { grid-area: folder; }
+	.shortcut-table td.shortcut-table__action { grid-area: action; text-align: right; }
+
+	.shortcut-table thead th.shortcut-table__date,
+	.shortcut-table td.shortcut-table__date {
+		display: none;
+	}
+
+	/* the 320px each the two text columns take on a desktop is wider than a phone,
+	   so they take a share of it instead and go on truncating at whatever that is */
+	.shortcut-table td.shortcut-table__name,
+	.shortcut-table td.shortcut-table__path {
+		max-width: 34vw;
+	}
+}
+
+/* the row's action at the end of the row, the way the drive and shared tables place
+   theirs, rather than as another column of text */
+.shortcut-table__action {
+	width: 1%;
+	white-space: nowrap;
+	text-align: right;
+}
+
 .deleted-entry {
     text-decoration: line-through;
-}
-.white-svg {
-    margin-bottom: -6px;
-    height: 24px;
-    width: 24px;
-    filter: invert(100%) sepia(100%) saturate(0%) hue-rotate(347deg) brightness(109%) contrast(101%);
 }
 </style>

@@ -133,12 +133,12 @@ module.exports = {
 	color: var(--color-hover) !important;
 }
 .app-button.accent{
-	color: var(--bg) !important;
-	background-color: var(--green-500) !important;
+	color: var(--pg-on-primary) !important;
+	background-color: var(--pg-primary) !important;
 }
 .app-button.accent:hover {
-	color: var(--bg) !important;
-	background-color: var(--green-200) !important;
+	color: var(--pg-on-primary) !important;
+	background-color: var(--pg-primary-hover) !important;
 }
 .app-button.accent:focus{
 	outline:none;
