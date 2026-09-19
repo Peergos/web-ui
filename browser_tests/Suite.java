@@ -22,6 +22,7 @@ public class Suite {
             run(failures, "browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));
             run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
             run(failures, "the links overview and adding to a link", () -> LinksOverviewCheck.run(args1));
+            run(failures, "auto-open names one item of a link", () -> AutoOpenSelectorCheck.run(args1));
             run(failures, "upload file", () -> UploadTest.run(args1));
             run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));
             run(failures, "upload folder", () -> UploadFolderTest.run(args1));
