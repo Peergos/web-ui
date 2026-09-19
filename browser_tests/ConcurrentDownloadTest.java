@@ -20,7 +20,12 @@ public class ConcurrentDownloadTest {
     // that uploading the fixtures does not dominate the run. With 2500ms of added latency a file
     // this size takes about a minute to come down.
     static final long SIZE = Long.getLong("fixture.size", 60L * 1024 * 1024);
-    static final int LATENCY_MILLIS = Integer.getInteger("latency.ms", 2500);
+    // Enough that the two downloads are unquestionably in flight together, which is what this
+    // test is about. The slowest runners are slow enough without it, and there a full 2.5s on
+    // every storage request has been the difference between a download that lands and one the
+    // browser never writes at all.
+    static final int LATENCY_MILLIS = Integer.getInteger("latency.ms",
+            "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 1000 : 2500);
 
     public static void main(String[] args) throws Exception {
         try {
