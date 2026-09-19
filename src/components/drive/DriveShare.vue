@@ -140,6 +140,28 @@
 						>
 							{{ translate("DRIVE.SHARE.LINK") }}
 						</AppButton>
+						<AppButton
+							v-if="otherLinks.length > 0"
+							aria-label="Add to an existing link"
+							@click.native="showAddToExisting = !showAddToExisting"
+						>
+							{{ translate("DRIVE.SHARE.LINK.ADD.TO.EXISTING") }}
+						</AppButton>
+						<div v-if="showAddToExisting" class="add-to-existing">
+							<p class="add-to-existing__note">{{ translate("DRIVE.SHARE.LINK.ADD.WARNING") }}</p>
+							<div v-for="l in otherLinks" :key="l.getLabel()" class="add-to-existing__row">
+								<span class="add-to-existing__what">
+									{{ l.itemCount() }} {{ l.itemCount() == 1 ? translate("DRIVE.SHARE.LINK.ITEM") : translate("DRIVE.SHARE.LINK.ITEMS") }}
+									&mdash; {{ l.paths().join(", ") }}
+								</span>
+								<button class="btn btn-success" @click="addToLink(l, false)">
+									{{ translate("DRIVE.SHARE.LINK.ADD.READONLY") }}
+								</button>
+								<button class="btn btn-success" @click="addToLink(l, true)">
+									{{ translate("DRIVE.SHARE.LINK.ADD.WRITABLE") }}
+								</button>
+							</div>
+						</div>
 					</div>
                     <Choice
                         v-if="showChoice"
@@ -226,6 +248,8 @@ module.exports = {
                     choice_options: [],
                     existingProps:null,
                     secretLinksList: [],
+                    otherLinks: [],
+                    showAddToExisting: false,
                     linkHost: "",
 		};
 	},
@@ -252,6 +276,7 @@ module.exports = {
 	},
     created: function() {
         this.loadSecretLinks();
+        this.loadOtherLinks();
     },
 	methods: {
         loadSecretLinks() {
@@ -267,6 +292,34 @@ module.exports = {
                 let fileSharingState = sharedWithState.get(props.name);
                 that.secretLinksList = fileSharingState.links.toArray([]);
                 that.showSpinner = false;
+            });
+        },
+        /** Links this file is not already in, so it can be added to one of them. */
+        loadOtherLinks() {
+            let that = this;
+            let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name).toString();
+            this.context.getAllSecretLinks().thenApply(links => {
+                that.otherLinks = links.toArray([]).filter(l => ! l.contains(filePath));
+            }).exceptionally(t => { console.log(t); return null; });
+        },
+        addToLink(summary, writable) {
+            let that = this;
+            let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name).toString();
+            this.showSpinner = true;
+            this.context.addToSecretLink(summary, filePath, writable).thenApply(props => {
+                that.showSpinner = false;
+                that.showAddToExisting = false;
+                that.$toast.success(that.translate("DRIVE.SHARE.LINK.ADDED"));
+                that.loadSecretLinks();
+                that.loadOtherLinks();
+                that.refreshFiles();
+                that.refresh();
+            }).exceptionally(t => {
+                console.log(t);
+                that.showSpinner = false;
+                let msg = "" + (t.message || t);
+                that.$toast.error(msg.substring(msg.lastIndexOf(":") + 1).trim(), {timeout:false});
+                return null;
             });
         },
         closeSecretLinkModal() {
