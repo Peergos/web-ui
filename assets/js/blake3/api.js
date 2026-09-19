@@ -31,5 +31,7 @@ export function chainingValue(bytes, startChunk) {
     return ref.tailCV(bytes, startChunk);
 }
 
-export const mergeNonRoot = fast.mergeNonRoot;
-export const mergeRoot = fast.mergeRoot;
+// No merges here on purpose: the tree above the chunks is built by HashTree in GWT
+// compiled Java (HashTree.buildBlake3 -> Blake3.mergeSubtree), so the browser's JS only
+// ever produces the per-chunk values. blake3-fast.js still has mergeNonRoot/mergeRoot if
+// that ever moves.
