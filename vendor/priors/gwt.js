@@ -1954,6 +1954,41 @@ var sha256FileNextWorker = 0;
     }
 })();
 
+// BLAKE3 web worker pools. Module workers, because the implementation ships as ES
+// modules; there is no WebCrypto BLAKE3, so these always do the work themselves.
+var blake3WorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
+var blake3Workers = [];
+var blake3Callbacks = new Map();
+var blake3NextId = 0;
+var blake3NextWorker = 0;
+
+var blake3FileWorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
+var blake3FileWorkers = [];
+var blake3FileCallbacks = new Map();
+var blake3FileNextId = 0;
+var blake3FileNextWorker = 0;
+
+function blake3Dispatch(worker, callbacks) {
+    worker.onmessage = function(e) {
+        var pending = callbacks.get(e.data.id);
+        if (pending) {
+            callbacks.delete(e.data.id);
+            if (e.data.error)
+                pending.reject(e.data.error);
+            else
+                pending.resolve(e.data.result);
+        }
+    };
+    return worker;
+}
+
+(function() {
+    for (var i = 0; i < blake3WorkerCount; i++)
+        blake3Workers.push(blake3Dispatch(new Worker('/js/blake3-worker.js', {type: 'module'}), blake3Callbacks));
+    for (var j = 0; j < blake3FileWorkerCount; j++)
+        blake3FileWorkers.push(blake3Dispatch(new Worker('/js/blake3-file-worker.js', {type: 'module'}), blake3FileCallbacks));
+})();
+
 var scryptJS = {
     NativeScryptJS: function() {
         this.hashToKeyBytes = hashToKeyBytesProm;
@@ -2056,6 +2091,66 @@ var scryptJS = {
                     var pending = sha256FileCallbacks.get(id);
                     if (pending) {
                         sha256FileCallbacks.delete(id);
+                        pending.reject('' + err);
+                    }
+                });
+            }
+            return future;
+        }
+
+        // BLAKE3. `chainingValue` picks between the file's root hash and one chunk's
+        // chaining value; the Java side decides which, since only it knows whether the
+        // chunk is the whole file (see HashTree.chunkHash).
+        function blake3Post(worker, callbacks, id, msg, transfer) {
+            var future = peergos.shared.util.Futures.incomplete();
+            callbacks.set(id, {
+                resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
+                reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
+            });
+            worker.postMessage(msg, transfer);
+            return future;
+        }
+
+        this.blake3 = function(input) {
+            var id = blake3NextId++;
+            var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
+            return blake3Post(blake3Workers[blake3NextWorker++ % blake3WorkerCount], blake3Callbacks, id,
+                {id: id, data: buf, chainingValue: false}, [buf]);
+        }
+
+        this.blake3ChainingValue = function(input, startChunkHi, startChunkLo) {
+            var id = blake3NextId++;
+            var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
+            return blake3Post(blake3Workers[blake3NextWorker++ % blake3WorkerCount], blake3Callbacks, id,
+                {id: id, data: buf, chainingValue: true, startChunkHi: startChunkHi, startChunkLo: startChunkLo}, [buf]);
+        }
+
+        this.blake3FileSection = function(reader, startHi, startLo, endHi, endLo, asChainingValue, startChunkHi, startChunkLo) {
+            var future = peergos.shared.util.Futures.incomplete();
+            var start = startHi * 4294967296 + (startLo >>> 0);
+            var end = endHi * 4294967296 + (endLo >>> 0);
+            var id = blake3FileNextId++;
+            blake3FileCallbacks.set(id, {
+                resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
+                reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
+            });
+            var worker = blake3FileWorkers[blake3FileNextWorker++ % blake3FileWorkerCount];
+            var common = {id: id, chainingValue: asChainingValue, startChunkHi: startChunkHi, startChunkLo: startChunkLo};
+            var file = reader.file;
+            if (typeof Blob !== 'undefined' && file instanceof Blob) {
+                common.file = file; common.start = start; common.end = end;
+                worker.postMessage(common);
+            } else {
+                // A file handed to us by the desktop app holds no bytes of its own,
+                // so it cannot be cloned into a worker. Read the slice here instead
+                // and hand over the bytes.
+                file.slice(start, end).arrayBuffer().then(function(buf) {
+                    common.buffer = buf;
+                    worker.postMessage(common, [buf]);
+                }).catch(function(err) {
+                    var pending = blake3FileCallbacks.get(id);
+                    if (pending) {
+                        blake3FileCallbacks.delete(id);
                         pending.reject('' + err);
                     }
                 });
