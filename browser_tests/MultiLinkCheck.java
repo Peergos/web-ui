@@ -86,6 +86,25 @@ public class MultiLinkCheck {
                 d.waitForScript("link resolved", "window.__resolved", 120_000);
                 Object res = d.script("return window.__resolved");
                 System.out.println("resolved: " + res);
+
+                // and the recipient lands on the first item in the link, not the first by name
+                d.script("""
+                    window.__entry = null;
+                    const d1 = window.__drive;
+                    peergos.shared.user.UserContext.fromSecretLinkV2(window.__r.url,
+                            {get_0: () => peergos.shared.util.Futures.of('')},
+                            d1.context.network, d1.context.crypto)
+                        .thenCompose(ctx => ctx.getEntryPath())
+                        .thenApply(p => { window.__entry = {path: p, expected: '/' + window.__dirs[0]}; return true; })
+                        .exceptionally(t => { window.__entry = {error: '' + t}; return null; });
+                    """);
+                d.waitForScript("entry path", "window.__entry", 120_000);
+                Object entry = d.script("return window.__entry");
+                System.out.println("landing: " + entry);
+                String path = String.valueOf(((java.util.Map) entry).get("path"));
+                String expected = String.valueOf(((java.util.Map) entry).get("expected"));
+                if (! expected.equals(path))
+                    throw new IllegalStateException("should land on the first member " + expected + ", not " + path);
                 if (res.toString().contains("error"))
                     throw new IllegalStateException("resolving failed: " + res);
                 System.out.println("PASS");
