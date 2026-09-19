@@ -447,6 +447,7 @@ const i18n = require("../i18n/index.js");
 const router = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const errorsMixin = require("../mixins/errors/index.js");
 
 module.exports = {
 	components: {
@@ -575,7 +576,6 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             progressBarUpdateFrequency: 15,
@@ -585,7 +585,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -937,10 +937,11 @@ module.exports = {
 		illegalFilenames.forEach(item => that.disallowedFilenames.set(item, ""));
 		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
-        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
-            that.launcherApp = launcher;
-            that.init();
-        });
+        // Straight to init: listing a folder needs no launcher app, and only adding a
+        // shortcut does - which asks for it then. Starting up behind it raced the same
+        // init at sign in, and on a new account the loser of that race came back with a
+        // CAS conflict that nothing caught, leaving the view behind its spinner for good.
+        this.init();
 	},
 
 	beforeDestroy() {
@@ -1033,6 +1034,10 @@ module.exports = {
                     if (that.download || that.open) {
                         that.context.getByPath(path)
                             .thenApply(function (file) {
+                            if (file == null || ! file.isPresent()) {
+                                that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                                return null;
+                            }
                             if (! file.get().isDirectory()) {
                                 if (that.download) {
                                 that.downloadFile(file.get());
@@ -1050,6 +1055,10 @@ module.exports = {
                                 let app = that.getApp(file.get(), linkPath);
                                 that.openFileOrDir(app, linkPath, {path:path});
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     } else if(path.startsWith("/peergos/recommended-apps")) {
                         let appPath = "/peergos/recommended-apps/";
@@ -1065,6 +1074,10 @@ module.exports = {
                                 };
                                 that.onUpdateCompletion.push(openRecApps);
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     }
 				} else {
@@ -2367,14 +2380,44 @@ module.exports = {
                     return future;
                 }
                 let transfer = uploadParams.transfer;
+                // Anything that stops an upload before it starts ends up here: the folder
+                // moved or deleted by another session since these files were chosen, or the
+                // lookup failing outright. Left alone the progress bar ticks on over an
+                // upload that will never happen, and the future never settles.
+                let uploadUnavailable = function(message) {
+                    transfers.finish(transfer);
+                    clearInterval(uploadParams.progressInterval);
+                    that.$toast.dismiss(uploadParams.progress.name);
+                    that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
+                    that.errorBody = message;
+                    that.showError = true;
+                    uploadFuture.complete(false);
+                };
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
-                    uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+                    // resolved and empty is not the same as failed, and it is what a folder
+                    // that has gone looks like from here
+                    let dir = uploadDir != null && uploadDir.isPresent() ? uploadDir.ref : null;
+                    if (dir == null) {
+                        uploadUnavailable(that.translate("DRIVE.MISSING.FOLDER"));
+                        return null;
+                    }
+                    dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
                         f => resumeFileUpload(f),
                         f => replaceFileUpload(f),
                         commitWatcher,
                         transfer != null ? transfer.isCancelled : transfers.never).thenApply(res => {
                             transfers.finish(transfer);
+                            // The watcher below says "complete" once every file's bytes are
+                            // through, which a file that was skipped because it is already
+                            // there never reaches - and the same message is what takes the
+                            // progress bar down. Said here too, the bar cannot outlive the
+                            // upload it reports on.
+                            if (! commitContext.completed) {
+                                commitContext.completed = true;
+                                that.addUploadProgressMessage(uploadParams,
+                                    that.translate("DRIVE.UPLOAD.COMPLETE"), '', '', '', true);
+                            }
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         transfers.finish(transfer);
@@ -2390,7 +2433,14 @@ module.exports = {
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.$toast.clear();
+                        uploadFuture.complete(false);
                     });
+                    return null;
+                // this also catches whatever the callback above throws, which is not always
+                // a java throwable
+                }).exceptionally(function (throwable) {
+                    uploadUnavailable(that.cleanError(that.errText(throwable)));
+                    return null;
                 });
             }
             return uploadFuture;
@@ -3045,18 +3095,28 @@ module.exports = {
 		refreshAndAddShortcutLink(link, created) {
 		    let that = this;
             this.showSpinner = true;
-            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
-                if (shortcutsMap.get(link) == null) {
-                    let entry = {added: new Date(), created: created};
-                    shortcutsMap.set(link, entry)
-                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+            // Each step is a future of its own, and a failure inside one is not one the
+            // chain around it sees: without a handler on each, a shortcut that could not
+            // be read or written left the view under a spinner with nothing said.
+            let failed = function (throwable) {
+                that.showSpinner = false;
+                that.$toast.error(that.cleanError(that.errText(throwable)));
+                return null;
+            };
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcherApp => {
+                that.loadShortcutsFile(launcherApp).thenApply(shortcutsMap => {
+                    if (shortcutsMap.get(link) == null) {
+                        let entry = {added: new Date(), created: created};
+                        shortcutsMap.set(link, entry)
+                        that.updateShortcutsFile(launcherApp, shortcutsMap).thenApply(res => {
+                            that.showSpinner = false;
+                            that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                        }).exceptionally(failed);
+                    } else {
                         that.showSpinner = false;
-                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
+                    }
+                }).exceptionally(failed);
+            }).exceptionally(failed);
 		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)
