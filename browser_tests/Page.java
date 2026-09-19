@@ -35,8 +35,10 @@ public class Page {
                 break;
         }
         try {
+            // the storage line that only a signed in shell has - matched without its case,
+            // which is the sidebar's to choose
             d.waitForScript("sign in to complete",
-                    "document.body.innerText.indexOf('UPGRADE') >= 0", timeout);
+                    "/upgrade/i.test(document.body.innerText)", timeout);
         } catch (RuntimeException e) {
             // A sign in that never completes looks the same whether the form was never filled,
             // the click was dropped, the page went somewhere else, or key generation really is
@@ -263,22 +265,38 @@ public class Page {
             throw new IllegalStateException("No '" + navLabel + "' item in the nav");
     }
 
-    /** Finds a mounted component exposing the named method, by walking the dom rather than the
-     *  component tree, so nesting depth does not matter.
+    /** Finds a component exposing the named method, by walking the component tree and taking
+     *  only one whose element is in the document.
      *
-     *  Deliberately the dom and not the component tree: the router builds a view's component
-     *  before it is shown, so a tree walk finds a Drive that has never been opened, returns
-     *  without clicking the nav, and leaves every later wait asking a view that was never asked
-     *  to load anything.
+     *  Both halves matter. The element has to be on the page because the router builds a view's
+     *  component before it is shown, and a plain tree walk finds a Drive that has never been
+     *  opened, returns without clicking the nav, and leaves every later wait asking a view that
+     *  was never asked to load anything. The walk has to be the tree and not el.__vue__: a view's
+     *  root element carries that only until the <transition> wrapping the views claims it, and
+     *  it is handed back when the transition re-renders - so a view that has been on screen
+     *  since the swap, and has not re-rendered since, is invisible to the dom.
+     *
+     *  Breadth first, so the shallowest match wins: downloadFile comes from a mixin that
+     *  seven components carry, and a depth first walk hands back whichever child of the
+     *  view happens to sit deepest - a DriveTable with no currentDir, no files and none
+     *  of the methods a test then calls on it.
      */
     private static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
         long end = System.currentTimeMillis() + millis;
         boolean first = true;
         String find = "(() => {" +
                 "  const wanted = '" + methodName + "';" +
-                "  for (const el of document.querySelectorAll('*')) {" +
-                "    const c = el.__vue__;" +
-                "    if (c && typeof c[wanted] === 'function') { window." + handle + " = c; return true; }" +
+                "  let root = null;" +
+                "  for (const el of document.querySelectorAll('*'))" +
+                "    if (el.__vue__) { root = el.__vue__.$root; break; }" +
+                "  if (! root) return false;" +
+                "  const queue = [root];" +
+                "  while (queue.length > 0) {" +
+                "    const c = queue.shift();" +
+                "    if (! c) continue;" +
+                "    if (typeof c[wanted] === 'function' && c.$el && c.$el.nodeType === 1" +
+                "        && document.contains(c.$el)) { window." + handle + " = c; return true; }" +
+                "    if (c.$children) for (const kid of c.$children) queue.push(kid);" +
                 "  }" +
                 "  return false;" +
                 "})()";

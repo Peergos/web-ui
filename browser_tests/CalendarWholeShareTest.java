@@ -76,8 +76,15 @@ public class CalendarWholeShareTest {
             // Saying no is the other way out of the question, and it leaves the reader in the
             // calendar: their own has to be there and usable afterwards.
             answer(d, data + "/" + mainDir, "No");
-            CalendarApp.waitInFrame(d, "bob's own calendar after saying no",
-                    "document.getElementById('event-calendar').options.length > 0", 120_000);
+            try {
+                CalendarApp.waitInFrame(d, "bob's own calendar after saying no",
+                        "document.getElementById('event-calendar').options.length > 0", 120_000);
+            } catch (RuntimeException e) {
+                // A bare timeout here says nothing about which half stopped, so say what each had
+                System.out.println("  app:  " + CalendarApp.appState(d));
+                System.out.println("  host: " + CalendarApp.hostState(d));
+                throw e;
+            }
 
             // The calendar an account starts with carries no name of its own, so what
             // arrives is named after whose it is.
@@ -207,6 +214,9 @@ public class CalendarWholeShareTest {
         d.script("Array.from(document.querySelectorAll('button'))"
                 + ".find(b => b.textContent.trim() === arguments[0]).click(); return 1;", reply);
         d.waitForScript("the calendar view", CalendarReadOnlyTest.CALENDAR_VIEW, 120_000);
+        // Mounted is not loaded: the view is there long before the host has the calendars it
+        // then sends to the app, and everything below reads what the app was sent.
+        CalendarApp.awaitHost(d);
     }
 
     /** What the sidebar menu on one calendar offers to do with it. */

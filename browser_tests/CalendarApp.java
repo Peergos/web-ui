@@ -12,10 +12,43 @@ public class CalendarApp {
 
     public static final String FRAME = "#calendar-iframe";
 
+    /** The host, not the frame: it is what answers the app's saves and what sends it the
+     *  calendars, and it is still fetching the calendar's properties while the frame is
+     *  already drawing an empty grid. Anything entering the view waits here first - a save
+     *  sent into that window is one nothing replies to, and the dialog never closes. */
+    static void awaitHost(WebDriver d) {
+        d.waitForScript("the host to finish opening the calendar",
+                "!!window.__cal && !window.__cal.showSpinner", 120_000);
+    }
+
+    /** What the app inside the frame has to say for itself, for a failure that would
+     *  otherwise be a bare timeout. */
+    static String appState(WebDriver d) {
+        d.switchToFrame(FRAME);
+        try {
+            return String.valueOf(d.scriptQuiet(
+                    "const sel = document.getElementById('event-calendar');"
+                            + "return 'select=' + !!sel + ' options=' + (sel ? sel.options.length : -1)"
+                            + " + ' gridcells=' + document.querySelectorAll('[role=\"gridcell\"]').length"));
+        } finally {
+            d.switchToTop();
+        }
+    }
+
+    /** And the host, likewise. */
+    static String hostState(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return !window.__cal ? 'no handle on the view'"
+                + " : 'spinner=' + window.__cal.showSpinner"
+                + " + ' calendars=' + (((window.__cal.calendarProperties || {}).calendars || []).length)"));
+    }
+
     /** Opens the calendar view and waits for the app inside the frame to finish its first load. */
     public static void open(WebDriver d) {
         Page.gotoView(d, "Calendar", "downloadIcsFile", "__cal");
+        awaitHost(d);
         d.waitForScript("the calendar frame", "document.querySelector('" + FRAME + "')", 60_000);
+        // The bar starts hidden and is only raised once a read is outstanding, so on its own it
+        // says "nothing is loading" rather than "the load is done" - hence the host above.
         d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
                 "return !!document.getElementById('load-progress')"
                         + " && document.getElementById('load-progress').hidden"
