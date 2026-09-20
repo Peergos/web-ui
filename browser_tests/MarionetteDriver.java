@@ -287,6 +287,19 @@ public class MarionetteDriver implements WebDriver {
     }
 
     @Override
+    public void setWindowRect(int width, int height) {
+        // Best effort, as on the http drivers: headless firefox will not go below about 500px
+        // wide, and a test that needs narrower than that reads back what it actually got.
+        try {
+            command("WebDriver:SetWindowRect",
+                    Map.of("x", 0, "y", 0, "width", width, "height", height));
+        } catch (RuntimeException wontResize) {
+            System.out.println("  the window would not take " + width + "x" + height
+                    + ": " + wontResize.getMessage());
+        }
+    }
+
+    @Override
     public void navigate(String url) {
         // Loading a page is idempotent, and a server too busy to answer is usually busy for a
         // moment rather than for the rest of the run - so try a few times rather than once.

@@ -27,6 +27,9 @@ public class Suite {
             run(failures, "follow markdown links", () -> MarkdownLinksTest.run(args1));
             run(failures, "html viewer links and images", () -> HtmlViewerTest.run(args1));
             run(failures, "cancel an upload", () -> CancelUploadTest.run(args1));
+            // The one thing a phone does differently: its panel must not decide how the next
+            // desktop session opens. Cheap, and no engine here is too wide to be a phone.
+            run(failures, "the drive on a phone", () -> MobileNavTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
