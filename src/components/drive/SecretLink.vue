@@ -40,15 +40,7 @@
                                         {{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}
                                     </p>
                                 </div>
-                                <div v-if="members.length > 1">
-                                    <label style="font-weight: normal;">{{ translate("DRIVE.LINK.OPENS.WITH") }}</label>
-                                    <select v-model="openSelector" @change="onChange()"
-                                            style="border: 2px solid var(--green-500); color: var(--color); background-color: var(--bg);">
-                                        <option value="">{{ translate("DRIVE.LINK.OPENS.NOTHING") }}</option>
-                                        <option v-for="m in members" :key="m.path" :value="m.selector">{{ m.path }}</option>
-                                    </select>
-                                </div>
-                                <div v-if="link.isFile && members.length < 2">
+                                <div v-if="link.isFile || members.length > 1">
                                     <label class="checkbox__group">
                                         {{ translate("DRIVE.LINK.OPEN") }}
                                         <input
@@ -177,7 +169,6 @@ module.exports = {
                 href:null,
                 base64QrCode: "",
                 members: [],
-                openSelector: "",
                 showPicker: false,
                 maxMembers: 100,
             };
@@ -206,7 +197,6 @@ module.exports = {
             this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen || (this.currentProps != null && this.currentProps.autoOpen());
             this.members = this.initialMembers();
-            this.openSelector = this.currentProps == null ? "" : this.currentProps.getOpenSelector();
             if (this.currentProps != null) {
                 Vue.nextTick(function() {
                     that.isLinkWritable = that.currentProps.isLinkWritable;
@@ -243,14 +233,12 @@ module.exports = {
                 if (this.currentProps != null && this.currentProps.memberCount() > 0) {
                     // a gwt List is not indexable from js; toArray is how the rest of the app reads one
                     return this.currentProps.getMembers().toArray().map(m => ({
-                        path: m.getPath(), writable: m.isWritable(), selector: m.getSelector(),
-                        canBeWritable: true, writableReason: ""
+                        path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
                     }));
                 }
                 return [{
                     path: this.getLinkPath(),
                     writable: this.currentProps != null && this.currentProps.isLinkWritable,
-                    selector: null,
                     canBeWritable: true,
                     writableReason: "",
                 }];
@@ -267,7 +255,7 @@ module.exports = {
                     this.$toast.error(this.translate("DRIVE.LINK.MEMBER.TOO.MANY"));
                     return;
                 }
-                this.members.push({path: path, writable: openForEditing === true, selector: null,
+                this.members.push({path: path, writable: openForEditing === true,
                                    canBeWritable: true, writableReason: ""});
                 this.onChange();
             },
@@ -287,12 +275,7 @@ module.exports = {
             },
             buildHref: function (link, autoOpenOverride) {
                 let args = "";
-                if (this.members.length > 1) {
-                    // a link with several items opens one of them by name, or none at all, and
-                    // either way the others stay reachable
-                    if (this.openSelector != "")
-                        args = "?open=" + encodeURIComponent(this.openSelector);
-                } else if (autoOpenOverride || this.autoOpen) {
+                if (autoOpenOverride || this.autoOpen) {
                     args = "?open=true";
                     if (link.shareFolderWithFile) {
                         args += "&path=" + link.path;
@@ -325,8 +308,7 @@ module.exports = {
                         that.showSpinner = false;
                     });
                 } else {
-                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen)
-                        .withAutoOpenMember(this.openSelector);
+                    let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen);
                     this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.members = that.initialMembers();

@@ -1101,49 +1101,11 @@ module.exports = {
                 that.setup();
             });
         },
-		/**
-		 * Open the member an auto-open selector named. A file opens in its app with its parent
-		 * listed; a directory is simply where we land. A selector that names nothing resolvable
-		 * falls back to the link's first item rather than opening something else.
-		 */
-		openLinkMember(memberPath, fallbackPath) {
-			const that = this;
-			this.context.getByPath(memberPath).thenApply(function (f) {
-				if (f.ref == null) {
-					that.$store.commit('SET_PATH', fallbackPath.split('/').filter(n => n.length > 0));
-					return null;
-				}
-				if (f.ref.isDirectory()) {
-					that.$store.commit('SET_PATH', memberPath.split('/').filter(n => n.length > 0));
-					return null;
-				}
-				const lastSlash = memberPath.lastIndexOf('/');
-				const parent = memberPath.substring(0, lastSlash);
-				const filename = memberPath.substring(lastSlash + 1);
-				that.$store.commit('SET_PATH', parent.split('/').filter(n => n.length > 0));
-				that.onUpdateCompletion.push(() => {
-					that.selectedFiles = that.files.filter(x => x.getName() == filename);
-					const app = that.getApp(f.ref, parent, false);
-					that.openInApp({filename: filename}, app);
-					that.openFileOrDir(app, that.getPath, {filename: filename}, false);
-				});
-				return null;
-			});
-		},
 		setup() {
 			const that = this;
 			if (this.context != null && this.context.username == null) {
 			    // open drive from a secret link
 			    this.context.getEntryPath().thenApply(function (linkPath) {
-				// a multi item link can name which of its items to open, by a selector in
-				// the fragment rather than a path, so that renaming or reordering a member
-				// does not make an already shared url open a different one
-				var selector = (typeof that.open === 'string' && that.open !== 'true') ? that.open : null;
-				var named = selector == null ? "" : that.context.pathForLinkSelector(selector);
-				if (named != "") {
-				    that.openLinkMember(named, linkPath);
-				    return null;
-				}
 				var path = that.initPath == null ? null : decodeURIComponent(that.initPath);
 				if (path != null && (path.startsWith(linkPath) || linkPath.startsWith(path))) {
                     that.$store.commit('SET_PATH', path.split('/').filter(n => n.length > 0))

@@ -433,8 +433,6 @@ module.exports = {
     "DRIVE.SHARE.LINK.ADDED":"Added to the link",
     "DRIVE.SHARE.LINK.ITEM":"item",
     "DRIVE.SHARE.LINK.ITEMS":"items",
-    "DRIVE.LINK.OPENS.WITH":"Opens with",
-    "DRIVE.LINK.OPENS.NOTHING":"Nothing - show the first item",
     "DRIVE.LINK.MEMBERS":"In this link",
     "DRIVE.LINK.MEMBER.ADD":"Add files or folders",
     "DRIVE.LINK.MEMBER.REMOVE.HINT":"Remove from this link",
