@@ -114,6 +114,9 @@ module.exports = {
             // Bumped for every load, so buckets read for a load the app has
             // already replaced are dropped rather than posted into it.
             loadToken: 0,
+            // What the frame was last sent, so a frame that comes up after it can be given
+            // the same thing rather than nothing at all.
+            lastLoad: null,
             // Both undone in beforeDestroy: the window outlives this view.
             messageListener: null,
             shareRetry: null,
@@ -372,6 +375,16 @@ module.exports = {
         // "constructor" finds nothing to call.
         let handlers = Object.assign(Object.create(null), {
             pong: function() { that.isIframeInitialised = true; },
+            // A frame announcing itself after we have already sent a load is a new document
+            // in that frame: what we sent went to the one before it and is not coming back.
+            // Send the whole load again, to whoever is in there now.
+            hello: function() {
+                let repeat = that.isIframeInitialised && that.lastLoad != null;
+                that.isIframeInitialised = true;
+                if (repeat) {
+                    that.load(calendar, that.lastLoad.year, that.lastLoad.month);
+                }
+            },
             save: function(data) { that.saveEvent(calendar, data); },
             saveLinked: function(data) { that.saveLinkedEntry(data); },
             // In the same lane as everything else addressed to one entry: a second save
@@ -970,6 +983,7 @@ module.exports = {
     loadCalendars: function(calendar, year, month, importCalendarEventParams) {
         let that = this;
         let token = ++this.loadToken;
+        this.lastLoad = {year: year, month: month};
         let months = this.monthsAroundMonth(year, month);
         Vue.nextTick(function() {
             // Posted before the reads start, so no bucket can arrive at the

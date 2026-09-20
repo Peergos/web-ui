@@ -5551,6 +5551,16 @@ let hostHandlers = Object.assign(Object.create(null), {
     respondDeleteCalendar: function (data) { respondToCalendarDelete(data.calendar); }
 });
 
+// Said as soon as there is something here to listen, and in every document this frame
+// loads, not only the first. The host sends the calendars once, on the strength of a
+// handshake that a document before this one may have answered, and postMessage keeps
+// nothing for a listener that registers later - so a frame that arrives after that went
+// out is never told anything, and shows an empty grid for ever. This is how it asks.
+(function () {
+    let parentDomain = window.location.host.substring(window.location.host.indexOf('.') + 1);
+    window.parent.postMessage({ type: 'hello' }, window.location.protocol + '//' + parentDomain);
+})();
+
 window.addEventListener('message', function (e) {
     // The parent page is this iframe's host minus the leading `calendar.`
     // label; anything else is not the host and is ignored outright.
