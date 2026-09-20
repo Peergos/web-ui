@@ -131,15 +131,15 @@
                         </button>
                     </slot>
                 </div>
+                <FilePicker
+                    v-if="showPicker"
+                    :baseFolder="'/' + username"
+                    :pickerAllowWriteMode="true"
+                    :pickerSelectFolders="true"
+                    :selectedFile_func="addMember"
+                />
             </div>
         </div>
-        <FilePicker
-            v-if="showPicker"
-            :baseFolder="'/' + username"
-            :pickerAllowWriteMode="true"
-            :pickerSelectFolders="true"
-            :selectedFile_func="addMember"
-        />
     </transition>
 </template>
 
@@ -197,6 +197,7 @@ module.exports = {
             this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen || (this.currentProps != null && this.currentProps.autoOpen());
             this.members = this.initialMembers();
+            this.refreshMembersFromLink();
             if (this.currentProps != null) {
                 Vue.nextTick(function() {
                     that.isLinkWritable = that.currentProps.isLinkWritable;
@@ -242,6 +243,22 @@ module.exports = {
                     canBeWritable: true,
                     writableReason: "",
                 }];
+            },
+            /**
+             * The recorded paths are only what they were when the link was last written; the
+             * payload is what it actually holds. Read them from there so a renamed or moved item
+             * shows where it is now - and so saving does not fail resolving a path that moved.
+             */
+            refreshMembersFromLink: function() {
+                if (this.currentProps == null)
+                    return;
+                let that = this;
+                this.context.getSecretLinkMembers(this.currentProps).thenApply(members => {
+                    that.members = members.toArray().map(m => ({
+                        path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
+                    }));
+                    return true;
+                }).exceptionally(t => { console.log(t); return null; });
             },
             addMember: function(path, openForEditing) {
                 this.showPicker = false;
@@ -300,6 +317,7 @@ module.exports = {
                         maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
                           that.members = that.initialMembers();
+                          that.refreshMembersFromLink();
                           that.updateHref();
                           that.showSpinner = false;
                     }).exceptionally(t => {
@@ -312,6 +330,7 @@ module.exports = {
                     this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.members = that.initialMembers();
+                        that.refreshMembersFromLink();
                         that.updateHref();
                         that.showSpinner = false;
                     }).exceptionally(t => {
@@ -407,11 +426,13 @@ module.exports = {
 .link-member {
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: flex-start;
+    gap: 10px;
     padding: 2px 0;
 }
 .link-member__path {
-    flex: 1 1 auto;
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
