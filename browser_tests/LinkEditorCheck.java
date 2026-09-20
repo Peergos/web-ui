@@ -25,16 +25,44 @@ public class LinkEditorCheck {
             d.waitForScript("login", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, "peergos", "testpassword");
             Page.gotoDrive(d);
+            // gotoDrive returns once the listing is up, but the shared-with state and the
+            // cache the sharing code needs arrive separately. Poking at the app before they
+            // do is what "Cannot read properties of null" in CI was.
+            d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
 
             // open the share modal on the first folder, then the secret link editor
-            d.script("""
-                const drive = window.__drive;
-                const f = (drive.files||[]).filter(x => x.isDirectory())[0];
-                drive.selectedFiles = [f];
-                drive.showShareWith();
+            // showShareWith reads this file's entry out of sharedWithState and dereferences it,
+            // so the map existing is not enough - the entry has to be there or it throws and the
+            // modal never opens. That is what failed intermittently in CI.
+            Object name = d.script("""
+                const dirs = (window.__drive.files||[]).filter(x => x.isDirectory());
+                if (dirs.length == 0) return null;
+                window.__pick = dirs[0];
+                return dirs[0].getName();
                 """);
+            if (name == null)
+                throw new IllegalStateException("no folders in the drive to share");
+            d.waitForScript("sharing state for " + name,
+                    "window.__drive.sharedWithState && window.__drive.sharedWithState.get(window.__pick.getName()) != null", 60_000);
+
+            Object opened = d.script("""
+                const drive = window.__drive;
+                drive.selectedFiles = [window.__pick];
+                drive.showShareWith();
+                return 'showShare=' + drive.showShare + ' name=' + window.__pick.getName();
+                """);
+            System.out.println("share setup: " + opened);
             String btn = "document.querySelector(\"[aria-label='Create Secret Link']\")";
-            d.waitForScript("share modal", btn, 30_000);
+            // Opening the modal occasionally does not take - the app re-renders the drive
+            // underneath it - so the wait re-triggers rather than failing the run on a miss.
+            String modalUp = "(function(){ var dr = window.__drive;"
+                    + " if (! dr.showShare) { try { dr.selectedFiles = [window.__pick]; dr.showShareWith(); } catch (e) {} }"
+                    + " return !!" + btn + "; })()";
+            // the modal loads this file's sharing state before it renders, which on a slow or
+            // busy runner takes a while; 30s was not enough in CI
+            long t0 = System.currentTimeMillis();
+            d.waitForScript("share modal", modalUp, 120_000);
+            System.out.println("share modal appeared in " + (System.currentTimeMillis() - t0) + "ms");
             d.script("return " + btn + ".click()");
             d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000);
 

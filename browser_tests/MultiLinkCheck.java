@@ -32,6 +32,10 @@ public class MultiLinkCheck {
                 d.waitForScript("login", "document.querySelector('input[name=username]')", 60_000);
                 Page.login(d, "peergos", "testpassword");
                 Page.gotoDrive(d);
+            // gotoDrive returns once the listing is up, but the shared-with state and the
+            // cache the sharing code needs arrive separately. Poking at the app before they
+            // do is what "Cannot read properties of null" in CI was.
+            d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
                 System.out.println("signed in");
 
                 d.script("""
