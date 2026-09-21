@@ -22,6 +22,9 @@ module.exports = {
 	padding: 16px 32px 24px;
 	margin-top: 0;
 	align-content: start;
+	/* each tile keeps its own height, so one with an opened name grows alone rather than
+	   stretching everything beside it */
+	align-items: start;
 }
 
 /* when the drop target stands in for the folder's contents there is no grid to draw */

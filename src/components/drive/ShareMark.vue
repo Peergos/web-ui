@@ -1,7 +1,6 @@
 <template>
 	<span v-if="kind" class="share-mark" :title="translate('DRIVE.SHARED')">
-		<AppIcon v-if="kind.indexOf('people') >= 0" icon="social"/>
-		<AppIcon v-if="kind.indexOf('link') >= 0" icon="shared"/>
+		<AppIcon icon="shared"/>
 	</span>
 </template>
 
@@ -15,7 +14,7 @@ module.exports = {
 	},
 	mixins: [i18n],
 	props: {
-		// "", "people", "link" or "people link"
+		// "", "people", "link" or "people link" - only whether it is empty is read here
 		kind: {
 			type: String,
 			default: ""
@@ -29,12 +28,14 @@ module.exports = {
 	display: flex;
 	flex: none;
 	align-items: center;
-	gap: 4px;
 	color: var(--pg-on-ok);
 }
 
+/* This glyph is drawn edge to edge in its own viewBox, where the rest of the set sits inset
+   in theirs, so 18px here would stand taller than the menu beside it. 16px draws it to the
+   same height as the other icons on the row. */
 .share-mark svg {
-	width: 18px;
-	height: 18px;
+	width: 16px;
+	height: 16px;
 }
 </style>
