@@ -30,6 +30,9 @@ public class Suite {
             // The one thing a phone does differently: its panel must not decide how the next
             // desktop session opens. Cheap, and no engine here is too wide to be a phone.
             run(failures, "the drive on a phone", () -> MobileNavTest.run(args1));
+            // Picking files out of the grid, which a pointer and a touch screen reach in
+            // different ways and which the file menu must not be mistaken for.
+            run(failures, "picking files in the grid", () -> GridSelectionTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
