@@ -1446,7 +1446,7 @@ module.exports = {
                         that.currentDir = updated;
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
-                        that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                        that.$toast.error(throwable.getMessage());
                         if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
                             if (path.endsWith("/"))
                                 path = path.substring(0, path.length-1)
