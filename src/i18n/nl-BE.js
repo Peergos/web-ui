@@ -66,6 +66,7 @@ module.exports = {
     "DRIVE.NEW.APP":"Nieuwe App",
     "DRIVE.PASTE":"Plak",
     "DRIVE.WITH":"Met",
+    "DRIVE.SELECT":"Selecteren",
     "DRIVE.SELECTED":"aangeduid",
     "DRIVE.NAME":"Naam",
     "DRIVE.SIZE":"Grootte",

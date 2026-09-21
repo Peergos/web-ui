@@ -48,6 +48,7 @@
 				<td class="date created">{{ formatDateTime(file.getFileProperties().created) }}</td>
 				<td class="menu">
 					<AppButton
+						v-if="! menuStandsDown(file)"
 						class="table__menu"
 						icon="dot-menu"
 						aria-label="menu"
@@ -82,6 +83,12 @@ module.exports = {
         selectedFiles: {
             type: Array,
             default: ()=>[]
+        },
+        // asked, per file, whether this row's menu should stand down rather than be a click
+        // that throws away the pick the user has going
+        menuStandsDown: {
+            type: Function,
+            default: () => false
         },
         // the view owns the sort and knows what is shared; the table only shows it
         sortBy: {

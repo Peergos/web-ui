@@ -127,6 +127,22 @@ const ModalFeedback = require("./modal/ModalFeedback.vue");
 const ModalMigrate = require("./modal/ModalMigrate.vue");
 const LinkPassword = require("./LinkPassword.vue");
 
+/* Safari only grew addEventListener on a media query in version 14, and the app still runs
+   where it has not, so both spellings live here rather than at each call site. */
+function onQueryChange(query, handler) {
+    if (query.addEventListener)
+        query.addEventListener("change", handler);
+    else
+        query.addListener(handler);
+}
+
+function offQueryChange(query, handler) {
+    if (query.removeEventListener)
+        query.removeEventListener("change", handler);
+    else
+        query.removeListener(handler);
+}
+
 const AppTab = require("./tabs/AppTab.vue");
 const AppTabs = require("./tabs/AppTabs.vue");
 
@@ -280,6 +296,8 @@ module.exports = {
     beforeDestroy() {
 	window.removeEventListener("hashchange", this.onUrlChange);
 	window.removeEventListener("resize", this.onWindowResize);
+	if (this.coarsePointerQuery)
+	    offQueryChange(this.coarsePointerQuery, this.onCoarsePointerChange);
     },
 
     mounted() {
@@ -290,10 +308,18 @@ module.exports = {
            localTheme = "dark-mode";
 	document.documentElement.setAttribute("data-theme", localTheme);
 	this.$store.commit("SET_THEME", localTheme == "dark-mode");
+        // a tablet that gets a mouse, or loses one, changes the answer mid-session
+        this.coarsePointerQuery = window.matchMedia && window.matchMedia("(hover: none)");
+        if (this.coarsePointerQuery)
+            onQueryChange(this.coarsePointerQuery, this.onCoarsePointerChange);
         this.loadDesktopServerSettings();
     },
 
 	methods: {
+        onCoarsePointerChange(e) {
+            this.$store.commit("SET_COARSE_POINTER", e.matches);
+        },
+
         /* the sidebar is a panel below this width and a rail above it, and the views that
            ask are not all mounted at once, so the shell keeps the answer */
         onWindowResize() {

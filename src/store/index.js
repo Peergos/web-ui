@@ -12,6 +12,8 @@ let mirrorBatIdLookup = null;
 module.exports = new Vuex.Store({
 	state: {
 		windowWidth: window.innerWidth,
+		// whether the primary input can hover, which is not the same question as the width
+		coarsePointer: window.matchMedia != null && window.matchMedia("(hover: none)").matches,
 		currentView: null,
 		isDark: false,
 		isSidebarOpen: false,
@@ -75,6 +77,12 @@ module.exports = new Vuex.Store({
 		isMobile:(state) => {
 			return state.windowWidth < 1024;
 		},
+		// A phone, or anything else with no pointer to reveal a hover-only affordance. Width
+		// alone strands a tablet: wider than the breakpoint, so it is handed the pointer's
+		// affordances, with no pointer to use them. Matches the stylesheet's touch rules.
+		isTouchLayout:(state) => {
+			return state.windowWidth < 1024 || state.coarsePointer;
+		},
 		quota: (state) => {
 			if (state.quotaBytes == 0)
 				return "N/A";
@@ -109,6 +117,9 @@ module.exports = new Vuex.Store({
 		// UI
 		SET_WINDOW_WIDTH(state, payload) {
 			state.windowWidth = payload;
+		},
+		SET_COARSE_POINTER(state, payload) {
+			state.coarsePointer = payload;
 		},
 		SET_VIEW(state, payload) {
 			state.view = payload;

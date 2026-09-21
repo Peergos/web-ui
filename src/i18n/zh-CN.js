@@ -51,6 +51,7 @@ module.exports = {
     "DRIVE.NEW.APP":"新应用",
     "DRIVE.PASTE":"粘贴",
     "DRIVE.WITH":"与",
+    "DRIVE.SELECT":"选择",
     "DRIVE.SELECTED":"已选择",
     "DRIVE.NAME":"名称",
     "DRIVE.SIZE":"大小",

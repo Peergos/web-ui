@@ -1,5 +1,5 @@
 <template>
-  <article class="drive-view" :class="{ 'drive-view--selecting': selectedFiles.length > 1 }">
+  <article class="drive-view" :class="{ 'drive-view--selecting': selectionBarShown }">
     <input
       type="file"
       id="uploadFileInput"
@@ -79,7 +79,7 @@
     />
 
     <transition name="fade" mode="out-in" appear>
-    <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
+    <DriveSelected v-if="selectionBarShown" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
@@ -117,13 +117,15 @@
               :filename="file.getFileProperties().name"
               :src="getThumbnailURL(file)"
               :type="file.getFileProperties().getType()"
-              @click.native="navigateDrive(file)"
+              @click.native="openOrSelect(file, $event)"
               @openMenu="openMenu(file)"
               :dragstartFunc="dragStart"
               :dropFunc="drop"
               :file="file"
               :itemIndex="index"
-              :selected="isSelected(file)"
+              :selected="isMarked(file)"
+              :selecting="picking"
+              :menuStandsDown="menuStandsDown"
               @toggleSelection="toggleSelection(file, $event)"
             />
           </DriveGrid>
@@ -131,7 +133,9 @@
           <DriveTable
             v-else
             :files="sortedFiles"
-            :selectedFiles.sync="selectedFiles"
+            :selectedFiles="pickedFiles"
+            :menuStandsDown="menuStandsDown"
+            @update:selectedFiles="pickFromList"
             :sortBy="sortBy"
             :normalSortOrder="normalSortOrder"
             :shareKinds="shareKinds"
@@ -203,6 +207,9 @@
         </li>
         <li id="rename-file" v-if="isWritable || canEditArchive" @keyup.enter="rename" @click="rename">
           {{ translate("DRIVE.RENAME") }}
+        </li>
+        <li id="select-file" @keyup.enter="selectFromMenu" @click="selectFromMenu">
+          {{ translate("DRIVE.SELECT") }}
         </li>
         <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
         <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
@@ -497,6 +504,10 @@ module.exports = {
 	data() {
 		return {
 			isGrid: true,
+			// Whether the user is picking files, which is not the same as selectedFiles being
+			// non-empty: openMenu borrows that list to say which file its actions apply to.
+			// Only a deliberate pick puts the drive in selection mode.
+			picking: false,
 			// path: [],
             searchPath: null,
 			currentDir: null,
@@ -504,6 +515,11 @@ module.exports = {
 			sortBy: "name",
 			normalSortOrder: true,
 			clipboard: {},
+			// Declared so it is reactive, as the single-file clipboard beside it already is.
+			// Cutting a selection has to reach what reads it - the paste entry in a folder's
+			// menu, and whether that menu is offered at all - and an undeclared property on
+			// the instance is invisible to Vue, so those answers never refreshed.
+			clipboardMultiSelect: null,
 			selectedFiles: [],
 			viewerFile: null,
 			url: null,
@@ -628,6 +644,21 @@ module.exports = {
 			'isSecretLink',
 			'getPath'
 		]),
+
+        // What the list view is shown as picked - the same answer isMarked gives the grid,
+        // as a list. Handing it the menu's borrowed file would tick that row's box and, worse,
+        // fold the file into the next pick the list emits: the list builds its selection as a
+        // whole array rather than a file at a time, so there is no toggleSelection to catch it.
+        pickedFiles() {
+            return (this.picking || this.viewMenu) ? this.selectedFiles : [];
+        },
+
+        // The selection bar is up. Read in two places, and they have to agree: the list's
+        // sticky header is pushed down to clear the bar, and a header that clears a bar which
+        // is not there - or sits under one that is - is the visible half of getting it wrong.
+        selectionBarShown() {
+            return this.picking && this.selectedFiles.length > 0;
+        },
 
         // an empty folder you can write to: the one place the drop target belongs,
         // in either view
@@ -982,6 +1013,12 @@ module.exports = {
 
 
 	watch: {
+		// an empty selection is not a selection, whichever way it emptied
+		selectedFiles(files) {
+			if (files.length == 0)
+				this.picking = false;
+		},
+
 		// manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
 		context(newContext, oldContext) {
 			this.updateCurrentDir();
@@ -3405,6 +3442,17 @@ module.exports = {
 			}
 		},
 
+		// While files are being picked a click adds to the pick rather than opening, on either
+		// platform - the whole tile, so there is no corner of it that means something else. A
+		// phone gets into that state by pressing and holding; a desktop has the circle and the
+		// menu's Select. With nothing being picked, a click opens.
+		openOrSelect(file, event) {
+			if (this.picking)
+				this.toggleSelection(file, event != null && event.shiftKey);
+			else
+				this.navigateDrive(file);
+		},
+
 		navigateDrive(file) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
@@ -3555,6 +3603,7 @@ module.exports = {
                 });
 			} else {
 			    this.multiSelectTargetFolder = null;
+			    this.picking = false;
                 if (file) {
                     this.selectedFiles = [file];
                 } else {
@@ -3876,8 +3925,9 @@ module.exports = {
 		},
 
 
-		// "" | "people" | "link" | "people link" - the two are marked apart, and
-		// isShared() counts people alone, so a secret link is asked for separately
+		// "" | "people" | "link" | "people link". Only whether it is empty decides the mark
+		// today, but isShared() counts people alone, so a file reachable only through a secret
+		// link has to be asked for separately or it would carry no mark at all.
 		shareKind(file) {
 			if (this.currentDir == null || this.archive != null || this.sharedWithState == null)
 				return "";
@@ -3913,13 +3963,56 @@ module.exports = {
 		closeMenu() {
 		    this.viewMenu = false
 		},
+
+		// The file is already in selectedFiles - opening the menu put it there - so this only
+		// has to say that the user meant it, and get out of the way.
+		selectFromMenu() {
+		    this.picking = true;
+		    this.closeMenu();
+		},
 		closePasteMenu() {
 			this.viewPasteMenu = false
 		},
         isSelected(file) {
             return this.selectedFiles.findIndex(selected => selected == file) > -1
         },
+
+        // The list view picks through a checkbox on every row rather than through the tile,
+        // so its changes arrive here instead of at toggleSelection. Ticking a box is a pick
+        // like any other and has to put the drive into selection mode, or the files are
+        // picked with no bar to do anything with them.
+        pickFromList(files) {
+            this.selectedFiles = files;
+            this.picking = files.length > 0;
+        },
+
+        // Whether this file's own menu should stand down. It replaces the selection with its
+        // one file, so with several picked it is a click that throws the pick away. Two things
+        // it is not: at one file it names the file already picked and costs nothing, and for a
+        // folder a pending cut can be pasted into it opens the paste menu instead, which names
+        // the folder without touching the selection - and is how files get moved on a phone,
+        // where dragging one onto a folder is not available.
+        menuStandsDown(file) {
+            return this.picking
+                && this.selectedFiles.length > 1
+                && ! this.isPasteToFolderMultiSelectAvailable(file);
+        },
+
+        // Picked by the user, or named by the menu that is open over it. The second is worth
+        // showing while that menu is up and worth dropping the moment it closes, since the
+        // file stays in selectedFiles either way.
+        isMarked(file) {
+            return (this.picking || this.viewMenu) && this.isSelected(file);
+        },
         toggleSelection(file, shiftModifier) {
+            // Whatever is in the list when nothing is being picked was put there by openMenu
+            // naming the file its actions apply to, not by anyone picking it. A pick starts
+            // from empty rather than adding to that - otherwise dismissing a file's menu and
+            // then picking one file leaves two selected, and the one nobody chose goes into
+            // whatever the selection bar is then asked to do.
+            if (! this.picking)
+                this.selectedFiles = [];
+            this.picking = true;
             let index = this.selectedFiles.findIndex(selected=> selected == file)
             if (index > -1) {
                 this.selectedFiles.splice(index, 1)

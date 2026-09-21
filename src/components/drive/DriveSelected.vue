@@ -5,6 +5,7 @@
             class="card__select"
             :class="{selected: totalFiles == selectedFiles.length}"
             :accent="totalFiles == selectedFiles.length"
+            :icon="totalFiles == selectedFiles.length ? 'check' : null"
             aria-label="Select All"
             @click.native="$emit('selectAllOrNone', 0 )">
         </AppButton>
@@ -70,11 +71,27 @@ module.exports = {
 }
 
 .drive-selected .card__select {
-  width: 24px;
-  height: 24px;
+  /* the same circle a tile carries, so the two read as one control in two places */
+  width: 26px;
+  height: 26px;
   flex: none;
   padding: 0;
   color: var(--green-500);
+  /* AppButton's own ring is 2px, and with border-box that thicker ring eats the disc inside
+     it - the tick then reads smaller than the identical one on a tile directly below. */
+  border-width: 1px;
+  /* and the tick has to be centred in it the way a tile centres its own. Left to the button's
+     block layout the icon sits on the text baseline, low and hard against the left edge. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* and the same tick in it. Without this the icon falls back to its own default, which is
+   larger than the circle drawn around it. */
+.drive-selected .card__select svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* the count reads as a state, not as the page's main action: the pill and the
