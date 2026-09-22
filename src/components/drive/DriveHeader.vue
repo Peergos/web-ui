@@ -52,6 +52,7 @@
 						<li v-if="!isArchive" @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
 						<li v-if="!isArchive" @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
                         <li v-if="canPaste" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
+                        <li v-if="!isSecretLink" @click="$emit('showSecretLinks')">{{ translate("DRIVE.LINKS.TITLE") }}</li>
 					</ul>
 				</AppDropdown>
 			</div>
@@ -90,6 +91,10 @@ module.exports = {
 		gridView: {
 			type: Boolean,
 			default: true
+		},
+		isSecretLink: {
+			type: Boolean,
+			default: false
 		},
 		isArchive: {
 			type: Boolean,

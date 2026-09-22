@@ -33,6 +33,7 @@
       :isWritable="isWritable || canEditArchive"
       :isArchive="archive != null"
       :canPaste="isPasteOptionAvailable"
+      :isSecretLink="isSecretLink"
       :path="path"
       @switchView="switchView()"
       @goBackToLevel="goBackToLevel($event)"
@@ -42,6 +43,12 @@
       @newApp="createNewApp()"
       @search="openSearch(false)"
       @paste="pasteToFolder($event)"
+      @showSecretLinks="showSecretLinksOverview = true"
+    />
+
+    <SecretLinksOverview
+      v-if="showSecretLinksOverview"
+      v-on:hide-overview="showSecretLinksOverview = false"
     />
 
     <AppPrompt
@@ -431,6 +438,7 @@ const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const CodeEditor = require("../components/code-editor/CodeEditor.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
+const SecretLinksOverview = require("../components/drive/SecretLinksOverview.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
@@ -477,6 +485,7 @@ module.exports = {
 	    CodeEditor,
 	    Confirm,
 		DriveHeader,
+		SecretLinksOverview,
 		DriveGrid,
 		DriveGridCard,
 		DriveGridDrop,
@@ -570,6 +579,7 @@ module.exports = {
 			prompt_new_app_func: (name, permissions) => { },
 			prompt_action: 'ok',
 			showPrompt: false,
+			showSecretLinksOverview: false,
 			showNewImageFilePrompt: false,
 			showNewAppPrompt: false,
             showFolderProperties: false,
