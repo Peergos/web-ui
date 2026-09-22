@@ -116,6 +116,12 @@
     >
       <transition name="drive-swap" mode="out-in" appear>
         <div class="drive-content" :key="isGrid ? 'grid' : 'list'">
+          <DriveSort
+            :class="{'drive-sort--list': ! isGrid}"
+            :sortBy="sortBy"
+            :normalSortOrder="normalSortOrder"
+            @sortBy="setSortBy"
+          />
           <DriveGrid v-if="isGrid" appear :class="{ 'drive-grid--empty': isEmptyWritableFolder }">
             <DriveGridCard
               v-for="(file, index) in sortedFiles"
@@ -442,6 +448,7 @@ const SecretLinksOverview = require("../components/drive/SecretLinksOverview.vue
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
+const DriveSort = require("../components/drive/DriveSort.vue");
 const DriveTable = require("../components/drive/DriveTable.vue");
 const Error = require("../components/error/Error.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
@@ -489,6 +496,7 @@ module.exports = {
 		DriveGrid,
 		DriveGridCard,
 		DriveGridDrop,
+		DriveSort,
 		DriveTable,
 		DriveMenu,
         DriveSelected,
