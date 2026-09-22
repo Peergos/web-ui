@@ -1,9 +1,8 @@
 
 <template>
 	<div class="app-dropdown"
-		@focusin="expanded(true)"
-    	@focusout="expanded(false)"
-		@keydown.esc="expanded(false)"
+		@focusout="close()"
+		@keydown.esc="close()"
         tabindex="-1"
 	>
 		<AppButton
@@ -11,8 +10,6 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@mousedown.native="remember()"
-			@keydown.native="remember()"
 			@click.native="toggle()"
 		>
 			<slot name="trigger"></slot>
@@ -53,31 +50,26 @@ module.exports = {
 	data() {
 		return {
 			isActive: false,
-			// whether the menu was already open when the pointer went down
-			wasOpen: false,
 		};
 	},
 	methods: {
-		// focusin opens the menu before the click on the trigger arrives, so isActive
-		// is already true by then. This runs before focus moves, so it catches the
-		// state the click is actually toggling.
-		remember(){
-			this.wasOpen = this.isActive;
-		},
+		// The trigger opens it, and nothing else does. Focus arriving here must not: a modal
+		// opened from one of these items takes focus, and whatever the browser does with focus
+		// when that modal closes - restoring it to the trigger, on a web view - would otherwise
+		// reopen the menu behind it.
 		toggle(){
-			// focus stays on the trigger, so focusin does not fire again and reopen it
-			this.isActive = ! this.wasOpen;
-			this.wasOpen = false;
+			this.isActive = ! this.isActive;
 		},
-		expanded(value){
-			// close on focus-out
-			// https://codepen.io/autumnwoodberry/pen/NvjJWm
-			this.isActive = value
-	        },        
-                closeMenu(){
-                    this.isActive = false;
-                    this.$el.blur();
-                },
+		// focus leaving the menu, or escape, puts it away
+		close(){
+			this.isActive = false;
+		},
+		// and choosing something in it closes it, then hands focus back out so the menu is
+		// not left holding it
+		closeMenu(){
+			this.close();
+			this.$el.blur();
+		},
 
 	},
 };
