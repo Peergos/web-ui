@@ -27,6 +27,22 @@
 					@click.native="$emit('switchView')"
 				/>
 
+				<AppDropdown
+					class="sort"
+					:aria-label="translate('DRIVE.SORT')"
+				>
+					<template #trigger>
+						<AppIcon icon="select"/>
+					</template>
+					<ul>
+						<li v-for="col in columns" :key="col.key"
+							@click="$emit('sortBy', col.key)"
+						>{{ translate(col.label) }}<AppIcon
+							v-if="sortBy == col.key" class="sort-caret"
+							:class="{'sort-caret--asc': normalSortOrder}" icon="chevron-down"/></li>
+					</ul>
+				</AppDropdown>
+
 				<AppButton
 					class="search"
 					icon="search"
@@ -72,6 +88,7 @@ const AppDropdown = require("../AppDropdown.vue");
 const AppIcon = require("../AppIcon.vue");
 const AppSandbox = require("../sandbox/AppSandbox.vue");
 const i18n = require("../../i18n/index.js");
+const columns = require("./columns.js");
 
 module.exports = {
 	components: {
@@ -84,10 +101,21 @@ module.exports = {
     data() {
         return {
             showAppSandbox: false,
-            sandboxAppName: ''
+            sandboxAppName: '',
+            columns,
         };
     },
 	props: {
+		// the property the listing is ordered by, and whether that order runs ascending: the
+		// same state the table's headings show and set, not a second copy of it
+		sortBy: {
+			type: String,
+			default: "name"
+		},
+		normalSortOrder: {
+			type: Boolean,
+			default: true
+		},
 		gridView: {
 			type: Boolean,
 			default: true
@@ -145,6 +173,32 @@ module.exports = {
 </script>
 
 <style>
+/* Opened from the right edge of its own button, like the upload menu beside it: these sit
+   at the end of the toolbar, and a menu that opens rightwards from here runs off the window. */
+.drive-header .sort .dropdown__content {
+	right: 0;
+	left: auto;
+}
+
+/* The menu marks the property in force and which way it runs. .sort-caret is the table's,
+   scoped to .pg-table, so the menu states its own rather than widening that one. The
+   heading version leans on colour, which says nothing here - a menu row is already at full
+   strength where a column heading is muted - so the caret carries the mark instead. */
+.drive-header .sort .pg-menu .sort-caret {
+	color: var(--pg-on-ok);
+	width: 12px;
+	height: 12px;
+	/* pushed to the far edge: a menu row is wider than its label, so 4px after the text
+	   would leave the carets ragged down the list */
+	margin-left: auto;
+	padding-left: 12px;
+	box-sizing: content-box;
+}
+
+.drive-header .sort .pg-menu .sort-caret--asc {
+	transform: rotate(180deg);
+}
+
 /* The drive header on the surfaces the sync and mount pages use: one bordered
    bar that stays at the top of the view, with its controls on .pg-btn's 40px
    floor and a rule between them and the account. */

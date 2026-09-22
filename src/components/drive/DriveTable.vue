@@ -355,18 +355,35 @@ module.exports = {
 /* A phone is narrower than any five columns: the row keeps its cells and lays
    them out in two lines instead of scrolling sideways at 1024px. */
 @media (max-width: 1024px) {
-	/* .pg-table lays the table out in blocks here; what follows is this list's own part
-	   of that: the width it may take, and how a row lays out */
+	/* .pg-table lays the table out in blocks here and turns the head into the strip of
+	   chips that is the only way left to sort; what follows is this list's own part of
+	   that: the width it may take, which chips it keeps, and how a row lays out */
 	.drive-table {
 		width: 100%;
 		min-width: 0;
 	}
 
-	/* .pg-table turns a head into a strip of chips at this width, and at this width the sort
-	   bar above is shown and is that strip. Keeping this one would stack the same chips
-	   twice, one row above the other */
-	.drive-table thead {
-		display: none;
+	.drive-table thead th {
+		flex: none;
+		height: auto;
+		min-height: 44px;
+		padding: 0 12px;
+		display: flex;
+		align-items: center;
+		color: var(--pg-muted);
+		background-color: var(--bg);
+		border: 1px solid var(--border-color);
+		border-radius: var(--radius-pill);
+	}
+
+	/* a chip is as wide as its label. The column widths above are the list's, and a
+	   chip is not a column - they are named here because .drive-table th.size and
+	   its neighbours outrank a plainer selector */
+	.drive-table thead th.file,
+	.drive-table thead th.size,
+	.drive-table thead th.type,
+	.drive-table thead th.date {
+		width: auto;
 	}
 
 	.drive-table tbody tr {

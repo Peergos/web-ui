@@ -1,16 +1,13 @@
 import java.nio.file.*;
 import java.util.*;
 
-/** Choosing the order of a drive listing from the header, in either view.
+/** Choosing the order of a drive listing, from either view.
  *
  *  The order itself was always shared - both views draw the same sortedFiles - but only the
  *  table offered a way to change it, through its column headings. The grid had none, so a
- *  listing could only be reordered by leaving the view. The bar sets the same state those
- *  headings do, which is the part worth guarding: a second copy of the state, or a bar wired
- *  to its own, would reorder one view and leave the other as it was.
- *
- *  The bar stands down for a list wide enough to show its headings, and takes over where
- *  they are hidden - so exactly one control is offered at every width.
+ *  listing could only be reordered by leaving the view. The header's sort menu sets the same
+ *  state those headings do, which is the part worth guarding: a second copy of the state, or
+ *  a menu wired to its own, would reorder one view and leave the other as it was.
  *
  *  Sizes are chosen so name order and size order disagree - asserting on an order that both
  *  would satisfy proves nothing.
@@ -54,101 +51,89 @@ public class GridSortTest {
             // whatever a previous run left in localStorage, start from name ascending
             d.scriptQuiet("window.__drive.sortBy = 'name'; window.__drive.normalSortOrder = true; return 1;");
             d.waitUntil("the grid to settle on name order",
-                    () -> List.of("sort-a.bin", "sort-b.bin", "sort-c.bin").equals(gridOrder(d)), 30_000);
+                    () -> List.of(PREFIX + "a.bin", PREFIX + "b.bin", PREFIX + "c.bin").equals(gridOrder(d)), 30_000);
             System.out.println("  grid opens in name order: " + gridOrder(d));
 
-            pressChip(d, "Size");
+            pickSort(d, "Size");
             d.waitUntil("the grid to reorder by size",
-                    () -> List.of("sort-b.bin", "sort-c.bin", "sort-a.bin").equals(gridOrder(d)), 30_000);
-            expect("grid ascending by size", List.of("sort-b.bin", "sort-c.bin", "sort-a.bin"), gridOrder(d));
+                    () -> List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin").equals(gridOrder(d)), 30_000);
+            expect("grid ascending by size", List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin"), gridOrder(d));
 
             // the same entry again turns the order around rather than picking size afresh
-            pressChip(d, "Size");
+            pickSort(d, "Size");
             d.waitUntil("the grid to turn the size order around",
-                    () -> List.of("sort-a.bin", "sort-c.bin", "sort-b.bin").equals(gridOrder(d)), 30_000);
-            expect("grid descending by size", List.of("sort-a.bin", "sort-c.bin", "sort-b.bin"), gridOrder(d));
+                    () -> List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin").equals(gridOrder(d)), 30_000);
+            expect("grid descending by size", List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), gridOrder(d));
 
-            // over the list, the bar gives way to the headings - one control for one state -
-            // but the order it set stands
+            // and the list is holding the same order, from the same state, not its own copy
             d.scriptQuiet("window.__drive.isGrid = false; return 1;");
             d.waitUntil("the list to draw", () -> listOrder(d).size() == 3, 30_000);
             expect("list carries the grid's order", List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), listOrder(d));
-            if (barShown(d))
-                throw new AssertionError("A list wide enough for its headings should not also wear the bar");
-            System.out.println("  ok   the bar stands down for a wide list's headings");
             String sorted = String.valueOf(d.script(
                     "const th = document.querySelector('.drive-table thead th.sorted');" +
                     "return th ? th.textContent.trim() : 'NONE';"));
             if (! sorted.startsWith("Size"))
                 throw new AssertionError("The table should show Size as the sorted column, got " + sorted);
-            System.out.println("  ok   the heading carries the state instead: " + sorted);
+            System.out.println("  ok   the table's own heading agrees: " + sorted);
 
-            // and those headings still move both views. Choosing a different property keeps the
-            // direction in force - only choosing the one already in force turns it around - so
-            // this lands on name descending.
+            // a table heading must move the grid too. Choosing a different property keeps the
+            // direction in force - only choosing the one already in force turns it around -
+            // so this lands on name descending.
             d.scriptQuiet("const th = [...document.querySelectorAll('.drive-table thead th')]" +
                     ".find(e => e.textContent.trim().startsWith('Name')); th.click(); return 1;");
-            d.waitUntil("the list to follow its heading",
-                    () -> List.of(PREFIX + "c.bin", PREFIX + "b.bin", PREFIX + "a.bin").equals(listOrder(d)), 30_000);
             d.scriptQuiet("window.__drive.isGrid = true; return 1;");
-            d.waitUntil("the grid to draw", () -> gridOrder(d).size() == 3, 30_000);
-            expect("the grid opens on what the heading set",
+            d.waitUntil("the grid to follow the table's heading",
+                    () -> List.of(PREFIX + "c.bin", PREFIX + "b.bin", PREFIX + "a.bin").equals(gridOrder(d)), 30_000);
+            expect("a table heading moves the grid as well",
                     List.of(PREFIX + "c.bin", PREFIX + "b.bin", PREFIX + "a.bin"), gridOrder(d));
 
-            // narrow enough and the headings are gone, so the list wears the bar after all
+            // and the menu shows what that heading set, rather than what it last set itself
+            String inForce = sortInForce(d);
+            if (! inForce.startsWith("Name"))
+                throw new AssertionError("The menu should show Name in force, got " + inForce);
+            System.out.println("  ok   the menu reports the heading's choice: " + inForce);
+
+            // the menu is in the header at every width, so a phone sorts from the same place
             d.setWindowRect(PHONE_WIDTH, PHONE_HEIGHT);
-            d.scriptQuiet("window.__drive.isGrid = false; return 1;");
-            d.waitUntil("the phone's list to draw", () -> listOrder(d).size() == 3, 30_000);
-            d.waitUntil("the bar to take over from the hidden headings", () -> barShown(d), 15_000);
-            expect("a phone's list wears the same bar", List.of("Name", "Size", "Type", "Modified", "Created"), chips(d));
-            if (! "Name".equals(activeChip(d)))
-                throw new AssertionError("The bar should show Name in force, got " + activeChip(d));
-            // descending is still in force from the heading, and picking a different property
-            // keeps it, so this is size descending
-            pressChip(d, "Size");
-            d.waitUntil("the phone's list to reorder by size",
-                    () -> List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin").equals(listOrder(d)), 30_000);
-            expect("and sorts from there", List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), listOrder(d));
-            if (! "Size".equals(activeChip(d)))
-                throw new AssertionError("The bar should now show Size in force, got " + activeChip(d));
+            d.waitUntil("the phone's grid to draw", () -> gridOrder(d).size() == 3, 30_000);
+            pickSort(d, "Size");
+            d.waitUntil("the phone's grid to reorder by size",
+                    () -> List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin").equals(gridOrder(d)), 30_000);
+            expect("a phone sorts from the same menu",
+                    List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), gridOrder(d));
         } finally {
             if (own != null)
                 own.close();
         }
     }
 
-    /** Presses one chip of the sort bar by its label, whichever view it stands over. */
-    static void pressChip(WebDriver d, String label) {
-        Object hit = d.script("const chip = [...document.querySelectorAll('.drive-sort__chip')]" +
+    /** Opens the header's sort menu and chooses one entry by its label. */
+    static void pickSort(WebDriver d, String label) {
+        openSortMenu(d);
+        Object hit = d.script("const li = [...document.querySelectorAll(" +
+                "'.drive-header .sort .dropdown__content li')]" +
                 ".find(e => e.textContent.trim().startsWith(arguments[0]));" +
-                "if (! chip) return 'NO SUCH CHIP'; chip.click(); return 'ok';", label);
+                "if (! li) return 'NO SUCH ENTRY'; li.click(); return 'ok';", label);
         if (! "ok".equals(String.valueOf(hit)))
-            throw new AssertionError("The sort bar should offer " + label + ", got " + hit);
+            throw new AssertionError("The sort menu should offer " + label + ", got " + hit);
     }
 
-    /** The bar's chips, in order - the same five whichever view stands under it. */
-    static List<String> chips(WebDriver d) {
-        Object got = d.script("return [...document.querySelectorAll('.drive-sort__chip')]" +
-                ".map(e => e.textContent.trim());");
-        List<String> out = new ArrayList<>();
-        if (got instanceof List)
-            for (Object o : (List<?>) got)
-                out.add(String.valueOf(o));
-        return out;
+    /** The entry the menu marks with a caret, which is the property in force. */
+    static String sortInForce(WebDriver d) {
+        openSortMenu(d);
+        String label = String.valueOf(d.script(
+                "const li = [...document.querySelectorAll(" +
+                "'.drive-header .sort .dropdown__content li')].find(e => e.querySelector('.sort-caret'));" +
+                "return li ? li.textContent.trim() : 'NONE';"));
+        // the trigger toggles, so this puts the menu away again
+        d.scriptQuiet("document.querySelector('.drive-header .sort .app-button').click(); return 1;");
+        return label;
     }
 
-    /** Whether the bar is drawn at all: it is in the page over a wide list too, hidden. */
-    static boolean barShown(WebDriver d) {
-        Object h = d.script("const b = document.querySelector('.drive-sort');" +
-                "return b ? b.offsetHeight : 0;");
-        return h instanceof Number && ((Number) h).doubleValue() > 0;
-    }
-
-    /** The label of the chip the bar shows as in force, or NONE. */
-    static String activeChip(WebDriver d) {
-        return String.valueOf(d.script(
-                "const c = document.querySelector('.drive-sort__chip.sorted');" +
-                "return c ? c.textContent.trim() : 'NONE';"));
+    static void openSortMenu(WebDriver d) {
+        d.scriptQuiet("document.querySelector('.drive-header .sort .app-button').click(); return 1;");
+        d.waitForScript("the sort menu to open",
+                "document.querySelector('.drive-header .sort .dropdown__content')", 10_000);
     }
 
     static List<String> gridOrder(WebDriver d) {

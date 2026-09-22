@@ -70,6 +70,7 @@ module.exports = {
     "DRIVE.WITH":"With",
     "DRIVE.SELECT":"Select",
     "DRIVE.SELECTED":"selected",
+    "DRIVE.SORT":"Sort by",
     "DRIVE.NAME":"Name",
     "DRIVE.SIZE":"Size",
     "DRIVE.TYPE":"Type",

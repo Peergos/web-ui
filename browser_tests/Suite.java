@@ -36,8 +36,8 @@ public class Suite {
             // Picking files out of the grid, which a pointer and a touch screen reach in
             // different ways and which the file menu must not be mistaken for.
             run(failures, "picking files in the grid", () -> GridSelectionTest.run(args1));
-            // Sorting is shared state drawn by two views: the sort bar sets it, the table's
-            // headings set it, and both views must follow whichever did.
+            // Sorting is shared state drawn by two views: the header's menu sets it, the
+            // table's headings set it, and both views must follow whichever did.
             run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
