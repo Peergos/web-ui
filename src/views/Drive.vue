@@ -37,7 +37,8 @@
       :path="path"
       :sortBy="sortBy"
       :normalSortOrder="normalSortOrder"
-      @sortBy="setSortBy"
+      @sortBy="setSortProperty"
+      @toggleSortOrder="toggleSortOrder"
       @switchView="switchView()"
       @goBackToLevel="goBackToLevel($event)"
       @askMkdir="askMkdir()"
@@ -1290,12 +1291,24 @@ module.exports = {
         appInstallSuccess(appName) {
         },
 
+		// A column heading is both: it picks the property, and picking the one already in
+		// force turns the order around. The menu separates them - an entry per property and
+		// one that only turns the order around - so neither has to guess what a click meant.
 		setSortBy(prop) {
 			if (this.sortBy == prop)
-				this.normalSortOrder = !this.normalSortOrder;
+				this.toggleSortOrder();
+			else
+				this.setSortProperty(prop);
+		},
+
+		setSortProperty(prop) {
 			this.sortBy = prop;
-                        localStorage.setItem("sortBy", prop);
-                        localStorage.setItem("normalSortOrder", this.normalSortOrder);
+			localStorage.setItem("sortBy", prop);
+		},
+
+		toggleSortOrder() {
+			this.normalSortOrder = ! this.normalSortOrder;
+			localStorage.setItem("normalSortOrder", this.normalSortOrder);
 		},
 
 		onResize() {

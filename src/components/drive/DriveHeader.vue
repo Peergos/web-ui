@@ -36,10 +36,15 @@
 					</template>
 					<ul>
 						<li v-for="col in columns" :key="col.key"
+							:class="{sorted: sortBy == col.key}"
 							@click="$emit('sortBy', col.key)"
 						>{{ translate(col.label) }}<AppIcon
-							v-if="sortBy == col.key" class="sort-caret"
-							:class="{'sort-caret--asc': normalSortOrder}" icon="chevron-down"/></li>
+							v-if="sortBy == col.key" class="sort-tick" icon="check"/></li>
+						<li class="divider" aria-hidden="true"></li>
+						<li class="sort__order" @click="$emit('toggleSortOrder')"
+						>{{ translate(normalSortOrder ? 'DRIVE.SORT.ASC' : 'DRIVE.SORT.DESC') }}<AppIcon
+							class="sort-caret" :class="{'sort-caret--asc': normalSortOrder}"
+							icon="chevron-down"/></li>
 					</ul>
 				</AppDropdown>
 
@@ -180,16 +185,15 @@ module.exports = {
 	left: auto;
 }
 
-/* The menu marks the property in force and which way it runs. .sort-caret is the table's,
-   scoped to .pg-table, so the menu states its own rather than widening that one. The
-   heading version leans on colour, which says nothing here - a menu row is already at full
-   strength where a column heading is muted - so the caret carries the mark instead. */
+/* The menu says both halves of the order outright: a tick against the property in force,
+   and a last entry that names the direction and is the only thing that turns it around.
+   Both are pushed to the far edge - a menu row is wider than its label, so a mark 4px after
+   the text would sit ragged down the list. */
+.drive-header .sort .pg-menu .sort-tick,
 .drive-header .sort .pg-menu .sort-caret {
 	color: var(--pg-on-ok);
 	width: 12px;
 	height: 12px;
-	/* pushed to the far edge: a menu row is wider than its label, so 4px after the text
-	   would leave the carets ragged down the list */
 	margin-left: auto;
 	padding-left: 12px;
 	box-sizing: content-box;
@@ -197,6 +201,11 @@ module.exports = {
 
 .drive-header .sort .pg-menu .sort-caret--asc {
 	transform: rotate(180deg);
+}
+
+/* the direction reads as the state it is in, not as another property to pick */
+.drive-header .sort .pg-menu .sort__order {
+	color: var(--pg-muted);
 }
 
 /* The drive header on the surfaces the sync and mount pages use: one bordered

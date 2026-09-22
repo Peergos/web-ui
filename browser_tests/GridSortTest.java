@@ -59,11 +59,24 @@ public class GridSortTest {
                     () -> List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin").equals(gridOrder(d)), 30_000);
             expect("grid ascending by size", List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin"), gridOrder(d));
 
-            // the same entry again turns the order around rather than picking size afresh
+            // picking the property already in force is not how the order is turned around here
+            // - that is the menu's last entry, so a second pick must leave the order alone
             pickSort(d, "Size");
+            Thread.sleep(1500);
+            expect("picking size again leaves the order as it was",
+                    List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin"), gridOrder(d));
+
+            toggleOrder(d);
             d.waitUntil("the grid to turn the size order around",
                     () -> List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin").equals(gridOrder(d)), 30_000);
             expect("grid descending by size", List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), gridOrder(d));
+
+            // and the menu says so, both halves of it
+            if (! "Size".equals(sortInForce(d)))
+                throw new AssertionError("The menu should tick Size, got " + sortInForce(d));
+            if (! "Descending".equals(directionInForce(d)))
+                throw new AssertionError("The menu should read Descending, got " + directionInForce(d));
+            System.out.println("  ok   the menu states both halves: Size, Descending");
 
             // and the list is holding the same order, from the same state, not its own copy
             d.scriptQuiet("window.__drive.isGrid = false; return 1;");
@@ -101,6 +114,11 @@ public class GridSortTest {
                     () -> List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin").equals(gridOrder(d)), 30_000);
             expect("a phone sorts from the same menu",
                     List.of(PREFIX + "a.bin", PREFIX + "c.bin", PREFIX + "b.bin"), gridOrder(d));
+            toggleOrder(d);
+            d.waitUntil("the phone to turn the order around",
+                    () -> List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin").equals(gridOrder(d)), 30_000);
+            expect("and turns it around from there too",
+                    List.of(PREFIX + "b.bin", PREFIX + "c.bin", PREFIX + "a.bin"), gridOrder(d));
         } finally {
             if (own != null)
                 own.close();
@@ -118,16 +136,37 @@ public class GridSortTest {
             throw new AssertionError("The sort menu should offer " + label + ", got " + hit);
     }
 
-    /** The entry the menu marks with a caret, which is the property in force. */
+    /** The entry the menu ticks, which is the property in force. */
     static String sortInForce(WebDriver d) {
+        return readMenu(d, "const li = [...document.querySelectorAll(" +
+                "'.drive-header .sort .dropdown__content li')].find(e => e.querySelector('.sort-tick'));" +
+                "return li ? li.textContent.trim() : 'NONE';");
+    }
+
+    /** What the menu's last entry says the direction is. */
+    static String directionInForce(WebDriver d) {
+        return readMenu(d, "const li = document.querySelector(" +
+                "'.drive-header .sort .dropdown__content .sort__order');" +
+                "return li ? li.textContent.trim() : 'NONE';");
+    }
+
+    /** Turns the order around from the menu's last entry. */
+    static void toggleOrder(WebDriver d) {
         openSortMenu(d);
-        String label = String.valueOf(d.script(
-                "const li = [...document.querySelectorAll(" +
-                "'.drive-header .sort .dropdown__content li')].find(e => e.querySelector('.sort-caret'));" +
-                "return li ? li.textContent.trim() : 'NONE';"));
+        Object hit = d.script("const li = document.querySelector(" +
+                "'.drive-header .sort .dropdown__content .sort__order');" +
+                "if (! li) return 'NO ORDER ENTRY'; li.click(); return 'ok';");
+        if (! "ok".equals(String.valueOf(hit)))
+            throw new AssertionError("The sort menu should carry a direction entry, got " + hit);
+    }
+
+    /** Opens the menu, reads something out of it, and puts it away again. */
+    static String readMenu(WebDriver d, String script) {
+        openSortMenu(d);
+        String out = String.valueOf(d.script(script));
         // the trigger toggles, so this puts the menu away again
         d.scriptQuiet("document.querySelector('.drive-header .sort .app-button').click(); return 1;");
-        return label;
+        return out;
     }
 
     static void openSortMenu(WebDriver d) {

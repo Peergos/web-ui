@@ -71,6 +71,8 @@ module.exports = {
     "DRIVE.SELECT":"Select",
     "DRIVE.SELECTED":"selected",
     "DRIVE.SORT":"Sort by",
+    "DRIVE.SORT.ASC":"Ascending",
+    "DRIVE.SORT.DESC":"Descending",
     "DRIVE.NAME":"Name",
     "DRIVE.SIZE":"Size",
     "DRIVE.TYPE":"Type",
