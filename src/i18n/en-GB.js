@@ -86,6 +86,8 @@ module.exports = {
     "DRIVE.RENAME":"Rename",
     "DRIVE.SHARE":"Share",
     "DRIVE.SHARED":"Shared",
+    "DRIVE.SHARED.PEOPLE":"Shared with people",
+    "DRIVE.SHARED.LINK":"Shared by secret link",
     "DRIVE.DOWNLOAD.ZIP":"Download as Zip",
     "DRIVE.THUMB":"Create Thumbnail",
     "DRIVE.PROPS":"Properties",

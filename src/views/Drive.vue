@@ -3935,9 +3935,9 @@ module.exports = {
 		},
 
 
-		// "" | "people" | "link" | "people link". Only whether it is empty decides the mark
-		// today, but isShared() counts people alone, so a file reachable only through a secret
-		// link has to be asked for separately or it would carry no mark at all.
+		// "" | "people" | "link" | "people link". Each of the two draws its own mark, and
+		// isShared() counts people alone, so a file reachable only through a secret link has
+		// to be asked for separately or it would carry no mark at all.
 		shareKind(file) {
 			if (this.currentDir == null || this.archive != null || this.sharedWithState == null)
 				return "";
