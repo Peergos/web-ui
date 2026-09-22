@@ -29,6 +29,9 @@ public interface WebDriver extends AutoCloseable {
     /** Types into an element. Used for file inputs too - the value is the path to upload. */
     void sendKeys(Object element, String text);
 
+    /** Sizes the window, so a test can ask for a phone rather than assume the one it got. */
+    void setWindowRect(int width, int height);
+
     @Override
     void close();
 

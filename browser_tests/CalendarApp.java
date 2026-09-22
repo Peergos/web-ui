@@ -12,13 +12,57 @@ public class CalendarApp {
 
     public static final String FRAME = "#calendar-iframe";
 
+    /** The host, not the frame: it is what answers the app's saves and what sends it the
+     *  calendars, and it is still fetching the calendar's properties while the frame is
+     *  already drawing an empty grid. Anything entering the view waits here first - a save
+     *  sent into that window is one nothing replies to, and the dialog never closes. */
+    static void awaitHost(WebDriver d) {
+        d.waitForScript("the host to finish opening the calendar",
+                "!!window.__cal && !window.__cal.busy", 120_000);
+    }
+
+    /** What the app inside the frame has to say for itself, for a failure that would
+     *  otherwise be a bare timeout. */
+    static String appState(WebDriver d) {
+        d.switchToFrame(FRAME);
+        try {
+            return String.valueOf(d.scriptQuiet(
+                    "const sel = document.getElementById('event-calendar');"
+                            + "return 'select=' + !!sel + ' options=' + (sel ? sel.options.length : -1)"
+                            + " + ' gridcells=' + document.querySelectorAll('[role=\"gridcell\"]').length"
+                            + " + ' listed=' + JSON.stringify(Array.from("
+                            + "     document.querySelectorAll('.calendar-list-item')).map(e => e.textContent.trim()))"
+                            + " + ' canCreate=' + (document.getElementById('toolbar-add-button') || {style:{}})"
+                            + "     .style.display"
+                            + " + ' canAddCalendar=' + (document.getElementById('add-calendar-button') || {style:{}})"
+                            + "     .style.display"
+                            + " + ' pending=' + ((document.getElementById('load-progress') || {}).dataset || {}).pending"));
+        } finally {
+            d.switchToTop();
+        }
+    }
+
+    /** And the host, likewise. */
+    static String hostState(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("return !window.__cal ? 'no handle on the view'"
+                + " : 'busy=' + window.__cal.busy + ' spinner=' + window.__cal.showSpinner"
+                + " + ' guest=' + window.__cal.loadCalendarAsGuest"
+                + " + ' viewReadOnly=' + window.__cal.isCalendarReadOnly"
+                + " + ' calendars=' + JSON.stringify((((window.__cal.calendarProperties || {}).calendars) || [])"
+                + "     .map(c => c.name + (c.writable === false ? ':readonly' : '') + (c.owner ? '@' + c.owner : '')))"));
+    }
+
     /** Opens the calendar view and waits for the app inside the frame to finish its first load. */
     public static void open(WebDriver d) {
         Page.gotoView(d, "Calendar", "downloadIcsFile", "__cal");
+        awaitHost(d);
         d.waitForScript("the calendar frame", "document.querySelector('" + FRAME + "')", 60_000);
+        // data-pending is the app's own count of reads still outstanding, and it is only
+        // set once a load has begun - the bar's own hidden/shown is a delayed presentation
+        // of the same thing and is no answer to "has it loaded".
         d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
-                "return !!document.getElementById('load-progress')"
-                        + " && document.getElementById('load-progress').hidden"
+                "const bar = document.getElementById('load-progress');"
+                        + "return !!bar && bar.dataset.pending === '0'"
                         + " && !!document.querySelector('[role=\"gridcell\"]')"), 120_000);
     }
 
@@ -250,21 +294,48 @@ public class CalendarApp {
      *  to the server, and the suite shares one account across its tests, so a directory holds
      *  whatever the tests before it left there. */
     public static String awaitFileSaying(WebDriver d, String subPath, String contains) {
-        return d.waitUntil("a file in " + subPath + " carrying " + contains, () -> {
-            for (String name : list(d, subPath)) {
-                if (read(d, subPath, name).contains(contains))
-                    return name;
-            }
-            return null;
-        }, 60_000);
+        try {
+            return d.waitUntil("a file in " + subPath + " carrying " + contains, () -> {
+                for (String name : list(d, subPath)) {
+                    if (read(d, subPath, name).contains(contains))
+                        return name;
+                }
+                return null;
+            }, 120_000);
+        } catch (RuntimeException neverWritten) {
+            sayWhatTheStoreHas(d, subPath);
+            throw neverWritten;
+        }
+    }
+
+    /** What the store and the host have to say when a wait for a write runs out.
+     *
+     *  A write is the app sending a save, the host writing it and the server storing it, and a
+     *  bare timeout names none of the three - so say what is actually in the directory and
+     *  whether the host is still busy.
+     */
+    private static void sayWhatTheStoreHas(WebDriver d, String subPath) {
+        String held;
+        try {
+            held = String.valueOf(list(d, subPath));
+        } catch (RuntimeException cannotList) {
+            held = "could not be listed: " + cannotList.getMessage();
+        }
+        System.out.println("  " + subPath + " holds " + held);
+        System.out.println("  host: " + hostState(d));
     }
 
     /** Reads the one file in a directory again until it says what the test is waiting for. */
     public static String awaitStored(WebDriver d, String subPath, String filename, String contains) {
-        return d.waitUntil("the stored file to carry " + contains, () -> {
-            String ics = read(d, subPath, filename);
-            return ics.contains(contains) ? ics : null;
-        }, 60_000);
+        try {
+            return d.waitUntil("the stored file to carry " + contains, () -> {
+                String ics = read(d, subPath, filename);
+                return ics.contains(contains) ? ics : null;
+            }, 120_000);
+        } catch (RuntimeException neverWritten) {
+            sayWhatTheStoreHas(d, subPath);
+            throw neverWritten;
+        }
     }
 
     /** A property line out of an .ics, e.g. "RRULE" or "SUMMARY", or null if it has none. The

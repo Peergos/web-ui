@@ -119,14 +119,6 @@
 			</ul>
 		</AppDropdown>
 
-		<!-- dark theme -->
-		<AppButton
-			class="toggle-theme mobile-hidden"
-			size="small"
-			:icon="isDark ? 'sun' : 'moon'"
-			@click.native="toggleTheme()"
-			aria-label="Toggle theme"
-		/>
                 <Admin
                     v-if="showAdmin"
                     v-on:hide-admin="showAdmin=false"
@@ -186,8 +178,8 @@ module.exports = {
 		};
 	},
 	computed: {
-		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context', 'isDark']),
-		...Vuex.mapGetters(['currentTheme', 'isPaid']),
+		...Vuex.mapState(['isLoggedIn', 'isAdmin', 'context']),
+		...Vuex.mapGetters(['isPaid']),
         isLocalhost() {
             return loopback.isLoopbackHost(window.location.hostname);
         },
@@ -403,14 +395,6 @@ module.exports = {
 		},
 		toggleSidebar() {
 			this.$store.commit("TOGGLE_SIDEBAR");
-		},
-		toggleTheme() {
-			this.$store.commit("TOGGLE_THEME");
-			document.documentElement.setAttribute(
-				"data-theme",
-				this.currentTheme
-			);
-			localStorage.setItem("theme", this.currentTheme);
 		},
 	},
 };

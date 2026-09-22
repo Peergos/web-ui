@@ -408,13 +408,25 @@ body {
    the column the grid lives in, not a block inside a card */
 #load-progress {
   flex: 0 0 auto;
+  /* the toolbar above it has no bottom padding, so without a gap the bar's top edge
+     lands on the search control's own border and the two read as one smudged line.
+     The sides take the toolbar's 8px gutters rather than bleeding to the column edge. */
+  margin: 8px 8px 0;
+}
+
+/* hidden keeps its meaning for assistive tech, but the row stays: taken out of the flow
+   the grid stepped 4px down as a load started and back up as it ended */
+#load-progress[hidden] {
+  display: block;
+  visibility: hidden;
 }
 
 #sidebar {
   flex: 0 0 240px;
   box-sizing: border-box;
   padding: 12px 8px;
-  border-right: 1px solid var(--fc-breezy-border);
+  /* no rule of its own: the grid outlines itself a gutter away, and two parallel edges
+     that close read as a seam rather than a division */
   /* the two lists inside scroll separately, so the column itself doesn't */
   overflow: hidden;
   display: flex;
@@ -439,9 +451,21 @@ body {
 @media (min-width: 701px) {
   #sidebar.collapsed {
     flex-basis: 0;
-    padding: 0;
-    border-right: none;
+    /* the sides only: taking the 12px top and bottom away with them made the list and
+       the tasks below it ride up as the column closed and settle back as it opened */
+    padding-left: 0;
+    padding-right: 0;
     overflow: hidden;
+  }
+
+  /* The column animates its own width, so its contents hold the open width and the
+     slide clips them rather than re-laying them out: without this the rows stepped
+     narrower frame by frame and "Add calendar" wrapped to a second line partway
+     through every open and close. 224px is the 240px column less its 8px sides. */
+  #sidebar > * {
+    flex-shrink: 0;
+    box-sizing: border-box;
+    min-width: 224px;
   }
 }
 

@@ -139,10 +139,10 @@ public class CancelDownloadTest {
 
     static void awaitPartWay(WebDriver d) {
         d.waitForScript("the download to be part way",
-                "(() => { const bar = document.querySelector('.Vue-Toastification__toast .progress__bar div');"
+                "(() => { const bar = document.querySelector('.Vue-Toastification__toast .progress__bar span');"
                         + " return bar != null && parseFloat(bar.style.width) >= 5"
                         + "   && !!document.querySelector('.progress__cancel'); })()", 300_000);
-        System.out.println("  progress " + d.script("return document.querySelector('.progress__bar div').style.width"));
+        System.out.println("  progress " + d.script("return document.querySelector('.progress__bar span').style.width"));
     }
 
     static void awaitCancelledMessage(WebDriver d) {

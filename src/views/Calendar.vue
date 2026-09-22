@@ -7,7 +7,7 @@
 		</AppHeader>
 		<main>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-	    <iframe id="calendar-iframe" :src="frameUrl()" allow="clipboard-write" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
+	    <iframe id="calendar-iframe" :src="frameSrc" allow="clipboard-write" style="width:100%; flex:1; min-height:0" frameBorder="0"></iframe>
             <Choice
                 v-if="showChoice"
                 v-on:hide-choice="showChoice = false"
@@ -89,6 +89,9 @@ module.exports = {
 	},
 	data: function() {
         return {
+            // read once: rebinding it on a theme change would reload the app and lose
+            // whatever is open in it, and the host's ping carries later changes
+            frameSrc: null,
             APPS_DIR_NAME: '.apps',
             CALENDAR_DIR_NAME: 'calendar',
             DATA_DIR_NAME: 'data',
@@ -111,6 +114,9 @@ module.exports = {
             // Bumped for every load, so buckets read for a load the app has
             // already replaced are dropped rather than posted into it.
             loadToken: 0,
+            // What the frame was last sent, so a frame that comes up after it can be given
+            // the same thing rather than nothing at all.
+            lastLoad: null,
             // Both undone in beforeDestroy: the window outlives this view.
             messageListener: null,
             shareRetry: null,
@@ -119,6 +125,13 @@ module.exports = {
             pendingWrites: Object.create(null),
             listenerRetry: null,
             showSpinner: false,
+            // Whether the view is working, apart from whether it is saying so: the spinner
+            // waits before appearing and lingers once up, so it answers "is anything on
+            // screen", not "has this finished". Anything that needs the second one - the
+            // browser tests wait here before signing out mid-write - reads this.
+            busy: false,
+            spinnerTimer: null,
+            spinnerShownAt: 0,
             spinnerMessage: "",
             calendarProperties: null,
             showPrompt: false,
@@ -190,6 +203,7 @@ module.exports = {
 	mixins:[routerMixins, i18n],
     created() {
         let that = this;
+        this.frameSrc = this.frameUrl();
         this.displaySpinner();
         this.getInputParameters().thenApply(inputParameters => {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
@@ -222,6 +236,7 @@ module.exports = {
         this.cancelSweeps();
         clearTimeout(this.listenerRetry);
         clearTimeout(this.shareRetry);
+        clearTimeout(this.spinnerTimer);
         if (this.messageListener != null) {
             window.removeEventListener('message', this.messageListener);
             this.messageListener = null;
@@ -303,7 +318,9 @@ module.exports = {
             return low + (props.sizeHigh() * Math.pow(2, 32));
     },
     frameUrl: function() {
-        return this.frameDomain() + "/apps/calendar/index.html";
+        let theme = this.$store.getters.currentTheme;
+        return this.frameDomain() + "/apps/calendar/index.html"
+            + (theme ? "?theme=" + encodeURIComponent(theme) : "");
     },
     frameDomain: function() {
         return window.location.protocol + "//calendar." + window.location.host;
@@ -358,6 +375,16 @@ module.exports = {
         // "constructor" finds nothing to call.
         let handlers = Object.assign(Object.create(null), {
             pong: function() { that.isIframeInitialised = true; },
+            // A frame announcing itself after we have already sent a load is a new document
+            // in that frame: what we sent went to the one before it and is not coming back.
+            // Send the whole load again, to whoever is in there now.
+            hello: function() {
+                let repeat = that.isIframeInitialised && that.lastLoad != null;
+                that.isIframeInitialised = true;
+                if (repeat) {
+                    that.load(calendar, that.lastLoad.year, that.lastLoad.month);
+                }
+            },
             save: function(data) { that.saveEvent(calendar, data); },
             saveLinked: function(data) { that.saveLinkedEntry(data); },
             // In the same lane as everything else addressed to one entry: a second save
@@ -935,6 +962,13 @@ module.exports = {
             if (modified) {
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.loadCalendars(calendar, year, month);
+                    return null;
+                }).exceptionally(t => {
+                    // The list in memory is already right, and the write that failed is of the
+                    // record of it. Loading anyway is what keeps a conflict on that one file
+                    // from costing the whole view.
+                    that.loadCalendars(calendar, year, month);
+                    return null;
                 });
             } else {
                 that.loadCalendars(calendar, year, month);
@@ -949,6 +983,7 @@ module.exports = {
     loadCalendars: function(calendar, year, month, importCalendarEventParams) {
         let that = this;
         let token = ++this.loadToken;
+        this.lastLoad = {year: year, month: month};
         let months = this.monthsAroundMonth(year, month);
         Vue.nextTick(function() {
             // Posted before the reads start, so no bucket can arrive at the
@@ -1195,11 +1230,45 @@ module.exports = {
         });
         return future;
     },
+    /* A spinner that arrives and leaves inside half a second reads as a flicker rather
+       than as progress. It waits to see whether the work is slow enough to be worth
+       saying so, and once it is up it stays long enough to be read. */
     displaySpinner: function() {
-        this.showSpinner = true;
+        this.busy = true;
+        if (this.showSpinner) {
+            // up already: call off a hide that is waiting out its minimum
+            window.clearTimeout(this.spinnerTimer);
+            this.spinnerTimer = null;
+            return;
+        }
+        // a show already on its way is left to run rather than restarted
+        if (this.spinnerTimer != null)
+            return;
+        let that = this;
+        this.spinnerTimer = window.setTimeout(function() {
+            that.spinnerTimer = null;
+            that.spinnerShownAt = Date.now();
+            that.showSpinner = true;
+        }, 300);
     },
     removeSpinner: function() {
-        this.showSpinner = false;
+        this.busy = false;
+        window.clearTimeout(this.spinnerTimer);
+        this.spinnerTimer = null;
+        if (! this.showSpinner)
+            return;
+        let shown = Date.now() - this.spinnerShownAt;
+        if (shown >= 400) {
+            this.showSpinner = false;
+            return;
+        }
+        // held in the same field as the other direction, so leaving the view cancels it
+        // and a load starting inside the minimum keeps the spinner it needs
+        let that = this;
+        this.spinnerTimer = window.setTimeout(function() {
+            that.spinnerTimer = null;
+            that.showSpinner = false;
+        }, 400 - shown);
     },
     getPropertiesFile: function(calendar) {
         let that = this;
@@ -1743,7 +1812,7 @@ module.exports = {
         // one that flashes and vanishes reads as a glitch.
         if (items.length > 1) {
             uploads.transfer = transfers.start(name, 'upload');
-            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name});
+            this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name, closeButton: false});
         }
         items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
         this.bulkUpload(uploads).thenApply(function(done) {
@@ -2344,6 +2413,13 @@ module.exports = {
             let directoryPath = peergos.client.PathUtils.directoryToPath(currentCalendar.directory.split('/'));
             calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
                 settle(currentCalendar, !filenames.isEmpty() || currentCalendar.owner == null, true);
+            }).exceptionally(t => {
+                // One of our own, and a listing that failed is no reason to drop it. Without
+                // this the count below never comes in, the future never completes, and the
+                // load waiting on it never happens - leaving the app on an empty grid with no
+                // calendar to save into, no spinner, and nothing on screen saying why.
+                settle(currentCalendar, true, true);
+                return null;
             });
         });
         return future;

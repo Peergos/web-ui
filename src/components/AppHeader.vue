@@ -1,10 +1,7 @@
 <template>
 	<header class="app-header">
 		<div class="primary">
-			<slot class="" name="primary"></slot>
-		</div>
-		<div class="tools">
-			<slot name="tools"></slot>
+			<slot name="primary"></slot>
 		</div>
 		<UserSettings />
 	</header>
@@ -27,19 +24,6 @@ module.exports = {
 	align-items: center;
 }
 
-.app-header .tools{
-	flex:1 0 auto;
-	display: flex;
-	justify-content: flex-end;
-	align-items: center;
-	padding: 0 32px;
-
-}
-
-.app-header .tools > *{
-	margin-right: 16px;
-}
-
 
 .app-header .primary{
 	padding: 4px 32px;
@@ -58,26 +42,29 @@ module.exports = {
 		padding: 0 16px;
 	}
 
+	/* the view's name reads the same here as on a desktop: at the head of the bar with
+	   the account at the other end, rather than leaving a phone to guess where it is */
 	.app-header .primary{
-		display:none;
-		/* order: 3;
-		flex:1 0 100%;
-		padding: 8px 16px;
-		border-top: 1px solid var(--border-color); */
+		display: flex;
+		align-items: center;
+		order: 1;
+		width: auto;
+		flex: 1 1 auto;
+		min-width: 0;
+		padding: 0 16px;
 	}
 
-	.app-header .tools{
-		flex:0 1 50%;
-		order: 1;
-		margin-left: 0;
-		padding: 0 16px;
-		justify-content: flex-start;
-
+	/* a name longer than the bar is cut rather than pushing the account off it */
+	.app-header .primary h1{
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 	}
 
 	.app-header .user-settings{
-		order: 2;
-		flex: 0 1 50%;
+		order: 3;
+		flex: 0 0 auto;
+		width: auto;
 		justify-content: flex-end;
 		margin-right: 0;
 	}

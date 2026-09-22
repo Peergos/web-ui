@@ -1,29 +1,27 @@
 <template>
-<Article class="app-view newsfeed-view">
+<article class="app-view newsfeed-view">
 	<AppHeader>
 		<template #primary>
 			<h1>{{ translate("NEWSFEED.TITLE") }}</h1>
 		</template>
-		<template #tools>
-			<AppButton
-				aria-label="New Post"
-				@click.native="addNewPost()"
-				size="small"
-				accent
-			>
-			{{ translate("NEWSFEED.NEW") }}
-			</AppButton>
-            <button :disabled="showSpinner" class="refresh-btn btn-success" @click="refresh()" aria-label="Refresh">
-                <i v-if="showSpinner" aria-hidden="true">
-                    <svg class="refresh-icon imageRotate" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="#fff"/></svg>
-                </i>
-                <i v-if="!showSpinner" aria-hidden="true" >
-                    <svg class="refresh-icon" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="#fff"/></svg>
-                </i>
-            </button>
-		</template>
 
 	</AppHeader>
+
+	<!-- the account bar carries the view's name and the account, nothing else: what the
+	     view itself offers goes in a bar of its own under it, as the drive's does -->
+	<div class="newsfeed-bar">
+            <button type="button" :disabled="showSpinner" class="pg-btn pg-btn--quiet" @click="refresh()" aria-label="Refresh">
+                <i v-if="showSpinner" aria-hidden="true">
+                    <svg class="refresh-icon imageRotate" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="currentColor"/></svg>
+                </i>
+                <i v-if="!showSpinner" aria-hidden="true" >
+                    <svg class="refresh-icon" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1639 1056q0 5-1 7-64 268-268 434.5t-478 166.5q-146 0-282.5-55t-243.5-157l-129 129q-19 19-45 19t-45-19-19-45v-448q0-26 19-45t45-19h448q26 0 45 19t19 45-19 45l-137 137q71 66 161 102t187 36q134 0 250-65t186-179q11-17 53-117 8-23 30-23h192q13 0 22.5 9.5t9.5 22.5zm25-800v448q0 26-19 45t-45 19h-448q-26 0-45-19t-19-45 19-45l138-138q-148-137-349-137-134 0-250 65t-186 179q-11 17-53 117-8 23-30 23h-199q-13 0-22.5-9.5t-9.5-22.5v-7q65-268 270-434.5t480-166.5q146 0 284 55.5t245 156.5l130-129q19-19 45-19t45 19 19 45z" fill="currentColor"/></svg>
+                </i>
+            </button>
+		<button type="button" class="pg-btn pg-btn--primary" @click="addNewPost()">
+			{{ translate("NEWSFEED.NEW") }}
+		</button>
+	</div>
 
         <center v-if="buildingFeed">
             <h3>
@@ -93,8 +91,8 @@
                     :initiallySelectedPaths="[]"
                     :pickerTitle="folderPickerTitle">
                 </FolderPicker>
-                <ul id="appMenu" v-if="showAppMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;padding: 10px;">
-                    <li id='open-in-app' style="padding-bottom: 5px;color: black;" v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
+                <ul id="appMenu" v-if="showAppMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                    <li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
                 </ul>
                 <div id="scroll-area">
                     <center v-if="data.length==0">
@@ -105,12 +103,12 @@
                             {{ translate("NEWSFEED.DESC") }}
                         </h3>
                     </center>
-                    <ul id="editMenu" v-if="showEditMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li style="padding-bottom: 5px;color: black;"><a @click="editPost($event, currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
-                        <li style="padding-bottom: 5px;color: black;"><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
+                    <ul id="editMenu" v-if="showEditMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                        <li><a @click="editPost($event, currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
+                        <li><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
-                    <ul id="friendMenu" v-if="showFriendMenu" class="dropdown-menu" v-bind:style="{top:menutop, left:menuleft}" style="cursor:pointer;display:block;min-width:100px;">
-                        <li style="padding-bottom: 5px;color: black;"><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
+                    <ul id="friendMenu" v-if="showFriendMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                        <li><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
                     </ul>
 
                     <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
@@ -148,11 +146,11 @@
                                         <div v-if="!entry[0].isPost && !entry[0].isMedia">
                                             <span class="grid_icon_wrapper fa">
                                                 <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <AppIcon style="height:100px" @click.stop.native="view($event, entry[0])" class="card__icon" :icon="getFileIconFromFileAndType(entry[0].file, entry[0].fileType)"></AppIcon>
+                                                    <AppIcon style="height:100px" @click.stop.native="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
                                                 </a>
                                                 <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
-                                                <button v-if="entry[0].isChat && entry[0].isNewChat" class="btn btn-success" @click="joinConversation(entry[0])" style="font-weight: bold;">{{ translate("NEWSFEED.JOIN") }}</button>
-                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" class="btn btn-success" @click="openConversation(entry[0])" style="font-weight: bold;">{{ translate("DRIVE.VIEW") }}</button>
+                                                <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>
+                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" type="button" class="pg-btn" @click="openConversation(entry[0])">{{ translate("DRIVE.VIEW") }}</button>
                                             </span>
                                         </div>
                                     </div>
@@ -171,7 +169,7 @@
                                             <div v-bind:style="{ marginLeft: indent(row) }">
                                                 <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="getFileIconFromFileAndType(media.file, media.fileType)"> </AppIcon>
+                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="fileIcon(media.fileType)"> </AppIcon>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
                                                 </div>
@@ -242,7 +240,7 @@
                         </div>
                     </div>
                     <center>
-                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" class="btn btn-success" v-on:click="requestMoreResults()">{{ translate("NEWSFEED.MORE") }}</button>
+                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" type="button" class="pg-btn" v-on:click="requestMoreResults()">{{ translate("NEWSFEED.MORE") }}</button>
                     </center>
                 </div>
             </div>
@@ -264,6 +262,7 @@ const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
+const fileIcon = require("../mixins/fileicon/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -351,7 +350,7 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins, mixins, i18n],
+	mixins:[routerMixins, mixins, i18n, fileIcon],
   	created: function() {
         let that = this;
         this.entryTree = new this.Tree(this);
@@ -424,22 +423,6 @@ module.exports = {
         updateSocialFeedInstance: function(updated) {
             // TODO put this in vuex store
             this.socialFeed = updated;
-        },
-        getFileIconFromFileAndType: function(file, type) {
-            // TODO unify this with the one on DriveGridCard
-            if (type == 'dir') 	return 'folder--72';
-	    if (type == 'image') 	return 'file-image--72';
-	    if (type == 'text') 	return 'file-text--72';
-	    if (type == 'audio') 	return 'file-audio--72';
-	    if (type == 'video') 	return 'file-video--72';
-	    if (type == 'pdf') 	return 'file-pdf--72';
-	    if (type == 'zip') 	return 'file-zip--72';
-	    if (type == 'calendar') 	return 'calendar--72';
-	    if (type == 'contact file') 	return 'file-card--72';
-	    if (type == 'powerpoint presentation' || type == 'presentation') 	return 'file-powerpoint--72';
-	    if (type == 'word document' || type == 'text document') 	return 'file-word--72';
-	    if (type == 'excel spreadsheet' || type == 'spreadsheet') 	return 'file-excel--72';
-            return 'file-generic--72';
         },
         displayProfile: function(username){
             this.showSpinner = true;
@@ -1834,6 +1817,22 @@ module.exports = {
 </script>
 
 <style>
+.newsfeed-bar {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 10px;
+	flex: none;
+	height: 56px;
+	padding: 0 32px;
+}
+
+@media screen and (max-width: 1024px) {
+	.newsfeed-bar {
+		padding: 0 16px;
+	}
+}
+
 
 
 
@@ -1842,7 +1841,9 @@ module.exports = {
 }
 .newsfeed__container{
 	width:100%;
-	min-height: 100vh;
+	/* the view around it is already a screenful; asking for another one here put the
+	   header, the bar and this margin past the bottom and left the page scrolling
+	   with nothing under the fold */
 	padding: 0 32px;
 	margin-top: 32px;
 }
@@ -1949,25 +1950,6 @@ module.exports = {
 .refresh-icon {
     height: 20px;
     width: 20px;
-}
-
-.refresh-btn {
-    display: inline-block;
-    padding: 3px 6px;
-    font-size: 14px;
-    text-align: center;
-    white-space: nowrap;
-    vertical-align: middle;
-    -ms-touch-action: manipulation;
-    touch-action: manipulation;
-    cursor: pointer;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    background-image: none;
-    border: 1px solid transparent;
-    border-radius: 2px;
 }
 
 .inline-svg {

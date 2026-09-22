@@ -91,7 +91,7 @@ public class CalendarReadOnlyTest {
                     + " && document.querySelector('#app').__vue__.$store.state.context != null", 120_000);
             // The same mark signing in waits for: if it is still here the sign out did nothing,
             // and everything below would be the owner looking at their own calendar.
-            if (Boolean.TRUE.equals(d.script("return document.body.innerText.indexOf('UPGRADE') >= 0;")))
+            if (Boolean.TRUE.equals(d.script("return /upgrade/i.test(document.body.innerText);")))
                 throw new AssertionError("The link opened with the owner still signed in, so nothing"
                         + " below is about what a stranger can do");
             // Opened the way the drive opens a folder in an app: by its path, the link kept.
@@ -105,7 +105,7 @@ public class CalendarReadOnlyTest {
             d.waitForScript("the calendar view", CALENDAR_VIEW, 120_000);
             d.waitForScript("the calendar frame", "!!document.querySelector('" + CalendarApp.FRAME + "')", 60_000);
             CalendarApp.waitInFrame(d, "the calendar app to load",
-                    "!!document.getElementById('load-progress') && document.getElementById('load-progress').hidden"
+                    "(document.getElementById('load-progress') || {}).dataset?.pending === '0'"
                             + " && !!document.querySelector('[role=\"gridcell\"]')", 120_000);
             CalendarApp.waitInFrame(d, "the owner's entry on the stranger's grid",
                     "Array.from(document.querySelectorAll('[data-search-event-id]'))"
@@ -176,7 +176,7 @@ public class CalendarReadOnlyTest {
             // frame exists and only the frame can say the first paint is done, so an entry can be
             // drawn correctly and still be sitting under a spinner nobody takes down.
             d.waitForScript("the host's spinner to go",
-                    CALENDAR_VIEW + " && !window.__cal.showSpinner", 60_000);
+                    CALENDAR_VIEW + " && !window.__cal.busy && !window.__cal.showSpinner", 60_000);
             System.out.println("  ok   and the spinner over it comes down");
             // The link was sent to show one entry, so that entry's detail is what a reader
             // should be looking at - not a month they have to hunt through for it.

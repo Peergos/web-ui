@@ -1,5 +1,5 @@
 <template>
-  <article class="drive-view">
+  <article class="drive-view" :class="{ 'drive-view--selecting': selectionBarShown }">
     <input
       type="file"
       id="uploadFileInput"
@@ -21,6 +21,12 @@
     <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
 
     <a id="downloadAnchor" style="display: none"></a>
+
+    <AppHeader>
+      <template #primary>
+        <h1>{{ translate("APPNAV.DRIVE") }}</h1>
+      </template>
+    </AppHeader>
 
     <DriveHeader
       :gridView="isGrid"
@@ -73,16 +79,17 @@
     />
 
     <transition name="fade" mode="out-in" appear>
-    <DriveSelected v-if="selectedFiles.length > 1" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
+    <DriveSelected v-if="selectionBarShown" :totalFiles="files.length" :selectedFiles="selectedFiles" @selectAllOrNone="selectAllOrNone()">
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
-      <li id="delete" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
         {{ translate("DRIVE.DESELECT") }}
       </li>
+      <li class="divider" v-if="isWritable || canEditArchive" aria-hidden="true"></li>
+      <li id="delete" class="is-danger" v-if="isWritable || canEditArchive" @keyup.enter="deleteFilesMultiSelect()" @click="deleteFilesMultiSelect()">{{ translate("DRIVE.DELETE") }}</li>
     </DriveSelected>
     </transition>
     <transition name="drop">
@@ -97,45 +104,51 @@
       id="dnd"
       @drop="dndDrop($event)"
       @dragover.prevent
+      @click="clearSelectionOnEmptySpace($event)"
       :class="{ not_owner: isNotMe, dnd: 'dnd' }"
     >
-      <transition name="fade" mode="out-in" appear>
-        <DriveGrid v-if="isGrid" appear>
-          <DriveGridCard
-            v-for="(file, index) in sortedFiles"
-            :class="{ shared: isShared(file) }"
-            :key="file.getFileProperties().name"
-            :filename="file.getFileProperties().name"
-            :src="getThumbnailURL(file)"
-            :type="file.getFileProperties().getType()"
-            @click.native="navigateDrive(file)"
-            @openMenu="openMenu(file)"
-            :dragstartFunc="dragStart"
-            :dropFunc="drop"
-            :file="file"
-            :itemIndex="index"
-            :selected="isSelected(file)"
-            @toggleSelection="toggleSelection(file, $event)"
-          />
-          <DriveGridDrop
-            v-if="
-              getPath.length > 1 &&
-              sortedFiles.length == 0 &&
-              currentDir != null &&
-              currentDir.isWritable()
-            "
-          >
-          </DriveGridDrop>
-        </DriveGrid>
+      <transition name="drive-swap" mode="out-in" appear>
+        <div class="drive-content" :key="isGrid ? 'grid' : 'list'">
+          <DriveGrid v-if="isGrid" appear :class="{ 'drive-grid--empty': isEmptyWritableFolder }">
+            <DriveGridCard
+              v-for="(file, index) in sortedFiles"
+              :shared="shareKinds[file.getFileProperties().name]"
+              :key="file.getFileProperties().name"
+              :filename="file.getFileProperties().name"
+              :src="getThumbnailURL(file)"
+              :type="file.getFileProperties().getType()"
+              @click.native="openOrSelect(file, $event)"
+              @openMenu="openMenu(file)"
+              :dragstartFunc="dragStart"
+              :dropFunc="drop"
+              :file="file"
+              :itemIndex="index"
+              :selected="isMarked(file)"
+              :selecting="picking"
+              :menuStandsDown="menuStandsDown"
+              @toggleSelection="toggleSelection(file, $event)"
+            />
+          </DriveGrid>
 
-        <DriveTable
-          v-else
-          :files="sortedFiles"
-          :selectedFiles.sync="selectedFiles"
-          @sortBy="setSortBy"
-          @openMenu="openMenu"
-          @navigateDrive="navigateDrive"
-        />
+          <DriveTable
+            v-else
+            :files="sortedFiles"
+            :selectedFiles="pickedFiles"
+            :menuStandsDown="menuStandsDown"
+            @update:selectedFiles="pickFromList"
+            :sortBy="sortBy"
+            :normalSortOrder="normalSortOrder"
+            :shareKinds="shareKinds"
+            @sortBy="setSortBy"
+            @openMenu="openMenu"
+            @navigateDrive="navigateDrive"
+          />
+
+          <!-- opening an empty folder swaps no view, so the target arrives on its own -->
+          <transition name="drive-swap">
+            <DriveGridDrop v-if="isEmptyWritableFolder"></DriveGridDrop>
+          </transition>
+        </div>
       </transition>
     </div>
 
@@ -195,13 +208,8 @@
         <li id="rename-file" v-if="isWritable || canEditArchive" @keyup.enter="rename" @click="rename">
           {{ translate("DRIVE.RENAME") }}
         </li>
-        <li
-          id="delete-file"
-          v-if="isWritable || canEditArchive"
-          @keyup.enter="deleteFile"
-          @click="deleteFile"
-        >
-          {{ translate("DRIVE.DELETE") }}
+        <li id="select-file" @keyup.enter="selectFromMenu" @click="selectFromMenu">
+          {{ translate("DRIVE.SELECT") }}
         </li>
         <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
         <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
@@ -266,6 +274,16 @@
           @click="installApp()"
         >
           {{ translate("DRIVE.INSTALL") }}
+        </li>
+        <li class="divider" v-if="isWritable || canEditArchive" aria-hidden="true"></li>
+        <li
+          id="delete-file"
+          class="is-danger"
+          v-if="isWritable || canEditArchive"
+          @keyup.enter="deleteFile"
+          @click="deleteFile"
+        >
+          {{ translate("DRIVE.DELETE") }}
         </li>
       </DriveMenu>
     </transition>
@@ -406,6 +424,7 @@
 
 <script>
 
+const AppHeader = require("../components/AppHeader.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const AppRunner = require("../components/sandbox/AppRunner.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
@@ -447,9 +466,11 @@ const i18n = require("../i18n/index.js");
 const router = require("../mixins/router/index.js");
 const launcherMixin = require("../mixins/launcher/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
+const errorsMixin = require("../mixins/errors/index.js");
 
 module.exports = {
 	components: {
+	    AppHeader,
 	    AppInstall,
 	    AppRunner,
 	    AppSandbox,
@@ -483,6 +504,10 @@ module.exports = {
 	data() {
 		return {
 			isGrid: true,
+			// Whether the user is picking files, which is not the same as selectedFiles being
+			// non-empty: openMenu borrows that list to say which file its actions apply to.
+			// Only a deliberate pick puts the drive in selection mode.
+			picking: false,
 			// path: [],
             searchPath: null,
 			currentDir: null,
@@ -490,6 +515,11 @@ module.exports = {
 			sortBy: "name",
 			normalSortOrder: true,
 			clipboard: {},
+			// Declared so it is reactive, as the single-file clipboard beside it already is.
+			// Cutting a selection has to reach what reads it - the paste entry in a folder's
+			// menu, and whether that menu is offered at all - and an undeclared property on
+			// the instance is invisible to Vue, so those answers never refreshed.
+			clipboardMultiSelect: null,
 			selectedFiles: [],
 			viewerFile: null,
 			url: null,
@@ -575,7 +605,6 @@ module.exports = {
             clicks: 0,
             clickTimer: null,
             clickedFilename: null,
-            launcherApp: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             progressBarUpdateFrequency: 15,
@@ -585,7 +614,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -615,6 +644,41 @@ module.exports = {
 			'isSecretLink',
 			'getPath'
 		]),
+
+        // What the list view is shown as picked - the same answer isMarked gives the grid,
+        // as a list. Handing it the menu's borrowed file would tick that row's box and, worse,
+        // fold the file into the next pick the list emits: the list builds its selection as a
+        // whole array rather than a file at a time, so there is no toggleSelection to catch it.
+        pickedFiles() {
+            return (this.picking || this.viewMenu) ? this.selectedFiles : [];
+        },
+
+        // The selection bar is up. Read in two places, and they have to agree: the list's
+        // sticky header is pushed down to clear the bar, and a header that clears a bar which
+        // is not there - or sits under one that is - is the visible half of getting it wrong.
+        selectionBarShown() {
+            return this.picking && this.selectedFiles.length > 0;
+        },
+
+        // an empty folder you can write to: the one place the drop target belongs,
+        // in either view
+        isEmptyWritableFolder() {
+            return this.getPath.length > 1
+                && this.sortedFiles.length == 0
+                && this.currentDir != null
+                && this.currentDir.isWritable();
+        },
+
+        shareKinds() {
+            const kinds = {};
+            if (this.sharedWithState == null)
+                return kinds;
+            for (const file of this.files) {
+                const name = file.getFileProperties().name;
+                kinds[name] = this.shareKind(file);
+            }
+            return kinds;
+        },
 
         sortedFiles() {
 			if (this.files == null) {
@@ -919,7 +983,6 @@ module.exports = {
 
 	created() {
 	    let that = this;
-		this.onResize();
 		let illegalFilenames = [
                                     'constructor',
                                     '__defineGetter__',
@@ -935,12 +998,12 @@ module.exports = {
                                     'toLocaleString'
                                   ];
 		illegalFilenames.forEach(item => that.disallowedFilenames.set(item, ""));
-		// TODO: throttle onResize and make it global?
 		window.addEventListener('resize', this.onResize, {passive: true} );
-        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
-            that.launcherApp = launcher;
-            that.init();
-        });
+        // Straight to init: listing a folder needs no launcher app, and only adding a
+        // shortcut does - which asks for it then. Starting up behind it raced the same
+        // init at sign in, and on a new account the loser of that race came back with a
+        // CAS conflict that nothing caught, leaving the view behind its spinner for good.
+        this.init();
 	},
 
 	beforeDestroy() {
@@ -950,6 +1013,12 @@ module.exports = {
 
 
 	watch: {
+		// an empty selection is not a selection, whichever way it emptied
+		selectedFiles(files) {
+			if (files.length == 0)
+				this.picking = false;
+		},
+
 		// manually encode currentDir dependencies to get around infinite dependency chain issues with async-computed methods
 		context(newContext, oldContext) {
 			this.updateCurrentDir();
@@ -1033,6 +1102,10 @@ module.exports = {
                     if (that.download || that.open) {
                         that.context.getByPath(path)
                             .thenApply(function (file) {
+                            if (file == null || ! file.isPresent()) {
+                                that.$toast.error(that.translate("DRIVE.MISSING.FOLDER"));
+                                return null;
+                            }
                             if (! file.get().isDirectory()) {
                                 if (that.download) {
                                 that.downloadFile(file.get());
@@ -1050,6 +1123,10 @@ module.exports = {
                                 let app = that.getApp(file.get(), linkPath);
                                 that.openFileOrDir(app, linkPath, {path:path});
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     } else if(path.startsWith("/peergos/recommended-apps")) {
                         let appPath = "/peergos/recommended-apps/";
@@ -1065,6 +1142,10 @@ module.exports = {
                                 };
                                 that.onUpdateCompletion.push(openRecApps);
                             }
+                            return null;
+                        }).exceptionally(function (throwable) {
+                            that.$toast.error(that.cleanError(that.errText(throwable)));
+                            return null;
                         });
                     }
 				} else {
@@ -1206,7 +1287,6 @@ module.exports = {
 
 		onResize() {
 			this.closeMenu()
-			this.$store.commit('SET_WINDOW_WIDTH', window.innerWidth)
 		},
         installApp() {
             this.closeMenu();
@@ -1933,8 +2013,9 @@ module.exports = {
                 let future = peergos.shared.util.Futures.incomplete();
                 let allFilesList = [];
                 progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                progress.kind = 'download';
                 progress.transfer = transfers.start(progress.toastId, 'download');
-                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: progress.toastId});
+                that.$toast({component: ProgressBar,props: progress}, { icon: false , timeout:false, id: progress.toastId, closeButton: false});
                 that.reduceCollectFilesToZip(0, path, files, allFilesList, future);
                 future.thenApply(res => {
                     that.showSpinner = false;
@@ -1996,9 +2077,10 @@ module.exports = {
                                 that.getPath + file.getFileProperties().name, accumulator, future);
                             future.thenApply(allFiles => {
                                 progress.toastId = 'zip-' + zipFilename + '-' + Date.now();
+                                progress.kind = 'download';
                                 progress.transfer = transfers.start(progress.toastId, 'download');
                                 that.$toast({component: ProgressBar,props: progress}
-                                    , { icon: false , timeout:false, id: progress.toastId});
+                                    , { icon: false , timeout:false, id: progress.toastId, closeButton: false});
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
@@ -2235,6 +2317,7 @@ module.exports = {
                         let sortedFiles = this.sortFilesByDirectory(files, this.getPath);
                         let progress = {
                             title: title,
+                            kind: 'upload',
                             done:0,
                             max:totalSize * 2,
                             name:name,
@@ -2245,7 +2328,7 @@ module.exports = {
                         let transfer = transfers.start(name, 'upload');
                         that.$toast(
                             {component: ProgressBar,props:  progress} ,
-                            { icon: false , timeout:false, id: name})
+                            { icon: false , timeout:false, id: name, closeButton: false})
                         let uploadDirectoryPath = that.getPath;
                         const uploadParams = {
                             applyReplaceToAll: false,
@@ -2270,8 +2353,11 @@ module.exports = {
                                         title: uploadParams.lastTitle,
                                         subtitle: uploadParams.lastSubtitle,
                                         stats: stats,
+                                        kind: 'upload',
                                         done: uploadParams.progress.done,
-                                        max: uploadParams.progress.max
+                                        max: uploadParams.progress.max,
+                                        current: uploadParams.progress.current,
+                                        total: uploadParams.progress.total
                                     }
                                 }
                             });
@@ -2367,14 +2453,44 @@ module.exports = {
                     return future;
                 }
                 let transfer = uploadParams.transfer;
+                // Anything that stops an upload before it starts ends up here: the folder
+                // moved or deleted by another session since these files were chosen, or the
+                // lookup failing outright. Left alone the progress bar ticks on over an
+                // upload that will never happen, and the future never settles.
+                let uploadUnavailable = function(message) {
+                    transfers.finish(transfer);
+                    clearInterval(uploadParams.progressInterval);
+                    that.$toast.dismiss(uploadParams.progress.name);
+                    that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
+                    that.errorBody = message;
+                    that.showError = true;
+                    uploadFuture.complete(false);
+                };
                 this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
-                    uploadDir.ref.uploadSubtree(folderStream, that.getMirrorBatId(uploadDir.ref), that.context.network,
+                    // resolved and empty is not the same as failed, and it is what a folder
+                    // that has gone looks like from here
+                    let dir = uploadDir != null && uploadDir.isPresent() ? uploadDir.ref : null;
+                    if (dir == null) {
+                        uploadUnavailable(that.translate("DRIVE.MISSING.FOLDER"));
+                        return null;
+                    }
+                    dir.uploadSubtree(folderStream, that.getMirrorBatId(dir), that.context.network,
                         that.context.crypto, that.context.getTransactionService(),
                         f => resumeFileUpload(f),
                         f => replaceFileUpload(f),
                         commitWatcher,
                         transfer != null ? transfer.isCancelled : transfers.never).thenApply(res => {
                             transfers.finish(transfer);
+                            // The watcher below says "complete" once every file's bytes are
+                            // through, which a file that was skipped because it is already
+                            // there never reaches - and the same message is what takes the
+                            // progress bar down. Said here too, the bar cannot outlive the
+                            // upload it reports on.
+                            if (! commitContext.completed) {
+                                commitContext.completed = true;
+                                that.addUploadProgressMessage(uploadParams,
+                                    that.translate("DRIVE.UPLOAD.COMPLETE"), '', '', '', true);
+                            }
                             uploadFuture.complete(true);
                     }).exceptionally(function (throwable) {
                         transfers.finish(transfer);
@@ -2390,7 +2506,14 @@ module.exports = {
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.$toast.clear();
+                        uploadFuture.complete(false);
                     });
+                    return null;
+                // this also catches whatever the callback above throws, which is not always
+                // a java throwable
+                }).exceptionally(function (throwable) {
+                    uploadUnavailable(that.cleanError(that.errText(throwable)));
+                    return null;
                 });
             }
             return uploadFuture;
@@ -2549,8 +2672,11 @@ module.exports = {
                             title: title,
                             subtitle: subtitle,
                             stats: stats,
+                            kind: 'upload',
                             done: uploadParams.progress.done,
-                            max: uploadParams.progress.max
+                            max: uploadParams.progress.max,
+                            current: uploadParams.progress.current,
+                            total: uploadParams.progress.total
                             },
                         }
                     });
@@ -3045,18 +3171,28 @@ module.exports = {
 		refreshAndAddShortcutLink(link, created) {
 		    let that = this;
             this.showSpinner = true;
-            this.loadShortcutsFile(this.launcherApp).thenApply(shortcutsMap => {
-                if (shortcutsMap.get(link) == null) {
-                    let entry = {added: new Date(), created: created};
-                    shortcutsMap.set(link, entry)
-                    that.updateShortcutsFile(that.launcherApp, shortcutsMap).thenApply(res => {
+            // Each step is a future of its own, and a failure inside one is not one the
+            // chain around it sees: without a handler on each, a shortcut that could not
+            // be read or written left the view under a spinner with nothing said.
+            let failed = function (throwable) {
+                that.showSpinner = false;
+                that.$toast.error(that.cleanError(that.errText(throwable)));
+                return null;
+            };
+            peergos.shared.user.App.init(this.context, "launcher").thenApply(launcherApp => {
+                that.loadShortcutsFile(launcherApp).thenApply(shortcutsMap => {
+                    if (shortcutsMap.get(link) == null) {
+                        let entry = {added: new Date(), created: created};
+                        shortcutsMap.set(link, entry)
+                        that.updateShortcutsFile(launcherApp, shortcutsMap).thenApply(res => {
+                            that.showSpinner = false;
+                            that.$store.commit("SET_SHORTCUTS", shortcutsMap);
+                        }).exceptionally(failed);
+                    } else {
                         that.showSpinner = false;
-                        that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    });
-                } else {
-                    that.showSpinner = false;
-                }
-            })
+                    }
+                }).exceptionally(failed);
+            }).exceptionally(failed);
 		},
 		showShareWith() {
 			if (this.selectedFiles.length == 0)
@@ -3094,6 +3230,10 @@ module.exports = {
 				return; //already root
 			}
 			console.log('Changing to path:' + path);
+			// the selection belongs to the folder it was made in. The listing clears it
+			// when it arrives, which is a round trip later: until then the count of the
+			// folder just left stands over the folder just entered
+			this.selectedFiles = [];
 			if (path.startsWith("/"))
 				path = path.substring(1);
 
@@ -3302,6 +3442,17 @@ module.exports = {
 			}
 		},
 
+		// While files are being picked a click adds to the pick rather than opening, on either
+		// platform - the whole tile, so there is no corner of it that means something else. A
+		// phone gets into that state by pressing and holding; a desktop has the circle and the
+		// menu's Select. With nothing being picked, a click opens.
+		openOrSelect(file, event) {
+			if (this.picking)
+				this.toggleSelection(file, event != null && event.shiftKey);
+			else
+				this.navigateDrive(file);
+		},
+
 		navigateDrive(file) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
@@ -3452,6 +3603,7 @@ module.exports = {
                 });
 			} else {
 			    this.multiSelectTargetFolder = null;
+			    this.picking = false;
                 if (file) {
                     this.selectedFiles = [file];
                 } else {
@@ -3692,19 +3844,24 @@ module.exports = {
                 that.showPrompt = false;
                 if (prompt_result != null) {
                     if (that.archive != null) {
-                        that.deleteFromArchive(that.selectedFiles.slice());
+                        let entries = that.selectedFiles.slice();
+                        that.selectedFiles = [];
+                        that.deleteFromArchive(entries);
                         return;
                     }
                     that.showSpinner = true;
                     let parent = that.currentDir;
                     let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
+                    // the files are on their way out, so the count goes with them: left to
+                    // the callbacks below it survives a usage call that never answers, and
+                    // the bar then counts files that are no longer there
+                    that.selectedFiles = [];
                     let path = that.getPath;
                     let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
                     peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, that.context).thenApply(updatedParent => {
                         that.updateUsage(usageBytes => {
                             that.updateCurrentDirectory(null , () => {
                                 that.showSpinner = false;
-                                that.selectedFiles = [];
                             });
                         });
                     }).exceptionally(function (throwable) {
@@ -3745,6 +3902,8 @@ module.exports = {
 		},
 
 		deleteOne(file, parent, context) {
+			// whatever else stays selected, the one being deleted does not
+			this.selectedFiles = this.selectedFiles.filter(f => f !== file);
 			if (file.isArchiveEntry) {
 				this.deleteFromArchive([file]);
 				return;
@@ -3766,15 +3925,31 @@ module.exports = {
 		},
 
 
-		isShared(file) {
-			if (this.currentDir == null || this.archive != null)
-				return false;
-			if (this.sharedWithState == null)
-				return false;
-			return this.sharedWithState.isShared(file.getFileProperties().name);
+		// "" | "people" | "link" | "people link". Only whether it is empty decides the mark
+		// today, but isShared() counts people alone, so a file reachable only through a secret
+		// link has to be asked for separately or it would carry no mark at all.
+		shareKind(file) {
+			if (this.currentDir == null || this.archive != null || this.sharedWithState == null)
+				return "";
+			let filename = file.getFileProperties().name;
+			let kind = this.sharedWithState.isShared(filename) ? "people" : "";
+			if (this.sharedWithState.hasLink(filename))
+				kind = kind == "" ? "link" : "people link";
+			return kind;
 		},
 
 
+
+		// clicking the empty space around the files clears the selection, as every
+		// other file manager does. A row, a tile or any control inside one is not
+		// empty space, and neither is a menu opened over it.
+		clearSelectionOnEmptySpace(event) {
+			if (this.selectedFiles.length == 0)
+				return;
+			if (event.target.closest(".grid-card, .table__item, thead, .drive-menu, .app-dropdown, button, input, label, a") != null)
+				return;
+			this.selectedFiles = [];
+		},
 
 		closePrompt() {
 			this.showPrompt = false;
@@ -3788,13 +3963,56 @@ module.exports = {
 		closeMenu() {
 		    this.viewMenu = false
 		},
+
+		// The file is already in selectedFiles - opening the menu put it there - so this only
+		// has to say that the user meant it, and get out of the way.
+		selectFromMenu() {
+		    this.picking = true;
+		    this.closeMenu();
+		},
 		closePasteMenu() {
 			this.viewPasteMenu = false
 		},
         isSelected(file) {
             return this.selectedFiles.findIndex(selected => selected == file) > -1
         },
+
+        // The list view picks through a checkbox on every row rather than through the tile,
+        // so its changes arrive here instead of at toggleSelection. Ticking a box is a pick
+        // like any other and has to put the drive into selection mode, or the files are
+        // picked with no bar to do anything with them.
+        pickFromList(files) {
+            this.selectedFiles = files;
+            this.picking = files.length > 0;
+        },
+
+        // Whether this file's own menu should stand down. It replaces the selection with its
+        // one file, so with several picked it is a click that throws the pick away. Two things
+        // it is not: at one file it names the file already picked and costs nothing, and for a
+        // folder a pending cut can be pasted into it opens the paste menu instead, which names
+        // the folder without touching the selection - and is how files get moved on a phone,
+        // where dragging one onto a folder is not available.
+        menuStandsDown(file) {
+            return this.picking
+                && this.selectedFiles.length > 1
+                && ! this.isPasteToFolderMultiSelectAvailable(file);
+        },
+
+        // Picked by the user, or named by the menu that is open over it. The second is worth
+        // showing while that menu is up and worth dropping the moment it closes, since the
+        // file stays in selectedFiles either way.
+        isMarked(file) {
+            return (this.picking || this.viewMenu) && this.isSelected(file);
+        },
         toggleSelection(file, shiftModifier) {
+            // Whatever is in the list when nothing is being picked was put there by openMenu
+            // naming the file its actions apply to, not by anyone picking it. A pick starts
+            // from empty rather than adding to that - otherwise dismissing a file's menu and
+            // then picking one file leaves two selected, and the one nobody chose goes into
+            // whatever the selection bar is then asked to do.
+            if (! this.picking)
+                this.selectedFiles = [];
+            this.picking = true;
             let index = this.selectedFiles.findIndex(selected=> selected == file)
             if (index > -1) {
                 this.selectedFiles.splice(index, 1)
@@ -3827,7 +4045,32 @@ module.exports = {
   flex-direction: column;
 }
 
+/* the view and an empty folder's drop target cross-fade as one: outside the transition
+   the target held its old place through the fade, then jumped when the view swapped */
+.drive-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* quick enough that the two fades read as one change: the shared half second each way
+   left the area blank for a second */
+.drive-swap-enter-active,
+.drive-swap-leave-active {
+  transition: opacity .18s ease;
+}
+
+.drive-swap-enter,
+.drive-swap-leave-to {
+  opacity: 0;
+}
+
+/* a column of its own, so the view below the header can take the height it is
+   given: an empty folder's drop target fills it */
 .dnd {
+  display: flex;
+  flex-direction: column;
   flex-grow: 1;
 }
 

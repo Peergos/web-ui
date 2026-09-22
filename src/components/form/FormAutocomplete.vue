@@ -2,12 +2,14 @@
 	<div class="form-autocomplete">
 		<div v-if="!isMultiple">
 			<input id="input-tokenfield"
-				class="autocomplete"
+				class="autocomplete pg-input"
 				v-if="!value"
 				v-model="textSearch"
 				type="text"
 				:placeholder="placeholder"
 				@focus="showOptions"
+				@blur="hideOptions"
+				@keyup.esc="hideOptions"
 			/>
 			<div class="items-selected">
 				<div class="item-selected" v-if="value">
@@ -15,20 +17,22 @@
 					<AppButton icon="close" @click.native="clearItem" />
 				</div>
 			</div>
-			<ul class="options" v-show="isShow">
-				<li v-for="item in filteredOptions" @click="selectItem(item)">
+			<ul class="options pg-menu" v-show="isOpen">
+				<li v-for="item in filteredOptions" @mousedown.prevent @click="selectItem(item)">
 					<slot :item="item">{{ item }}</slot>
 				</li>
-				<li v-if="filteredOptions.length === 0">Item not found</li>
+				<li v-if="filteredOptions.length === 0" class="options__empty">{{ translate("SOCIAL.NOTFOUND") }}</li>
 			</ul>
 		</div>
 		<div v-else>
 			<input id="input-tokenfield"
-				class="autocomplete"
+				class="autocomplete pg-input"
 				v-model="textSearch"
 				type="text"
 				:placeholder="placeholder"
 				@focus="showOptions"
+				@blur="hideOptions"
+				@keyup.esc="hideOptions"
 			/>
 			<div class="items-selected">
 				<div class="item-selected" v-for="(v, k) in value">
@@ -37,15 +41,16 @@
 					<AppButton icon="close" @click.native="removeItem(k)" />
 				</div>
 			</div>
-			<ul class="options" v-show="isShow">
+			<ul class="options pg-menu" v-show="isOpen">
 				<li
 					v-for="item in filteredOptions"
 					:class="{ disabled: inSelectedItems(item) }"
+					@mousedown.prevent
 					@click="addItem(item)"
 				>
 					<slot :item="item">{{ item }}</slot>
 				</li>
-				<li v-if="filteredOptions.length === 0 && this.doSearch">User not found</li>
+				<li v-if="filteredOptions.length === 0" class="options__empty">{{ translate("SOCIAL.NOTFOUND") }}</li>
 			</ul>
 		</div>
 	</div>
@@ -53,10 +58,12 @@
 
 <script>
 const AppButton = require("../AppButton.vue");
+const i18n = require("../../i18n/index.js");
 module.exports = {
 	components: {
 	    AppButton,
 	},
+	mixins: [i18n],
 	props: {
 		isMultiple: {
 			type: Boolean,
@@ -121,6 +128,11 @@ module.exports = {
 	    },
             doSearch() {
                 return this.textSearch.length >= this.minchars;
+            },
+            /* open only with the caret in the field and something typed to match: on focus
+               alone an empty field opened a list whose only row said nothing was found */
+            isOpen() {
+                return this.isShow && this.doSearch;
             }
 	},
 	methods: {
@@ -129,6 +141,9 @@ module.exports = {
 		},
 		showOptions() {
 			this.isShow = true;
+		},
+		hideOptions() {
+			this.isShow = false;
 		},
 		selectItem(item) {
 			this.textSearch = "";
@@ -215,37 +230,36 @@ module.exports = {
 
 <style>
 .form-autocomplete {
+	position: relative;
 	margin-bottom: var(--app-margin);
 }
 
 
-.form-autocomplete ul {
-	/* width: 200px; */
-	padding-left: 0;
-	display: flex;
-
-
-}
-.form-autocomplete ul > li {
-	cursor: pointer;
+/* the results hang under the field on .pg-menu, the surface every other list opens on:
+   in flow they were a row of bordered boxes that pushed the form down */
+.form-autocomplete .options {
+	position: absolute;
+	top: calc(100% + 4px);
+	left: 0;
+	z-index: 40;
+	width: 100%;
+	margin: 0;
+	padding: 6px;
 	list-style: none;
-	padding: 5px;
-	color:var(--color);
-	line-height: 36px;
-	border: 2px solid var(--bg-2);
-	border-radius: 4px;
-	margin: 0 5px 10px 0;
 }
-.form-autocomplete ul > li:hover {
-	background: var(--bg-2);
-	color:var(--color);
+
+.form-autocomplete .options > li.options__empty {
+	color: var(--pg-muted);
+	cursor: default;
 }
-.form-autocomplete ul > li.disabled,
-.form-autocomplete ul > li.disabled:hover {
-	display:none;
+
+.form-autocomplete .options > li.options__empty:hover {
+	background-color: transparent;
 }
-.form-autocomplete ul > li.disabled {
-	opacity: 0.5;
+
+.form-autocomplete .options > li.disabled,
+.form-autocomplete .options > li.disabled:hover {
+	display: none;
 }
 
 .form-autocomplete .items-selected {

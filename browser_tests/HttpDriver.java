@@ -91,6 +91,7 @@ public class HttpDriver implements WebDriver {
      *  a window that will not take the size says so and the tests carry on, since the one that
      *  cares says what it was given when it fails.
      */
+    @Override
     public void setWindowRect(int width, int height) {
         String had = null;
         for (int attempt = 0; attempt < 3; attempt++) {

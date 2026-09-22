@@ -1,8 +1,8 @@
 
 <template>
 	<div class="app-dropdown"
-		@focusin="expanded(true)"
-    	@focusout="expanded(false)"
+		@focusout="close()"
+		@keydown.esc="close()"
         tabindex="-1"
 	>
 		<AppButton
@@ -10,13 +10,13 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click.native="expanded(true)"
+			@click.native="toggle()"
 		>
 			<slot name="trigger"></slot>
 		</AppButton>
 		<transition name="drop">
 			<div v-if="isActive"
-				class="dropdown__content"
+				class="dropdown__content pg-menu"
                                 @mousedown.prevent
                                 @click="closeMenu"
 			>
@@ -53,19 +53,23 @@ module.exports = {
 		};
 	},
 	methods: {
-		expanded(value){
-			// close on focus-out
-			// https://codepen.io/autumnwoodberry/pen/NvjJWm
-			this.isActive = value
-	        },        
-                closeMenu(){
-                    this.isActive = false;
-                    // the trigger inside $el holds the focus, not $el itself, so blurring $el
-                    // leaves it focused and the next focusin reopens the menu
-                    let focused = document.activeElement;
-                    if (focused != null && this.$el.contains(focused))
-                        focused.blur();
-                },
+		// The trigger opens it, and nothing else does. Focus arriving here must not: a modal
+		// opened from one of these items takes focus, and whatever the browser does with focus
+		// when that modal closes - restoring it to the trigger, on a web view - would otherwise
+		// reopen the menu behind it.
+		toggle(){
+			this.isActive = ! this.isActive;
+		},
+		// focus leaving the menu, or escape, puts it away
+		close(){
+			this.isActive = false;
+		},
+		// and choosing something in it closes it, then hands focus back out so the menu is
+		// not left holding it
+		closeMenu(){
+			this.close();
+			this.$el.blur();
+		},
 
 	},
 };
@@ -79,41 +83,16 @@ module.exports = {
 	border-radius: 4px;
 }
 
+/* the surface is .pg-menu in 2_status-cards.css; this is only where it opens */
 .app-dropdown .dropdown__content {
-
 	position: absolute;
 	top: calc(100% + 8px);
 	left: 0;
-
-	/* padding: 16px; */
-	min-width: 200px;
-	border-radius: 4px;
-	color: var(--color);
-	background-color:var(--bg);
-	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-.app-dropdown ul {
-	list-style: none;
-	padding-left: 0;
-	margin: 0;
-}
-.app-dropdown li {
-	padding: 8px  16px;
-	cursor: pointer;
-	font-size: var(--text-small);
-	transition: background-color 0.5s;
-}
-.app-dropdown li:hover {
-	background-color: var(--bg-2);
+	min-width: 220px;
 }
 .app-dropdown li:hover a{
 	color: var(--color);
 	text-decoration: none;
-}
-.app-dropdown li.divider{
-	border-top: 1px solid var(--border-color);
-	height: 1px;
-	padding: 0;
 }
 
 .drop-enter-active, .drop-leave-active  {
