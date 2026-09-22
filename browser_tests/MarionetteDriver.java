@@ -320,8 +320,18 @@ public class MarionetteDriver implements WebDriver {
                 last = e;
                 if (marked && arrivedAt(url, mark))
                     return;
-                if (attempt + 1 < attempts)
+                if (attempt + 1 < attempts) {
                     System.out.println("  page load timed out, navigating again: " + url);
+                    // A load that never finished leaves the session waiting on it, so asking
+                    // that same session for that same page is the step which has already
+                    // failed - two attempts at it spend ten minutes proving it twice. The
+                    // session is rebuilt first, which is what makes the second attempt a
+                    // different one. Only at the top level: inside a frame a restart throws
+                    // away the document under test, and there the plain retry is the safer of
+                    // the two.
+                    if (frames.isEmpty())
+                        restartSession();
+                }
             }
         }
         throw last;
