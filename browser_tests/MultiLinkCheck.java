@@ -22,6 +22,8 @@ public class MultiLinkCheck {
         }
     }
 
+
+
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
         String url = args.length > 1 ? args[1] : "http://localhost:8080";
@@ -38,7 +40,7 @@ public class MultiLinkCheck {
             d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
                 System.out.println("signed in");
 
-                d.script("""
+                Object r = Settle.step(d, "link created", "__r", """
                     window.__r = null;
                     const ctx = window.__drive.context;
                     const u = ctx.username;
@@ -60,14 +62,12 @@ public class MultiLinkCheck {
                         return true;
                     }).exceptionally(t => { window.__r = {error: '' + t}; return null; });
                     """);
-                d.waitForScript("link created", "window.__r", 120_000);
-                Object r = d.script("return window.__r");
                 System.out.println("result: " + r);
                 if (r.toString().contains("error"))
                     throw new IllegalStateException("browser reported: " + r);
 
                 // and the link resolves, to both items, in a context that has only the link
-                d.script("""
+                Object res = Settle.step(d, "link resolved", "__resolved", """
                     window.__resolved = null;
                     const url = window.__r.url;
                     const d0 = window.__drive;
@@ -87,12 +87,10 @@ public class MultiLinkCheck {
                                 })))
                         .exceptionally(t => { window.__resolved = {error: '' + t}; return null; });
                     """);
-                d.waitForScript("link resolved", "window.__resolved", 120_000);
-                Object res = d.script("return window.__resolved");
                 System.out.println("resolved: " + res);
 
                 // and the recipient lands on the first item in the link, not the first by name
-                d.script("""
+                Object entry = Settle.step(d, "entry path", "__entry", """
                     window.__entry = null;
                     const d1 = window.__drive;
                     peergos.shared.user.UserContext.fromSecretLinkV2(window.__r.url,
@@ -102,8 +100,6 @@ public class MultiLinkCheck {
                         .thenApply(p => { window.__entry = {path: p, expected: '/' + window.__dirs[0]}; return true; })
                         .exceptionally(t => { window.__entry = {error: '' + t}; return null; });
                     """);
-                d.waitForScript("entry path", "window.__entry", 120_000);
-                Object entry = d.script("return window.__entry");
                 System.out.println("landing: " + entry);
                 String path = String.valueOf(((java.util.Map) entry).get("path"));
                 String expected = String.valueOf(((java.util.Map) entry).get("expected"));

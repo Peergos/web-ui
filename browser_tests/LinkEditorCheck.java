@@ -59,12 +59,14 @@ public class LinkEditorCheck {
                     + " if (! dr.showShare) { try { dr.selectedFiles = [window.__pick]; dr.showShareWith(); } catch (e) {} }"
                     + " return !!" + btn + "; })()";
             // the modal loads this file's sharing state before it renders, which on a slow or
-            // busy runner takes a while; 30s was not enough in CI
+            // busy runner takes a while; 30s was not enough in CI, and 120s was not enough on
+            // the macos runner, which drives a real safari with nothing headless about it
+            long slow = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 3 : 1;
             long t0 = System.currentTimeMillis();
-            d.waitForScript("share modal", modalUp, 120_000);
+            d.waitForScript("share modal", modalUp, 120_000 * slow);
             System.out.println("share modal appeared in " + (System.currentTimeMillis() - t0) + "ms");
             d.script("return " + btn + ".click()");
-            d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000);
+            d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000 * slow);
 
             // the members list shows the file the modal was opened on
             System.out.println("members shown: " + d.script(
