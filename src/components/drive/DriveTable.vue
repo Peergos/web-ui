@@ -64,7 +64,7 @@
 const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const ShareMark = require("./ShareMark.vue");
-const mixins = require("../../mixins/downloader/index.js");
+const downloader = require("../../mixins/downloader/index.js");
 const i18n = require("../../i18n/index.js");
 const fileIcon = require("../../mixins/fileicon/index.js");
 const sortColumn = require("../../mixins/sortcolumn/index.js");
@@ -105,7 +105,7 @@ module.exports = {
             default: ()=>({})
         },
 	},
-    mixins:[mixins, i18n, fileIcon, sortColumn],
+    mixins:[downloader, i18n, fileIcon, sortColumn],
     data: function () {
         return {
             selected: this.selectedFiles,
