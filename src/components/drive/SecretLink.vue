@@ -237,6 +237,8 @@ module.exports = {
                         path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
                     }));
                 }
+                if (this.link.paths != null)
+                    return this.link.paths.map(p => ({path: p, writable: false, canBeWritable: true, writableReason: ""}));
                 return [{
                     path: this.getLinkPath(),
                     writable: this.currentProps != null && this.currentProps.isLinkWritable,

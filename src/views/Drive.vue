@@ -87,6 +87,7 @@
       <li id="copy" v-if="allowCopy" @keyup.enter="copyMultiSelect()" @click="copyMultiSelect()">{{ translate("DRIVE.COPY") }}</li>
       <li id="cut" v-if="isWritable" @keyup.enter="cutMultiSelect()" @click="cutMultiSelect()">{{ translate("DRIVE.CUT") }}</li>
       <li id="download" @keyup.enter="downloadAllMultiSelect()" @click="downloadAllMultiSelect()">{{ translate("DRIVE.DOWNLOAD") }}</li>
+      <li id="secret-link" v-if="allowSecretLinkMultiSelect" @keyup.enter="createSecretLinkMultiSelect()" @click="createSecretLinkMultiSelect()">{{ translate("DRIVE.SHARE.LINK") }}</li>
       <li id="zip" @keyup.enter="zipAndDownloadMultiSelect()" @click="zipAndDownloadMultiSelect()">{{ translate("DRIVE.ZIP") }}</li>
       <li id="create-thumbnail" v-if="isWritable" @keyup.enter="createThumbnailMultiSelect()" @click="createThumbnailMultiSelect()">{{ translate("DRIVE.THUMB") }}</li>
       <li id="deselect" @keyup.enter="selectedFiles = []" @click="selectedFiles = []">
@@ -354,6 +355,15 @@
       :messages="messages"
     >
     </Share>
+    <SecretLink
+      v-if="showSecretLinkMultiSelect"
+      v-on:hide-modal="closeSecretLinkMultiSelect"
+      :title="translate('DRIVE.SHARE.LINK')"
+      :link="secretLinkMultiSelect"
+      :host="secretLinkHost"
+      :existingProps="null"
+      :username="context.username"
+    />
     <Search
       v-if="showSearch"
       v-on:hide-search="closeSearch"
@@ -443,6 +453,7 @@ const Error = require("../components/error/Error.vue");
 const Gallery = require("../components/drive/DriveGallery.vue");
 const Identity = require("../components/identity-proof-viewer.vue");
 const Share = require("../components/drive/DriveShare.vue");
+const SecretLink = require("../components/drive/SecretLink.vue");
 const Search = require("../components/Search.vue");
 const Markup = require("../components/viewers/Markup.vue");
 const Hex = require("../components/viewers/Hex.vue");
@@ -497,6 +508,7 @@ module.exports = {
 		Gallery,
 		Identity,
 		Share,
+		SecretLink,
 		Search,
 		Markup,
 		Hex,
@@ -530,6 +542,9 @@ module.exports = {
 			viewMenu: false,
 			viewPasteMenu: false,
 			showShare: false,
+			showSecretLinkMultiSelect: false,
+			secretLinkMultiSelect: null,
+			secretLinkHost: "",
 			sharedWithState: null,
 			sharedWithData: {
 				"edit_shared_with_users": [],
@@ -917,6 +932,9 @@ module.exports = {
 		allowShare() {
 			// there is no capability to an entry inside an archive: copy it out first
 			return this.isLoggedIn && this.path.length > 0 && this.archive == null;
+		},
+		allowSecretLinkMultiSelect() {
+			return this.allowShare && !this.isSecretLink && !this.isNotMe;
 		},
 		allowAddingToLauncher() {
             try {
@@ -3233,6 +3251,37 @@ module.exports = {
 		},
 		closeShare() {
 			this.showShare = false;
+		},
+		createSecretLinkMultiSelect() {
+			if (this.selectedFiles.length == 0)
+				return;
+			if (this.selectedFiles.length > 100) {
+				this.$toast.error(this.translate("DRIVE.LINK.MEMBER.TOO.MANY"));
+				return;
+			}
+			let dirPath = peergos.client.PathUtils.directoryToPath(this.path);
+			let paths = this.selectedFiles.map(f => peergos.client.PathUtils.toPath(this.path, f.getFileProperties().name).toString());
+			let first = this.selectedFiles[0].getFileProperties();
+			this.secretLinkMultiSelect = {
+				paths: paths,
+				path: dirPath.toString(),
+				filename: first.name,
+				name: paths.length == 1 ? first.name : paths.length + " " + this.translate("DRIVE.SHARE.LINK.ITEMS"),
+				isFile: paths.length == 1 && !first.isDirectory,
+				shareFolderWithFile: false,
+				autoOpen: false,
+			};
+			let that = this;
+			this.context.getLinkHost().thenApply(host => {
+				that.secretLinkHost = host;
+				that.showSecretLinkMultiSelect = true;
+			});
+		},
+		closeSecretLinkMultiSelect() {
+			this.showSecretLinkMultiSelect = false;
+			this.secretLinkMultiSelect = null;
+			this.forceSharedRefreshWithUpdate++;
+			this.forceUpdate++;
 		},
 
 		updateContext(newContext) {
