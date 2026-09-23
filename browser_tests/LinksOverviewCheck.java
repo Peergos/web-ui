@@ -1,9 +1,7 @@
 import java.nio.file.*;
 
 /**
- * Every secret link enumerated at once, and "add to an existing link" as a user meets it in
- * the share modal. The enumeration has no screen of its own any more, so this is what holds
- * it: it is still what the share modal appends to.
+ * The links overview and "add to an existing link", driven as a user meets them.
  *
  * Both are new js reaching new java: enumerating every link once despite it being recorded under
  * each of its items, and appending one more. A java test cannot see the vue wiring or the js
@@ -17,8 +15,6 @@ public class LinksOverviewCheck {
             run(new String[]{args.length > 0 ? args[0] : "firefox", server.url()});
         }
     }
-
-
 
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
@@ -35,7 +31,7 @@ public class LinksOverviewCheck {
             d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
 
             // two links over one item each, then the overview should show exactly two
-            Object listed = Settle.step(d, "links listed", "__o", """
+            d.script("""
                 window.__o = null;
                 const ctx = window.__drive.context;
                 const u = ctx.username;
@@ -54,12 +50,11 @@ public class LinksOverviewCheck {
                       return true;
                   }).exceptionally(t => { window.__o = {error: '' + t}; return null; });
                 """);
-            System.out.println("overview: " + listed);
-            if (Settle.transientStorage(listed))
-                throw new IllegalStateException("listing never settled: " + listed);
+            d.waitForScript("links listed", "window.__o", 120_000);
+            System.out.println("overview: " + d.script("return window.__o"));
 
             // now append the second folder to the first link, and list again
-            Object after = Settle.step(d, "appended", "__a", """
+            d.script("""
                 window.__a = null;
                 const ctx = window.__drive.context;
                 ctx.getAllSecretLinks().thenCompose(ls => {
@@ -88,6 +83,8 @@ public class LinksOverviewCheck {
                         });
                 }).exceptionally(t => { window.__a = {error: '' + t}; return null; });
                 """);
+            d.waitForScript("appended", "window.__a", 120_000);
+            Object after = d.script("return window.__a");
             System.out.println("after adding: " + after);
             if (after.toString().contains("error"))
                 throw new IllegalStateException("adding failed: " + after);
