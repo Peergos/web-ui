@@ -17,7 +17,25 @@
 
 <script>
 module.exports = {
-
+	data() {
+		return {
+			menuHeight: 0,
+		}
+	},
+	mounted() {
+		this.measure()
+	},
+	updated() {
+		this.measure()
+	},
+	methods: {
+		// the height is only known once rendered, and items come and go with the selection
+		measure() {
+			const height = this.$el.offsetHeight
+			if (height != this.menuHeight)
+				this.menuHeight = height
+		}
+	},
 	computed: {
 		...Vuex.mapState([
 			'driveMenuTarget',
@@ -38,6 +56,11 @@ module.exports = {
 				if(xPos >maxWidth){
 					xPos = maxWidth
 				}
+				const margin = 8
+				const maxBottom = window.scrollY + window.innerHeight - margin
+				if (yPos + this.menuHeight > maxBottom) {
+					yPos = Math.max(window.scrollY + margin, maxBottom - this.menuHeight)
+				}
 				return `left: ${xPos}px; top: ${yPos}px;`
 			}
 		}
@@ -55,6 +78,8 @@ module.exports = {
 	position: absolute;
 	z-index: 100;
 	width: 250px;
+	max-height: calc(100vh - 16px);
+	overflow-y: auto;
 }
 
 .drive-menu:focus-visible {
