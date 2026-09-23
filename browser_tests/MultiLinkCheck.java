@@ -22,6 +22,16 @@ public class MultiLinkCheck {
         }
     }
 
+    /** How many secret links the account holds, or -1 if that could not be read. */
+    static long linkCount(WebDriver d) {
+        d.script("window.__n = null; window.__drive.context.getAllSecretLinks()"
+                + ".thenApply(ls => { window.__n = ls.toArray([]).length; return true; })"
+                + ".exceptionally(t => { window.__n = -1; return null; });");
+        d.waitForScript("link count", "window.__n !== null", 60_000);
+        Object n = d.script("return window.__n");
+        return n instanceof Number ? ((Number) n).longValue() : -1;
+    }
+
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
         String url = args.length > 1 ? args[1] : "http://localhost:8080";
@@ -38,7 +48,7 @@ public class MultiLinkCheck {
             d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
                 System.out.println("signed in");
 
-                d.script("""
+                String create = """
                     window.__r = null;
                     const ctx = window.__drive.context;
                     const u = ctx.username;
@@ -59,9 +69,27 @@ public class MultiLinkCheck {
                             .map(m => m.getPath() + (m.isWritable() ? ':w' : ':r'));
                         return true;
                     }).exceptionally(t => { window.__r = {error: '' + t}; return null; });
-                    """);
-                d.waitForScript("link created", "window.__r", 120_000);
-                Object r = d.script("return window.__r");
+                    """;
+                // The suite shares one account, so this write can lose a compare-and-set against
+                // one the app is making at the same moment. A create that fails that way writes
+                // nothing, so it is safe to take again - but only once that is checked, since a
+                // create taken again after it did land makes a second link and spoils every test
+                // after this one. The count before and after the failed attempt is that check.
+                long before = linkCount(d);
+                Object r = null;
+                for (int attempt = 1; attempt <= 3; attempt++) {
+                    d.script(create);
+                    d.waitForScript("link created", "window.__r", 120_000);
+                    r = d.script("return window.__r");
+                    String err = String.valueOf(r).replace('+', ' ');
+                    if (! err.contains("Champ root not present") && ! err.contains("CasException"))
+                        break;
+                    long now = linkCount(d);
+                    if (before < 0 || now != before)
+                        break;
+                    System.out.println("  the create lost a race with another write and left nothing, taking it again");
+                    Thread.sleep(2000);
+                }
                 System.out.println("result: " + r);
                 if (r.toString().contains("error"))
                     throw new IllegalStateException("browser reported: " + r);

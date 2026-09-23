@@ -45,6 +45,16 @@ public class LinkEditorCheck {
             d.waitForScript("sharing state for " + name,
                     "window.__drive.sharedWithState && window.__drive.sharedWithState.get(window.__pick.getName()) != null", 60_000);
 
+            // A render error inside the modal drops the whole thing, Create button included, and
+            // never reaches showShareWith - so catch what Vue itself reports while it renders.
+            d.script("""
+                window.__vueErrs = [];
+                const before = Vue.config.errorHandler;
+                Vue.config.errorHandler = function (err, vm, info) {
+                    window.__vueErrs.push(info + ': ' + err + (err && err.stack ? ' @ ' + String(err.stack).split('\\n')[1] : ''));
+                    if (before) before(err, vm, info);
+                };
+                """);
             Object opened = d.script("""
                 const drive = window.__drive;
                 drive.selectedFiles = [window.__pick];
@@ -55,16 +65,39 @@ public class LinkEditorCheck {
             String btn = "document.querySelector(\"[aria-label='Create Secret Link']\")";
             // Opening the modal occasionally does not take - the app re-renders the drive
             // underneath it - so the wait re-triggers rather than failing the run on a miss.
+            // The catch keeps a miss from failing the run, but it also threw away the only
+            // account of why the modal never came: every failure read "timed out" and nothing
+            // else. The reason is kept so the timeout below can say it.
+            // Re-opening only when showShare is false misses the case its own note describes: a
+            // re-render underneath can take the modal out of the page and leave showShare true,
+            // and then nothing ever opens it again. A modal that is missing is closed so the
+            // next pass opens it; one that is up but empty is left alone for the report below.
             String modalUp = "(function(){ var dr = window.__drive;"
-                    + " if (! dr.showShare) { try { dr.selectedFiles = [window.__pick]; dr.showShareWith(); } catch (e) {} }"
-                    + " return !!" + btn + "; })()";
+                    + " if (" + btn + ") return true;"
+                    + " try {"
+                    + "  if (dr.showShare && ! document.querySelector('.drive-share')) dr.showShare = false;"
+                    + "  if (! dr.showShare) { dr.selectedFiles = [window.__pick]; dr.showShareWith(); }"
+                    + " } catch (e) { window.__shareErr = '' + e; }"
+                    + " return false; })()";
             // the modal loads this file's sharing state before it renders, which on a slow or
-            // busy runner takes a while; 30s was not enough in CI
+            // busy runner takes a while; 30s was not enough in CI, and 120s was not enough on
+            // the macos runner, which drives a real safari with nothing headless about it
+            long slow = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 3 : 1;
             long t0 = System.currentTimeMillis();
-            d.waitForScript("share modal", modalUp, 120_000);
+            try {
+                d.waitForScript("share modal", modalUp, 120_000 * slow);
+            } catch (RuntimeException e) {
+                // it opens in about ten milliseconds or it never opens, so a timeout here is
+                // showShareWith throwing rather than the runner being slow
+                Object why = d.script("return 'showShareWith: ' + (window.__shareErr || 'did not throw')"
+                        + " + ' | vue: ' + ((window.__vueErrs || []).join(' || ') || 'nothing reported')"
+                        + " + ' | showShare=' + window.__drive.showShare"
+                        + " + ' | modal in page: ' + !!document.querySelector('.drive-share')");
+                throw new IllegalStateException("the share modal never came up: " + why, e);
+            }
             System.out.println("share modal appeared in " + (System.currentTimeMillis() - t0) + "ms");
             d.script("return " + btn + ".click()");
-            d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000);
+            d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000 * slow);
 
             // the members list shows the file the modal was opened on
             System.out.println("members shown: " + d.script(

@@ -1,7 +1,9 @@
 import java.nio.file.*;
 
 /**
- * The links overview and "add to an existing link", driven as a user meets them.
+ * Every secret link enumerated at once, and "add to an existing link" as a user meets it in
+ * the share modal. The enumeration has no screen of its own any more, so this is what holds
+ * it: it is still what the share modal appends to.
  *
  * Both are new js reaching new java: enumerating every link once despite it being recorded under
  * each of its items, and appending one more. A java test cannot see the vue wiring or the js

@@ -68,6 +68,7 @@ const downloader = require("../../mixins/downloader/index.js");
 const i18n = require("../../i18n/index.js");
 const fileIcon = require("../../mixins/fileicon/index.js");
 const sortColumn = require("../../mixins/sortcolumn/index.js");
+const columns = require("./columns.js");
 
 module.exports = {
 	components: {
@@ -110,13 +111,7 @@ module.exports = {
         return {
             selected: this.selectedFiles,
             isShiftModifierOn: false,
-            columns: [
-                {key: "name", cls: "file", label: "DRIVE.NAME"},
-                {key: "size", cls: "size", label: "DRIVE.SIZE"},
-                {key: "type", cls: "type", label: "DRIVE.TYPE"},
-                {key: "modified", cls: "date", label: "DRIVE.MODIFIED"},
-                {key: "created", cls: "date", label: "DRIVE.CREATED"},
-            ],
+            columns,
         }
     },
     computed: {
@@ -360,35 +355,18 @@ module.exports = {
 /* A phone is narrower than any five columns: the row keeps its cells and lays
    them out in two lines instead of scrolling sideways at 1024px. */
 @media (max-width: 1024px) {
-	/* .pg-table lays the table out in blocks here and turns the head into the strip of
-	   chips that is the only way left to sort; what follows is this list's own part of
-	   that: the width it may take, which chips it keeps, and how a row lays out */
+	/* .pg-table lays the table out in blocks here; what follows is this list's own part
+	   of that: the width it may take, and how a row lays out */
 	.drive-table {
 		width: 100%;
 		min-width: 0;
 	}
 
-	.drive-table thead th {
-		flex: none;
-		height: auto;
-		min-height: 44px;
-		padding: 0 12px;
-		display: flex;
-		align-items: center;
-		color: var(--pg-muted);
-		background-color: var(--bg);
-		border: 1px solid var(--border-color);
-		border-radius: var(--radius-pill);
-	}
-
-	/* a chip is as wide as its label. The column widths above are the list's, and a
-	   chip is not a column - they are named here because .drive-table th.size and
-	   its neighbours outrank a plainer selector */
-	.drive-table thead th.file,
-	.drive-table thead th.size,
-	.drive-table thead th.type,
-	.drive-table thead th.date {
-		width: auto;
+	/* .pg-table turns a head into a strip of chips at this width, which cost a phone a row
+	   of its listing to say what the header's sort menu already says. The menu is in the
+	   toolbar at every width, so this is the one that goes. */
+	.drive-table thead {
+		display: none;
 	}
 
 	.drive-table tbody tr {

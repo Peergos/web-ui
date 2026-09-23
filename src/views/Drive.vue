@@ -33,8 +33,11 @@
       :isWritable="isWritable || canEditArchive"
       :isArchive="archive != null"
       :canPaste="isPasteOptionAvailable"
-      :isSecretLink="isSecretLink"
       :path="path"
+      :sortBy="sortBy"
+      :normalSortOrder="normalSortOrder"
+      @sortBy="setSortProperty"
+      @toggleSortOrder="toggleSortOrder"
       @switchView="switchView()"
       @goBackToLevel="goBackToLevel($event)"
       @askMkdir="askMkdir()"
@@ -43,12 +46,6 @@
       @newApp="createNewApp()"
       @search="openSearch(false)"
       @paste="pasteToFolder($event)"
-      @showSecretLinks="showSecretLinksOverview = true"
-    />
-
-    <SecretLinksOverview
-      v-if="showSecretLinksOverview"
-      v-on:hide-overview="showSecretLinksOverview = false"
     />
 
     <AppPrompt
@@ -438,7 +435,6 @@ const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const CodeEditor = require("../components/code-editor/CodeEditor.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const DriveHeader = require("../components/drive/DriveHeader.vue");
-const SecretLinksOverview = require("../components/drive/SecretLinksOverview.vue");
 const DriveGrid = require("../components/drive/DriveGrid.vue");
 const DriveGridCard = require("../components/drive/DriveGridCard.vue");
 const DriveGridDrop = require("../components/drive/DriveGridDrop.vue");
@@ -485,7 +481,6 @@ module.exports = {
 	    CodeEditor,
 	    Confirm,
 		DriveHeader,
-		SecretLinksOverview,
 		DriveGrid,
 		DriveGridCard,
 		DriveGridDrop,
@@ -579,7 +574,6 @@ module.exports = {
 			prompt_new_app_func: (name, permissions) => { },
 			prompt_action: 'ok',
 			showPrompt: false,
-			showSecretLinksOverview: false,
 			showNewImageFilePrompt: false,
 			showNewAppPrompt: false,
             showFolderProperties: false,
@@ -1287,12 +1281,24 @@ module.exports = {
         appInstallSuccess(appName) {
         },
 
+		// A column heading is both: it picks the property, and picking the one already in
+		// force turns the order around. The menu separates them - an entry per property and
+		// one that only turns the order around - so neither has to guess what a click meant.
 		setSortBy(prop) {
 			if (this.sortBy == prop)
-				this.normalSortOrder = !this.normalSortOrder;
+				this.toggleSortOrder();
+			else
+				this.setSortProperty(prop);
+		},
+
+		setSortProperty(prop) {
 			this.sortBy = prop;
-                        localStorage.setItem("sortBy", prop);
-                        localStorage.setItem("normalSortOrder", this.normalSortOrder);
+			localStorage.setItem("sortBy", prop);
+		},
+
+		toggleSortOrder() {
+			this.normalSortOrder = ! this.normalSortOrder;
+			localStorage.setItem("normalSortOrder", this.normalSortOrder);
 		},
 
 		onResize() {
@@ -3935,9 +3941,9 @@ module.exports = {
 		},
 
 
-		// "" | "people" | "link" | "people link". Only whether it is empty decides the mark
-		// today, but isShared() counts people alone, so a file reachable only through a secret
-		// link has to be asked for separately or it would carry no mark at all.
+		// "" | "people" | "link" | "people link". Each of the two draws its own mark, and
+		// isShared() counts people alone, so a file reachable only through a secret link has
+		// to be asked for separately or it would carry no mark at all.
 		shareKind(file) {
 			if (this.currentDir == null || this.archive != null || this.sharedWithState == null)
 				return "";

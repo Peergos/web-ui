@@ -21,7 +21,7 @@ public class Suite {
             // every later hash in the run is built on it, and the failure to look at is this.
             run(failures, "browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));
             run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
-            run(failures, "the links overview and adding to a link", () -> LinksOverviewCheck.run(args1));
+            run(failures, "every secret link at once, and adding to one", () -> LinksOverviewCheck.run(args1));
             run(failures, "the secret link editor", () -> LinkEditorCheck.run(args1));
             run(failures, "upload file", () -> UploadTest.run(args1));
             run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));
@@ -36,6 +36,9 @@ public class Suite {
             // Picking files out of the grid, which a pointer and a touch screen reach in
             // different ways and which the file menu must not be mistaken for.
             run(failures, "picking files in the grid", () -> GridSelectionTest.run(args1));
+            // Sorting is shared state drawn by two views: the header's menu sets it, the
+            // table's headings set it, and both views must follow whichever did.
+            run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit

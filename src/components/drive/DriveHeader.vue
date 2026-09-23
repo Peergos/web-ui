@@ -27,6 +27,27 @@
 					@click.native="$emit('switchView')"
 				/>
 
+				<AppDropdown
+					class="sort"
+					:aria-label="translate('DRIVE.SORT')"
+				>
+					<template #trigger>
+						<AppIcon icon="select"/>
+					</template>
+					<ul>
+						<li v-for="col in columns" :key="col.key"
+							:class="{sorted: sortBy == col.key}"
+							@click="$emit('sortBy', col.key)"
+						>{{ translate(col.label) }}<AppIcon
+							v-if="sortBy == col.key" class="sort-tick" icon="check"/></li>
+						<li class="divider" aria-hidden="true"></li>
+						<li class="sort__order" @click="$emit('toggleSortOrder')"
+						>{{ translate(normalSortOrder ? 'DRIVE.SORT.ASC' : 'DRIVE.SORT.DESC') }}<AppIcon
+							class="sort-caret" :class="{'sort-caret--asc': normalSortOrder}"
+							icon="chevron-down"/></li>
+					</ul>
+				</AppDropdown>
+
 				<AppButton
 					class="search"
 					icon="search"
@@ -52,7 +73,6 @@
 						<li v-if="!isArchive" @click="$emit('askMkdir')">{{ translate("DRIVE.NEW.FOLDER") }}</li>
 						<li v-if="!isArchive" @click="$emit('newApp')">{{ translate("DRIVE.NEW.APP") }}</li>
                         <li v-if="canPaste" @click="$emit('paste')">{{ translate("DRIVE.PASTE") }}</li>
-                        <li v-if="!isSecretLink" @click="$emit('showSecretLinks')">{{ translate("DRIVE.LINKS.TITLE") }}</li>
 					</ul>
 				</AppDropdown>
 			</div>
@@ -72,6 +92,7 @@ const AppDropdown = require("../AppDropdown.vue");
 const AppIcon = require("../AppIcon.vue");
 const AppSandbox = require("../sandbox/AppSandbox.vue");
 const i18n = require("../../i18n/index.js");
+const columns = require("./columns.js");
 
 module.exports = {
 	components: {
@@ -84,17 +105,24 @@ module.exports = {
     data() {
         return {
             showAppSandbox: false,
-            sandboxAppName: ''
+            sandboxAppName: '',
+            columns,
         };
     },
 	props: {
-		gridView: {
+		// the property the listing is ordered by, and whether that order runs ascending: the
+		// same state the table's headings show and set, not a second copy of it
+		sortBy: {
+			type: String,
+			default: "name"
+		},
+		normalSortOrder: {
 			type: Boolean,
 			default: true
 		},
-		isSecretLink: {
+		gridView: {
 			type: Boolean,
-			default: false
+			default: true
 		},
 		isArchive: {
 			type: Boolean,
@@ -145,6 +173,40 @@ module.exports = {
 </script>
 
 <style>
+/* Opened from the right edge of its own button, like the upload menu beside it: these sit
+   at the end of the toolbar, and a menu that opens rightwards from here runs off the window. */
+.drive-header .sort .dropdown__content {
+	right: 0;
+	left: auto;
+}
+
+/* The menu says both halves of the order outright: a tick against the property in force,
+   and a last entry that names the direction and is the only thing that turns it around.
+   Both are pushed to the far edge - a menu row is wider than its label, so a mark 4px after
+   the text would sit ragged down the list.
+
+   18px, not the 12px a caret takes in a table heading: these glyphs are stroked 2 units wide
+   in a 32 unit box, so 12px draws them 0.75px thick - under one pixel, which is what makes a
+   small mark look faint rather than small. 18px puts the stroke back over a pixel. */
+.drive-header .sort .pg-menu .sort-tick,
+.drive-header .sort .pg-menu .sort-caret {
+	color: var(--pg-on-ok);
+	width: 18px;
+	height: 18px;
+	margin-left: auto;
+	padding-left: 12px;
+	box-sizing: content-box;
+}
+
+/* and the row says it too, so the mark is not the only thing carrying it */
+.drive-header .sort .pg-menu li.sorted {
+	color: var(--pg-on-ok);
+}
+
+.drive-header .sort .pg-menu .sort-caret--asc {
+	transform: rotate(180deg);
+}
+
 /* The drive header on the surfaces the sync and mount pages use: one bordered
    bar that stays at the top of the view, with its controls on .pg-btn's 40px
    floor and a rule between them and the account. */
@@ -205,7 +267,11 @@ module.exports = {
 	margin-left: 10px;
 }
 
-.drive-header .drive-tools > .app-button {
+/* The sort control is a dropdown, so its button sits a level deeper than the toggle and the
+   search beside it. Named here as well, or it keeps the header's own colour and size and
+   stands out white against two muted neighbours. */
+.drive-header .drive-tools > .app-button,
+.drive-header .drive-tools > .sort > .app-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -217,17 +283,20 @@ module.exports = {
 	border-radius: var(--radius-control);
 }
 
-.drive-header .drive-tools > .app-button:hover {
+.drive-header .drive-tools > .app-button:hover,
+.drive-header .drive-tools > .sort > .app-button:hover {
 	color: var(--color) !important;
 	background-color: var(--bg-2);
 }
 
-.drive-header .drive-tools > .app-button:focus-visible {
+.drive-header .drive-tools > .app-button:focus-visible,
+.drive-header .drive-tools > .sort > .app-button:focus-visible {
 	outline: 2px solid var(--green-500);
 	outline-offset: 2px;
 }
 
-.drive-header .drive-tools > .app-button svg {
+.drive-header .drive-tools > .app-button svg,
+.drive-header .drive-tools > .sort > .app-button svg {
 	width: 20px;
 	height: 20px;
 }
@@ -364,7 +433,8 @@ module.exports = {
 	}
 
 	/* a finger needs more than a mouse, as .pg-btn already allows for */
-	.drive-header .drive-tools > .app-button {
+	.drive-header .drive-tools > .app-button,
+	.drive-header .drive-tools > .sort > .app-button {
 		width: 48px;
 		height: 48px;
 	}
