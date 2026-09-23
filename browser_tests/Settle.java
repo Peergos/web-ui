@@ -11,7 +11,10 @@
 public class Settle {
 
     public static boolean transientStorage(Object result) {
-        String s = String.valueOf(result);
+        // A JsException crossing the bridge arrives url-encoded, so "No secret link published!"
+        // reads "No+secret+link+published!". Matching the plain wording against that silently
+        // never fires, which is how the retry looked like it was working and was not.
+        String s = String.valueOf(result).replace('+', ' ');
         return s.contains("CasException")
             || s.contains("Champ root not present")
             || s.contains("No secret link published");

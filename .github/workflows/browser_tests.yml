@@ -129,8 +129,10 @@ jobs:
         HEADLESS: ${{ matrix.engine == 'safari' && '0' || '1' }}
         # the windows and macos runners are slower, and safari cannot run headless so it is
         # doing real rendering besides: the browser side sign in needs longer than the 300s
-        # that suffices on linux
-        PEERGOS_TEST_SLOW: ${{ (matrix.os == 'windows-latest' || matrix.os == 'macos-latest') && '1' || '0' }}
+        # that suffices on linux. WebKitGTK is named too though it runs on linux: it takes half
+        # a minute just to launch where chromium takes two seconds, and every step after is in
+        # proportion.
+        PEERGOS_TEST_SLOW: ${{ (matrix.os == 'windows-latest' || matrix.os == 'macos-latest' || matrix.engine == 'webkit') && '1' || '0' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
       run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
