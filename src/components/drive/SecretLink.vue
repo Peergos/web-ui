@@ -1,142 +1,168 @@
 <template>
     <transition name="modal">
-        <div class="modal-mask" @click="$emit('hide-modal')">
-            <div style="height:30%"></div>
-            <div class="modal-container" style="transform: translateY(-30%);" @click.stop>
-                <Spinner v-if="showSpinner"></Spinner>
-                <div class="modal-header">
-                    <h3 id="modal-header-id">{{ title }}</h3>
-                </div>
-                
-                <div class="modal-body">
-                    <div class="secret-link-container scrollable"><p style="word-wrap;break-all;">
-                            <div>
-                                <div class="link-members">
-                                    <h4 style="margin-bottom: 4px;">{{ translate("DRIVE.LINK.MEMBERS") }}</h4>
-                                    <div v-for="(m, i) in members" :key="m.path" class="link-member">
-                                        <span class="link-member__path" :title="m.path">{{ m.path }}</span>
-                                        <label class="checkbox__group link-member__writable" :title="m.writableReason">
-                                            {{ translate("DRIVE.LINK.WRITABLE") }}
-                                            <input type="checkbox" :disabled="!m.canBeWritable" v-model="m.writable" @change="onChange()"/>
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <button class="fa fa-times link-member__remove"
-                                                :disabled="members.length < 2"
-                                                :title="translate('DRIVE.LINK.MEMBER.REMOVE.HINT')"
-                                                @click="removeMember(i)"></button>
-                                    </div>
-                                    <div style="margin: 6px 0;">
-                                        <button class="btn btn-success" :disabled="members.length >= maxMembers" @click="showPicker = true">
-                                            {{ translate("DRIVE.LINK.MEMBER.ADD") }}
-                                        </button>
-                                        <span v-if="members.length >= maxMembers - 10" style="margin-left: 8px; font-size: 0.9em;">
-                                            {{ members.length }} / {{ maxMembers }}
-                                        </span>
-                                    </div>
-                                    <p v-if="currentProps != null" class="link-members__note">
-                                        {{ translate("DRIVE.LINK.MEMBERS.SAME.URL") }}
-                                    </p>
-                                    <p v-if="spansDirectories" class="link-members__note">
-                                        {{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}
-                                    </p>
-                                </div>
-                                <div v-if="link.isFile || members.length > 1">
-                                    <label class="checkbox__group">
-                                        {{ translate("DRIVE.LINK.OPEN") }}
-                                        <input
-                                            type="checkbox"
-                                            name=""
-                                            v-model="autoOpen"
-                                            @change="onChange()"
-                                        />
-                                        <span class="checkmark"></span>
-                                    </label>
-                                </div>
-                                <div>
-                                    <span>
-                                        <label class="checkbox__group" style="display:inline-block">
-                                            {{ translate("DRIVE.LINK.EXPIRE.ON") }}
-                                            <input
-                                                type="checkbox"
-                                                name=""
-                                                v-model="hasExpiry"
-                                                @change="onChange()"
-                                            />
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" id="expiry-date-picker" :disabled="!hasExpiry" type="date" @change="onChange(link.id)">
-                                        <label style="font-weight: normal;">{{ translate("DRIVE.LINK.AT.TIME") }}</label>
-                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" id="expiry-time-picker" :disabled="!hasExpiry" type="time" @change="onChange(link.id)">
-                                    </span>
-                                </div>
-                                <div>
-                                    <span>
-                                        <label class="checkbox__group" style="display:inline-block">
-                                            {{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}
-                                            <input
-                                                type="checkbox"
-                                                name=""
-                                                v-model="hasMaxRetrievals"
-                                                @change="onChange()"
-                                            />
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <input style="border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg);" @change="onChange()" :disabled="!hasMaxRetrievals" v-model="maxRetrievals" type="number" min="1" max="999">
-                                    </span>
-                                </div>
-                                <div>
-                                    <span>
-                                        <label class="checkbox__group" style="display:inline-block">
-                                            {{ translate("DRIVE.LINK.PASSWORD") }}
-                                            <input
-                                                type="checkbox"
-                                                name=""
-                                                v-model="hasPassword"
-                                            />
-                                            <span class="checkmark"></span>
-                                        </label>
-                                        <input style="all: revert; border: 2px solid var(--green-500);color: var(--color); background-color: var(--bg); font-family: inherit; font-size: inherit; line-height: inherit;" :disabled="!hasPassword" type="text" size="15" v-model="userPassword">
-                                    </span>
-                                </div>
-                                <div style="padding: 10px;">
-                                    <button
-                                        id='modal-button-id'
-                                        class="btn btn-success"
-                                        @click="createOrUpdateLink">
-                                        {{ currentProps == null ? translate("DRIVE.LINK.CREATE") : translate("DRIVE.LINK.UPDATE") }}
+        <div class="pg-dialog__mask" @click="$emit('hide-modal')">
+            <div class="pg-dialog secret-link" role="dialog" aria-modal="true" aria-labelledby="secret-link-title" tabindex="-1" @click.stop>
+                <header class="pg-dialog__head">
+                    <h2 class="pg-dialog__title" id="secret-link-title">{{ title }}</h2>
+                    <DialogClose @close="$emit('hide-modal')"/>
+                </header>
+
+                <div class="pg-dialog__body secret-link__body">
+                    <template v-if="showLink()">
+                        <div v-if="justCreated" class="secret-link__done" role="status">
+                            <span class="secret-link__done-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            </span>
+                            {{ translate("DRIVE.LINK.CREATED") }}
+                        </div>
+                        <div class="secret-link__field">
+                            <label for="secret-link-url" class="secret-link__label">{{ translate("DRIVE.LINK.URL") }}</label>
+                            <div class="secret-link__copy">
+                                <input id="secret-link-url" class="pg-input" type="text" readonly :value="href" @focus="$event.target.select()">
+                                <button type="button" class="pg-btn pg-btn--primary" @click="copyUrlToClipboard()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                                    {{ translate("DRIVE.LINK.COPY.BUTTON") }}
+                                </button>
+                            </div>
+                        </div>
+                        <div class="secret-link__share">
+                            <img v-if="base64QrCode" class="secret-link__qr" :src="base64QrCode" :alt="translate('DRIVE.LINK.QR')"/>
+                            <div class="secret-link__share-text">
+                                <p class="pg-note">{{ translate("DRIVE.LINK.QR.HINT") }}</p>
+                                <button type="button" class="pg-btn" @click="email()">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+                                    {{ translate("DRIVE.LINK.EMAIL") }}
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <section class="link-members secret-link__section">
+                        <h3 class="secret-link__heading">{{ translate("DRIVE.LINK.MEMBERS") }}</h3>
+                        <ul class="secret-link__members">
+                            <li v-for="(m, i) in members" :key="m.path" class="link-member">
+                                <span class="link-member__path" :title="m.path">
+                                    <span class="link-member__name">{{ pathLeaf(m.path) }}</span>
+                                    <span class="link-member__dir">{{ memberFolder(m.path) }}</span>
+                                </span>
+                                <label class="pg-switch link-member__writable" :title="m.writableReason">
+                                    <input type="checkbox" :disabled="!m.canBeWritable" v-model="m.writable" @change="onChange()"/>
+                                    <span class="pg-switch__track" aria-hidden="true"></span>
+                                    <span>{{ translate("DRIVE.LINK.CAN.EDIT") }}</span>
+                                </label>
+                                <button type="button" class="link-member__remove"
+                                        :disabled="members.length < 2"
+                                        :title="translate('DRIVE.LINK.MEMBER.REMOVE.HINT')"
+                                        :aria-label="translate('DRIVE.LINK.MEMBER.REMOVE.HINT')"
+                                        @click="removeMember(i)">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                </button>
+                            </li>
+                        </ul>
+                        <p v-if="anyWritable" class="pg-callout">{{ translate("DRIVE.LINK.WRITABLE.WARN") }}</p>
+                        <div class="secret-link__add">
+                            <button type="button" class="pg-btn link-members__add" :disabled="members.length >= maxMembers" @click="showPicker = true">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                                {{ translate("DRIVE.LINK.MEMBER.ADD") }}
+                            </button>
+                            <span v-if="members.length >= maxMembers - 10" class="pg-note">
+                                {{ members.length }} / {{ maxMembers }}
+                            </span>
+                        </div>
+                        <p v-if="currentProps != null" class="pg-note">{{ translate("DRIVE.LINK.MEMBERS.SAME.URL") }}</p>
+                        <p v-if="spansDirectories" class="pg-note">{{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}</p>
+                    </section>
+
+                    <section class="secret-link__section secret-link__options">
+                        <h3 class="secret-link__heading">{{ translate("DRIVE.LINK.OPTIONS") }}</h3>
+                        <label v-if="link.isFile || members.length > 1" class="pg-switch">
+                            <input type="checkbox" v-model="autoOpen" @change="onChange()"/>
+                            <span class="pg-switch__track" aria-hidden="true"></span>
+                            <span>{{ translate("DRIVE.LINK.OPEN") }}</span>
+                        </label>
+
+                        <label class="pg-switch">
+                            <input type="checkbox" v-model="hasExpiry" @change="onChange()"/>
+                            <span class="pg-switch__track" aria-hidden="true"></span>
+                            <span>{{ translate("DRIVE.LINK.EXPIRE.ON") }}</span>
+                        </label>
+                        <div v-if="hasExpiry" class="secret-link__reveal">
+                            <div class="secret-link__field">
+                                <label for="expiry-date-picker" class="secret-link__label">{{ translate("DRIVE.LINK.DATE") }}</label>
+                                <input id="expiry-date-picker" class="pg-input" type="date" v-model="expireDateString" @change="onChange()">
+                            </div>
+                            <div class="secret-link__field secret-link__field--narrow">
+                                <label for="expiry-time-picker" class="secret-link__label">{{ translate("DRIVE.LINK.TIME") }}</label>
+                                <input id="expiry-time-picker" class="pg-input" type="time" v-model="expireTimeString" @change="onChange()">
+                            </div>
+                        </div>
+
+                        <label class="pg-switch">
+                            <input type="checkbox" v-model="hasMaxRetrievals" @change="onChange()"/>
+                            <span class="pg-switch__track" aria-hidden="true"></span>
+                            <span>{{ translate("DRIVE.LINK.LIMIT.RETRIEVALS") }}</span>
+                        </label>
+                        <div v-if="hasMaxRetrievals" class="secret-link__reveal">
+                            <div class="secret-link__field secret-link__field--narrow">
+                                <label for="secret-link-uses" class="secret-link__label">{{ translate("DRIVE.LINK.USES") }}</label>
+                                <input id="secret-link-uses" class="pg-input" type="number" min="1" max="999" v-model="maxRetrievals" @change="onChange()">
+                            </div>
+                        </div>
+
+                        <label class="pg-switch">
+                            <input type="checkbox" v-model="hasPassword"/>
+                            <span class="pg-switch__track" aria-hidden="true"></span>
+                            <span>{{ translate("DRIVE.LINK.PASSWORD") }}</span>
+                        </label>
+                        <div v-if="hasPassword" class="secret-link__reveal">
+                            <div class="secret-link__field">
+                                <label for="secret-link-password" class="secret-link__label">{{ translate("DRIVE.LINK.PASSWORD.FIELD") }}</label>
+                                <div class="secret-link__copy">
+                                    <input id="secret-link-password" class="pg-input" :type="showPassword ? 'text' : 'password'"
+                                           autocomplete="new-password" v-model="userPassword">
+                                    <button type="button" class="pg-btn" @click="showPassword = ! showPassword">
+                                        {{ showPassword ? translate("DRIVE.LINK.HIDE") : translate("DRIVE.LINK.SHOW") }}
                                     </button>
                                 </div>
-                                <div v-if="showLink()" style="padding: 10px;">
-                                    <input type="text" v-bind:value="this.href" style="display: none">
-                                    <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyUrlToClipboard($event)">&nbsp;{{ translate("DRIVE.LINK.COPY") }}</button>
-                                    <button class="fa fa-envelope" style="padding: 6px 12px; background-color:var(--bg);" @click="email($event)">&nbsp;{{ translate("DRIVE.LINK.EMAIL") }}</button>
-                                    <img
-                                        style="width: 150px;"
-                                        v-if="base64QrCode"
-                                        :src="base64QrCode"
-                                        alt="qr-code"
-                                    />
-                                </div>
+                            </div>
                         </div>
+                    </section>
+                </div>
+
+                <footer class="pg-dialog__foot">
+                    <div class="pg-dialog__actions">
+                        <span class="pg-dialog__spacer"></span>
+                        <template v-if="currentProps == null">
+                            <button type="button" class="pg-btn" @click="$emit('hide-modal')">{{ translate("PROMPT.CANCEL") }}</button>
+                            <button type="button" id="modal-button-id" class="pg-btn pg-btn--primary" :disabled="showSpinner" @click="createOrUpdateLink">
+                                {{ translate("DRIVE.LINK.CREATE") }}
+                            </button>
+                        </template>
+                        <template v-else>
+                            <button type="button" id="modal-button-id" class="pg-btn" :disabled="showSpinner" @click="createOrUpdateLink">
+                                {{ translate("DRIVE.LINK.UPDATE") }}
+                            </button>
+                            <button type="button" class="pg-btn pg-btn--primary" @click="$emit('hide-modal')">{{ translate("DRIVE.LINK.OK") }}</button>
+                        </template>
                     </div>
-                </div>
-                
-                <div class="modal-footer">
-                    <slot name="footer">
-                        <button
-                            id='modal-button-id'
-                            class="btn btn-success"
-                            @click="$emit('hide-modal')">
-                            {{ translate("DRIVE.LINK.OK") }}
-                        </button>
-                    </slot>
-                </div>
+                </footer>
+                <div v-if="showSpinner" class="pg-dialog__loading"><Spinner/></div>
+
                 <FilePicker
                     v-if="showPicker"
                     :baseFolder="'/' + username"
+                    :pickerTitle="translate('DRIVE.LINK.MEMBER.ADD')"
                     :pickerAllowWriteMode="true"
                     :pickerSelectFolders="true"
                     :selectedFile_func="addMember"
+                />
+                <Confirm
+                    v-if="showRemoveConfirm"
+                    :confirm_message="removeConfirm.message"
+                    :confirm_body="removeConfirm.body"
+                    :consumer_cancel_func="keepMember"
+                    :consumer_func="confirmRemoveMember"
+                    @hide-confirm="showRemoveConfirm = false"
                 />
             </div>
         </div>
@@ -146,11 +172,16 @@
 <script>
 const Spinner = require("../spinner/Spinner.vue");
 const FilePicker = require("../picker/FilePicker.vue");
+const Confirm = require("../confirm/Confirm.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const i18n = require("../../i18n/index.js");
+const paths = require("../../mixins/paths/index.js");
 module.exports = {
     components:{
         Spinner,
-        FilePicker
+        FilePicker,
+        Confirm,
+        DialogClose
     },
 	data() {
 	    return {
@@ -171,6 +202,13 @@ module.exports = {
                 members: [],
                 showPicker: false,
                 maxMembers: 100,
+                showPassword: false,
+                // only a link made in this dialog gets the banner; one opened to edit has nothing new to announce
+                justCreated: false,
+                // Confirm hides itself before it calls back, so whether it is up and which member it
+                // asks about are kept apart: clearing the member on hide lost it before Yes landed
+                showRemoveConfirm: false,
+                removeIndex: null,
             };
 	},
     computed: {
@@ -183,8 +221,19 @@ module.exports = {
             let dirs = new Set(this.members.map(m => m.path.substring(0, m.path.lastIndexOf('/'))));
             return dirs.size > 1;
         },
+        anyWritable: function() {
+            return this.members.some(m => m.writable);
+        },
+        /** the confirmation's first paragraph is the question, the rest is why it matters */
+        removeConfirm: function() {
+            if (this.removeIndex == null || this.members[this.removeIndex] == null)
+                return {message: "", body: ""};
+            let parts = this.translate("DRIVE.LINK.MEMBER.REMOVE.CONFIRM")
+                .replace("%s", this.members[this.removeIndex].path).split("\n\n");
+            return {message: parts[0], body: parts.slice(1).join(" ")};
+        },
     },
-    mixins:[i18n],
+    mixins:[i18n, paths],
 	props: [
 	    "title",
 	    "link",
@@ -216,10 +265,8 @@ module.exports = {
                         + '-' + (jsDate.getDate() < 10 ? '0' : '') + jsDate.getDate();
                         let timePart =  (jsDate.getHours() < 10 ? '0' : '') + jsDate.getHours()
                                         + ':' + (jsDate.getMinutes() < 10 ? '0' : '') + jsDate.getMinutes();
-                        let dateExpiry = document.getElementById("expiry-date-picker");
-                        dateExpiry.value = datePart;
-                        let timeExpiry = document.getElementById("expiry-time-picker");
-                        timeExpiry.value = timePart;
+                        that.expireDateString = datePart;
+                        that.expireTimeString = timePart;
                     }
                     that.updateHref();
                 });
@@ -281,7 +328,20 @@ module.exports = {
             removeMember: function(i) {
                 // removing is not revoking: anyone who already opened the link keeps that
                 // capability, and only rotating the item's keys takes it back
-                if (! confirm(this.translate("DRIVE.LINK.MEMBER.REMOVE.CONFIRM").replace("%s", this.members[i].path)))
+                this.removeIndex = i;
+                this.showRemoveConfirm = true;
+            },
+            /** marked left to right, or the rtl that ellipsises its start moves the leading slash to the end */
+            memberFolder: function(path) {
+                return "\u200e" + this.pathHead(path) + "\u200e";
+            },
+            keepMember: function() {
+                this.removeIndex = null;
+            },
+            confirmRemoveMember: function() {
+                let i = this.removeIndex;
+                this.removeIndex = null;
+                if (i == null || i >= this.members.length)
                     return;
                 this.members.splice(i, 1);
                 this.onChange();
@@ -318,6 +378,7 @@ module.exports = {
                     this.context.createSecretLinkTo(this.memberPaths(), this.writableMemberPaths(), this.getExpiry(),
                         maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
+                          that.justCreated = true;
                           that.members = that.initialMembers();
                           that.refreshMembersFromLink();
                           that.updateHref();
@@ -355,14 +416,12 @@ module.exports = {
                 return this.translate(fallbackKey);
             },
             getExpiry: function() {
-                let dateExpiry = document.getElementById("expiry-date-picker");
-                let dateS = dateExpiry.value;
-                if (! this.hasExpiry || dateS == "")
+                let dateS = this.expireDateString;
+                if (! this.hasExpiry || dateS == null || dateS == "")
                     return java.util.Optional.empty();
-                let timeExpiry = document.getElementById("expiry-time-picker");
                 let expireTimeString = "00:00";
-                if (timeExpiry != null && timeExpiry.value.length > 0) {
-                    expireTimeString = timeExpiry.value;
+                if (this.expireTimeString != null && this.expireTimeString.length > 0) {
+                    expireTimeString = this.expireTimeString;
                 }
                 let year = parseInt(dateS.split("-")[0]);
                 let month = parseInt(dateS.split("-")[1]);
@@ -391,9 +450,11 @@ module.exports = {
             onChange: function () {
                 this.href = this.buildHref(this.link);
             },
-            copyUrlToClipboard: function (clickEvent) {
-                var text = clickEvent.srcElement.previousElementSibling.value.toString();
-                navigator.clipboard.writeText(text).then(function() {}, function() {
+            copyUrlToClipboard: function () {
+                let that = this;
+                navigator.clipboard.writeText(this.href).then(function() {
+                    that.$toast.success(that.translate("DRIVE.LINK.COPIED"));
+                }, function() {
                     console.error("Unable to write to clipboard.");
                 });
             },
@@ -417,47 +478,213 @@ module.exports = {
     }
 </script>
 <style>
+/* unscoped, and every other modal's body has come to rely on it: kept as it was */
 .modal-body {
     margin: 0px 0;
 }
-.scrollable
-{
-    max-height: 450px;
-    overflow-y: scroll;
+.secret-link {
+    position: relative;
+    width: 560px;
+}
+.secret-link__body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding-bottom: 16px;
+}
+.secret-link__section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+}
+.secret-link__options {
+    gap: 12px;
+}
+/* the same small caps the sync and mount cards label their endpoints with */
+.secret-link__heading {
+    margin: 0;
+    font-size: 11px;
+    font-weight: var(--bold);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+}
+.secret-link__members {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
 }
 .link-member {
     display: flex;
     align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    padding: 2px 0;
+    gap: 12px;
+    padding: 10px 4px 10px 14px;
+}
+.link-member + .link-member {
+    border-top: 1px solid var(--pg-track);
 }
 .link-member__path {
-    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
     min-width: 0;
+    gap: 2px;
+}
+.link-member__name,
+.link-member__dir {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+.link-member__name {
+    font-size: 15px;
+    font-weight: var(--bold);
+}
+/* the start of a deep path is the least telling part, so that is where it gives way */
+.link-member__dir {
     direction: rtl;
     text-align: left;
+    font-size: 13px;
+    color: var(--pg-muted);
 }
 .link-member__writable {
-    flex: 0 0 auto;
-    margin: 0;
+    flex: none;
 }
 .link-member__remove {
-    flex: 0 0 auto;
-    background-color: var(--bg);
-    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--pg-muted);
+    cursor: pointer;
 }
-.link-members__note {
-    font-size: 0.9em;
-    opacity: 0.8;
-    margin: 4px 0;
+.link-member__remove svg {
+    width: 18px;
+    height: 18px;
 }
-.secret-link-container{
-    padding-right:15px;
-    padding-left:15px;
-    margin-right:auto;
-    margin-left:auto}
+.link-member__remove:not(:disabled):hover {
+    background-color: var(--pg-surface-2);
+    color: var(--color);
+}
+.link-member__remove:focus-visible {
+    outline: 2px solid var(--green-500);
+    outline-offset: 2px;
+}
+.link-member__remove:disabled {
+    opacity: .35;
+    cursor: default;
+}
+.secret-link__add {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.secret-link .pg-callout {
+    margin: 0;
+}
+/* what a switch turns on sits under it, indented so it reads as belonging to it */
+.secret-link__reveal {
+    display: flex;
+    gap: 10px;
+    padding-left: 12px;
+}
+.secret-link__field {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 6px;
+}
+.secret-link__field--narrow {
+    flex: 0 0 130px;
+}
+.secret-link__label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--pg-muted);
+}
+.secret-link__copy {
+    display: flex;
+    gap: 8px;
+}
+.secret-link__copy .pg-btn {
+    flex: none;
+}
+.secret-link__done {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    font-weight: var(--bold);
+    color: var(--pg-on-ok);
+    background-color: var(--pg-tint-ok);
+    border-radius: 12px;
+}
+.secret-link__done-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    color: #ffffff;
+    background-color: var(--pg-disc-ok);
+}
+.secret-link__done-icon svg {
+    width: 18px;
+    height: 18px;
+}
+.secret-link__share {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+/* the code is drawn dark on light, and a scanner needs that contrast in either theme */
+.secret-link__qr {
+    flex: none;
+    width: 152px;
+    height: 152px;
+    padding: 6px;
+    background-color: #ffffff;
+    border-radius: 10px;
+}
+.secret-link__share-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+}
+@media (max-width: 600px) {
+    .secret-link {
+        width: 100%;
+    }
+    /* no room for the switch beside the name: it drops under it */
+    .link-member {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .link-member__path {
+        flex-basis: calc(100% - 56px);
+    }
+    .link-member__remove {
+        order: 2;
+    }
+    .link-member__writable {
+        order: 3;
+    }
+}
 </style>

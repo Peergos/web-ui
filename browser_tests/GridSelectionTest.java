@@ -273,6 +273,12 @@ public class GridSelectionTest {
         if (barShown(d))
             throw new AssertionError("Opening a row's menu must not raise the bar in the list"
                     + " view any more than it does in the grid");
+        if (count(d, ".drive-table tbody tr.is-selected") != 0
+                || count(d, ".drive-table tbody tr input[type=checkbox]:checked") != 0
+                || count(d, ".drive-table tbody tr.is-menu-target") != 1)
+            throw new AssertionError("A row whose menu is open should be shaded, not ticked: "
+                    + count(d, ".drive-table tbody tr input[type=checkbox]:checked") + " ticked, "
+                    + count(d, ".drive-table tbody tr.is-menu-target") + " shaded");
         d.script("window.__drive.closeMenu(); return 1;");
         WebDriver.sleep(600);
         d.script("const rows = [...document.querySelectorAll('.drive-table tbody tr')];"
@@ -334,6 +340,12 @@ public class GridSelectionTest {
             throw new AssertionError("The menu borrowing selectedFiles must not raise the"
                     + " selection bar - see the note at the top of this test");
         System.out.println("  ok   a file's menu does not put the drive into selection mode");
+        // nor show a tick: the next pick throws the menu's file away, so a tick would be a lie
+        if (count(d, ".grid-card.selected") != 0 || count(d, ".grid-card.menu-target") != 1)
+            throw new AssertionError("The file whose menu is open should be shaded, not ticked: "
+                    + count(d, ".grid-card.selected") + " ticked, "
+                    + count(d, ".grid-card.menu-target") + " shaded");
+        System.out.println("  ok   the menu's file is shaded rather than ticked");
 
         d.scriptQuiet("window.__drive.selectFromMenu(); return 1;");
         WebDriver.sleep(600);
@@ -509,15 +521,16 @@ public class GridSelectionTest {
                 + "vm.openMenu(vm.sortedFiles.find(f => f.getFileProperties().name === arguments[0]));"
                 + "return 1;", PREFIX + "1.bin");
         WebDriver.sleep(600);
-        if (! marked(d, PREFIX + "1.bin"))
+        if (! tileHas(d, PREFIX + "1.bin", "menu-target") || marked(d, PREFIX + "1.bin"))
             throw new AssertionError("While its menu is open the file it applies to should be"
-                    + " marked, so it is clear what the menu will act on");
+                    + " shaded, so it is clear what the menu will act on, and not ticked, since"
+                    + " nobody picked it");
         d.script("window.__drive.closeMenu(); return 1;");
         WebDriver.sleep(600);
-        if (marked(d, PREFIX + "1.bin"))
-            throw new AssertionError("Once the menu is dismissed its file should stop looking"
-                    + " picked - nobody picked it");
-        System.out.println("  ok   a file is marked while its menu is open and not after");
+        if (tileHas(d, PREFIX + "1.bin", "menu-target") || marked(d, PREFIX + "1.bin"))
+            throw new AssertionError("Once the menu is dismissed its file should look like any"
+                    + " other - nobody picked it");
+        System.out.println("  ok   a file is shaded while its menu is open and not after");
 
         pick(d, PREFIX + "2.bin");
         if (selected(d) != 1)
@@ -618,12 +631,16 @@ public class GridSelectionTest {
 
     /** Whether the tile for this file is drawn as picked. */
     private static boolean marked(WebDriver d, String name) {
+        return tileHas(d, name, "selected");
+    }
+
+    private static boolean tileHas(WebDriver d, String name, String cls) {
         return Boolean.TRUE.equals(d.script(
                 "const tile = [...document.querySelectorAll('.grid-card')].find(c => {"
                         + "  const n = c.querySelector('.card__name');"
                         + "  return n && n.textContent.trim() === arguments[0]; });"
                         + "if (tile == null) throw new Error('no tile for ' + arguments[0]);"
-                        + "return tile.classList.contains('selected');", name));
+                        + "return tile.classList.contains(arguments[1]);", name, cls));
     }
 
     private static boolean barShown(WebDriver d) {

@@ -129,6 +129,7 @@
               :file="file"
               :itemIndex="index"
               :selected="isMarked(file)"
+              :menuOpen="menuTarget === file"
               :selecting="picking"
               :menuStandsDown="menuStandsDown"
               @toggleSelection="toggleSelection(file, $event)"
@@ -139,6 +140,7 @@
             v-else
             :files="sortedFiles"
             :selectedFiles="pickedFiles"
+            :menuTarget="menuTarget"
             :menuStandsDown="menuStandsDown"
             @update:selectedFiles="pickFromList"
             :sortBy="sortBy"
@@ -669,7 +671,15 @@ module.exports = {
         // fold the file into the next pick the list emits: the list builds its selection as a
         // whole array rather than a file at a time, so there is no toggleSelection to catch it.
         pickedFiles() {
-            return (this.picking || this.viewMenu) ? this.selectedFiles : [];
+            return this.picking ? this.selectedFiles : [];
+        },
+
+        // The file whose menu is open, which borrows selectedFiles to say what its actions apply
+        // to. It is marked apart from a pick: a tick would promise a selection that the next pick
+        // throws away.
+        menuTarget() {
+            return this.viewMenu && ! this.picking && this.selectedFiles.length == 1 ?
+                this.selectedFiles[0] : null;
         },
 
         // The selection bar is up. Read in two places, and they have to agree: the list's
@@ -4063,11 +4073,9 @@ module.exports = {
                 && ! this.isPasteToFolderMultiSelectAvailable(file);
         },
 
-        // Picked by the user, or named by the menu that is open over it. The second is worth
-        // showing while that menu is up and worth dropping the moment it closes, since the
-        // file stays in selectedFiles either way.
+        // Picked by the user. A file only named by its open menu is menuTarget, and is not ticked.
         isMarked(file) {
-            return (this.picking || this.viewMenu) && this.isSelected(file);
+            return this.picking && this.isSelected(file);
         },
         toggleSelection(file, shiftModifier) {
             // Whatever is in the list when nothing is being picked was put there by openMenu

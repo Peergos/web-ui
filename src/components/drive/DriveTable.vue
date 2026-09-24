@@ -11,7 +11,7 @@
             </tr>
 		</thead>
 		<tbody role="presentation">
-			<tr v-for="file in files" tabindex="1" role="row" class="table__item" :class="{ 'is-selected': selectedSet.has(file) }">
+			<tr v-for="file in files" tabindex="1" role="row" class="table__item" :class="{ 'is-selected': selectedSet.has(file), 'is-menu-target': file === menuTarget }">
                 <td class="select">
                     <label class="checkbox__group">
                         <input
@@ -84,6 +84,10 @@ module.exports = {
         selectedFiles: {
             type: Array,
             default: ()=>[]
+        },
+        // the file whose menu is open: shaded, not ticked, since it is not part of a pick
+        menuTarget: {
+            default: null
         },
         // asked, per file, whether this row's menu should stand down rather than be a click
         // that throws away the pick the user has going
@@ -222,7 +226,8 @@ module.exports = {
 	transition: background-color 0.15s ease;
 }
 
-.drive-table tbody tr:focus {
+.drive-table tbody tr:focus,
+.drive-table tbody tr.is-menu-target {
 	background-color: var(--bg-2);
 }
 
