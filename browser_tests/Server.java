@@ -40,6 +40,12 @@ public class Server implements AutoCloseable {
 
     /** Starts a fresh pki server. serverDir is web-ui/server, which holds the jar and webroot. */
     public static Server start(Path serverDir) throws IOException {
+        return start(serverDir, 100);
+    }
+
+    /** As above, capped at maxUsers accounts: 1 is a server the admin alone fills, which takes new
+     *  users only with a signup token. */
+    public static Server start(Path serverDir, int maxUsers) throws IOException {
         int port = freePort();
         // proxy-target is the second http server this starts, and it defaults to a fixed
         // 127.0.0.1:8003 - so without its own port a test server collides with any other Peergos
@@ -53,7 +59,7 @@ public class Server implements AutoCloseable {
                 "-useIPFS", "false",
                 "-webroot", "webroot",
                 "-webcache", "false",
-                "-max-users", "100",
+                "-max-users", Integer.toString(maxUsers),
                 "peergos.password", PASSWORD,
                 "pki.keygen.password", "testpkipassword",
                 "pki.keyfile.password", "testpkifilepassword",
