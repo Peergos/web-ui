@@ -23,6 +23,7 @@ public class Suite {
             run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
             run(failures, "every secret link at once, and adding to one", () -> LinksOverviewCheck.run(args1));
             run(failures, "the secret link editor", () -> LinkEditorCheck.run(args1));
+            run(failures, "the interface in another language", () -> LanguageTest.run(args1));
             run(failures, "upload file", () -> UploadTest.run(args1));
             run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));
             run(failures, "upload folder", () -> UploadFolderTest.run(args1));

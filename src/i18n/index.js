@@ -13,9 +13,24 @@ const supported = ["en-GB", "zh-CN"]
 const supported_prefixes = ["de", "el", "es", "fr", "it", "ko", "nl", "pl"]
 const supportedLanguages = ["English", "中文", "Française", "Deutsch", "Italiana", "한국인", "Nederlands", "Polski", "Español", "Ελληνικά"];
 const locales = {"English":"en-GB", "中文":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Nederlands":"nl", "Polski":"pl", "Español":"es", "Ελληνικά":"el"}
+
+// the chosen language, else the browser's, as one of the codes above; English when neither is supported
+function languageCode() {
+    let locale = localStorage.getItem("Language");
+    if (locale == null)
+        locale = navigator.language;
+    if (supported.includes(locale))
+        return locale;
+    for (let i = 0; i < supported_prefixes.length; i++)
+        if (locale == supported_prefixes[i] || locale.startsWith(supported_prefixes[i] + "-"))
+            return supported_prefixes[i];
+    return "en-GB";
+}
+
 module.exports = {
 
     methods: {
+        languageCode,
         getLanguages() {
             return supportedLanguages;
         },
@@ -26,20 +41,8 @@ module.exports = {
             localStorage.setItem("Language", locale);
             this.$toast(this.translate("LANGUAGE.RELOGIN"))
         },
-        translate(label, locale) {
-            locale = localStorage.getItem("Language");
-            if (locale == null)
-                locale = navigator.language;
-            if (! supported.includes(locale)) {
-                isSupportedPrefix = false;
-                for (var i=0; i < supported_prefixes.length; i++)
-                    if (locale == supported_prefixes[i] || locale.startsWith(supported_prefixes[i]+"-")) {
-                        isSupportedPrefix = true;
-                        locale = supported_prefixes[i];
-                    }
-                if (! isSupportedPrefix)
-                    locale = "en-GB";
-            }
+        translate(label) {
+            const locale = languageCode();
             if (locale == "en-GB") {
                 const res = enGB[label];
                 if (res != null)
