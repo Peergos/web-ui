@@ -216,8 +216,8 @@
         <li id="select-file" @keyup.enter="selectFromMenu" @click="selectFromMenu">
           {{ translate("DRIVE.SELECT") }}
         </li>
-        <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">Copy</li>
-        <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">Cut</li>
+        <li id="copy-file" v-if="allowCopy" @keyup.enter="copy" @click="copy">{{ translate("DRIVE.COPY") }}</li>
+        <li id="cut-file" v-if="isWritable" @keyup.enter="cut" @click="cut">{{ translate("DRIVE.CUT") }}</li>
         <li id="paste-file" v-if="isPasteAvailable" @keyup.enter="paste" @click="paste">
           {{ translate("DRIVE.PASTE") }}
         </li>
