@@ -709,5 +709,6 @@ module.exports = {
     "MIRROR.MIRRORFREE":"Request mirroring your data",
     "VERSION.TITLE":"Version",
     "VERSION.CLOSE":"Close",
-    "LANGUAGE.CHOOSE":"Language"
+    "LANGUAGE.CHOOSE":"Language",
+    "LANGUAGE.RELOGIN":"Log in again to reflect language change"
 }

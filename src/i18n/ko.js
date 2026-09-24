@@ -549,5 +549,6 @@ module.exports = {
     "MIRROR.MIRRORFREE":"데이터 미러링 요청",
     "VERSION.TITLE":"버전",
     "VERSION.CLOSE":"닫기",
-    "LANGUAGE.CHOOSE":"언어"
+    "LANGUAGE.CHOOSE":"언어",
+    "LANGUAGE.RELOGIN":"언어 변경을 적용하려면 다시 로그인하세요"
 }

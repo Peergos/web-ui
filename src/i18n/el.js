@@ -708,5 +708,6 @@ module.exports = {
     "MIRROR.MIRRORFREE":"Αίτημα κατοπτρισμού των δεδομένων σας",
     "VERSION.TITLE":"Έκδοση",
     "VERSION.CLOSE":"Κλείσιμο",
-    "LANGUAGE.CHOOSE":"Γλώσσα"
+    "LANGUAGE.CHOOSE":"Γλώσσα",
+    "LANGUAGE.RELOGIN":"Συνδεθείτε ξανά για να εφαρμοστεί η αλλαγή γλώσσας"
 }

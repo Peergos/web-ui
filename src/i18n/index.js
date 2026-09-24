@@ -24,7 +24,7 @@ module.exports = {
         },
         setLanguage(locale) {
             localStorage.setItem("Language", locale);
-            this.$toast("Log in again to reflect language change")
+            this.$toast(this.translate("LANGUAGE.RELOGIN"))
         },
         translate(label, locale) {
             locale = localStorage.getItem("Language");

@@ -509,5 +509,6 @@ module.exports = {
     "SHAREDWITH.FOLDER": "Carpeta",
     "SHAREDWITH.ACCESS": "Acceso",
     "SHAREDWITH.EMPTY.TITLE": "Aún no se ha compartido nada",
-    "SHAREDWITH.EMPTY.BODY": "Comparta un archivo o una carpeta desde su Unidad y aparecerá aquí, con quién lo compartió y qué puede hacer esa persona."
+    "SHAREDWITH.EMPTY.BODY": "Comparta un archivo o una carpeta desde su Unidad y aparecerá aquí, con quién lo compartió y qué puede hacer esa persona.",
+    "LANGUAGE.RELOGIN": "Vuelva a iniciar sesión para aplicar el cambio de idioma"
 }

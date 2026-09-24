@@ -483,5 +483,6 @@ module.exports = {
     "SHAREDWITH.FOLDER": "文件夹",
     "SHAREDWITH.ACCESS": "访问权限",
     "SHAREDWITH.EMPTY.TITLE": "尚未共享任何内容",
-    "SHAREDWITH.EMPTY.BODY": "在云盘中共享文件或文件夹后，会显示在这里，包括共享对象及其权限。"
+    "SHAREDWITH.EMPTY.BODY": "在云盘中共享文件或文件夹后，会显示在这里，包括共享对象及其权限。",
+    "LANGUAGE.RELOGIN": "请重新登录以应用语言更改"
 }
