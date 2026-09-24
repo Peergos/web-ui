@@ -33,11 +33,15 @@ public class AdminInviteTest {
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             Page.gotoDrive(d);
 
-            d.script("let r = null; for (const e of document.querySelectorAll('*')) if (e.__vue__) { r = e.__vue__.$root; break; }"
-                    + " const st = [r]; while (st.length) { const c = st.pop(); if (! c) continue;"
-                    + "   if (typeof c.showAdminPanel === 'function') { c.showAdminPanel(); return 1; }"
-                    + "   if (c.$children) st.push(...c.$children); } throw new Error('no admin menu');");
+            // through the menu, as an admin gets there: with no space requests pending, which on its
+            // own says nothing about who is an admin
+            d.script("document.querySelector('.user-settings .drive-user').click(); return 1;");
+            String adminItem = "[...document.querySelectorAll('.user-settings li')].find(li => li.textContent.trim() === 'Admin Panel')";
+            d.waitForScript("the admin menu item", adminItem, 60_000);
+            d.script(adminItem + ".click(); return 1;");
             d.waitForScript("the admin panel", "!!document.querySelector('.admin-invites')", 60_000);
+            if (! Boolean.TRUE.equals(d.script("return document.querySelector('.admin-panel').textContent.includes('No one is waiting for more space')")))
+                throw new AssertionError("The admin here should have no space requests pending");
             d.script("const i = document.querySelector('#admin-invite-count'); i.value = '2';"
                     + " i.dispatchEvent(new Event('input', {bubbles: true}));"
                     + " [...document.querySelectorAll('.admin-invites button')].find(b => b.textContent.trim() === 'Create invites').click(); return 1;");

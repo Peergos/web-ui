@@ -332,6 +332,7 @@ module.exports = {
 	    'updateQuota',
 	    'updateUsage',
 	    'updatePayment',
+	    'updateAdmin',
 	    'updateMirrorBatId'
 	]),
         formatNetworkError(throwable) {
@@ -396,6 +397,7 @@ module.exports = {
                     that.updateUsage();
                     that.updateQuota();
                     that.updatePayment();
+                    that.updateAdmin();
                     that.initSandboxedApps();
                 })
             });
