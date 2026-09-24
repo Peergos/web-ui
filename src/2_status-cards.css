@@ -837,6 +837,12 @@ a.pg-btn {
 		align-items: flex-start;
 	}
 
+	/* on its own, as when a mount syncs calendars or contacts and has no endpoints to show,
+	   space-between leaves the status at the start: keep it at the end, where it is with them */
+	.pg-card__head .pg-pill {
+		margin-left: auto;
+	}
+
 	/* stack the two endpoints and turn the arrow upright. The route shrinks rather
 	   than claiming the full row, so the status stays top right beside it */
 	.pg-route {
