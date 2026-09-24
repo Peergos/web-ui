@@ -69,6 +69,21 @@ module.exports = {
 	background-color: var(--bg-2);
 }
 
+/* on a phone three labels in a longer language (Greek, German) outgrow 30px a side, and the
+   last tab ran off the screen */
+@media (max-width: 480px) {
+	.app-tabs .tabs__header > li {
+		padding: 15px 10px;
+	}
+}
+
+@media (max-width: 360px) {
+	.app-tabs .tabs__header > li {
+		padding: 15px 6px;
+		font-size: var(--text-small);
+	}
+}
+
 .app-tabs .tabs__header > li.active {
 	border-radius: 4px 4px 0 0;
 	background-color: var(--bg);
