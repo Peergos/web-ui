@@ -1,26 +1,30 @@
 <template>
-  <ul style="list-style-type: none">
-        <div v-if="selectLeafOnly && isLeaf">
-          <span @click="selectItem" v-bind:id="model.path">{{ displayName(model.path) }}</span>
-        </div>
-        <div v-if="selectLeafOnly && !isLeaf">
-          <span v-bind:id="model.path">{{ displayName(model.path) }}</span>
-          <span v-if="isFolder" @click="toggle">[{{ model.isOpen ? '-' : '+' }}]</span>
-        </div>
-        <div v-if="!selectLeafOnly">
-          <span @click="selectItem" v-bind:id="model.path">{{ displayName(model.path) }}</span>
-          <span v-if="isFolder" @click="toggle">[{{ model.isOpen ? '-' : '+' }}]</span>
-        </div>
-    <li v-show="model.isOpen" v-if="isFolder" style="list-style-type: none">
+  <ul class="fp-branch" :role="isRoot ? 'tree' : 'group'" :aria-label="isRoot ? treeLabel : null">
+    <li role="treeitem" :aria-expanded="isFolder ? (model.isOpen ? 'true' : 'false') : null"
+        :aria-selected="selectable ? (isSelected ? 'true' : 'false') : null">
+      <div class="fp-row" :class="{'fp-row--selected': isSelected}" v-bind:id="model.path" tabindex="0"
+           @click="onRowClick" @keyup.enter="onRowClick">
+        <span class="fp-row__bg"></span>
+        <span class="fp-row__twisty" :class="{'fp-row__twisty--open': model.isOpen, 'fp-row__twisty--leaf': ! isFolder}"
+              @click.stop="toggle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </span>
+        <svg v-if="isLeaf" class="fp-row__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z"/><path d="M14 3v5h5"/></svg>
+        <svg v-else class="fp-row__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="fp-row__name">{{ displayName(model.path) }}</span>
+        <svg v-if="isSelected" class="fp-row__tick" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+    </li>
+    <li v-show="model.isOpen" v-if="isFolder" class="fp-children">
       <SelectableTreeItem
-        class="item"
-        v-for="model in model.children"
-        :model="model" :select_func="select_func" :load_func="load_func" :spinnerEnable_func="spinnerEnable_func" :spinnerDisable_func="spinnerDisable_func" :selectLeafOnly="selectLeafOnly">
+        v-for="child in model.children"
+        :key="child.path"
+        :model="child" :select_func="select_func" :load_func="load_func" :spinnerEnable_func="spinnerEnable_func"
+        :spinnerDisable_func="spinnerDisable_func" :selectLeafOnly="selectLeafOnly" :selectedPath="selectedPath">
       </SelectableTreeItem>
     </li>
   </ul>
 </template>
-
 <script>
 module.exports = {
   name: 'SelectableTreeItem', // necessary for self-reference
@@ -34,6 +38,8 @@ module.exports = {
     },
     spinnerEnable_func: Function,
     spinnerDisable_func: Function,
+    selectedPath: String,
+    treeLabel: String,
   },
   data() {
     return {
@@ -45,6 +51,16 @@ module.exports = {
     },
     isLeaf() {
       return this.model.isLeaf === true
+    },
+    isRoot() {
+      return this.$parent == null || this.$parent.$options.name !== 'SelectableTreeItem'
+    },
+    // with leaves only, a folder's row opens it rather than choosing it
+    selectable() {
+      return ! this.selectLeafOnly || this.isLeaf
+    },
+    isSelected() {
+      return this.selectable && this.selectedPath != null && this.selectedPath === this.model.path
     }
   },
   methods: {
@@ -79,12 +95,31 @@ module.exports = {
         };
         this.load_func(this.model.path + "/", callback);
     },
-    selectItem(selectedItem) {
-        this.select_func(selectedItem.currentTarget.id);
+    onRowClick(e) {
+        if (this.selectable)
+            this.select_func(this.model.path);
+        else
+            this.toggle(e);
     }
   }
 }
 </script>
 
 <style>
+.fp-row--selected .fp-row__bg {
+    background-color: var(--pg-tint-ok);
+}
+.fp-row--selected .fp-row__name {
+    color: var(--pg-on-ok);
+    font-weight: 600;
+}
+.fp-row--selected .fp-row__icon {
+    color: var(--green-500);
+}
+.fp-row__tick {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    color: var(--pg-on-ok);
+}
 </style>

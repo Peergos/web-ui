@@ -112,13 +112,28 @@ public class LinkEditorCheck {
                 """));
 
             // and the add button must actually open the picker
-            d.script("document.querySelector('.link-members button.btn-success').click()");
+            d.script("document.querySelector('.link-members__add').click()");
             Thread.sleep(1500);
             Object pickerVisible = d.script(
                 "return !!document.querySelector('.file-picker-container')");
             System.out.println("picker opened: " + pickerVisible);
             if (! Boolean.TRUE.equals(pickerVisible))
                 throw new IllegalStateException("the add files or folders button did nothing");
+
+            // removing asks first, and Yes has to actually take the item out: the confirm hides
+            // itself before it calls back, which once dropped the item it was asked about
+            d.script("""
+                // the element belongs to the <transition> the dialog renders through, so climb to it
+                let vm = document.querySelector('.secret-link').parentElement.__vue__;
+                while (vm && ! Array.isArray(vm.members)) vm = vm.$parent;
+                vm.addMember(vm.members[0].path + '/removal-check', false);
+                """);
+            d.waitForScript("second member", "document.querySelectorAll('.link-member').length === 2", 10_000);
+            d.script("const rs = document.querySelectorAll('.link-member__remove'); rs[rs.length - 1].click();");
+            d.waitForScript("remove confirmation", "document.querySelector('.pg-dialog--prompt .pg-btn--primary')", 10_000);
+            d.script("document.querySelector('.pg-dialog--prompt .pg-btn--primary').click()");
+            d.waitForScript("the member to go", "document.querySelectorAll('.link-member').length === 1", 10_000);
+            System.out.println("remove confirmed: back to one member");
             System.out.println("PASS");
         }
     }
