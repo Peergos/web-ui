@@ -6,7 +6,7 @@
 		<template #body>
 
                 <div v-for="lang in getLanguages()" >
-                    <AppButton@click.native="setLanguage(getLocale(lang))">
+                    <AppButton @click.native="choose(lang)">
                         {{ lang }}
                     </AppButton>
                 </div>
@@ -42,6 +42,11 @@ module.exports = {
     },
     mixins:[UriDecoder, i18n],
     methods: {
+        // picking is the whole job of this dialog, so it closes once a language is picked
+        choose(lang) {
+            this.setLanguage(this.getLocale(lang));
+            this.$store.commit("SET_MODAL", false);
+        },
     },
 };
 </script>

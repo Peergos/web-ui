@@ -529,5 +529,6 @@ module.exports = {
     "SHAREDWITH.FOLDER": "Folder",
     "SHAREDWITH.ACCESS": "Dostęp",
     "SHAREDWITH.EMPTY.TITLE": "Nic nie zostało jeszcze udostępnione",
-    "SHAREDWITH.EMPTY.BODY": "Udostępnij plik lub folder z Dysku, a pojawi się tutaj wraz z informacją, komu go udostępniono i co ta osoba może zrobić."
+    "SHAREDWITH.EMPTY.BODY": "Udostępnij plik lub folder z Dysku, a pojawi się tutaj wraz z informacją, komu go udostępniono i co ta osoba może zrobić.",
+    "LANGUAGE.RELOGIN": "Zaloguj się ponownie, aby zastosować zmianę języka"
 }

@@ -172,6 +172,18 @@ module.exports = {
 	.app-navigation:not(.expanded) .navigation-storage .storage {
 		flex-grow: 0;
 	}
+
+	/* the rail leaves 64px, which "Upgrade" fits and a longer label ("Αναβάθμιση", "Mettre à
+	   niveau", "Zmień subskrypcję") did not: it spilled past both edges and lost its first
+	   letters. At 10.5px the longest word of each is under 63px, so labels wrap between words;
+	   breaking inside one is only for a word no translation has yet */
+	.app-navigation:not(.expanded) .navigation-storage .upgrade {
+		max-width: 100%;
+		white-space: normal;
+		overflow-wrap: anywhere;
+		text-align: center;
+		font-size: 10.5px !important;
+	}
 }
 
 .navigation-storage {

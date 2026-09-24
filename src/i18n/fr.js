@@ -529,5 +529,6 @@ module.exports = {
     "SHAREDWITH.FOLDER": "Dossier",
     "SHAREDWITH.ACCESS": "Accès",
     "SHAREDWITH.EMPTY.TITLE": "Rien n'est encore partagé",
-    "SHAREDWITH.EMPTY.BODY": "Partagez un fichier ou un dossier depuis votre Drive et il apparaîtra ici, avec les personnes concernées et ce qu'elles peuvent en faire."
+    "SHAREDWITH.EMPTY.BODY": "Partagez un fichier ou un dossier depuis votre Drive et il apparaîtra ici, avec les personnes concernées et ce qu'elles peuvent en faire.",
+    "LANGUAGE.RELOGIN": "Reconnectez-vous pour appliquer le changement de langue"
 }

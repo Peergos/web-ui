@@ -1,5 +1,6 @@
 const enGB = require("en-GB.js")
 const de = require("de.js")
+const el = require("el.js")
 const es = require("es.js")
 const fr = require("fr.js")
 const it = require("it.js")
@@ -9,12 +10,27 @@ const pl = require("pl.js")
 const zhCN = require("zh-CN.js")
 
 const supported = ["en-GB", "zh-CN"]
-const supported_prefixes = ["de", "es", "fr", "it", "ko", "nl", "pl"]
-const supportedLanguages = ["English", "中文", "Française", "Deutsch", "Italiana", "한국인", "Nederlands", "Polski", "Español"];
-const locales = {"English":"en-GB", "中文":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Nederlands":"nl", "Polski":"pl", "Español":"es"}
+const supported_prefixes = ["de", "el", "es", "fr", "it", "ko", "nl", "pl"]
+const supportedLanguages = ["English", "中文", "Française", "Deutsch", "Italiana", "한국인", "Nederlands", "Polski", "Español", "Ελληνικά"];
+const locales = {"English":"en-GB", "中文":"zh-CN", "Française":"fr", "Deutsch": "de", "Italiana":"it", "한국인":"ko", "Nederlands":"nl", "Polski":"pl", "Español":"es", "Ελληνικά":"el"}
+
+// the chosen language, else the browser's, as one of the codes above; English when neither is supported
+function languageCode() {
+    let locale = localStorage.getItem("Language");
+    if (locale == null)
+        locale = navigator.language;
+    if (supported.includes(locale))
+        return locale;
+    for (let i = 0; i < supported_prefixes.length; i++)
+        if (locale == supported_prefixes[i] || locale.startsWith(supported_prefixes[i] + "-"))
+            return supported_prefixes[i];
+    return "en-GB";
+}
+
 module.exports = {
 
     methods: {
+        languageCode,
         getLanguages() {
             return supportedLanguages;
         },
@@ -23,22 +39,10 @@ module.exports = {
         },
         setLanguage(locale) {
             localStorage.setItem("Language", locale);
-            this.$toast("Log in again to reflect language change")
+            this.$toast(this.translate("LANGUAGE.RELOGIN"))
         },
-        translate(label, locale) {
-            locale = localStorage.getItem("Language");
-            if (locale == null)
-                locale = navigator.language;
-            if (! supported.includes(locale)) {
-                isSupportedPrefix = false;
-                for (var i=0; i < supported_prefixes.length; i++)
-                    if (locale == supported_prefixes[i] || locale.startsWith(supported_prefixes[i]+"-")) {
-                        isSupportedPrefix = true;
-                        locale = supported_prefixes[i];
-                    }
-                if (! isSupportedPrefix)
-                    locale = "en-GB";
-            }
+        translate(label) {
+            const locale = languageCode();
             if (locale == "en-GB") {
                 const res = enGB[label];
                 if (res != null)
@@ -46,6 +50,11 @@ module.exports = {
             }
             if (locale== "de") {
                 const res = de[label];
+                if (res != null)
+                    return res;
+            }
+            if (locale== "el") {
+                const res = el[label];
                 if (res != null)
                     return res;
             }

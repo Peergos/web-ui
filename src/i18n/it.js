@@ -529,5 +529,6 @@ module.exports = {
     "SHAREDWITH.FOLDER": "Cartella",
     "SHAREDWITH.ACCESS": "Accesso",
     "SHAREDWITH.EMPTY.TITLE": "Non hai ancora condiviso nulla",
-    "SHAREDWITH.EMPTY.BODY": "Condividi un file o una cartella dal tuo Drive e comparirà qui, con chi l'hai condiviso e cosa può farci."
+    "SHAREDWITH.EMPTY.BODY": "Condividi un file o una cartella dal tuo Drive e comparirà qui, con chi l'hai condiviso e cosa può farci.",
+    "LANGUAGE.RELOGIN": "Accedi di nuovo per applicare il cambio di lingua"
 }

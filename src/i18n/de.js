@@ -569,5 +569,6 @@ module.exports = {
     "MIRROR.MIRRORFREE": "Datenspiegelung anfordern",
     "VERSION.TITLE": "Version",
     "VERSION.CLOSE": "Schließen",
-    "LANGUAGE.CHOOSE":"Sprache"
+    "LANGUAGE.CHOOSE":"Sprache",
+    "LANGUAGE.RELOGIN":"Melden Sie sich erneut an, damit die Sprachänderung wirksam wird"
 }

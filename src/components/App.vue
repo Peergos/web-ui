@@ -307,6 +307,8 @@ module.exports = {
         if (localTheme == null && prefersDark)
            localTheme = "dark-mode";
 	document.documentElement.setAttribute("data-theme", localTheme);
+	// the page says which language it is in, so screen readers voice it and capitals follow its rules
+	document.documentElement.setAttribute("lang", this.languageCode());
 	this.$store.commit("SET_THEME", localTheme == "dark-mode");
         // a tablet that gets a mouse, or loses one, changes the answer mid-session
         this.coarsePointerQuery = window.matchMedia && window.matchMedia("(hover: none)");

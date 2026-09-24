@@ -585,5 +585,6 @@ module.exports = {
     "MIRROR.MIRRORFREE":"Vraag het spiegelen van je data aan",
     "VERSION.TITLE":"Versie",
     "VERSION.CLOSE":"Sluit",
-    "LANGUAGE.CHOOSE":"Taal"
+    "LANGUAGE.CHOOSE":"Taal",
+    "LANGUAGE.RELOGIN":"Log opnieuw in om de taalwijziging toe te passen"
 }
