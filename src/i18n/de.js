@@ -364,6 +364,7 @@ module.exports = {
     "DRIVE.LINK.EXPIRE.ON": "Ablaufdatum",
     "DRIVE.LINK.LIMIT.RETRIEVALS": "Anzahl der Linknutzungen begrenzen",
     "DRIVE.LINK.PASSWORD": "Passwort für den Zugriff erforderlich",
+    "DRIVE.PATH.EXPAND": "Vollständigen Pfad anzeigen",
     "DRIVE.LINK.CAN.EDIT": "Bearbeitbar",
     "DRIVE.LINK.WRITABLE.WARN": "Jeder mit dem Link kann zu den als bearbeitbar markierten Elementen Dateien hinzufügen, und diese belegen deinen Speicherplatz.",
     "DRIVE.LINK.OPTIONS": "Optionen",

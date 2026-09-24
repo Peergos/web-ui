@@ -380,6 +380,7 @@ module.exports = {
     "DRIVE.LINK.EXPIRE.ON":"Vervalt op",
     "DRIVE.LINK.LIMIT.RETRIEVALS":"Beperk het aantal keer dat de link gebruikt kan worden",
     "DRIVE.LINK.PASSWORD":"Vereist een wachtwoord om aan te kunnen",
+    "DRIVE.PATH.EXPAND":"Volledig pad tonen",
     "DRIVE.LINK.CAN.EDIT":"Bewerkbaar",
     "DRIVE.LINK.WRITABLE.WARN":"Iedereen met de link kan bestanden toevoegen aan wat je als bewerkbaar hebt gemarkeerd, en die tellen mee voor jouw opslagruimte.",
     "DRIVE.LINK.OPTIONS":"Opties",

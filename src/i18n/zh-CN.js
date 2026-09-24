@@ -340,6 +340,7 @@ module.exports = {
     "DRIVE.SHARE.ERROR.REPEAT":"已共享",
     "DRIVE.SHARE.COMPLETE":"安全共享完成",
     "DRIVE.LINK.OPEN":"自动打开",
+    "DRIVE.PATH.EXPAND":"显示完整路径",
     "DRIVE.LINK.CAN.EDIT":"可编辑",
     "DRIVE.LINK.WRITABLE.WARN":"任何拥有此链接的人都可以向标记为可编辑的项目添加文件，这些文件会占用你的空间。",
     "DRIVE.LINK.OPTIONS":"选项",

@@ -1,20 +1,32 @@
 <template>
-	<header class="drive-header">
+	<header class="drive-header" :class="{'drive-header--path-open': pathExpanded}">
 
-			<nav class="drive-breadcrumb">
-				<AppButton v-if="!(path.length >2 && path[1] == '.apps')" class="breadcrumb__root" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
+			<nav ref="breadcrumb" class="drive-breadcrumb" :class="{'drive-breadcrumb--expanded': pathExpanded, 'drive-breadcrumb--tight': pathTight}">
+				<AppButton v-if="!(path.length >2 && path[1] == '.apps')" class="breadcrumb__root" :class="{'breadcrumb__root--current': !path.length}" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
 					<AppIcon icon="globe--24"/>
-					<span v-if="!path.length">global</span>
 				</AppButton>
+				<AppIcon v-if="path.length && !(path.length >2 && path[1] == '.apps')" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
 
+				<!-- a trail too long to fit keeps the folder and its parent, and folds the rest in here -->
+				<span v-if="firstShown > pathStart" key="more" class="breadcrumb__crumb breadcrumb__crumb--more">
+					<button type="button" class="breadcrumb__more" :aria-label="translate('DRIVE.PATH.EXPAND')"
+							:title="translate('DRIVE.PATH.EXPAND')" @click="pathExpanded = true">&#x22EF;</button>
+					<AppIcon icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
+				</span>
+				<!-- each name carries the separator after it, so an expanded trail that wraps ends a
+				     line on a separator and starts the next on a name -->
 				<template v-if="!(path.length >2 && path[1] == '.apps')" v-for="(dir, index) in path">
-					<AppIcon v-if="index!==0" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
-					<AppButton :key="index" class="breadcrumb__item" :aria-label="dir" :title="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
+					<span v-if="index >= firstShown" :key="index" class="breadcrumb__crumb" :class="{'breadcrumb__crumb--current': index == path.length - 1}">
+						<AppButton class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="openLevel(index)">{{ dir }}</AppButton>
+						<AppIcon v-if="index < path.length - 1" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
+					</span>
 				</template>
                 <template v-if="path.length >2 && path[1] == '.apps'" v-for="(dir, index) in path">
-                    <AppIcon v-if="index>2" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
-                    <AppButton v-if="index>2" :key="index" class="breadcrumb__item" :aria-label="dir" :title="dir" tabindex="-1" @click.native="$emit('goBackToLevel', index + 1 )">{{ dir }}</AppButton>
-                    <AppButton v-if="index==2" :key="index" class="breadcrumb__item" :aria-label="dir" :title="dir" tabindex="-1">{{ dir }}</AppButton>
+                    <span v-if="index >= firstShown" :key="index" class="breadcrumb__crumb" :class="{'breadcrumb__crumb--current': index == path.length - 1}">
+                        <AppButton v-if="index>2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="openLevel(index)">{{ dir }}</AppButton>
+                        <AppButton v-if="index==2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="index == path.length - 1 && togglePath()">{{ dir }}</AppButton>
+                        <AppIcon v-if="index < path.length - 1" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
+                    </span>
                 </template>
 			</nav>
 
@@ -107,7 +119,36 @@ module.exports = {
             showAppSandbox: false,
             sandboxAppName: '',
             columns,
+            pathExpanded: false,
+            // the middle of the trail folded into the ellipsis, because the whole of it did not fit
+            pathCollapsed: false,
+            // some name in the trail is cut short
+            pathTight: false,
         };
+    },
+    watch: {
+        // every folder opens with its trail folded, or the grid stays pushed down for no reason
+        path() {
+            this.pathExpanded = false;
+            this.pathCollapsed = false;
+            this.pathTight = false;
+            this.$nextTick(this.measurePath);
+        },
+    },
+    mounted() {
+        this.$nextTick(this.measurePath);
+        if (typeof ResizeObserver === "function") {
+            this.pathObserver = new ResizeObserver(() => this.measurePath());
+            this.pathObserver.observe(this.$refs.breadcrumb);
+        } else {
+            window.addEventListener("resize", this.measurePath);
+        }
+    },
+    beforeDestroy() {
+        if (this.pathObserver)
+            this.pathObserver.disconnect();
+        else
+            window.removeEventListener("resize", this.measurePath);
     },
 	props: {
 		// the property the listing is ordered by, and whether that order runs ascending: the
@@ -142,11 +183,54 @@ module.exports = {
 		}
 	},
 	computed: {
+        // an app's own folder shows from its name on, not from the .apps above it
+        pathStart() {
+            return this.path.length > 2 && this.path[1] == '.apps' ? 2 : 0;
+        },
+        firstShown() {
+            if (! this.pathCollapsed || this.pathExpanded)
+                return this.pathStart;
+            return Math.max(this.pathStart, this.path.length - 2);
+        },
         ...Vuex.mapState([
             "sandboxedApps"
         ]),
 	},
 	methods: {
+        // the folder you are in has nowhere to go, so on a trail too long to show whole it opens
+        // and folds the trail instead
+        openLevel(index) {
+            if (index == this.path.length - 1 && this.togglePath())
+                return;
+            this.$emit('goBackToLevel', index + 1);
+        },
+        togglePath() {
+            if (! this.pathExpanded && ! this.pathCollapsed && ! this.pathTight)
+                return false;
+            this.pathExpanded = ! this.pathExpanded;
+            return true;
+        },
+        /**
+         * Whether the whole trail fits, measured with all of it shown: a folded trail cannot say
+         * whether a wider window now has room. Unfolding and folding again both land before the
+         * next paint, so the check does not show.
+         */
+        measurePath() {
+            let nav = this.$refs.breadcrumb;
+            if (nav == null || this.pathExpanded)
+                return;
+            if (this.pathCollapsed || this.pathTight) {
+                this.pathCollapsed = false;
+                this.pathTight = false;
+                this.$nextTick(this.measurePath);
+                return;
+            }
+            let truncated = Array.prototype.some.call(nav.querySelectorAll(".breadcrumb__item"),
+                b => b.scrollWidth > b.clientWidth + 1);
+            this.pathTight = truncated;
+            if (truncated && this.path.length - this.pathStart > 2)
+                this.pathCollapsed = true;
+        },
 	    appCreateNewInstance(appName) {
             this.showAppSandbox = true;
             this.sandboxAppName = appName;
@@ -321,9 +405,23 @@ module.exports = {
 	white-space: nowrap;
 }
 
-.drive-breadcrumb .app-button:hover {
-	color: var(--color) !important;
-	background-color: var(--bg-2);
+/* a touch screen keeps :hover on whatever was tapped last, which left a name lit up */
+@media (hover: hover) {
+	.drive-breadcrumb .app-button:hover {
+		color: var(--color) !important;
+		background-color: var(--bg-2);
+	}
+}
+
+/* and the button's own hover brightens the text, so a touch screen keeps each name its colour */
+@media (hover: none) {
+	.drive-breadcrumb .app-button:hover {
+		color: var(--pg-muted) !important;
+	}
+
+	.drive-breadcrumb .breadcrumb__item--current:hover {
+		color: var(--color) !important;
+	}
 }
 
 .drive-breadcrumb .breadcrumb__root {
@@ -341,9 +439,65 @@ module.exports = {
 	height: 22px;
 }
 
-.drive-breadcrumb .breadcrumb__root span {
-	padding-left: 16px;
-	font-weight: var(--regular);
+/* at the top, the globe is where you are, so it takes the current folder's solid colour */
+.drive-breadcrumb .breadcrumb__root--current,
+.drive-breadcrumb .breadcrumb__root--current:hover {
+	color: var(--color) !important;
+}
+
+/* A name squeezed below its padding drew over the next one, so each keeps to its own box */
+.drive-breadcrumb .breadcrumb__crumb {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	min-width: 0;
+	flex-shrink: 10;
+	overflow: hidden;
+}
+
+/* short of room, a name other than the current folder keeps enough to show a letter and its
+   separator; a trail with room needs no floor, which would pad out a one letter name */
+.drive-breadcrumb--tight .breadcrumb__crumb {
+	min-width: 56px;
+}
+
+/* When the trail is short of room, the folder you are in is the last to give way. The others
+   take ten times the share rather than it taking a tenth: once they are down to nothing, a
+   shrink factor under one only ever gives up that fraction of the overflow, and a long name ran
+   off the screen uncut. The ellipsis does not give way at all, or there is nothing to tap. */
+.drive-breadcrumb .breadcrumb__crumb--current,
+.drive-breadcrumb--tight .breadcrumb__crumb--current {
+	min-width: 0;
+	flex-shrink: 1;
+}
+
+.drive-breadcrumb .breadcrumb__crumb--more {
+	flex: none;
+}
+
+.drive-breadcrumb .breadcrumb__more {
+	flex: none;
+	padding: 7px 10px;
+	border: 0;
+	border-radius: var(--radius-control);
+	background-color: transparent;
+	color: var(--pg-muted);
+	font-family: inherit;
+	font-size: 15px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.drive-breadcrumb .breadcrumb__more:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+@media (hover: hover) {
+	.drive-breadcrumb .breadcrumb__more:hover {
+		color: var(--color);
+		background-color: var(--bg-2);
+	}
 }
 
 .drive-breadcrumb .breadcrumb__separator {
@@ -358,9 +512,52 @@ module.exports = {
 	text-overflow: ellipsis;
 }
 
-.drive-breadcrumb .breadcrumb__item:last-child {
+.drive-breadcrumb .breadcrumb__item--current {
 	color: var(--color);
 	font-weight: var(--bold);
+}
+
+/* expanded, every name is shown whole and the trail wraps onto as many lines as it needs,
+   the way a tile's name opens when tapped */
+.drive-breadcrumb--expanded {
+	flex-wrap: wrap;
+	overflow: visible;
+}
+
+.drive-breadcrumb--expanded .breadcrumb__item {
+	overflow: visible;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	text-align: left;
+}
+
+/* The bar is one 56px row with everything centred in it, so a trail that wraps grew out of it
+   both ways and its first line rose. Opened, the bar grows with the trail instead, everything
+   held at the top where the centred row had it: (56 - 40) / 2. */
+@media (min-width: 1025px) {
+	.drive-header.drive-header--path-open {
+		height: auto;
+		min-height: 56px;
+		align-items: flex-start;
+		padding-top: 8px;
+		padding-bottom: 8px;
+	}
+}
+
+@media screen and (max-width: 1024px) {
+	/* wrapped lines read as one trail when they sit close; the phone's full height tap target
+	   spaced them 49px apart. Doubled class to outrank that rule, the more specific otherwise. */
+	.drive-breadcrumb.drive-breadcrumb--expanded .breadcrumb__item {
+		padding-top: 5px;
+		padding-bottom: 5px;
+	}
+
+	/* the first line then sits where the centred single line did: half the 6px taken off each
+	   name, plus the half pixel the row's centring had */
+	.drive-header .drive-breadcrumb.drive-breadcrumb--expanded {
+		padding-top: 3.5px;
+		padding-bottom: 3.5px;
+	}
 }
 
 /* .app-button carries a 2px transparent border, which leaves the fill 4px shorter

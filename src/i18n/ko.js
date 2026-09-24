@@ -364,6 +364,7 @@ module.exports = {
     "DRIVE.LINK.EXPIRE.ON":"만료일",
     "DRIVE.LINK.LIMIT.RETRIEVALS":"링크 사용 횟수 제한",
     "DRIVE.LINK.PASSWORD":"접근 시 비밀번호 필요",
+    "DRIVE.PATH.EXPAND":"전체 경로 표시",
     "DRIVE.LINK.CAN.EDIT":"편집 가능",
     "DRIVE.LINK.WRITABLE.WARN":"링크를 가진 사람은 누구나 편집 가능으로 표시한 항목에 파일을 추가할 수 있으며, 이는 사용자의 저장 공간을 차지합니다.",
     "DRIVE.LINK.OPTIONS":"옵션",

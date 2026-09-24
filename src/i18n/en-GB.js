@@ -411,6 +411,7 @@ module.exports = {
     "DRIVE.LINK.EXPIRE.ON":"Expire on",
     "DRIVE.LINK.LIMIT.RETRIEVALS":"Limit number of link usages",
     "DRIVE.LINK.PASSWORD":"Require a password to access",
+    "DRIVE.PATH.EXPAND":"Show the full path",
     "DRIVE.LINK.CAN.EDIT":"Can edit",
     "DRIVE.LINK.WRITABLE.WARN":"Anyone with the link can add files to what you marked Can edit, and they count against your space.",
     "DRIVE.LINK.OPTIONS":"Options",

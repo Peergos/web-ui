@@ -360,6 +360,7 @@ module.exports = {
     "DRIVE.LINK.EXPIRE.ON": "Caduca el",
     "DRIVE.LINK.LIMIT.RETRIEVALS": "Limitar la cantidad de usos del enlace",
     "DRIVE.LINK.PASSWORD": "Requerir una contraseña para acceder",
+    "DRIVE.PATH.EXPAND": "Mostrar la ruta completa",
     "DRIVE.LINK.CAN.EDIT": "Editable",
     "DRIVE.LINK.WRITABLE.WARN": "Cualquiera con el enlace puede añadir archivos a lo que marcaste como editable, y ocuparán tu espacio.",
     "DRIVE.LINK.OPTIONS": "Opciones",
