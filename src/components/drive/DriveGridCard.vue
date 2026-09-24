@@ -1,6 +1,6 @@
 <template>
 	<article 
-        class="grid-card" :class="{selected: selected}"
+        class="grid-card" :class="{selected: selected, 'menu-target': menuOpen}"
         v-longpress="onLongPress" >
 
         <AppButton 
@@ -69,7 +69,9 @@ module.exports = {
         // whether the user is picking files, which changes what a tap on the tile means
         'selecting',
         // asked, per file, whether this tile's menu should stand down
-        'menuStandsDown'
+        'menuStandsDown',
+        // this tile's menu is open: marked as the hover is, without the tick of a pick
+        'menuOpen'
 	],
 	data() {
 		return {
@@ -215,7 +217,8 @@ module.exports = {
 	overflow: hidden;
 }
 
-.grid-card:hover {
+.grid-card:hover,
+.grid-card.menu-target {
 	background-color: var(--bg-2);
 	border-color: var(--pg-border-strong);
 }
