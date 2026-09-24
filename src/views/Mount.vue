@@ -49,7 +49,7 @@
 
 				<!-- Mounted: the same endpoint pair the sync page uses -->
 				<template v-if="isMounted">
-					<ul class="pg-cards">
+					<ul v-if="cardHasContent" class="pg-cards">
 						<li class="pg-card">
 							<div class="pg-card__head">
 								<div class="pg-route" v-if="config.mountPoint">
@@ -132,7 +132,7 @@
 
 						</li>
 					</ul>
-				<p class="pg-note">{{ translate("MOUNT.UNMOUNTED.LOCAL_FILES") }}</p>
+				<p v-if="mountNote" class="pg-note">{{ translate(mountNote) }}</p>
 				</template>
 
 				<!-- Not mounted: say what it costs before they commit, not after -->
@@ -329,6 +329,27 @@ module.exports = {
         isMounted() {
             return this.config.enabled === true
                     && (!! this.config.mountPoint || ! this.config.mountDrive);
+        },
+        /** The card shows the endpoints, the address a CalDAV or CardDAV client needs, and what went
+         *  wrong. A mount with none of those - calendars or contacts synced into the device's own
+         *  apps, as on Android - would be a card holding only its status, so it is left out. */
+        cardHasContent() {
+            return !! this.config.mountPoint
+                || (this.config.davClients && (this.config.syncCalendar || this.config.syncContacts))
+                || this.offline || !! this.error;
+        },
+        /** One note under the mount, worded for what it does: what happens to downloaded files, and,
+         *  where there is no client to point at the bridge (Android), that calendars and contacts go
+         *  to the device's own apps. Each case is a whole string, so every language can word it. */
+        mountNote() {
+            const cal = this.config.syncCalendar, contacts = this.config.syncContacts, drive = this.config.mountDrive;
+            if (this.config.davClients || ! (cal || contacts))
+                return drive ? "MOUNT.UNMOUNTED.LOCAL_FILES" : null;
+            if (cal && contacts)
+                return drive ? "MOUNT.PLATFORM.BOTH.DRIVE" : "MOUNT.PLATFORM.BOTH";
+            if (cal)
+                return drive ? "MOUNT.PLATFORM.CALENDAR.DRIVE" : "MOUNT.PLATFORM.CALENDAR";
+            return drive ? "MOUNT.PLATFORM.CONTACTS.DRIVE" : "MOUNT.PLATFORM.CONTACTS";
         },
         /** What this login is actually doing, so a calendar only one does not claim a drive. */
         summary() {

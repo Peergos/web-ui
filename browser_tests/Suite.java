@@ -40,6 +40,7 @@ public class Suite {
             // table's headings set it, and both views must follow whichever did.
             run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
             run(failures, "a long path trail opens out", () -> PathExpandTest.run(args1));
+            run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
