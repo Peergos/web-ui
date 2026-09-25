@@ -401,8 +401,27 @@ module.exports = {
                     that.initSandboxedApps();
                 })
             });
+            this.checkForNewerRelease();
 	    }
 	},
+        checkForNewerRelease() {
+            const isAndroid = navigator.userAgent.toLowerCase().indexOf("android") > -1;
+            if (this.isLocalhost && isAndroid)
+                return;
+            const that = this;
+            this.context.newerRelease().thenApply(version => {
+                if (version == null)
+                    return;
+                if (that.isLocalhost) {
+                    that.$toast.info(that.translate("RELEASE.NEWER.DOWNLOAD").replace("$VERSION", version.toString()), {
+                        timeout: false,
+                        onClick: () => window.open("https://peergos.org/download", "_blank", "noopener")
+                    });
+                } else {
+                    that.$toast.info(that.translate("RELEASE.NEWER.ADMIN").replace("$VERSION", version.toString()), {timeout: false});
+                }
+            });
+        },
         getSecretLinkProps() {
             var fragment = window.location.hash.substring(1);
 	    var props = {};
