@@ -15,7 +15,24 @@
 			:initialIsVerified="initialIsVerified"
 			:context="context">
 		</Fingerprint>
-		<Spinner v-if="showSpinner"></Spinner>
+		<Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+		<Choice
+			v-if="showChoice"
+			v-on:hide-choice="showChoice = false"
+			:choice_message="choice_message"
+			:choice_body="choice_body"
+			:choice_consumer_func="choice_consumer_func"
+			:choice_options="choice_options">
+		</Choice>
+		<Prompt
+			v-if="showPrompt"
+			v-on:hide-prompt="showPrompt = false"
+			:prompt_message="prompt_message"
+			:placeholder="prompt_placeholder"
+			:value="prompt_value"
+			:max_input_size="100"
+			:consumer_func="prompt_consumer_func">
+		</Prompt>
 		<ViewProfile
                     v-if="showProfileViewForm"
                     v-on:hide-profile-view="showProfileViewForm = false"
@@ -95,6 +112,73 @@
                 </div>
             </div>
 
+            <div class="social-groups">
+                <h3>{{ translate("GROUPS.TITLE") }}</h3>
+                <p class="social-groups__hint">{{ translate("GROUPS.BUILTIN") }}</p>
+                <div class="social-invite social-groups__create">
+                    <input
+                        class="social-groups__name pg-input"
+                        type="text"
+                        maxlength="100"
+                        v-model="newGroupName"
+                        :placeholder="translate('GROUPS.NAME')"
+                        v-on:keyup.enter="createGroup()"
+                    />
+                    <FormAutocomplete
+                        class="social-invite__field"
+                        is-multiple
+                        v-model="newGroupMembers"
+                        :minchars="0"
+                        :options="allFollowers"
+                        :maxitems="100"
+                        :placeholder="translate('GROUPS.MEMBERS.PICK')"
+                    />
+                    <button type="button" class="pg-btn pg-btn--primary" :disabled="newGroupName.trim().length == 0" @click="createGroup()">
+                        {{ translate("GROUPS.CREATE") }}
+                    </button>
+                </div>
+
+                <div v-for="uid in customGroupUids" :key="uid" class="social-group">
+                    <div class="flex-container" style="justify-content:space-between; max-width:700px;">
+                        <div style="font-size:1.5em;">
+                            {{ socialData.groupsUidToName[uid] }}
+                            <span class="social-group__count">{{ memberCountLabel(uid) }}</span>
+                        </div>
+                        <div class="flex-container" style="justify-content:space-evenly;">
+                            <div class="hspace-5">
+                                <button type="button" class="pg-btn" @click="toggleAddMember(uid)">{{ translate("GROUPS.ADD") }}</button>
+                            </div>
+                            <div class="hspace-5">
+                                <button type="button" class="pg-btn" @click="renameGroup(uid)">{{ translate("GROUPS.RENAME") }}</button>
+                            </div>
+                            <div class="hspace-5">
+                                <button type="button" class="pg-btn pg-btn--danger" @click="deleteGroup(uid)">{{ translate("GROUPS.DELETE") }}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="social-group__members">
+                        <span v-for="member in (groupMembers[uid] || [])" :key="member" class="social-group__member">
+                            {{ member }}
+                            <button type="button" class="social-group__remove" :aria-label="translate('GROUPS.REMOVE')" :title="translate('GROUPS.REMOVE')" @click="removeMember(uid, member)">&times;</button>
+                        </span>
+                    </div>
+                    <div v-if="addingTo == uid" class="social-invite">
+                        <FormAutocomplete
+                            class="social-invite__field"
+                            is-multiple
+                            v-model="membersToAdd"
+                            :minchars="0"
+                            :options="nonMembers(uid)"
+                            :maxitems="100"
+                            :placeholder="translate('GROUPS.MEMBERS.PICK')"
+                        />
+                        <button type="button" class="pg-btn pg-btn--primary" :disabled="membersToAdd.length == 0" @click="addMembers(uid)">
+                            {{ translate("GROUPS.ADD") }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <h3>{{ translate("SOCIAL.FOLLOWING") }}</h3>
                 <div class="table flex-container" style="flex-flow:column;">
@@ -128,6 +212,8 @@
 <script>
 const AppButton = require("../components/AppButton.vue");
 const AppHeader = require("../components/AppHeader.vue");
+const Choice = require("../components/choice/Choice.vue");
+const Prompt = require("../components/prompt/Prompt.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
@@ -143,6 +229,8 @@ module.exports = {
 		ViewProfile,
 		AppButton,
 		AppHeader,
+		Choice,
+		Prompt,
 		Spinner,
 	},
     data() {
@@ -164,7 +252,23 @@ module.exports = {
 	    showProfileViewForm: false,
             initialIsVerified: false,
 	    fingerprint: null,
-	    friendname: null
+	    friendname: null,
+            spinnerMessage: null,
+            newGroupName: "",
+            newGroupMembers: [],
+            groupMembers: {},
+            addingTo: null,
+            membersToAdd: [],
+            showChoice: false,
+            choice_message: "",
+            choice_body: "",
+            choice_options: [],
+            choice_consumer_func: () => {},
+            showPrompt: false,
+            prompt_message: "",
+            prompt_placeholder: "",
+            prompt_value: "",
+            prompt_consumer_func: () => {}
         }
     },
     props: [],
@@ -188,6 +292,14 @@ module.exports = {
                 userList.splice(userList.indexOf(name), 1);
             });
             return userList;
+        },
+        allFollowers() {
+            return this.socialData.friends.concat(this.socialData.followers);
+        },
+        customGroupUids() {
+            let builtIn = [peergos.shared.user.SocialState.FRIENDS_GROUP_NAME, peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME]
+                .map(name => this.socialData.groupsNameToUid[name]);
+            return this.socialData.groupUids.filter(uid => ! builtIn.includes(uid));
         }
     },
 	created() {
@@ -195,6 +307,7 @@ module.exports = {
         this.showSpinner = true;
         this.updateSocial(() => {
             that.showSpinner = false;
+            that.loadGroupMembers();
         });
     },
     methods: {
@@ -394,6 +507,131 @@ module.exports = {
 
         close () {
             this.$emit("hide-social");
+        },
+
+        loadGroupMembers() {
+            this.customGroupUids.forEach(uid => this.loadMembers(uid));
+        },
+        loadMembers(uid) {
+            let that = this;
+            return this.context.getGroupMembers(uid).thenApply(members => {
+                that.$set(that.groupMembers, uid, members.toArray([]));
+            });
+        },
+        memberCountLabel(uid) {
+            let members = this.groupMembers[uid];
+            if (members == null)
+                return "";
+            if (members.length == 0)
+                return "(" + this.translate("GROUPS.EMPTY") + ")";
+            return "(" + members.length + ")";
+        },
+        nonMembers(uid) {
+            let members = this.groupMembers[uid] || [];
+            return this.allFollowers.filter(name => ! members.includes(name));
+        },
+        isDuplicateName(name, exceptUid) {
+            return this.customGroupUids.some(uid => uid != exceptUid && this.socialData.groupsUidToName[uid] == name);
+        },
+        onGroupError(throwable) {
+            this.showSpinner = false;
+            this.spinnerMessage = null;
+            let msg = "" + (throwable.getMessage != null ? throwable.getMessage() : throwable);
+            this.$toast.error(msg.replace(/^([\w.$]+(Exception|Error):\s*)+/, "").trim(), {timeout:false, id: 'groups'});
+        },
+        refreshGroups(message) {
+            let that = this;
+            this.updateSocial(() => {
+                that.loadGroupMembers();
+                that.showSpinner = false;
+                that.spinnerMessage = null;
+                if (message != null)
+                    that.$toast(message);
+            });
+        },
+        createGroup() {
+            let name = this.newGroupName.trim();
+            if (name.length == 0)
+                return;
+            if (this.isDuplicateName(name, null))
+                this.$toast.warning(this.translate("GROUPS.DUPLICATE").replace("$NAME", name));
+            let that = this;
+            this.showSpinner = true;
+            this.context.createGroup(name, peergos.client.JsUtil.asSet(this.newGroupMembers.slice())).thenApply(uid => {
+                that.newGroupName = "";
+                that.newGroupMembers = [];
+                that.refreshGroups(that.translate("GROUPS.CREATED").replace("$NAME", name));
+            }).exceptionally(t => that.onGroupError(t));
+        },
+        toggleAddMember(uid) {
+            this.membersToAdd = [];
+            this.addingTo = this.addingTo == uid ? null : uid;
+        },
+        addMembers(uid) {
+            let that = this;
+            this.showSpinner = true;
+            this.context.addGroupMembers(uid, peergos.client.JsUtil.asSet(this.membersToAdd.slice())).thenApply(done => {
+                that.addingTo = null;
+                that.membersToAdd = [];
+                that.refreshGroups(null);
+            }).exceptionally(t => that.onGroupError(t));
+        },
+        renameGroup(uid) {
+            let that = this;
+            let current = this.socialData.groupsUidToName[uid];
+            this.prompt_message = this.translate("GROUPS.RENAME.TITLE").replace("$NAME", current);
+            this.prompt_placeholder = this.translate("GROUPS.NAME");
+            this.prompt_value = current;
+            this.prompt_consumer_func = (name) => {
+                if (name == null || name.trim().length == 0 || name.trim() == current)
+                    return;
+                name = name.trim();
+                if (that.isDuplicateName(name, uid))
+                    that.$toast.warning(that.translate("GROUPS.DUPLICATE").replace("$NAME", name));
+                that.showSpinner = true;
+                that.context.renameGroup(uid, name).thenApply(done => {
+                    that.refreshGroups(that.translate("GROUPS.RENAMED"));
+                }).exceptionally(t => that.onGroupError(t));
+            };
+            this.showPrompt = true;
+        },
+        removeMember(uid, member) {
+            let that = this;
+            let name = this.socialData.groupsUidToName[uid];
+            this.choice_message = this.translate("GROUPS.REMOVE.TITLE").replace("$USER", member).replace("$NAME", name);
+            this.choice_body = this.translate("GROUPS.REMOVE.BODY").replace("$USER", member);
+            this.choice_options = [this.translate("GROUPS.REMOVE.KEEP"), this.translate("GROUPS.REMOVE.REVOKE")];
+            this.choice_consumer_func = (index) => {
+                that.showSpinner = true;
+                that.context.removeGroupMember(uid, member, index == 1).thenApply(done => {
+                    that.refreshGroups(that.translate("GROUPS.REMOVED").replace("$USER", member));
+                }).exceptionally(t => that.onGroupError(t));
+            };
+            this.showChoice = true;
+        },
+        deleteGroup(uid) {
+            let that = this;
+            let name = this.socialData.groupsUidToName[uid];
+            this.showSpinner = true;
+            this.context.countSharedWithGroup(uid).thenApply(count => {
+                that.showSpinner = false;
+                that.choice_message = that.translate("GROUPS.DELETE.TITLE").replace("$NAME", name);
+                that.choice_body = that.translate("GROUPS.DELETE.BODY").replace("$COUNT", count);
+                that.choice_options = [that.translate("GROUPS.DELETE.KEEP"), that.translate("GROUPS.DELETE.REVOKE").replace("$COUNT", count)];
+                that.choice_consumer_func = (index) => {
+                    let revoke = index == 1;
+                    let done = 0;
+                    that.spinnerMessage = revoke ? that.translate("GROUPS.DELETE.PROGRESS").replace("$DONE", 0).replace("$COUNT", count) : null;
+                    that.showSpinner = true;
+                    that.context.deleteGroup(uid, revoke, x => {
+                        done++;
+                        that.spinnerMessage = that.translate("GROUPS.DELETE.PROGRESS").replace("$DONE", done).replace("$COUNT", count);
+                    }).thenApply(res => {
+                        that.refreshGroups(that.translate("GROUPS.DELETED").replace("$NAME", name));
+                    }).exceptionally(t => that.onGroupError(t));
+                };
+                that.showChoice = true;
+            }).exceptionally(t => that.onGroupError(t));
         }
     },
 
@@ -417,6 +655,56 @@ module.exports = {
 	flex: 1 1 auto;
 	min-width: 0;
 	margin-bottom: 0;
+}
+
+.social-groups {
+	align-self: stretch;
+	max-width: 700px;
+}
+
+.social-groups__hint,
+.social-group__count {
+	opacity: 0.7;
+}
+
+.social-groups__create {
+	flex-wrap: wrap;
+	max-width: none;
+}
+
+.social-groups__name {
+	flex: 0 1 200px;
+	min-width: 0;
+}
+
+.social-group {
+	margin-bottom: var(--app-margin);
+}
+
+.social-group__members {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin: 6px 0;
+}
+
+.social-group__member {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 2px 4px 2px 10px;
+	border-radius: 12px;
+	border: 1px solid var(--border-color, currentColor);
+}
+
+.social-group__remove {
+	border: none;
+	background: none;
+	color: inherit;
+	cursor: pointer;
+	font-size: 1.1em;
+	line-height: 1;
+	padding: 0 4px;
 }
 
 

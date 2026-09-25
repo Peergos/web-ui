@@ -53,7 +53,8 @@ module.exports = new Vuex.Store({
 			pendingOutgoing: [],
 			blocked: [],
 			groupsNameToUid: {},
-			groupsUidToName: {}
+			groupsUidToName: {},
+			groupUids: []
 		},
         sandboxedApps: {
             appFileExtensionRegistrationMap: new Map(),
@@ -235,6 +236,9 @@ module.exports = new Vuex.Store({
 		SET_GROUP_TO_UID(state, payload) {
 			state.socialData.groupsNameToUid = payload;
 		},
+		SET_GROUP_UIDS(state, payload) {
+			state.socialData.groupUids = payload;
+		},
 		SET_PENDING_INCOMING(state, payload) {
 			state.socialData.pending = payload;
 		},
@@ -377,6 +381,7 @@ module.exports = new Vuex.Store({
 				let groupsNameToUid = {}
 				socialState.groupNameToUid.keySet().toArray([]).map(name => groupsNameToUid[name]=socialState.groupNameToUid.get(name));
 				commit('SET_GROUP_TO_UID', groupsNameToUid)
+				commit('SET_GROUP_UIDS', socialState.getGroupUids().toArray([]))
 
 				let pendingOutgoingUsernames = [];
 				socialState.pendingOutgoing.toArray([]).map(u => pendingOutgoingUsernames.push(u));
