@@ -46,13 +46,25 @@ public class Server implements AutoCloseable {
     /** As above, capped at maxUsers accounts: 1 is a server the admin alone fills, which takes new
      *  users only with a signup token. */
     public static Server start(Path serverDir, int maxUsers) throws IOException {
+        return start(serverDir, maxUsers, List.of());
+    }
+
+    /** A paid instance, as build.xml's paid_run starts one: quotas and signup tokens are kept by a
+     *  separate quota service, here the QuotaAdminStandIn listening on quotaAdminPort. */
+    public static Server startPaid(Path serverDir, int quotaAdminPort) throws IOException {
+        return start(serverDir, 5, List.of(
+                "quota-admin-address", "/ip4/127.0.0.1/tcp/" + quotaAdminPort,
+                "-payment-domain", "localhost:7000"));
+    }
+
+    private static Server start(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
         int port = freePort();
         // proxy-target is the second http server this starts, and it defaults to a fixed
         // 127.0.0.1:8003 - so without its own port a test server collides with any other Peergos
         // already running on the machine, including a developer's.
         int p2pPort = freePort();
         Path dataDir = Temp.directory("peergos-browser-test-");
-        List<String> cmd = List.of("java", "-jar", "Peergos.jar", "pki-init",
+        List<String> cmd = new ArrayList<>(List.of("java", "-jar", "Peergos.jar", "pki-init",
                 "-port", Integer.toString(port),
                 "-proxy-target", "/ip4/127.0.0.1/tcp/" + p2pPort,
                 "-log-to-console", "false",
@@ -66,7 +78,8 @@ public class Server implements AutoCloseable {
                 "default-quota", Long.toString(4L * 1024 * 1024 * 1024),
                 "PEERGOS_PATH", dataDir.toString(),
                 "-admin-usernames", USERNAME,
-                "-max-daily-signups", "10000");
+                "-max-daily-signups", "10000"));
+        cmd.addAll(extraArgs);
         Path log = dataDir.resolve("server.log");
         Process p = new ProcessBuilder(cmd)
                 .directory(serverDir.toFile())
