@@ -3,53 +3,53 @@
 <div class="pg-dialog__mask" @click="close">
     <div class="pg-dialog admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-panel-title" tabindex="-1" @click.stop>
         <header class="pg-dialog__head">
-            <h2 class="pg-dialog__title" id="admin-panel-title">Admin panel</h2>
+            <h2 class="pg-dialog__title" id="admin-panel-title">{{ translate("ADMIN.TITLE") }}</h2>
             <DialogClose @close="close"/>
         </header>
 
         <div class="pg-dialog__body admin-panel__body">
             <section class="admin-panel__section">
-                <h3 class="admin-panel__heading">Space requests</h3>
-                <p v-if="data.pending.length == 0" class="pg-note">No one is waiting for more space.</p>
+                <h3 class="admin-panel__heading">{{ translate("ADMIN.REQUESTS") }}</h3>
+                <p v-if="data.pending.length == 0" class="pg-note">{{ translate("ADMIN.REQUESTS.NONE") }}</p>
                 <ul v-else class="admin-panel__requests">
                     <li v-for="req in data.pending" class="admin-panel__request">
                         <span class="admin-panel__who">
                             <span class="admin-panel__name">{{ req.getUsername() }}</span>
                             <span class="pg-note">{{ req.getSizeInMiB() }} MiB</span>
                         </span>
-                        <button type="button" class="pg-btn pg-btn--danger" :disabled="showSpinner" @click="reject(req)">Deny</button>
-                        <button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner" @click="approve(req)">Approve</button>
+                        <button type="button" class="pg-btn pg-btn--danger" :disabled="showSpinner" @click="reject(req)">{{ translate("ADMIN.DENY") }}</button>
+                        <button type="button" class="pg-btn pg-btn--primary" :disabled="showSpinner" @click="approve(req)">{{ translate("ADMIN.APPROVE") }}</button>
                     </li>
                 </ul>
             </section>
 
             <section class="admin-panel__section admin-invites">
                 <h3 class="admin-panel__heading">
-                    Signup invites<span v-if="invites.length > 0" class="admin-invites__count"> · {{ invites.length }} unused</span>
+                    {{ translate("ADMIN.INVITES") }}<span v-if="invites.length > 0" class="admin-invites__count"> · {{ translate("ADMIN.INVITES.UNUSED").replace("$COUNT", invites.length) }}</span>
                 </h3>
-                <p class="pg-note">Each link lets one new user sign up, even while this server is not accepting signups. It stays here until someone uses it or you cancel it.</p>
+                <p class="pg-note">{{ translate("ADMIN.INVITES.HINT") }}</p>
                 <div class="admin-invites__create">
                     <div class="admin-invites__stepper">
-                        <button type="button" class="admin-invites__step" aria-label="One fewer invite" :disabled="invitesBusy || ! (inviteCount > 1)" @click="step(-1)">
+                        <button type="button" class="admin-invites__step" :aria-label="translate('ADMIN.INVITES.FEWER')" :disabled="invitesBusy || ! (inviteCount > 1)" @click="step(-1)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg>
                         </button>
-                        <input id="admin-invite-count" type="number" inputmode="numeric" min="1" :max="maxInvites" aria-label="How many invites" v-model.number="inviteCount" @keyup.enter="createInvites()">
-                        <button type="button" class="admin-invites__step" aria-label="One more invite" :disabled="invitesBusy || ! (inviteCount < maxInvites)" @click="step(1)">
+                        <input id="admin-invite-count" type="number" inputmode="numeric" min="1" :max="maxInvites" :aria-label="translate('ADMIN.INVITES.COUNT')" v-model.number="inviteCount" @keyup.enter="createInvites()">
+                        <button type="button" class="admin-invites__step" :aria-label="translate('ADMIN.INVITES.MORE')" :disabled="invitesBusy || ! (inviteCount < maxInvites)" @click="step(1)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                         </button>
                     </div>
                     <button type="button" class="pg-btn pg-btn--primary admin-invites__submit" :disabled="invitesBusy" @click="createInvites()">{{ createLabel }}</button>
                 </div>
-                <p v-if="invitesError" class="pg-note">Couldn't load the unused invites: {{ invitesError }}</p>
-                <p v-else-if="invitesLoaded && invites.length == 0" class="pg-note">No unused invites.</p>
+                <p v-if="invitesError" class="pg-note">{{ translate("ADMIN.INVITES.LOAD.ERROR").replace("$REASON", invitesError) }}</p>
+                <p v-else-if="invitesLoaded && invites.length == 0" class="pg-note">{{ translate("ADMIN.INVITES.NONE") }}</p>
                 <ul v-if="invites.length > 0" class="admin-invites__list">
                     <li v-for="invite in invites" :key="invite.token">
-                        <input type="text" class="pg-input" readonly :value="invite.link" aria-label="Invite link" @focus="$event.target.select()">
-                        <button type="button" class="pg-btn admin-invites__copy" aria-label="Copy invite link" @click="copy(invite.link)">
+                        <input type="text" class="pg-input" readonly :value="invite.link" :aria-label="translate('ADMIN.INVITES.LINK')" @focus="$event.target.select()">
+                        <button type="button" class="pg-btn admin-invites__copy" :aria-label="translate('ADMIN.INVITES.COPY.LINK')" @click="copy(invite.link)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
-                            <span class="admin-invites__copy-text">Copy</span>
+                            <span class="admin-invites__copy-text">{{ translate("ADMIN.INVITES.COPY") }}</span>
                         </button>
-                        <button type="button" class="admin-invites__cancel" aria-label="Cancel invite" title="Cancel invite" :disabled="invitesBusy" @click="cancelInvite(invite)">
+                        <button type="button" class="admin-invites__cancel" :aria-label="translate('ADMIN.INVITES.CANCEL')" :title="translate('ADMIN.INVITES.CANCEL')" :disabled="invitesBusy" @click="cancelInvite(invite)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
                         </button>
                     </li>
@@ -64,6 +64,7 @@
 <script>
 const Spinner = require("../spinner/Spinner.vue");
 const DialogClose = require("../dialog/DialogClose.vue");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -83,6 +84,7 @@ module.exports = {
         }
     },
     props: ['data', 'context'],
+    mixins: [i18n],
     computed: {
         // until the list first arrives, a change made here could be overwritten by it
         invitesBusy: function() {
@@ -91,8 +93,8 @@ module.exports = {
         createLabel: function() {
             const n = this.inviteCount;
             if (! Number.isInteger(n) || n < 1 || n > this.maxInvites)
-                return "Create invites";
-            return n == 1 ? "Create 1 invite" : "Create " + n + " invites";
+                return this.translate("ADMIN.INVITES.CREATE");
+            return n == 1 ? this.translate("ADMIN.INVITES.CREATE.ONE") : this.translate("ADMIN.INVITES.CREATE.MANY").replace("$COUNT", n);
         }
     },
     created: function() {
@@ -108,7 +110,7 @@ module.exports = {
             this.context.approveSpaceRequest(req)
                 .thenApply(function(success) {
 		    that.showSpinner = false;
-                    that.showMessage("User: " + req.getUsername() + ". Space request approved!");
+                    that.showMessage(that.translate("ADMIN.APPROVED").replace("$USER", req.getUsername()));
                     that.$emit("recalc-admin");
                 });
         },
@@ -118,7 +120,7 @@ module.exports = {
             this.showSpinner = true;
             this.context.rejectSpaceRequest(req)
                 .thenApply(function(success) {
-                    that.showMessage("User: " + req.getUsername() + ". Space request rejected!");
+                    that.showMessage(that.translate("ADMIN.DENIED").replace("$USER", req.getUsername()));
                     that.showSpinner = false;
                     that.$emit("recalc-admin");
                 });
@@ -159,7 +161,7 @@ module.exports = {
                 return;
             const count = this.inviteCount;
             if (! Number.isInteger(count) || count < 1 || count > this.maxInvites) {
-                this.$toast.error("Choose between 1 and " + this.maxInvites + " invites");
+                this.$toast.error(this.translate("ADMIN.INVITES.RANGE").replace("$MAX", this.maxInvites));
                 return;
             }
             const that = this;
@@ -174,7 +176,7 @@ module.exports = {
                 });
             }).exceptionally(function(t) {
                 that.showSpinner = false;
-                that.$toast.error("Couldn't create invites: " + that.reasonOf(t), {timeout: false});
+                that.$toast.error(that.translate("ADMIN.INVITES.CREATE.ERROR").replace("$REASON", that.reasonOf(t)), {timeout: false});
                 return false;
             });
         },
@@ -188,22 +190,22 @@ module.exports = {
                 that.showSpinner = false;
                 // nothing to remove means someone signed up with it since the list was loaded
                 if (removed)
-                    that.$toast("Invite cancelled");
+                    that.$toast(that.translate("ADMIN.INVITES.CANCELLED"));
                 else
-                    that.$toast("That invite had already been used");
+                    that.$toast(that.translate("ADMIN.INVITES.USED"));
                 return true;
             }).exceptionally(function(t) {
                 that.showSpinner = false;
-                that.$toast.error("Couldn't cancel the invite: " + that.reasonOf(t), {timeout: false});
+                that.$toast.error(that.translate("ADMIN.INVITES.CANCEL.ERROR").replace("$REASON", that.reasonOf(t)), {timeout: false});
                 return false;
             });
         },
         copy: function(text) {
             const that = this;
             navigator.clipboard.writeText(text).then(function() {
-                that.$toast("Copied");
+                that.$toast(that.translate("ADMIN.INVITES.COPIED"));
             }, function() {
-                that.$toast.error("Couldn't copy to the clipboard");
+                that.$toast.error(that.translate("ADMIN.INVITES.COPY.ERROR"));
             });
         },
         close: function () {

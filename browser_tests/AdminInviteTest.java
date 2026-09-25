@@ -115,6 +115,18 @@ public class AdminInviteTest {
             openPanel(d);
             d.waitForScript("the empty invite list", "document.querySelector('.admin-invites').textContent.includes('No unused invites')", 30_000);
             System.out.println("  ok   used invites leave the list");
+
+            // the panel speaks the chosen language. It looks the language up as it opens, so it
+            // needs no new sign in, which the page helpers could not do in Greek anyway
+            d.script("document.querySelector('.admin-panel .pg-dialog__close').click(); return 1;");
+            d.waitForScript("the admin panel closed", "!document.querySelector('.admin-invites')", 10_000);
+            d.script("localStorage.setItem('Language', 'el'); return 1;");
+            openPanel(d);
+            d.waitForScript("the empty invite list in Greek", "document.querySelector('.admin-invites').textContent.includes('Δεν υπάρχουν αχρησιμοποίητες προσκλήσεις.')", 30_000);
+            String greek = (String) d.script("return document.querySelector('.admin-panel .pg-dialog__title').textContent.trim() + ' | ' + document.querySelector('.admin-invites__submit').textContent.trim()");
+            if (! "Πίνακας διαχείρισης | Δημιουργία 1 πρόσκλησης".equals(greek))
+                throw new AssertionError("The panel should be in Greek, but reads: " + greek);
+            System.out.println("  ok   the panel is translated");
             System.out.println("PASS");
         }
     }
