@@ -9,7 +9,14 @@
 		<!-- needs restyle -->
 		<section v-if="isSecretLink && this.context == null">
 		    <AppIcon icon="logo-full" class="sprite-test" />
-                    <center>
+                    <div v-if="secretLinkError != null" class="pg-empty secret-link-unavailable" role="alert">
+                        <span class="pg-empty__mark" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17H7A5 5 0 0 1 7 7h2"/><path d="M15 7h2a5 5 0 0 1 4 8"/><path d="M8 12h3"/><path d="m2 2 20 20"/></svg>
+                        </span>
+                        <h2>{{ translate("LINK.UNAVAILABLE") }}</h2>
+                        <p>{{ secretLinkError }}</p>
+                    </div>
+                    <center v-else>
 			<h2>Loading file...</h2>
                     </center>
                     <LinkPassword
@@ -208,6 +215,8 @@ module.exports = {
 		return {
 		    token: "",
                     showLinkPassword: false,
+                    // the reason a secret link could not be opened, shown in place of the loading page
+                    secretLinkError: null,
                     future:null,
                     desktopServerUrl: "",
                     activeDesktopServerUrl: "",
@@ -555,6 +564,19 @@ module.exports = {
             return future;
         },
 
+	/** What to tell someone opening a link the server refused, in words they can act on: the
+	 *  server's reasons are the prefixes of peergos.shared.user.fs.SecretLink, url encoded. */
+	secretLinkRefusal(throwable) {
+	    let message = String(throwable && throwable.getMessage ? throwable.getMessage() : throwable);
+	    try { message = decodeURIComponent(message.replace(/\+/g, " ")); } catch (e) {}
+	    if (message.includes("Maximum link retrievals"))
+	        return this.translate("LINK.UNAVAILABLE.USED_UP");
+	    if (message.includes("Secret link expired"))
+	        return this.translate("LINK.UNAVAILABLE.EXPIRED");
+	    if (message.includes("No secret link"))
+	        return this.translate("LINK.UNAVAILABLE.MISSING");
+	    return this.translate("LINK.UNAVAILABLE.OTHER");
+	},
 	// still need to check this
 	gotoSecretLink(props) {
 	    var that = this;
@@ -584,9 +606,7 @@ module.exports = {
                     window.location.hash = propsToFragment(props)
 		})
 		.exceptionally(function (throwable) {
-		    that.$toast.error(
-			"Secret link not found! Link expired or deleted?"
-		    );
+		    that.secretLinkError = that.secretLinkRefusal(throwable);
                     throwable.printStackTrace();
 		});
 	},
@@ -599,6 +619,11 @@ module.exports = {
 	position: relative;
 	top: 0;
 	min-height: 100vh;
+}
+
+/* the shared empty state, kept off the screen edges on a phone */
+.secret-link-unavailable {
+	width: calc(100% - 32px);
 }
 
 .icon.sprite-test {
