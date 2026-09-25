@@ -416,6 +416,12 @@ public class MarionetteDriver implements WebDriver {
                 Map.of("script", body, "args", Arrays.asList(args))));
     }
 
+    /** A png of the whole page, for looking at a layout rather than asserting on it. */
+    public byte[] screenshot() {
+        Object png = value(command("WebDriver:TakeScreenshot", Map.of("full", true, "hash", false)));
+        return Base64.getDecoder().decode(String.valueOf(png));
+    }
+
     /** Runs a script in the browser's own chrome rather than in the page: how a test reaches what
      *  a person does outside the page, such as cancelling a download in the downloads list. */
     public Object chromeScript(String body) {

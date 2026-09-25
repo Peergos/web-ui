@@ -115,17 +115,15 @@
             <div class="social-groups">
                 <h3>{{ translate("GROUPS.TITLE") }}</h3>
                 <p class="social-groups__hint">{{ translate("GROUPS.BUILTIN") }}</p>
-                <div class="social-invite">
+                <div class="social-invite social-groups__create">
                     <input
-                        class="social-groups__name"
+                        class="social-groups__name pg-input"
                         type="text"
                         maxlength="100"
                         v-model="newGroupName"
                         :placeholder="translate('GROUPS.NAME')"
                         v-on:keyup.enter="createGroup()"
                     />
-                </div>
-                <div class="social-invite">
                     <FormAutocomplete
                         class="social-invite__field"
                         is-multiple
@@ -539,7 +537,7 @@ module.exports = {
             this.showSpinner = false;
             this.spinnerMessage = null;
             let msg = "" + (throwable.getMessage != null ? throwable.getMessage() : throwable);
-            this.$toast.error(msg.substring(msg.lastIndexOf(":") + 1).trim(), {timeout:false, id: 'groups'});
+            this.$toast.error(msg.replace(/^([\w.$]+(Exception|Error):\s*)+/, "").trim(), {timeout:false, id: 'groups'});
         },
         refreshGroups(message) {
             let that = this;
@@ -669,8 +667,13 @@ module.exports = {
 	opacity: 0.7;
 }
 
+.social-groups__create {
+	flex-wrap: wrap;
+	max-width: none;
+}
+
 .social-groups__name {
-	flex: 1 1 auto;
+	flex: 0 1 200px;
 	min-width: 0;
 }
 
