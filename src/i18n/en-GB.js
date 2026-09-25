@@ -388,6 +388,8 @@ module.exports = {
     "DRIVE.SHARE.GROUP":"Or Group(s)",
     "DRIVE.SHARE.FRIENDS":"Friends",
     "DRIVE.SHARE.FOLLOWERS":"Followers (Includes Friends)",
+    "GROUPS.EMPTY":"empty",
+    "GROUPS.SHARED.EMPTY":"$NAME has no members yet, so nobody can see this through it until you add some",
     "DRIVE.SHARE.RWACCESS":"Read and Write Access",
     "DRIVE.SHARE.REVOKE":"Revoke",
     "DRIVE.SHARE.NONE":"None",

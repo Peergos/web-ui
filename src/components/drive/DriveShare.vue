@@ -43,31 +43,22 @@
 
 						<label>{{ translate("DRIVE.SHARE.GROUP") }}:</label>
 
-						<label class="checkbox__group">
-							{{ translate("DRIVE.SHARE.FRIENDS") }}
-							<input
-								type="checkbox"
-								name=""
-								v-model="shareWithFriendsGroup"
-								@change="onFriendChange()"
-							/>
-							<span class="checkmark"></span>
-						</label>
-
-						<label class="checkbox__group">
-							{{ translate("DRIVE.SHARE.FOLLOWERS") }}
-							<input
-								type="checkbox"
-								name=""
-								v-model="shareWithFollowersGroup"
-								@change="onFollowerChange()"
-							/>
-							<span class="checkmark"></span>
-						</label>
-
+						<div class="share-groups">
+							<label class="checkbox__group" v-for="uid in groupUids" :key="uid">
+								{{ groupLabel(uid) }}
+								<span class="share-groups__count">{{ groupCountLabel(uid) }}</span>
+								<input
+									type="checkbox"
+									:value="uid"
+									v-model="selectedGroupUids"
+									@change="onGroupChange(uid)"
+								/>
+								<span class="checkmark"></span>
+							</label>
+						</div>
 
 						<AppButton
-							:disabled="this.targetUsernames.slice().length == 0 && !this.shareWithFriendsGroup &&  !this.shareWithFollowersGroup"
+							:disabled="this.targetUsernames.slice().length == 0 && this.selectedGroupUids.length == 0"
 							class=""
 							accent
 							aria-label="Share"
@@ -83,6 +74,7 @@
 							<div v-if="this.files[0].getOwnerName() == this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
 									<label class="checkbox__group">
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
 										{{ getUserOrGroupName(user) }}
 										<input
 											type="checkbox"
@@ -97,6 +89,7 @@
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
+									<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
 									{{ getUserOrGroupName(user) }}
 								</div>
 							</div>
@@ -111,6 +104,7 @@
 								<div v-for="user in filterReadSharedWithUsers()">
 									<!-- <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span> -->
 									<label class="checkbox__group">
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
 										{{ getUserOrGroupName(user) }}
 										<input
 											type="checkbox"
@@ -125,6 +119,7 @@
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterReadSharedWithUsers()">
+									<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
 									{{ getUserOrGroupName(user) }}
 								</div>
 							</div>
@@ -213,6 +208,7 @@
 
 <script>
 const AppButton = require("../AppButton.vue");
+const AppIcon = require("../AppIcon.vue");
 const Choice = require('../choice/Choice.vue');
 const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
@@ -222,6 +218,7 @@ const i18n = require("../../i18n/index.js");
 module.exports = {
 	components: {
 	    AppButton,
+	    AppIcon,
 	    Choice,
 	    FormAutocomplete,
             SecretLink,
@@ -234,8 +231,8 @@ module.exports = {
 		    targetUsername: "",
 		    targetUsernames: [],
 		    sharedWithAccess: "Read",
-		    shareWithFriendsGroup: false,
-		    shareWithFollowersGroup: false,
+		    selectedGroupUids: [],
+		    customGroupMembers: {},
 		    unsharedReadAccessNames: [],
 		    unsharedEditAccessNames: [],
 		    showModal: false,
@@ -272,13 +269,63 @@ module.exports = {
 		allNames() {
 			// return this.followernames.concat(this.friendnames);
 			return this.socialData.followers.concat(this.socialData.friends);
+		},
+		friendsGroupUid() {
+			return this.getGroupUid(peergos.shared.user.SocialState.FRIENDS_GROUP_NAME);
+		},
+		followersGroupUid() {
+			return this.getGroupUid(peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME);
+		},
+		groupUids() {
+			return this.socialData.groupUids;
 		}
 	},
     created: function() {
         this.loadSecretLinks();
         this.loadOtherLinks();
+        this.loadCustomGroupMembers();
     },
 	methods: {
+        loadCustomGroupMembers() {
+            let that = this;
+            this.groupUids.filter(uid => ! this.isBuiltInGroup(uid)).forEach(uid => {
+                that.context.getGroupMembers(uid).thenApply(members => {
+                    that.$set(that.customGroupMembers, uid, members.toArray([]));
+                });
+            });
+        },
+        isBuiltInGroup(uid) {
+            return uid == this.friendsGroupUid || uid == this.followersGroupUid;
+        },
+        isGroup(name) {
+            return this.socialData.groupsUidToName[name] != null;
+        },
+        groupMembers(uid) {
+            if (uid == this.friendsGroupUid)
+                return this.socialData.friends;
+            if (uid == this.followersGroupUid)
+                return this.socialData.followers.concat(this.socialData.friends);
+            return this.customGroupMembers[uid];
+        },
+        groupLabel(uid) {
+            if (uid == this.friendsGroupUid)
+                return this.translate("DRIVE.SHARE.FRIENDS");
+            if (uid == this.followersGroupUid)
+                return this.translate("DRIVE.SHARE.FOLLOWERS");
+            return this.getUserOrGroupName(uid);
+        },
+        isEmptyGroup(uid) {
+            let members = this.groupMembers(uid);
+            return members != null && members.length == 0;
+        },
+        groupCountLabel(uid) {
+            let members = this.groupMembers(uid);
+            if (members == null)
+                return "";
+            if (members.length == 0)
+                return "(" + this.translate("GROUPS.EMPTY") + ")";
+            return "(" + members.length + ")";
+        },
         loadSecretLinks() {
             let that = this;
             this.context.getLinkHost().thenApply(host => {
@@ -428,15 +475,12 @@ module.exports = {
 			this.modalTitle = title;
 			this.modalLink = link;
 		},
-		onFriendChange() {
-			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
-				this.shareWithFollowersGroup = false;
-			}
-		},
-		onFollowerChange() {
-			if (this.shareWithFollowersGroup && this.shareWithFriendsGroup) {
-				this.shareWithFriendsGroup = false;
-			}
+		// followers includes friends, so at most one of the two is selected
+		onGroupChange(uid) {
+			let other = uid == this.friendsGroupUid ? this.followersGroupUid :
+				uid == this.followersGroupUid ? this.friendsGroupUid : null;
+			if (other != null && this.selectedGroupUids.includes(uid))
+				this.selectedGroupUids = this.selectedGroupUids.filter(g => g != other);
 		},
 		unshare(sharedWithAccess) {
 			if (this.files.length == 0) return this.close();
@@ -531,11 +575,8 @@ module.exports = {
 				throw "Unimplemented multiple file share call";
 
 			if (!this.allowedToShare(this.files[0])) return;
-			if (!this.shareWithFriendsGroup && !this.shareWithFollowersGroup) {
-				if (this.targetUsernames.slice() == 0) {
-					return;
-				}
-			}
+			if (this.selectedGroupUids.length == 0 && this.targetUsernames.slice().length == 0)
+				return;
 			var that = this;
 			this.showSpinner = true;
 			let filePath = peergos.client.PathUtils.toPath(
@@ -558,43 +599,17 @@ module.exports = {
 					that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()} `, {timeout:false, id: 'share'})
 				});
 		},
-		isFriend(name) {
-			return this.socialData.friends.indexOf(name) > -1;
-		},
-		isFollower(name) {
-			return this.socialData.followers.indexOf(name) > -1 || this.isFriend(name);
-		},
-		filterNamesFromGroups(includesFriends, includesFollowers, name) {
-			if (includesFriends && this.isFriend(name)) {
-				return false;
-			}
-			if (includesFollowers && this.isFollower(name)) {
-				return false;
-			}
-			return true;
+		isMemberOfAny(groupUids, name) {
+			return groupUids.some(uid => {
+				let members = this.groupMembers(uid);
+				return members != null && members.includes(name);
+			});
 		},
 		filterSharedWithUsers(usernames) {
-			let friendGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FRIENDS_GROUP_NAME
-			);
-			let includesFriends = usernames.indexOf(friendGroupUid) > -1;
-			let followerGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME
-			);
-			let includesFollowers = usernames.indexOf(followerGroupUid) > -1;
-			var result = usernames.filter((name) =>
-				this.filterNamesFromGroups(
-					includesFriends,
-					includesFollowers,
-					name
-				)
-			);
-			if (includesFollowers) {
-				let friendIndex = result.findIndex((v) => v === friendGroupUid);
-				if (friendIndex > -1) {
-					result.splice(friendIndex, 1);
-				}
-			}
+			let groups = usernames.filter(name => this.isGroup(name));
+			var result = usernames.filter(name => this.isGroup(name) || ! this.isMemberOfAny(groups, name));
+			if (groups.includes(this.followersGroupUid))
+				result = result.filter(name => name != this.friendsGroupUid);
 			return result;
 		},
 		filterEditSharedWithUsers() {
@@ -611,44 +626,10 @@ module.exports = {
 		getGroupUid(groupName) {
 			return this.socialData.groupsNameToUid[groupName];
 		},
+		// drop anyone who already gets the file through a group, so they aren't shared with twice
 		rationaliseUsersToShareWith(existingSharedUsers, usersToShareWith) {
-			let friendGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FRIENDS_GROUP_NAME
-			);
-			let followersGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME
-			);
-
-			let includesFriends =
-				this.shareWithFriendsGroup ||
-				this.isAlreadySharedWithUser(
-					friendGroupUid,
-					existingSharedUsers
-				);
-			let includesFollowers =
-				this.shareWithFollowersGroup ||
-				this.isAlreadySharedWithUser(
-					followersGroupUid,
-					existingSharedUsers
-				);
-			if (includesFriends || includesFollowers) {
-				for (var i = usersToShareWith.length - 1; i >= 0; i--) {
-					let targetUsername = usersToShareWith[i];
-					let removed = false;
-					if (includesFriends && this.isFriend(targetUsername)) {
-						usersToShareWith.splice(i, 1);
-						removed = true;
-					}
-					if (
-						!removed &&
-						includesFollowers &&
-						this.isFollower(targetUsername)
-					) {
-						usersToShareWith.splice(i, 1);
-					}
-				}
-			}
-			return usersToShareWith;
+			let groups = this.selectedGroupUids.concat(existingSharedUsers.filter(name => this.isGroup(name)));
+			return usersToShareWith.filter(name => ! this.isMemberOfAny(groups, name));
 		},
 		isAlreadySharedWithUser(username, existingSharedUsers) {
 			return existingSharedUsers.indexOf(username) > -1;
@@ -677,41 +658,19 @@ module.exports = {
 				usersToShareWith
 			);
 
-			let friendGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FRIENDS_GROUP_NAME
-			);
-			let followersGroupUid = this.getGroupUid(
-				peergos.shared.user.SocialState.FOLLOWERS_GROUP_NAME
-			);
-			if (this.shareWithFriendsGroup) {
-				if (
-					!this.isAlreadySharedWithUser(
-						friendGroupUid,
-						existingSharedUsers
-					) &&
-					!this.isAlreadySharedWithUser(
-						followersGroupUid,
-						existingSharedUsers
-					) &&
-					!this.shareWithFollowersGroup
-				) {
-					usersToShareWith.push(friendGroupUid);
-				}
-			}
-			if (this.shareWithFollowersGroup) {
-				if (
-					!this.isAlreadySharedWithUser(
-						followersGroupUid,
-						existingSharedUsers
-					)
-				) {
-					usersToShareWith.push(followersGroupUid);
-				}
-			}
+			let followersIncluded = this.selectedGroupUids.includes(this.followersGroupUid) ||
+				this.isAlreadySharedWithUser(this.followersGroupUid, existingSharedUsers);
+			this.selectedGroupUids
+				.filter(uid => ! this.isAlreadySharedWithUser(uid, existingSharedUsers))
+				.filter(uid => ! (uid == this.friendsGroupUid && followersIncluded))
+				.forEach(uid => usersToShareWith.push(uid));
 			if (usersToShareWith.length == 0) {
 				that.$toast.error(that.translate("DRIVE.SHARE.ERROR.REPEAT"), {timeout:false, id: 'share'})
 				return;
 			}
+			let emptyGroups = usersToShareWith.filter(uid => this.isGroup(uid) && this.isEmptyGroup(uid));
+			if (emptyGroups.length > 0)
+				this.$toast.info(this.translate("GROUPS.SHARED.EMPTY").replace("$NAME", emptyGroups.map(uid => this.groupLabel(uid)).join(", ")));
 			var filename = that.files[0].getFileProperties().name;
 			let filePath = peergos.client.PathUtils.toPath(this.path, filename);
 			this.showSpinner = true;
@@ -766,6 +725,22 @@ module.exports = {
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
+}
+
+.share-groups{
+	max-height: 12rem;
+	overflow-y: auto;
+	align-self: stretch;
+}
+
+.share-groups__count{
+	opacity: 0.7;
+	margin-left: 0.25em;
+}
+
+.share-group-icon{
+	vertical-align: middle;
+	margin-right: 0.25em;
 }
 
 .modal-section{
