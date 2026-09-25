@@ -21,6 +21,7 @@ public class Suite {
             // every later hash in the run is built on it, and the failure to look at is this.
             run(failures, "browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));
             run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
+            run(failures, "a secret link that can no longer be opened", () -> SecretLinkUnavailableTest.run(args1));
             run(failures, "every secret link at once, and adding to one", () -> LinksOverviewCheck.run(args1));
             run(failures, "the secret link editor", () -> LinkEditorCheck.run(args1));
             run(failures, "the interface in another language", () -> LanguageTest.run(args1));
