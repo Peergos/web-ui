@@ -735,6 +735,8 @@ module.exports = {
     "MIRROR.MIRRORFREE":"Request mirroring your data",
     "VERSION.TITLE":"Version",
     "VERSION.CLOSE":"Close",
+    "RELEASE.NEWER.DOWNLOAD":"Peergos $VERSION is available. Click here to get the latest release from https://peergos.org/download",
+    "RELEASE.NEWER.ADMIN":"Peergos $VERSION is available. Please ask your server admin to upgrade.",
     "LANGUAGE.CHOOSE":"Language",
     "LANGUAGE.RELOGIN":"Log in again to reflect language change",
     "ADMIN.TITLE":"Admin panel",
