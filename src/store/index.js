@@ -332,13 +332,22 @@ module.exports = new Vuex.Store({
 					    commit("SET_PAYMENT_PROPERTIES", paymentProps);
                                             if (callback != null)
                                                 callback()
-					} else {
-						state.context.getPendingSpaceRequests().thenApply(reqs => {
-						if (reqs.toArray([]).length > 0)
-							commit("USER_ADMIN", true);
-						});
 					}
 				});
+		},
+
+		// asked outright, since an admin with nothing pending gets the same empty list as anyone
+		// else. A server without the call falls back to that list, which finds an admin only
+		// while someone is waiting for space
+		updateAdmin({ commit, state }) {
+			state.context.isAdmin().thenApply(isAdmin => {
+				commit("USER_ADMIN", isAdmin);
+			}).exceptionally(() => {
+				state.context.getPendingSpaceRequests().thenApply(reqs => {
+					if (reqs.toArray([]).length > 0)
+						commit("USER_ADMIN", true);
+				});
+			});
 		},
 
 		updateSocial({ commit, state }, callback) {

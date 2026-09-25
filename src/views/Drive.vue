@@ -1285,13 +1285,8 @@ module.exports = {
                     
 
                     that.context.getPaymentProperties(false).thenApply(function (paymentProps) {
-                        if (paymentProps.isPaid()) {
+                        if (paymentProps.isPaid())
                             that.paymentProperties = paymentProps;
-                        } else
-                            that.context.getPendingSpaceRequests().thenApply(reqs => {
-                                if (reqs.toArray([]).length > 0)
-                                    that.$store.commit('USER_ADMIN', true);
-                            });
                     });
                 });
 			}
