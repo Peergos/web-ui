@@ -1547,7 +1547,7 @@ module.exports = {
 			if (this.isSecretLink || dir == null || ! dir.isWritable() || dir.getOwnerName() == this.context.username)
 				return;
 			let that = this;
-			this.context.getWriteSpaceInfo(dir).thenApply(info => {
+			this.context.getWriteUsageInfo(dir).thenApply(info => {
 				if (that.currentDir === dir && info.hasAvailable())
 					that.sharedFolderFree = info.getAvailableBytes();
 			}).exceptionally(t => { console.log(t); return null; });
