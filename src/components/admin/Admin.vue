@@ -25,9 +25,9 @@
 
             <section class="admin-panel__section admin-invites">
                 <h3 class="admin-panel__heading">
-                    {{ translate("ADMIN.INVITES") }}<span v-if="invites.length > 0" class="admin-invites__count"> · {{ translate("ADMIN.INVITES.UNUSED").replace("$COUNT", invites.length) }}</span>
+                    {{ translate("ADMIN.INVITES") }}<span v-if="invites.length > 0 && invitesError == null" class="admin-invites__count"> · {{ translate("ADMIN.INVITES.UNUSED").replace("$COUNT", invites.length) }}</span>
                 </h3>
-                <p class="pg-note">{{ translate("ADMIN.INVITES.HINT") }}</p>
+                <p class="pg-note">{{ translate("ADMIN.INVITES.HINT") }}<template v-if="invitesError == null"> {{ translate("ADMIN.INVITES.HINT.LISTED") }}</template></p>
                 <div class="admin-invites__create">
                     <div class="admin-invites__stepper">
                         <button type="button" class="admin-invites__step" :aria-label="translate('ADMIN.INVITES.FEWER')" :disabled="invitesBusy || ! (inviteCount > 1)" @click="step(-1)">
@@ -40,7 +40,9 @@
                     </div>
                     <button type="button" class="pg-btn pg-btn--primary admin-invites__submit" :disabled="invitesBusy" @click="createInvites()">{{ createLabel }}</button>
                 </div>
-                <p v-if="invitesError" class="pg-note">{{ translate("ADMIN.INVITES.LOAD.ERROR").replace("$REASON", invitesError) }}</p>
+                <!-- a quota service that cannot list tokens, or any failure to: either way, what is not
+                     copied now cannot be found here again -->
+                <p v-if="invitesError != null" class="pg-callout">{{ translate("ADMIN.INVITES.NO.LIST") }}</p>
                 <p v-else-if="invitesLoaded && invites.length == 0" class="pg-note">{{ translate("ADMIN.INVITES.NONE") }}</p>
                 <ul v-if="invites.length > 0" class="admin-invites__list">
                     <li v-for="invite in invites" :key="invite.token">
@@ -49,7 +51,7 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
                             <span class="admin-invites__copy-text">{{ translate("ADMIN.INVITES.COPY") }}</span>
                         </button>
-                        <button type="button" class="admin-invites__cancel" :aria-label="translate('ADMIN.INVITES.CANCEL')" :title="translate('ADMIN.INVITES.CANCEL')" :disabled="invitesBusy" @click="cancelInvite(invite)">
+                        <button v-if="invitesError == null" type="button" class="admin-invites__cancel" :aria-label="translate('ADMIN.INVITES.CANCEL')" :title="translate('ADMIN.INVITES.CANCEL')" :disabled="invitesBusy" @click="cancelInvite(invite)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
                         </button>
                     </li>
@@ -132,11 +134,11 @@ module.exports = {
             const base = (host.startsWith("localhost:") ? "http://" : "https://") + host + "/?signup=true&token=";
             return tokens.toArray().map(t => ({token: t, link: base + t}));
         },
-        // the server's message arrives url encoded
+        // the server's message arrives url encoded, and behind the name of the java exception
         reasonOf: function(t) {
             let reason = String(t && t.message ? t.message : t);
             try { reason = decodeURIComponent(reason.replace(/\+/g, " ")); } catch (e) {}
-            return reason;
+            return reason.replace(/^([a-z]+\.)+[A-Za-z]*(Exception|Error):\s*/, "");
         },
         loadInvites: function() {
             const that = this;
