@@ -47,6 +47,9 @@
       @search="openSearch(false)"
       @paste="pasteToFolder($event)"
     />
+    <p v-if="sharedFolderFree != null" class="drive-shared-space">
+      {{ translate("DRIVE.SHARED.SPACE.FREE").replace("$SPACE", sharedFolderFreeText) }}
+    </p>
 
     <AppPrompt
       v-if="showPrompt"
@@ -628,6 +631,7 @@ module.exports = {
             clickedFilename: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
+            sharedFolderFree: null,
             progressBarUpdateFrequency: 15,
             zipAndDownloadFoldersCount: 0,
             htmlAnchor: "",
@@ -672,6 +676,10 @@ module.exports = {
         // whole array rather than a file at a time, so there is no toggleSelection to catch it.
         pickedFiles() {
             return this.picking ? this.selectedFiles : [];
+        },
+
+        sharedFolderFreeText() {
+            return helpers.convertBytesToHumanReadable('' + this.sharedFolderFree);
         },
 
         // The file whose menu is open, which borrows selectedFiles to say what its actions apply
@@ -1532,6 +1540,18 @@ module.exports = {
 		updateCurrentDir() {
 			this.updateCurrentDirectory(null, null);
 		},
+		/** The free space in someone else's folder that we can write to, if they have limited it */
+		updateSharedFolderSpace() {
+			let dir = this.currentDir;
+			this.sharedFolderFree = null;
+			if (this.isSecretLink || dir == null || ! dir.isWritable() || dir.getOwnerName() == this.context.username)
+				return;
+			let that = this;
+			this.context.getWriteSpaceInfo(dir).thenApply(info => {
+				if (that.currentDir === dir && info.hasAvailable())
+					that.sharedFolderFree = info.getAvailableBytes();
+			}).exceptionally(t => { console.log(t); return null; });
+		},
 		updateCurrentDirectory(selectedFilename, callback) {
 		    if (this.context == null)
 			return Promise.resolve(null);
@@ -1563,6 +1583,7 @@ module.exports = {
                         }
                         that.leaveArchive();
                         that.currentDir = updated;
+                        that.updateSharedFolderSpace();
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
                         that.$toast.error(throwable.getMessage());
@@ -2345,7 +2366,9 @@ module.exports = {
                 } else {
                     let spaceAfterOperation = that.checkAvailableSpace(totalSize);
                     if (!isWritableSecretLink && spaceAfterOperation < 0) {
-                        let errMsg = this.translate("DRIVE.UPLOAD.SPACE.ERROR").replace("$SPACE",  helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
+                        let errMsg = this.sharedFolderFree != null ?
+                            this.translate("DRIVE.UPLOAD.SHARED.SPACE.ERROR").replace("$SPACE", this.sharedFolderFreeText) :
+                            this.translate("DRIVE.UPLOAD.SPACE.ERROR").replace("$SPACE",  helpers.convertBytesToHumanReadable('' + -spaceAfterOperation));
                         that.$toast.error(errMsg, {timeout:false, id: 'upload'})
                     } else {
                         //resetting .value tricks browser into allowing subsequent upload of same file(s)
@@ -2542,7 +2565,11 @@ module.exports = {
                             return;
                         }
                         that.errorTitle = that.translate("DRIVE.UPLOAD.ERROR");
-                        that.errorBody = throwable.getMessage();
+                        let message = throwable.getMessage();
+                        // the owner of a shared folder has limited its space, which says nothing about our own quota
+                        that.errorBody = message != null && message.includes("Storage quota reached for this shared folder") ?
+                            that.translate("DRIVE.UPLOAD.SHARED.FULL") : message;
+                        that.updateSharedFolderSpace();
                         that.showError = true;
                         that.$toast.clear();
                         uploadFuture.complete(false);
@@ -3193,7 +3220,9 @@ module.exports = {
 		},
 		checkAvailableSpace(fileSize) {
 		    if (this.currentDir.getOwnerName() != this.context.username) {
-		        return 0;
+		        if (this.sharedFolderFree == null)
+		            return 0;
+		        return this.sharedFolderFree - fileSize;
 		    }
 			return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
 		},
@@ -4107,6 +4136,11 @@ module.exports = {
 </script>
 
 <style>
+.drive-shared-space {
+    margin: 0 16px 8px;
+    font-size: 0.9em;
+    opacity: 0.8;
+}
 .drive-view {
   min-height: 100vh;
   display: flex;
