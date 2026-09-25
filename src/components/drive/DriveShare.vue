@@ -41,6 +41,15 @@
 							<span class="checkmark"></span>
 						</label>
 
+						<div v-if="sharedWithAccess == 'Edit' && writeQuota == null" class="share-limit">
+							<label>{{ translate("DRIVE.SHARE.LIMIT") }}:</label>
+							<input type="number" min="0" v-model="limitAmount" :placeholder="translate('DRIVE.SHARE.LIMIT.NONE')" />
+							<select v-model="limitUnit">
+								<option value="MB">MB</option>
+								<option value="GB">GB</option>
+							</select>
+						</div>
+
 						<label>{{ translate("DRIVE.SHARE.GROUP") }}:</label>
 
 						<div class="share-groups">
@@ -86,6 +95,20 @@
 									</label>
 								</div>
 								<button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">{{ translate("DRIVE.SHARE.REVOKE") }}</button>
+								<div v-if="writeQuota != null" class="share-limit">
+									<p>
+										{{ translate("DRIVE.SHARE.LIMIT") }}:
+										<span v-if="writeQuota.hasQuota()">{{ convertBytesToHumanReadable(writeQuota.getUsedBytes()) }} / {{ convertBytesToHumanReadable(writeQuota.getQuotaBytes()) }}</span>
+										<span v-else>{{ translate("DRIVE.SHARE.LIMIT.NONE") }}</span>
+									</p>
+									<input type="number" min="0" v-model="limitAmount" />
+									<select v-model="limitUnit">
+										<option value="MB">MB</option>
+										<option value="GB">GB</option>
+									</select>
+									<button class="btn btn-success" @click="setWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.SET") }}</button>
+									<button v-if="writeQuota.hasQuota()" class="btn btn-success" @click="removeWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.REMOVE") }}</button>
+								</div>
 							</div>
 							<div v-if="this.files[0].getOwnerName() != this.context.username">
 								<div v-for="user in filterEditSharedWithUsers()">
@@ -214,6 +237,7 @@ const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
 const SecretLink = require("SecretLink.vue");
 const i18n = require("../../i18n/index.js");
+const mixins = require("../../mixins/mixins.js");
 
 module.exports = {
 	components: {
@@ -224,7 +248,7 @@ module.exports = {
             SecretLink,
             Spinner,
 	},
-        mixins:[i18n],
+        mixins:[i18n, mixins],
 	data() {
 		return {
 		    showSpinner: false,
@@ -248,6 +272,9 @@ module.exports = {
                     otherLinks: [],
                     showAddToExisting: false,
                     linkHost: "",
+                    writeQuota: null,
+                    limitAmount: "",
+                    limitUnit: "GB",
 		};
 	},
 	props: [
@@ -284,6 +311,7 @@ module.exports = {
         this.loadSecretLinks();
         this.loadOtherLinks();
         this.loadCustomGroupMembers();
+        this.loadWriteQuota();
     },
 	methods: {
         loadCustomGroupMembers() {
@@ -325,6 +353,55 @@ module.exports = {
             if (members.length == 0)
                 return "(" + this.translate("GROUPS.EMPTY") + ")";
             return "(" + members.length + ")";
+        },
+        isOwner() {
+            return this.files[0].getOwnerName() == this.context.username;
+        },
+        filePath() {
+            return peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name);
+        },
+        loadWriteQuota() {
+            if (! this.allowReadWriteSharing || ! this.isOwner() || this.data.edit_shared_with_users.length == 0)
+                return;
+            let that = this;
+            this.context.getWriteShareQuota(this.filePath()).thenApply(info => {
+                that.writeQuota = info;
+            }).exceptionally(t => { console.log(t); return null; });
+        },
+        /** null when no limit was entered, and NaN when the entry isn't a positive number */
+        limitBytes() {
+            if (String(this.limitAmount).trim() == "")
+                return null;
+            let amount = Number(this.limitAmount);
+            if (isNaN(amount) || amount <= 0)
+                return NaN;
+            return Math.round(amount * (this.limitUnit == "GB" ? 1000 * 1000 * 1000 : 1000 * 1000));
+        },
+        applyWriteQuota(update) {
+            let that = this;
+            this.showSpinner = true;
+            return update.thenApply(res => {
+                that.showSpinner = false;
+                that.limitAmount = "";
+                that.$toast(that.translate("DRIVE.SHARE.LIMIT.SAVED"));
+                that.loadWriteQuota();
+                return res;
+            }).exceptionally(t => {
+                that.showSpinner = false;
+                that.$toast.error(that.translate("DRIVE.SHARE.LIMIT.ERROR") + ": " + t.getMessage(), {timeout:false, id: 'share'});
+                return null;
+            });
+        },
+        setWriteQuota() {
+            let bytes = this.limitBytes();
+            if (bytes == null || isNaN(bytes)) {
+                this.$toast.error(this.translate("DRIVE.SHARE.LIMIT.INVALID"), {id: 'share'});
+                return;
+            }
+            this.applyWriteQuota(this.context.setWriteShareQuota(this.filePath(), bytes));
+        },
+        removeWriteQuota() {
+            this.applyWriteQuota(this.context.removeWriteShareQuota(this.filePath()));
         },
         loadSecretLinks() {
             let that = this;
@@ -577,6 +654,10 @@ module.exports = {
 			if (!this.allowedToShare(this.files[0])) return;
 			if (this.selectedGroupUids.length == 0 && this.targetUsernames.slice().length == 0)
 				return;
+			if (this.sharedWithAccess == "Edit" && this.writeQuota == null && isNaN(this.limitBytes())) {
+				this.$toast.error(this.translate("DRIVE.SHARE.LIMIT.INVALID"), {id: 'share'});
+				return;
+			}
 			var that = this;
 			this.showSpinner = true;
 			let filePath = peergos.client.PathUtils.toPath(
@@ -698,6 +779,15 @@ module.exports = {
 						filePath,
 						peergos.client.JsUtil.asSet(usersToShareWith)
 					)
+					.thenCompose(function (b) {
+						let bytes = that.writeQuota == null ? that.limitBytes() : null;
+						if (bytes == null)
+							return peergos.shared.util.Futures.of(true);
+						return that.context.setWriteShareQuota(filePath, bytes).exceptionally(function (throwable) {
+							that.$toast.error(that.translate("DRIVE.SHARE.LIMIT.ERROR") + ": " + throwable.getMessage(), {timeout:false, id: 'share-limit'});
+							return false;
+						});
+					})
 					.thenApply(function (b) {
 						that.showSpinner = false;
 						that.$toast(that.translate("DRIVE.SHARE.COMPLETE"))
@@ -745,5 +835,14 @@ module.exports = {
 
 .modal-section{
 	margin: 32px 0;
+}
+
+.share-limit{
+	margin: 16px 0;
+}
+
+.share-limit input{
+	width: 8em;
+	margin-right: 8px;
 }
 </style>
