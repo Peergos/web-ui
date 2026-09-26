@@ -150,6 +150,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"此链接已过期。请向所有者索取新链接。",
     "LINK.UNAVAILABLE.MISSING":"此链接已不存在，可能已被所有者删除。",
     "LINK.UNAVAILABLE.OTHER":"请检查是否完整复制了链接，或向所有者索取新链接。",
+    "LINK.UNAVAILABLE.LEGACY":"此链接使用的旧格式已不再受支持。请向所有者索取新链接。",
     "SETTINGS.ACCOUNT":"账户",
     "SETTINGS.PROFILE":"资料",
     "SETTINGS.FEEDBACK":"反馈",

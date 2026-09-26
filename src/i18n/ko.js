@@ -162,6 +162,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"링크가 만료되었습니다. 소유자에게 새 링크를 요청하세요.",
     "LINK.UNAVAILABLE.MISSING":"더 이상 존재하지 않는 링크입니다. 소유자가 삭제했을 수 있습니다.",
     "LINK.UNAVAILABLE.OTHER":"링크 전체가 복사되었는지 확인하거나 소유자에게 새 링크를 요청하세요.",
+    "LINK.UNAVAILABLE.LEGACY":"더 이상 지원되지 않는 이전 링크 형식입니다. 소유자에게 새 링크를 요청하세요.",
     "SETTINGS.ACCOUNT":"계정",
     "SETTINGS.PROFILE":"프로필",
     "SETTINGS.FEEDBACK":"피드백",

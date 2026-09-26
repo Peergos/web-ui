@@ -472,21 +472,11 @@ module.exports = {
 	    try {
 		props = fragmentToProps(fragment);
 	    } catch (e) {
-		if (fragment.length > 0) {
-		    // support legacy secret links
-		    props.secretLink = true;
-
-		    var query = fragment.indexOf("?");
-		    if (query > 0) {
-			if (fragment.indexOf("download=true") > 0)
-			    props.download = true;
-			if (fragment.indexOf("open=true") > 0)
-			    props.open = true;
-			fragment = fragment.substring(0, query);
-		    }
-		    props.link = fragment;
-		}
+		// a legacy secret link, with the capability in the fragment
+		return { secretLink: true, legacy: true };
 	    }
+	    if (props.secretLink)
+		return { secretLink: true, legacy: true };
             return props;
         },
 
@@ -602,19 +592,17 @@ module.exports = {
 	gotoSecretLink(props) {
 	    var that = this;
             this.$store.commit("SET_IS_SECRET_LINK", true);
+            if (props.legacy) {
+                this.secretLinkError = this.translate("LINK.UNAVAILABLE.LEGACY");
+                return;
+            }
             
-	    (props.linkpassword != null ?
-             peergos.shared.user.UserContext.fromSecretLinkV2(
+	    peergos.shared.user.UserContext.fromSecretLinkV2(
 		 window.location.pathname + "#" + props.linkpassword,
                  {get_0:() => this.getLinkPassword()},
 		 that.network,
 		 that.crypto
-	    ):
-             peergos.shared.user.UserContext.fromSecretLink(
-		props.link,
-		that.network,
-		that.crypto
-	    ))
+	    )
 		.thenApply(function (context) {
 		    that.$store.commit("SET_CONTEXT", context);
 		    that.$store.commit("SET_DOWNLOAD", props.download);

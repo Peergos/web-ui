@@ -162,6 +162,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"Er ist abgelaufen. Bitten Sie den Besitzer um einen neuen Link.",
     "LINK.UNAVAILABLE.MISSING":"Er existiert nicht mehr. Der Besitzer hat ihn vielleicht gelöscht.",
     "LINK.UNAVAILABLE.OTHER":"Prüfen Sie, ob der ganze Link kopiert wurde, oder bitten Sie den Besitzer um einen neuen.",
+    "LINK.UNAVAILABLE.LEGACY":"Er verwendet ein altes Linkformat, das nicht mehr unterstützt wird. Bitten Sie den Besitzer um einen neuen Link.",
     "SETTINGS.ACCOUNT": "Konto",
     "SETTINGS.PROFILE": "Profil",
     "SETTINGS.FEEDBACK": "Feedback",
