@@ -159,6 +159,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"Ha caducado. Pida a su propietario un enlace nuevo.",
     "LINK.UNAVAILABLE.MISSING":"Ya no existe. Puede que su propietario lo haya eliminado.",
     "LINK.UNAVAILABLE.OTHER":"Compruebe que se copió el enlace completo o pida a su propietario uno nuevo.",
+    "LINK.UNAVAILABLE.LEGACY":"Usa un formato de enlace antiguo que ya no es compatible. Pida a su propietario un enlace nuevo.",
     "SETTINGS.ACCOUNT": "Cuenta",
     "SETTINGS.PROFILE": "Perfil",
     "SETTINGS.FEEDBACK": "Comentarios",

@@ -159,6 +159,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"Il a expiré. Demandez un nouveau lien à son propriétaire.",
     "LINK.UNAVAILABLE.MISSING":"Il n'existe plus. Son propriétaire l'a peut-être supprimé.",
     "LINK.UNAVAILABLE.OTHER":"Vérifiez que le lien a été copié en entier, ou demandez-en un nouveau à son propriétaire.",
+    "LINK.UNAVAILABLE.LEGACY":"Il utilise un ancien format de lien qui n'est plus pris en charge. Demandez un nouveau lien à son propriétaire.",
     "SETTINGS.ACCOUNT": "Compte",
     "SETTINGS.PROFILE": "Profil",
     "SETTINGS.FEEDBACK": "Commentaires",

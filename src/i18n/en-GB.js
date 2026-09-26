@@ -185,6 +185,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"It has expired. Ask its owner for a new link.",
     "LINK.UNAVAILABLE.MISSING":"It no longer exists. Its owner may have deleted it.",
     "LINK.UNAVAILABLE.OTHER":"Check that the whole link was copied, or ask its owner for a new one.",
+    "LINK.UNAVAILABLE.LEGACY":"It uses an old link format that is no longer supported. Ask its owner for a new link.",
     "SETTINGS.ACCOUNT":"Account",
     "SETTINGS.PROFILE":"Profile",
     "SETTINGS.FEEDBACK":"Feedback",

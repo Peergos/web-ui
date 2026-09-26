@@ -173,6 +173,7 @@ module.exports = {
     "LINK.UNAVAILABLE.EXPIRED":"Hij is verlopen. Vraag de eigenaar om een nieuwe link.",
     "LINK.UNAVAILABLE.MISSING":"Hij bestaat niet meer. De eigenaar heeft hem misschien verwijderd.",
     "LINK.UNAVAILABLE.OTHER":"Controleer of de hele link is gekopieerd, of vraag de eigenaar om een nieuwe.",
+    "LINK.UNAVAILABLE.LEGACY":"Hij gebruikt een oud linkformaat dat niet meer wordt ondersteund. Vraag de eigenaar om een nieuwe link.",
     "SETTINGS.ACCOUNT":"Account",
     "SETTINGS.PROFILE":"Profiel",
     "SETTINGS.FEEDBACK":"Feedback",
