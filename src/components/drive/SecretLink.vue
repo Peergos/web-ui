@@ -57,6 +57,21 @@
                                         @click="removeMember(i)">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
                                 </button>
+                                <div v-if="m.writable" class="link-member__limit">
+                                    <label :for="'link-limit-' + i" class="secret-link__label">{{ translate("DRIVE.SHARE.LIMIT") }}</label>
+                                    <input :id="'link-limit-' + i" class="pg-input" type="number" min="0" v-model="m.limitAmount"
+                                           :placeholder="m.quota != null && m.quota.hasQuota() ? '' : translate('DRIVE.SHARE.LIMIT.NONE')">
+                                    <select class="pg-input" v-model="m.limitUnit">
+                                        <option value="MB">MB</option>
+                                        <option value="GB">GB</option>
+                                    </select>
+                                    <span v-if="m.quota != null && m.quota.hasQuota()" class="pg-note">
+                                        {{ convertBytesToHumanReadable(m.quota.getUsedBytes()) }} / {{ convertBytesToHumanReadable(m.quota.getQuotaBytes()) }}
+                                    </span>
+                                    <button v-if="m.quota != null && m.quota.hasQuota()" type="button" class="pg-btn" :disabled="showSpinner" @click="removeLimit(m)">
+                                        {{ translate("DRIVE.SHARE.LIMIT.REMOVE") }}
+                                    </button>
+                                </div>
                             </li>
                         </ul>
                         <p v-if="anyWritable" class="pg-callout">{{ translate("DRIVE.LINK.WRITABLE.WARN") }}</p>
@@ -176,6 +191,7 @@ const Confirm = require("../confirm/Confirm.vue");
 const DialogClose = require("../dialog/DialogClose.vue");
 const i18n = require("../../i18n/index.js");
 const paths = require("../../mixins/paths/index.js");
+const mixins = require("../../mixins/mixins.js");
 module.exports = {
     components:{
         Spinner,
@@ -233,7 +249,7 @@ module.exports = {
             return {message: parts[0], body: parts.slice(1).join(" ")};
         },
     },
-    mixins:[i18n, paths],
+    mixins:[i18n, paths, mixins],
 	props: [
 	    "title",
 	    "link",
@@ -280,18 +296,15 @@ module.exports = {
             initialMembers: function() {
                 if (this.currentProps != null && this.currentProps.memberCount() > 0) {
                     // a gwt List is not indexable from js; toArray is how the rest of the app reads one
-                    return this.currentProps.getMembers().toArray().map(m => ({
-                        path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
-                    }));
+                    return this.currentProps.getMembers().toArray().map(m => this.member(m.getPath(), m.isWritable()));
                 }
                 if (this.link.paths != null)
-                    return this.link.paths.map(p => ({path: p, writable: false, canBeWritable: true, writableReason: ""}));
-                return [{
-                    path: this.getLinkPath(),
-                    writable: this.currentProps != null && this.currentProps.isLinkWritable,
-                    canBeWritable: true,
-                    writableReason: "",
-                }];
+                    return this.link.paths.map(p => this.member(p, false));
+                return [this.member(this.getLinkPath(), this.currentProps != null && this.currentProps.isLinkWritable)];
+            },
+            member: function(path, writable) {
+                return {path: path, writable: writable, canBeWritable: true, writableReason: "",
+                        limitAmount: "", limitUnit: "MB", quota: null};
             },
             /**
              * The recorded paths are only what they were when the link was last written; the
@@ -303,9 +316,8 @@ module.exports = {
                     return;
                 let that = this;
                 this.context.getSecretLinkMembers(this.currentProps).thenApply(members => {
-                    that.members = members.toArray().map(m => ({
-                        path: m.getPath(), writable: m.isWritable(), canBeWritable: true, writableReason: ""
-                    }));
+                    that.members = members.toArray().map(m => that.member(m.getPath(), m.isWritable()));
+                    that.loadLimits();
                     return true;
                 }).exceptionally(t => { console.log(t); return null; });
             },
@@ -321,8 +333,7 @@ module.exports = {
                     this.$toast.error(this.translate("DRIVE.LINK.MEMBER.TOO.MANY"));
                     return;
                 }
-                this.members.push({path: path, writable: openForEditing === true,
-                                   canBeWritable: true, writableReason: ""});
+                this.members.push(this.member(path, openForEditing === true));
                 this.onChange();
             },
             removeMember: function(i) {
@@ -372,6 +383,12 @@ module.exports = {
             createOrUpdateLink: function() {
                 let create = this.currentProps == null;
                 let that = this;
+                let limits = this.members.filter(m => m.writable && this.limitBytes(m) != null);
+                if (limits.some(m => isNaN(this.limitBytes(m)))) {
+                    this.$toast.error(this.translate("DRIVE.SHARE.LIMIT.INVALID"));
+                    return;
+                }
+                limits = limits.map(m => ({path: m.path, bytes: this.limitBytes(m)}));
                 this.showSpinner = true;
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
@@ -380,9 +397,8 @@ module.exports = {
                           that.currentProps = props;
                           that.justCreated = true;
                           that.members = that.initialMembers();
-                          that.refreshMembersFromLink();
                           that.updateHref();
-                          that.showSpinner = false;
+                          that.applyLimits(limits);
                     }).exceptionally(t => {
                         console.log(t);
                         that.$toast.error(that.linkError(t, "DRIVE.LINK.ERROR.CREATE"), {timeout:false});
@@ -393,15 +409,71 @@ module.exports = {
                     this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.members = that.initialMembers();
-                        that.refreshMembersFromLink();
                         that.updateHref();
-                        that.showSpinner = false;
+                        that.applyLimits(limits);
                     }).exceptionally(t => {
                         console.log(t);
                         that.$toast.error(that.linkError(t, "DRIVE.LINK.ERROR.UPDATE"), {timeout:false});
                         that.showSpinner = false;
                     });
                 }
+            },
+            /** null when no limit was entered, and NaN when the entry isn't a positive number */
+            limitBytes: function(m) {
+                if (String(m.limitAmount).trim() == "")
+                    return null;
+                let amount = Number(m.limitAmount);
+                if (isNaN(amount) || amount <= 0)
+                    return NaN;
+                return Math.round(amount * (m.limitUnit == "GB" ? 1000 * 1000 * 1000 : 1000 * 1000));
+            },
+            memberPath: function(path) {
+                return peergos.client.PathUtils.directoryToPath(path.split('/').filter(s => s.length > 0));
+            },
+            /** A writable member is only its own writing space once the link is saved, so limits are set after that */
+            applyLimits: function(limits) {
+                let that = this;
+                let done = function() {
+                    that.showSpinner = false;
+                    that.refreshMembersFromLink();
+                };
+                let next = function(i) {
+                    if (i >= limits.length) {
+                        if (limits.length > 0)
+                            that.$toast(that.translate("DRIVE.SHARE.LIMIT.SAVED"));
+                        return done();
+                    }
+                    that.context.setWriteShareQuota(that.memberPath(limits[i].path), limits[i].bytes)
+                        .thenApply(res => next(i + 1))
+                        .exceptionally(t => {
+                            console.log(t);
+                            that.$toast.error(that.translate("DRIVE.SHARE.LIMIT.ERROR") + ": " + limits[i].path, {timeout:false});
+                            done();
+                        });
+                };
+                next(0);
+            },
+            removeLimit: function(m) {
+                let that = this;
+                this.showSpinner = true;
+                this.context.removeWriteShareQuota(this.memberPath(m.path)).thenApply(res => {
+                    that.showSpinner = false;
+                    that.$toast(that.translate("DRIVE.SHARE.LIMIT.SAVED"));
+                    that.loadLimits();
+                }).exceptionally(t => {
+                    console.log(t);
+                    that.showSpinner = false;
+                    that.$toast.error(that.translate("DRIVE.SHARE.LIMIT.ERROR"), {timeout:false});
+                });
+            },
+            loadLimits: function() {
+                let that = this;
+                this.members.filter(m => m.writable).forEach(m => {
+                    that.context.getWriteShareQuota(that.memberPath(m.path)).thenApply(info => {
+                        m.quota = info;
+                        m.limitAmount = "";
+                    }).exceptionally(t => { console.log(t); return null; });
+                });
             },
             /**
              * The server side refusals here are things the user can act on - someone else's file,
@@ -521,6 +593,7 @@ module.exports = {
 }
 .link-member {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 12px;
     padding: 10px 4px 10px 14px;
@@ -554,6 +627,19 @@ module.exports = {
 }
 .link-member__writable {
     flex: none;
+}
+.link-member__limit {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    flex-basis: 100%;
+    gap: 8px;
+}
+.link-member__limit input {
+    width: 110px;
+}
+.link-member__limit select {
+    width: auto;
 }
 .link-member__remove {
     display: flex;
@@ -674,7 +760,6 @@ module.exports = {
     }
     /* no room for the switch beside the name: it drops under it */
     .link-member {
-        flex-wrap: wrap;
         row-gap: 8px;
     }
     .link-member__path {
@@ -685,6 +770,9 @@ module.exports = {
     }
     .link-member__writable {
         order: 3;
+    }
+    .link-member__limit {
+        order: 4;
     }
 }
 </style>

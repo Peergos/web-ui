@@ -1544,7 +1544,7 @@ module.exports = {
 		updateSharedFolderSpace() {
 			let dir = this.currentDir;
 			this.sharedFolderFree = null;
-			if (this.isSecretLink || dir == null || ! dir.isWritable() || dir.getOwnerName() == this.context.username)
+			if (dir == null || ! dir.isWritable() || dir.getOwnerName() == this.context.username)
 				return;
 			let that = this;
 			this.context.getWriteUsageInfo(dir).thenApply(info => {
