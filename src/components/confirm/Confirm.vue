@@ -6,7 +6,8 @@
       <h3 class="pg-dialog__title" id="confirm-header-id">{{confirm_message}}</h3>
       <DialogClose @close="close"/>
     </header>
-    <div class="pg-dialog__body">
+    <!-- a question that says it all has no body, rather than an empty one holding a gap -->
+    <div v-if="confirm_body" class="pg-dialog__body">
       <p id='confirm-body-id'>{{confirm_body}}</p>
     </div>
     <footer class="pg-dialog__foot">

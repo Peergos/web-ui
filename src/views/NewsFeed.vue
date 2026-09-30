@@ -1,5 +1,5 @@
 <template>
-<article class="app-view newsfeed-view">
+<article class="app-view pg-view newsfeed-view">
 	<AppHeader>
 		<template #primary>
 			<h1>{{ translate("NEWSFEED.TITLE") }}</h1>
@@ -23,17 +23,16 @@
 		</button>
 	</div>
 
-        <center v-if="buildingFeed">
-            <h3>
-                {{ translate("NEWSFEED.BUILDING") }}
-                </h3>
-            <h3>
-                {{ translate("NEWSFEED.MINUTE") }}
-            </h3>
-        </center>
+        <section v-if="buildingFeed" class="pg-empty">
+            <span class="pg-empty__mark" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>
+            </span>
+            <h2>{{ translate("NEWSFEED.BUILDING") }}</h2>
+            <p>{{ translate("NEWSFEED.MINUTE") }}</p>
+        </section>
     <main v-else class="newsfeed__container">
             <Spinner v-if="showSpinner"></Spinner>
-            <div @click="closeMenus($event)" style="flex-grow:1">
+            <div @click="closeMenus($event)" class="newsfeed__column">
                 <AppInstall
                     v-if="showAppInstallation"
                     v-on:hide-app-installation="closeAppInstallation"
@@ -51,8 +50,7 @@
                     :socialFeed="socialFeed"
                     :showMessage="showMessage"
                     :socialPostAction="socialPostAction"
-                    :currentSocialPostEntry="currentSocialPostEntry"
-                    :top="socialPostTop">
+                    :currentSocialPostEntry="currentSocialPostEntry">
                 </SocialPost>
                 <Gallery
                     v-if="showEmbeddedGallery"
@@ -91,161 +89,126 @@
                     :initiallySelectedPaths="[]"
                     :pickerTitle="folderPickerTitle">
                 </FolderPicker>
-                <ul id="appMenu" v-if="showAppMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                <ul id="appMenu" v-if="showAppMenu" class="pg-menu" tabindex="0" @focusout="closeMenus(null)" @keydown.esc="closeMenus(null)" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
                     <li id='open-in-app' v-for="app in availableApps" v-on:keyup.enter="appOpen($event, app.name, app.path, app.file)" v-on:click="appOpen($event, app.name, app.path, app.file)">{{app.contextMenuText}}</li>
                 </ul>
                 <div id="scroll-area">
-                    <center v-if="data.length==0">
-                        <h3>
-                            {{ translate("NEWSFEED.BUILT") }}
-                        </h3>
-                        <h3>
-                            {{ translate("NEWSFEED.DESC") }}
-                        </h3>
-                    </center>
-                    <ul id="editMenu" v-if="showEditMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                    <section v-if="data.length==0" class="pg-empty">
+                        <span class="pg-empty__mark" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h10M7 13h10M7 17h6"/></svg>
+                        </span>
+                        <h2>{{ translate("NEWSFEED.BUILT") }}</h2>
+                        <p>{{ translate("NEWSFEED.DESC") }}</p>
+                    </section>
+                    <ul id="editMenu" v-if="showEditMenu" class="pg-menu" tabindex="0" @focusout="closeMenus(null)" @keydown.esc="closeMenus(null)" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
                         <li><a @click="editPost($event, currentRow)">{{ translate("DRIVE.EDIT") }}</a></li>
                         <li><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
-                    <ul id="friendMenu" v-if="showFriendMenu" class="pg-menu" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
+                    <ul id="friendMenu" v-if="showFriendMenu" class="pg-menu" tabindex="0" @focusout="closeMenus(null)" @keydown.esc="closeMenus(null)" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
                         <li><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
                     </ul>
 
-                    <div id="feed" class="table table-responsive table-striped table-hover" style="border:none;">
-                        <div v-for="entry in blocks">
-                            <div v-if="entry[0].isLastEntry">
-                                <center><span>{{ translate("NEWSFEED.END") }}</span></center>
-                            </div>
-                            <div v-if="!entry[0].isLastEntry && displaySharingItem(entry)" style="padding: 2em;">
-                                <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer;">
-                                    <span v-if="entry[0].sharerThumbnail.length > 0">
-                                        <img v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail">
-                                    </span>
-                                    <span v-if="entry[0].sharerThumbnail.length == 0" class="drive-user" style="margin-right: 10px; margin-top: -10px; padding: 4px;">
-                                        <AppIcon class="cover" icon="user--48" />
-                                    </span>
-                                    <span>
-                                        {{ entry[0].sharer }}
-                                    </span>
-                                </a>
-                                <a v-if="entry[0].sharer == context.username" v-on:click="displayProfile(entry[0].sharer)" style="cursor: pointer; margin-right: 10px;">
-                                    <span v-if="entry[0].sharerThumbnail.length > 0">
-                                        <img v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail">
-                                    </span>
-                                    <span v-if="entry[0].sharerThumbnail.length == 0" class="drive-user" style="margin-top: -10px; padding: 4px;">
-                                        <AppIcon class="cover" icon="user--48" />
-                                    </span>
-                                </a>
-                                <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)">{{ entry[0].sharer }}</span>
-                                <span>{{ entry[0].info }}</span>
-                                <a v-if="entry[0].displayFilename" v-on:click="viewFolder(entry[0])" style="cursor: pointer">
-                                    <span :title="entry[0].link">{{ entry[0].name }}</span>
-                                </a>
-                                <div>
-                                    <div v-if="!entry[0].isLastEntry">
-                                        <div v-if="!entry[0].isPost && !entry[0].isMedia">
-                                            <span class="grid_icon_wrapper fa">
-                                                <a v-if="!entry[0].hasThumbnail && !entry[0].isChat">
-                                                    <AppIcon style="height:100px" @click.stop.native="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
-                                                </a>
-                                                <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" style="cursor: pointer"/>
-                                                <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>
-                                                <button v-if="entry[0].isChat && !entry[0].isNewChat" type="button" class="pg-btn" @click="openConversation(entry[0])">{{ translate("DRIVE.VIEW") }}</button>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <span v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])">
-                                        <i @click="addComment($event, entry[0])" style="cursor: pointer">
-                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M896 384q-204 0-381.5 69.5t-282 187.5-104.5 255q0 112 71.5 213.5t201.5 175.5l87 50-27 96q-24 91-70 172 152-63 275-171l43-38 57 6q69 8 130 8 204 0 381.5-69.5t282-187.5 104.5-255-104.5-255-282-187.5-381.5-69.5zm896 512q0 174-120 321.5t-326 233-450 85.5q-70 0-145-8-198 175-460 242-49 14-114 22h-5q-15 0-27-10.5t-16-27.5v-1q-3-4-.5-12t2-10 4.5-9.5l6-9 7-8.5 8-9q7-8 31-34.5t34.5-38 31-39.5 32.5-51 27-59 26-76q-157-89-247.5-220t-90.5-281q0-174 120-321.5t326-233 450-85.5 450 85.5 326 233 120 321.5z"/></svg>
-                                            Comment
-                                        </i>
-                                    </span>
+                    <div id="feed" class="feed">
+                        <div v-for="entry in blocks" class="feed__entry">
+                            <p v-if="entry[0].isLastEntry" class="pg-note feed__end">{{ translate("NEWSFEED.END") }}</p>
+                            <div v-if="!entry[0].isLastEntry" class="feed-card">
+                            <div v-if="displaySharingItem(entry)" class="feed-share">
+                                <div class="feed-meta feed-meta--wrap">
+                                    <a v-if="entry[0].sharer != context.username && canLoadProfile(entry[0].sharer)" v-on:click="displayProfile(entry[0].sharer)" class="feed-avatar-link">
+                                        <img v-if="entry[0].sharerThumbnail.length > 0" v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail" alt="">
+                                        <span v-if="entry[0].sharerThumbnail.length == 0" class="feed-avatar" aria-hidden="true">{{ initialOf(entry[0].sharer) }}</span>
+                                        <span class="feed-author">{{ entry[0].sharer }}</span>
+                                    </a>
+                                    <a v-if="entry[0].sharer == context.username" v-on:click="displayProfile(entry[0].sharer)" class="feed-avatar-link">
+                                        <img v-if="entry[0].sharerThumbnail.length > 0" v-bind:src="entry[0].sharerThumbnail" class="profile-thumbnail" alt="">
+                                        <span v-if="entry[0].sharerThumbnail.length == 0" class="feed-avatar" aria-hidden="true">{{ initialOf(entry[0].sharer) }}</span>
+                                    </a>
+                                    <span v-if="entry[0].sharer != context.username && !canLoadProfile(entry[0].sharer)" class="feed-author">{{ entry[0].sharer }}</span>
+                                    <span class="feed-info">{{ entry[0].info }}</span>
+                                    <a v-if="entry[0].displayFilename" v-on:click="viewFolder(entry[0])" class="feed-link">
+                                        <span class="feed-link__name" :title="entry[0].link">{{ entry[0].name }}</span>
+                                    </a>
+                                </div>
+                                <div v-if="!entry[0].isPost && !entry[0].isMedia" class="feed-preview">
+                                    <a v-if="!entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__icon">
+                                        <AppIcon @click.stop.native="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
+                                    </a>
+                                    <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
+                                    <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>
+                                    <button v-if="entry[0].isChat && !entry[0].isNewChat" type="button" class="pg-btn" @click="openConversation(entry[0])">{{ translate("DRIVE.VIEW") }}</button>
+                                </div>
+                                <div v-if="!entry[0].isDirectory && entry[0].sharer != context.username && !entry[0].isMedia && canComment(entry[0])" class="feed-actions">
+                                    <button type="button" class="pg-btn pg-btn--quiet feed-action" @click="addComment($event, entry[0])">
+                                        <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M896 384q-204 0-381.5 69.5t-282 187.5-104.5 255q0 112 71.5 213.5t201.5 175.5l87 50-27 96q-24 91-70 172 152-63 275-171l43-38 57 6q69 8 130 8 204 0 381.5-69.5t282-187.5 104.5-255-104.5-255-282-187.5-381.5-69.5zm896 512q0 174-120 321.5t-326 233-450 85.5q-70 0-145-8-198 175-460 242-49 14-114 22h-5q-15 0-27-10.5t-16-27.5v-1q-3-4-.5-12t2-10 4.5-9.5l6-9 7-8.5 8-9q7-8 31-34.5t34.5-38 31-39.5 32.5-51 27-59 26-76q-157-89-247.5-220t-90.5-281q0-174 120-321.5t326-233 450-85.5 450 85.5 326 233 120 321.5z"/></svg>
+                                        Comment
+                                    </button>
                                 </div>
                             </div>
-                            <div v-if="!entry[0].isLastEntry" v-bind:class="[displaySharingItem(entry) ? 'entry-no-bg' : 'entry']">
-                                <div class="table-responsive table-striped table-hover" style="font-size: 1.0em;padding-left:0;margin-bottom:0;border:none;">
+                            <div v-if="hasThread(entry)" class="feed-thread">
                                     <div v-for="(row, rowIndex) in entry">
                                         <div v-if="displayMedia(entry, rowIndex, row)">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div  v-for="(media, mediaIndex) in row.mediaList" class="grid_icon_wrapper fa">
+                                            <div class="feed-media" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                                <div v-for="(media, mediaIndex) in row.mediaList" class="feed-media__item">
                                                     <a v-if="!media.hasThumbnail">
-                                                        <AppIcon style="height:100px" v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="fileIcon(media.fileType)"> </AppIcon>
+                                                        <AppIcon v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="fileIcon(media.fileType)"> </AppIcon>
                                                     </a>
-                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" style="cursor: pointer"/>
+                                                    <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" alt=""/>
                                                 </div>
                                             </div>
-                                            <div v-bind:style="{ marginLeft: indent(entry[rowIndex-1]) }">
-                                                <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="displayCommentButtonForPrevious(entry, rowIndex)">
-                                                        <i @click="addComment($event, entry[rowIndex-1]) && rowIndex == 1" style="cursor: pointer">
-                                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
-                                                            Reply
-                                                        </i>
-                                                    </span>
-                                                </div>
+                                            <div v-if="displayCommentButtonForPrevious(entry, rowIndex)" class="feed-actions" v-bind:style="{ marginLeft: threadIndent(entry[rowIndex-1]) }">
+                                                <button type="button" class="pg-btn pg-btn--quiet feed-action" @click="addComment($event, entry[rowIndex-1]) && rowIndex == 1">
+                                                    <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
+                                                    Reply
+                                                </button>
                                             </div>
                                         </div>
-                                        <div v-if="displayPost(entry, rowIndex, row)">
-                                            <div v-bind:style="{ marginLeft: indent(row) }">
-                                                <div style="display:flex;font-size: 1em;color: #7d7d7d;margin-right: 10px;">
-                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" style="cursor: pointer">
-                                                        <span v-if="row.sharerThumbnail.length > 0">
-                                                            <img v-bind:src="row.sharerThumbnail" class="profile-thumbnail">
-                                                        </span>
-                                                        <span v-if="row.sharerThumbnail.length == 0" class="picon-profile profile-thumbnail">
-                                                            <div class="drive-user" style="margin-top: -10px; padding: 4px;">
-                                                                <AppIcon class="cover" icon="user--48" />
-                                                            </div>
-                                                        </span>
+                                        <div v-if="displayPost(entry, rowIndex, row)" class="feed-post" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                                <div class="feed-meta">
+                                                    <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" class="feed-avatar-link">
+                                                        <img v-if="row.sharerThumbnail.length > 0" v-bind:src="row.sharerThumbnail" class="profile-thumbnail" alt="">
+                                                        <span v-if="row.sharerThumbnail.length == 0" class="feed-avatar" aria-hidden="true">{{ initialOf(row.sharer) }}</span>
                                                     </a>
-                                                    <a v-if="row.sharer == context.username" v-on:click="displayProfile(row.sharer)" style="cursor: pointer; margin-right: 10px;">
-                                                        <span v-if="row.sharerThumbnail.length > 0">
-                                                            <img v-bind:src="row.sharerThumbnail" class="profile-thumbnail">
-                                                        </span>
-                                                        <span v-if="row.sharerThumbnail.length == 0" class="picon-profile profile-thumbnail">
-                                                            <div class="drive-user" style="margin-top: -10px; padding: 4px;">
-                                                                <AppIcon class="cover" icon="user--48" />
-                                                            </div>
-                                                        </span>
+                                                    <a v-if="row.sharer == context.username" v-on:click="displayProfile(row.sharer)" class="feed-avatar-link">
+                                                        <img v-if="row.sharerThumbnail.length > 0" v-bind:src="row.sharerThumbnail" class="profile-thumbnail" alt="">
+                                                        <span v-if="row.sharerThumbnail.length == 0" class="feed-avatar" aria-hidden="true">{{ initialOf(row.sharer) }}</span>
                                                     </a>
-                                                    <span v-if="row.sharer != context.username && canLoadProfile(row.sharer)" class="sharer-name">
+                                                    <span class="feed-meta__text">
+                                                    <span v-if="row.sharer != context.username && canLoadProfile(row.sharer)" class="feed-author">
                                                         {{ row.sharer }}
                                                     </span>
                                                     <a
                                                         v-if="row.sharer!= context.username && !canLoadProfile(row.sharer)"
                                                         v-on:click="displayFriendMenu($event, row)"
-                                                        style="cursor: pointer">
+                                                        class="feed-author feed-link">
                                                         <span>{{ row.sharer }}&nbsp;</span>
                                                     </a>
-                                                    {{ row.info }}
-                                                    <span style="flex-grow:1;">&nbsp&nbsp;{{ row.status}}</span>
-                                                    <span v-if="row.sharer == context.username" class="fa fa-ellipsis-h" @click="displayEditMenu($event, row)"></span>
+                                                    <span class="feed-info">{{ row.info }}</span>
+                                                    <span class="feed-status">{{ row.status}}</span>
+                                                    </span>
+                                                    <button v-if="row.sharer == context.username" type="button" class="feed-post__more" aria-label="Edit or delete" @click="displayEditMenu($event, row)">
+                                                        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                                                    </button>
                                                 </div>
                                                 <div class="post-content" v-if="row.name.length > 0">{{ row.name }}</div>
-                                            </div>
-                                            <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia)" v-bind:style="{ marginLeft: indent(row) }">
-                                                <div style="margin-top: 10px; margin-bottom: 10px;">
-                                                    <span v-if="displayCommentButton(entry, row)">
-                                                        <i @click="addComment($event, row)" style="cursor: pointer">
-                                                            <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
-                                                            Reply
-                                                        </i>
-                                                    </span>
-                                                </div>
+                                            <div v-if="!(rowIndex + 1 < entry.length && entry[rowIndex+1].isMedia) && displayCommentButton(entry, row)" class="feed-actions">
+                                                <button type="button" class="pg-btn pg-btn--quiet feed-action" @click="addComment($event, row)">
+                                                    <svg class="inline-svg" viewBox="0 0 1792 1792" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M1792 1120q0 166-127 451-3 7-10.5 24t-13.5 30-13 22q-12 17-28 17-15 0-23.5-10t-8.5-25q0-9 2.5-26.5t2.5-23.5q5-68 5-123 0-101-17.5-181t-48.5-138.5-80-101-105.5-69.5-133-42.5-154-21.5-175.5-6h-224v256q0 26-19 45t-45 19-45-19l-512-512q-19-19-19-45t19-45l512-512q19-19 45-19t45 19 19 45v256h224q713 0 875 403 53 134 53 333z"/></svg>
+                                                    Reply
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                            </div>
                             </div>
                         </div>
                     </div>
-                    <center>
-                        <button :disabled="requestingMoreResults" v-if="hasLoadedInitialResults && !noMoreResults" type="button" class="pg-btn" v-on:click="requestMoreResults()">{{ translate("NEWSFEED.MORE") }}</button>
-                    </center>
+                    <div v-if="hasLoadedInitialResults && !noMoreResults" class="feed__more">
+                        <button :disabled="requestingMoreResults" type="button" class="pg-btn" v-on:click="requestMoreResults()">{{ translate("NEWSFEED.MORE") }}</button>
+                    </div>
                 </div>
             </div>
         </main>
-	</Article>
+	</article>
 </template>
 
 <script>
@@ -302,7 +265,6 @@ module.exports = {
                 webRoot: ""
             },
             showSocialPostForm: false,
-            socialPostTop: "100px",
             socialPostAction: '',
             currentSocialPostEntry: null,
             showEmbeddedGallery: false,
@@ -417,6 +379,10 @@ module.exports = {
                 return row.isMedia;
             }
         },
+        // whether an entry has posts or media to show under it: a share on its own has neither
+        hasThread: function(entry) {
+            return entry.some((row, rowIndex) => this.displayPost(entry, rowIndex, row) || this.displayMedia(entry, rowIndex, row));
+        },
         displaySharingItem: function(entry) {
             return !entry[0].isPost && !entry[0].isMedia;
         },
@@ -462,7 +428,6 @@ module.exports = {
             Vue.nextTick(function() {
                 that.currentSocialPostEntry = null;
                 that.socialPostAction = 'add';
-                that.socialPostTop = '100px';
                 that.showSocialPostForm = true;
             });
         },
@@ -487,26 +452,28 @@ module.exports = {
                 }
             }
         },
-        getPosition: function(e) {
-			var posx = 0;
-			var posy = 0;
-
-			if (!e) var e = window.event;
-			// var body = document.getElementById("modal-body");
-			// var feed = document.getElementById("feed")
-
-			if (e.clientX || e.clientY) {
-				// posx = e.clientX - feed.offsetLeft + document.body.scrollLeft + document.documentElement.scrollLeft;
-				// posy = e.clientY - body.offsetTop + document.body.scrollTop + document.documentElement.scrollTop;
-				posx = e.clientX - document.body.scrollLeft + document.documentElement.scrollLeft;
-				posy = e.clientY - document.body.scrollTop + document.documentElement.scrollTop;
-
-			}
-			return {
-				x: posx,
-				y: posy
-			}
-		},
+        /** Where a menu opens: by the pointer, or under the control for a key press, which has
+         *  none. In the window's own coordinates, as the menus are fixed there, and kept inside
+         *  it, so on a phone a menu cannot open off the side of the screen. */
+        menuPosition: function(event, dx, dy) {
+            let x = event.clientX, y = event.clientY;
+            if (! x && ! y && event.currentTarget && event.currentTarget.getBoundingClientRect) {
+                let from = event.currentTarget.getBoundingClientRect();
+                x = from.right;
+                y = from.bottom;
+            }
+            const menuWidth = 200;
+            return {left: Math.max(8, Math.min(x + dx, window.innerWidth - menuWidth - 8)), top: y + dy};
+        },
+	// a menu closes as the drive's does: once focus leaves it, which a tap or a click anywhere
+	// else does, whether in the feed or around it, or on escape
+	focusMenu: function(id) {
+	    this.$nextTick(() => {
+	        let menu = document.getElementById(id);
+	        if (menu)
+	            menu.focus();
+	    });
+	},
 	closeMenus: function(e) {
 	    this.showEditMenu = false;
         this.showFriendMenu = false;
@@ -517,14 +484,13 @@ module.exports = {
 	},
 	displayEditMenu: function(event, row) {
             this.currentRow = row;
-	    var pos = this.getPosition(event);
+	    var pos = this.menuPosition(event, -100, 10);
 	    Vue.nextTick(function() {
-		var top = pos.y + 10;
-		var left = pos.x - 100;
-		this.menutop = top + 'px';
-		this.menuleft = left + 'px';
+		this.menutop = pos.top + 'px';
+		this.menuleft = pos.left + 'px';
 	    }.bind(this));
             this.showEditMenu = true;
+            this.focusMenu('editMenu');
 	    event.stopPropagation();
         },
         editPost: function(event, entry) {
@@ -536,9 +502,7 @@ module.exports = {
             }
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, sharer: parentPostAuthor};
             let that = this;
-            let pos = this.getPosition(event);
             Vue.nextTick(function() {
-                that.socialPostTop = Math.max(100, (pos.y - 250)) + 'px';
                 that.showSocialPostForm = true;
             });
             event.stopPropagation();
@@ -556,14 +520,13 @@ module.exports = {
         },
         displayFriendMenu: function(event, row) {
             this.currentRow = row;
-	    var pos = this.getPosition(event);
+	    var pos = this.menuPosition(event, -100, 10);
 	    Vue.nextTick(function() {
-		var top = pos.y + 10;
-		var left = pos.x - 100;
-		this.menutop = top + 'px';
-		this.menuleft = left + 'px';
+		this.menutop = pos.top + 'px';
+		this.menuleft = pos.left + 'px';
 	    }.bind(this));
             this.showFriendMenu = true;
+            this.focusMenu('friendMenu');
 	    event.stopPropagation();
         },
         removeItemFromDisplay: function(entry) {
@@ -707,9 +670,7 @@ module.exports = {
             }
             this.currentSocialPostEntry = {path: entry.link, socialPost: entry.socialPost, file: entry.file, cap: cap, sharer: entry.sharer};
             let that = this;
-            let pos = this.getPosition(event);
             Vue.nextTick(function() {
-                that.socialPostTop = Math.max(100, (pos.y - 250)) + 'px';
                 that.showSocialPostForm = true;
             });
             event.stopPropagation();
@@ -1216,14 +1177,13 @@ module.exports = {
                 appOptions.push(option);
             }
             this.availableApps = appOptions;
-            var pos = this.getPosition(event);
+            var pos = this.menuPosition(event, 0, 0);
             Vue.nextTick(function() {
-                var top = pos.y;
-                var left = pos.x;
-                this.menutop = top + 'px';
-                this.menuleft = left + 'px';
+                this.menutop = pos.top + 'px';
+                this.menuleft = pos.left + 'px';
             }.bind(this));
             this.showAppMenu = true;
+            this.focusMenu('appMenu');
             event.stopPropagation();
         },
         appOpen(event, appName, path, file) {
@@ -1259,9 +1219,13 @@ module.exports = {
             let isFollowing = this.followingnames.indexOf(sharer) > -1;
             return isFriend || isFollowing;
         },
-        indent: function(item) {
-            let calcMargin = (item.indent * 20) + 10;
-            return "" +  calcMargin + "px";
+        // the first letter of a name, for the round mark where there is no profile photo
+        initialOf: function(name) {
+            return name ? name.charAt(0).toUpperCase() : "";
+        },
+        // how far a reply sits in from the post that starts its thread, which sits at the edge
+        threadIndent: function(item) {
+            return (Math.max(0, item.indent - 1) * 16) + "px";
         },
         fromUTCtoLocal: function(dateTime) {
             let date = new Date(dateTime.toString() + "+00:00");//adding UTC TZ in ISO_OFFSET_DATE_TIME ie 2021-12-03T10:25:30+00:00
@@ -1817,6 +1781,9 @@ module.exports = {
 </script>
 
 <style>
+/* The feed on the surfaces the other views use: the page is .pg-view, each entry a card like
+   the sync and mount views' cards, the actions .pg-btn and the empty states .pg-empty. Only
+   the look changes - what the feed loads, and every action on it, is what it always was. */
 .newsfeed-bar {
 	display: flex;
 	align-items: center;
@@ -1833,62 +1800,261 @@ module.exports = {
 	}
 }
 
-
-
-
-.newsfeed-view {
-    min-height: 100vh;
-}
-.newsfeed__container{
-	width:100%;
-	/* the view around it is already a screenful; asking for another one here put the
-	   header, the bar and this margin past the bottom and left the page scrolling
-	   with nothing under the fold */
-	padding: 0 32px;
-	margin-top: 32px;
+/* a feed reads best as one column of a comfortable measure, whatever the window's width */
+.newsfeed-view main.newsfeed__container {
+	max-width: 760px;
+	padding-top: 8px;
 }
 
+.newsfeed__column {
+	flex-grow: 1;
+}
+
+/* the menus float by what opened them, rather than taking a place in the feed */
+.newsfeed-view #editMenu,
+.newsfeed-view #friendMenu,
+.newsfeed-view #appMenu {
+	position: fixed;
+	z-index: 30;
+}
+
+/* it takes focus to know when to close, and rings for a keyboard only, as the drive's does */
+.newsfeed-view .pg-menu:focus {
+	outline: none;
+}
+
+.newsfeed-view .pg-menu:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+.feed {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.feed__end {
+	text-align: center;
+	padding: 8px 0;
+}
+
+.feed__more {
+	display: flex;
+	justify-content: center;
+	margin: 16px 0;
+}
+
+.feed-card {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 16px 18px;
+	color: var(--color);
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow);
+}
+
+.feed-thread {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+/* who, what and when: the avatar, then the words, which wrap on a phone under themselves
+   rather than under the avatar, then the post's menu at the end of the line */
+.feed-meta {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--text-small);
+	color: var(--pg-muted);
+}
+
+.feed-meta--wrap {
+	flex-wrap: wrap;
+	gap: 6px 8px;
+}
+
+.feed-meta__text {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 2px 6px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.feed-avatar-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.feed-avatar {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	font-size: 14px;
+	font-weight: var(--bold);
+	color: var(--pg-on-ok);
+	background-color: var(--pg-tint-ok);
+}
+
+.feed-author {
+	font-weight: var(--bold);
+	color: var(--color);
+}
+
+/* inline with the words, but the height of something to tap; the margin gives the extra back */
+.feed-link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 32px;
+	margin: -6px 0;
+	color: var(--pg-link);
+	cursor: pointer;
+	overflow-wrap: anywhere;
+}
+
+/* a long file name takes two lines, with the whole of it on hover, as the shared view keeps
+   its names to one; a tap opens the file, so it has nothing to expand */
+.feed-link__name {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+	overflow: hidden;
+	overflow-wrap: anywhere;
+}
+
+/* hover only where something can hover: on a touch screen it sticks after the tap */
+@media (hover: hover) {
+	.feed-link:hover {
+		text-decoration: underline;
+	}
+
+	.feed-post__more:hover {
+		background-color: var(--pg-surface-2);
+		color: var(--color);
+	}
+
+	.feed-action:not(:disabled):hover {
+		color: var(--color);
+	}
+}
+
+/* the menu of one's own post: a control a finger and a keyboard can use, where the old one
+   was a 16px icon a click alone reached */
+.feed-post__more {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 36px;
+	height: 36px;
+	margin: -6px -6px -6px 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background-color: transparent;
+	color: var(--pg-muted);
+	cursor: pointer;
+}
+
+.feed-post__more:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+.feed-post__more svg {
+	width: 18px;
+	height: 18px;
+}
+
+.feed-post {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+/* a reply hangs off a thread line, as well as its indent */
+.feed-post--reply {
+	padding-left: 12px;
+	border-left: 2px solid var(--border-color);
+}
+
+.post-content {
+	margin: 0;
+	white-space: pre-wrap;
+	font-size: 15px;
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+}
+
+.feed-preview {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.feed-preview__thumb {
+	max-width: 100%;
+	max-height: 240px;
+	border-radius: var(--radius-field);
+	cursor: pointer;
+}
+
+.feed-media {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.feed-media__item img {
+	display: block;
+	max-width: 160px;
+	max-height: 160px;
+	border-radius: var(--radius-field);
+	cursor: pointer;
+}
 
 .newsfeed-view .card__icon {
-	width:72px;
-	height: 72px;
-	color: var(--color-2);
-	transform: scale(1);
-	transition: transform 0.2s;
-        font-size: 5em;
-        word-wrap: break-word;
-        max-width: 5em;
-        cursor: pointer;
-}
-.newsfeed-view .entry-no-bg{
-	border-radius: 12px;
-	margin-top:5px;
-	padding: 16px;
+	width: 64px;
+	height: 64px;
+	color: var(--pg-muted);
+	cursor: pointer;
 }
 
-.newsfeed-view .entry{
-	color:var(--color);
-    background-color:var(--bg-2);
-	border-radius: 12px;
-	margin-top:5px;
-	padding: 16px;
-
-
-}
-.post-content {
-    white-space:pre-wrap;
-    margin-bottom:0;
-    margin-right: 10px;
-
-    border-radius: 4px;
-    padding: 5px;
-    font-size: 1.2em;
-    overflow-wrap: break-word;
+.feed-actions {
+	display: flex;
+	gap: 6px;
 }
 
-@media (max-width: 1024px) {
-	.newsfeed__container{
-		padding: 0 16px;
+.feed-action {
+	gap: 6px;
+	margin-left: -12px;
+	color: var(--pg-muted);
+}
+
+.newsfeed-view .profile-thumbnail {
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+@media (max-width: 600px) {
+	.feed-card {
+		padding: 14px;
 	}
 }
 
@@ -1953,31 +2119,9 @@ module.exports = {
 }
 
 .inline-svg {
-    margin-bottom: -6px;
-    height: 24px;
-    width: 24px;
-}
-
-.sharer-name {
-    margin-left: 10px;
-    margin-right: 5px;
-}
-
-.profile-thumbnail {
-    height: 32px;
-    width: 32px;
-    border-radius: 50%;
-    color: darkgray;
-    max-width: 100%;
-    line-height: 1.42857143;
-    background-color: #fff;
-    -webkit-transition: all .2s ease-in-out;
-    -o-transition: all .2s ease-in-out;
-    transition: all .2s ease-in-out;
-}
-
-.picon-profile {
-    font-size: 3em;
+    height: 16px;
+    width: 16px;
+    fill: currentColor;
 }
 
 </style>
