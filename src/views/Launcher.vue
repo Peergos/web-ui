@@ -1,11 +1,11 @@
 <template>
-<article class="app-view launcher-view">
+<article class="app-view pg-view launcher-view">
 	<AppHeader>
 		<template #primary>
 			<h1>{{ translate("APPNAV.LAUNCHER") }}</h1>
 		</template>
 	</AppHeader>
-        <div class="modal-body">
+        <main>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
             <Replace
                 v-if="showReplace"
@@ -110,8 +110,11 @@
                     </AppGrid>
                 </div>
             </div>
-            <div>
-                <h3>{{ translate("LAUNCHER.SHORTCUTS") }}</h3>
+            <div class="launcher-shortcuts">
+                <div class="pg-sectionhead">
+                    <h2>{{ translate("LAUNCHER.SHORTCUTS") }}</h2>
+                    <span>{{ shortcutList.length }}</span>
+                </div>
                 <section v-if="shortcutList.length ==0" class="pg-empty">
                     <span class="pg-empty__mark" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4.5 19.5 9 17 11.5l-1-1-3.5 3.5.5 3-1.5 1.5-6-6L7 11l3-.5L13.5 7l-1-1z"/><path d="m7 17-3 3"/></svg>
@@ -133,7 +136,8 @@
                         </thead>
                         <tbody>
                         <tr v-for="shortcut in sortedShortcuts">
-                            <td class="shortcut-table__name" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" :title="shortcut.name" v-on:click="view($event, shortcut)">{{ shortcut.name }}</td>
+                            <td class="shortcut-table__name" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" :title="shortcutName(shortcut)"
+                                v-on:click="shortcut.isDirectory ? navigateTo(shortcut) : view($event, shortcut)">{{ shortcutName(shortcut) }}</td>
                             <td class="shortcut-table__path" v-bind:class="[shortcut.missing ? 'deleted-entry' : '']" :title="shortcut.path" v-on:click="navigateTo(shortcut)">
                                 {{ shortcut.path }}
                             </td>
@@ -154,7 +158,7 @@
                     </table>
                 </div>
             </div>
-        </div>
+        </main>
 </article>
 </template>
 
@@ -313,11 +317,12 @@ module.exports = {
             var sortBy = this.shortcutsSortBy;
             var reverseOrder = ! this.shortcutsNormalSortOrder;
             if(sortBy == "name") {
+                let name = this.shortcutName;
                 return this.shortcutList.sort(function (a, b) {
                     if (reverseOrder) {
-                        return ('' + b.name).localeCompare(a.name);
+                        return ('' + name(b)).localeCompare(name(a));
                     } else {
-                        return ('' + a.name).localeCompare(b.name);
+                        return ('' + name(a)).localeCompare(name(b));
                     }
                 });
             } else if(sortBy == "path") {
@@ -971,6 +976,10 @@ module.exports = {
                 }
             );
         },
+        // a pinned folder keeps no name of its own, so it shows the last part of its path
+        shortcutName: function(entry) {
+            return entry.isDirectory ? entry.path.substring(entry.path.lastIndexOf('/') + 1) : entry.name;
+        },
         deleteShortcut: function(entry) {
             let link = entry.path + '/' + (entry.isDirectory ? "" : entry.name);
             this.refreshAndDeleteShortcutLink(link);
@@ -1147,11 +1156,20 @@ module.exports = {
 </script>
 
 <style>
-/* the view's own column, on the gutter the title above it keeps: the container is a
-   modal body left over from this view's past and brings a 10px inset of its own */
-.launcher-view .modal-body {
-	padding-left: 32px;
-	padding-right: 32px;
+/* The apps and shortcuts, on the surfaces the other views use: the page is .pg-view, the
+   shortcuts a .pg-sectionhead over a .pg-table, the actions .pg-btn. Only the look changes -
+   launching, the app menu and the shortcuts do what they always did. */
+/* the page shell centres a 1040px column, which suits a page of cards; the shortcuts are a
+   list, and a list reads better across the whole window, as the drive's and the shared
+   view's do. The column keeps the gutter the title above it keeps */
+.launcher-view main {
+	max-width: none;
+	padding: 0 32px 32px;
+	gap: 0;
+}
+
+.launcher-shortcuts .pg-sectionhead {
+	margin: 24px 0 12px;
 }
 
 /* the two actions were inline in a heading with no words of its own, where a button with
@@ -1183,9 +1201,17 @@ module.exports = {
 	color: var(--pg-link);
 }
 
-.shortcut-table td.shortcut-table__path:hover,
-.shortcut-table td.shortcut-table__name:hover {
-	text-decoration: underline;
+/* hover only where something can hover: on a touch screen it sticks after the tap */
+@media (hover: hover) {
+	.shortcut-table td.shortcut-table__path:hover,
+	.shortcut-table td.shortcut-table__name:hover {
+		text-decoration: underline;
+	}
+}
+
+/* dates line up digit under digit, as the shared view's do */
+.shortcut-table .shortcut-table__date {
+	font-variant-numeric: tabular-nums;
 }
 
 /* the list runs the width of the view, as the drive's and the shared view's lists do: it
@@ -1208,10 +1234,10 @@ module.exports = {
 	padding-right: 32px;
 }
 
-/* the three dates are what a phone has no room for, as the drive drops type and
+/* the three dates are what a phone's rows have no room for, as the drive drops type and
    created: what is left is the name, where it lives, and how to remove it */
 @media (max-width: 1024px) {
-	.launcher-view .modal-body {
+	.launcher-view main {
 		padding-left: 16px;
 		padding-right: 16px;
 	}
@@ -1257,9 +1283,16 @@ module.exports = {
 	.shortcut-table td.shortcut-table__path { grid-area: folder; }
 	.shortcut-table td.shortcut-table__action { grid-area: action; text-align: right; }
 
-	.shortcut-table thead th.shortcut-table__date,
+	/* the rows leave the dates out, but the head keeps every column as a chip, as the
+	   shared view's does: it is how a phone sorts, and how it shows what the list is
+	   sorted by, which is when each was added until a chip is picked */
 	.shortcut-table td.shortcut-table__date {
 		display: none;
+	}
+
+	/* the chips keep their own padding, not the gutter the first column has on a desktop */
+	.shortcut-table thead th:first-child {
+		padding-left: 12px;
 	}
 
 	/* the 320px each the two text columns take on a desktop is wider than a phone,
