@@ -135,8 +135,12 @@ a.pg-btn {
 	flex: none;
 }
 
-.pg-btn:not(:disabled):hover {
-	background-color: var(--bg-2);
+/* a hover state only where something can hover: on a touch screen it sticks to the
+   button after a tap, and reads as that button still being pressed */
+@media (hover: hover) {
+	.pg-btn:not(:disabled):hover {
+		background-color: var(--bg-2);
+	}
 }
 
 .pg-btn:disabled {
@@ -166,9 +170,11 @@ a.pg-btn {
 	border-color: var(--pg-primary);
 }
 
-.pg-btn--primary:not(:disabled):hover {
-	background-color: var(--pg-primary-hover);
-	border-color: var(--pg-primary-hover);
+@media (hover: hover) {
+	.pg-btn--primary:not(:disabled):hover {
+		background-color: var(--pg-primary-hover);
+		border-color: var(--pg-primary-hover);
+	}
 }
 
 .pg-btn--quiet {
@@ -183,8 +189,10 @@ a.pg-btn {
 	border-color: transparent;
 }
 
-.pg-btn--danger:not(:disabled):hover {
-	background-color: var(--pg-tint-error);
+@media (hover: hover) {
+	.pg-btn--danger:not(:disabled):hover {
+		background-color: var(--pg-tint-error);
+	}
 }
 
 .pg-btn--onTone {
@@ -202,10 +210,12 @@ a.pg-btn {
 	border-color: var(--pg-on-pause-tint);
 }
 
-.pg-btn--pause:not(:disabled):hover {
-	color: var(--pg-on-pause);
-	background-color: var(--pg-pause);
-	border-color: var(--pg-pause);
+@media (hover: hover) {
+	.pg-btn--pause:not(:disabled):hover {
+		color: var(--pg-on-pause);
+		background-color: var(--pg-pause);
+		border-color: var(--pg-pause);
+	}
 }
 
 /* while paused, resuming is the primary action, so it takes the solid fill */
@@ -215,9 +225,11 @@ a.pg-btn {
 	border-color: var(--pg-pause);
 }
 
-.pg-btn--resume:not(:disabled):hover {
-	background-color: var(--pg-pause-hover);
-	border-color: var(--pg-pause-hover);
+@media (hover: hover) {
+	.pg-btn--resume:not(:disabled):hover {
+		background-color: var(--pg-pause-hover);
+		border-color: var(--pg-pause-hover);
+	}
 }
 
 /* ---------- unavailable / empty ---------- */

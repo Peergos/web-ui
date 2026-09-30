@@ -114,12 +114,15 @@ public class CustomGroupsTest {
             d.script("document.querySelector('.social-group__remove').click(); return 1;");
             d.waitForScript("the remove choice", "!!document.getElementById('choice-header-id')", 30_000);
             shot(d, "4-remove-member");
-            clickButton(d, ".modal-container", "Confirm");
+            clickButton(d, ".pg-dialog", "Confirm");
             d.waitForScript("the group to be empty",
                     "document.querySelector('.social-group').innerText.includes('(empty)')", 180_000);
             expect(members(d, uid), "[]", "the members after removing " + bob);
             System.out.println("  ok   removed " + bob + " from the group");
 
+            // the member is gone before the remove dialog has faded out, and that dialog's
+            // header would pass for the delete dialog's
+            d.waitForScript("the remove dialog to close", "!document.getElementById('choice-header-id')", 30_000);
             clickButton(d, ".social-group", "Delete");
             d.waitForScript("the delete choice", "!!document.getElementById('choice-header-id')", 60_000);
             String body = String.valueOf(d.script("return document.getElementById('choice-body-id').innerText"));
@@ -127,7 +130,7 @@ public class CustomGroupsTest {
                 throw new AssertionError("The delete dialog says: " + body);
             shot(d, "5-delete-choice");
             d.script("document.querySelectorAll('.choice-block input')[1].click(); return 1;");
-            clickButton(d, ".modal-container", "Confirm");
+            clickButton(d, ".pg-dialog", "Confirm");
             d.waitForScript("the group to be gone", "document.querySelectorAll('.social-group').length == 0", 180_000);
             expect(readers(d, alice + "/holidays"), "[]", "who holidays is shared with after deleting and revoking");
             shot(d, "6-deleted");

@@ -211,26 +211,6 @@ table {
   padding: 2px;
 }
 
-.qrcode-container {
-    position: relative;
-    width: 400px;
-    height: 400px;
-}
-.qrcode {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 100%;
-}
-
-@media (max-width: 600px) {
-    .qrcode-container {
-	padding-bottom: 100%;
-	width: 100%;
-	height: unset;
-    }
-}
-
 .modal-mask {
   position: fixed;
   z-index: 2500;

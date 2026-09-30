@@ -633,6 +633,8 @@ module.exports = {
     "DRIVE.COPYING.TITLE":"Copying file(s)",
     "DRIVE.COPYING.COMPLETE":"Completing copy and refreshing folder...",
     "SOCIAL.NOTFOUND":"No match",
+    "SOCIAL.EMPTY.TITLE":"No one here yet",
+    "SOCIAL.EMPTY.BODY":"Send a follow request to someone you know. Requests you receive, your friends, and the people you follow appear here.",
     "SHAREDWITH.TITLE": "Shared With",
     "SHAREDWITH.FOLDER":"Folder",
     "SHAREDWITH.ACCESS":"Access",
