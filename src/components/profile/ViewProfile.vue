@@ -101,6 +101,14 @@ module.exports = {
     /* font-family: Helvetica,Arial,sans-serif; */
 }
 
+/* 40% of a phone is a column a few words wide: there the panel takes the screen */
+@media (max-width: 700px) {
+    .profile-page-container {
+        width: 100%;
+        padding: 16px;
+    }
+}
+
 .profile-span {
     font-weight: bold;
     padding-right: 10px;

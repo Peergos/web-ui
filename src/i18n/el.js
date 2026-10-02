@@ -586,6 +586,8 @@ module.exports = {
     "DRIVE.COPYING.TITLE":"Αντιγραφή αρχείων",
     "DRIVE.COPYING.COMPLETE":"Ολοκλήρωση αντιγραφής και ανανέωση φακέλου...",
     "SOCIAL.NOTFOUND":"Κανένα αποτέλεσμα",
+    "SOCIAL.EMPTY.TITLE":"Κανείς εδώ ακόμη",
+    "SOCIAL.EMPTY.BODY":"Στείλτε αίτημα ακολούθησης σε κάποιον που γνωρίζετε. Τα αιτήματα που λαμβάνετε, οι φίλοι σας και όσοι ακολουθείτε εμφανίζονται εδώ.",
     "SHAREDWITH.TITLE":"Κοινή χρήση με",
     "SHAREDWITH.FOLDER":"Φάκελος",
     "SHAREDWITH.ACCESS":"Πρόσβαση",

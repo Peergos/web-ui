@@ -1,13 +1,11 @@
 <template>
-   	<article class="app-view social-view">
+   	<article class="app-view pg-view social-view">
 	   	<AppHeader>
 			<template #primary>
 				<h1>{{ translate("APPNAV.SOCIAL") }}</h1>
 			</template>
 		</AppHeader>
 		<main>
-
-
 		<Fingerprint v-if="showFingerprint"
 			v-on:hide-fingerprint="hideFingerprint"
 			:fingerprint="fingerprint"
@@ -24,22 +22,25 @@
 			:choice_consumer_func="choice_consumer_func"
 			:choice_options="choice_options">
 		</Choice>
-		<Prompt
+		<AppPrompt
 			v-if="showPrompt"
 			v-on:hide-prompt="showPrompt = false"
-			:prompt_message="prompt_message"
+			:message="prompt_message"
+			:name="prompt_name"
 			:placeholder="prompt_placeholder"
 			:value="prompt_value"
 			:max_input_size="100"
-			:consumer_func="prompt_consumer_func">
-		</Prompt>
+			:consumer_func="prompt_consumer_func"
+			:action="prompt_action"
+		/>
 		<ViewProfile
                     v-if="showProfileViewForm"
                     v-on:hide-profile-view="showProfileViewForm = false"
                     :profile="profile">
                 </ViewProfile>
-                <section>
-			<h3>{{ translate("SOCIAL.SEND.TITLE") }}:</h3>
+
+		<section class="pg-card social-send">
+			<h2>{{ translate("SOCIAL.SEND.TITLE") }}</h2>
 			<div class="social-invite">
 				<FormAutocomplete
 				    class="social-invite__field"
@@ -55,156 +56,173 @@
 			</div>
 		</section>
 
-            <div>
-                <h3>{{ translate("SOCIAL.INCOMING") }}</h3>
-                <div id='follow-request-table-id' class="flex-container table" style="flex-flow:column;">
-                  <div v-for="req in socialData.pending" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
-                    <div id='follow-request-id' style="font-size:1.5em;">{{ req.getEntry().ownerName }}</div>
-		    <div class="flex-container" style="justify-content:space-evenly;">
-                      <div class="hspace-5">
-			<button type="button" class="pg-btn pg-btn--primary" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
-                      </div>
-                      <div class="hspace-5">
-			<button type="button" class="pg-btn" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
-                      </div>
-                      <div class="hspace-5">
-			<button type="button" class="pg-btn pg-btn--danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
-                      </div>
-		    </div>
-		  </div>
-                </div>
-            </div>
+		<section v-if="nobody" class="pg-empty">
+			<span class="pg-empty__mark" aria-hidden="true">
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+			</span>
+			<h2>{{ translate("SOCIAL.EMPTY.TITLE") }}</h2>
+			<p>{{ translate("SOCIAL.EMPTY.BODY") }}</p>
+		</section>
 
-            <div>
-                <h3>{{ translate("SOCIAL.FRIENDS") }}</h3>
-                <div id='friend-table-id' class="table flex-container" style="flex-flow:column;">
-                  <div v-for="username in socialData.friends" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
-                    <div id='friend-id' style="font-size:1.5em;">
-                        <a v-on:click="displayProfile(username)" style="cursor: pointer">{{ username }}</a>
-                        <span v-if="isVerified(username)" class="fas fa-check-circle"><span class="not-mobile">{{ translate("VERIFY.VERIFIED") }}</span></span>
-		    </div>
-		    <div class="flex-container" style="justify-content:space-evenly;">
-                      <div class="hspace-5">
-			<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
-		      </div>
-		      <div class="hspace-5">
-			<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
-		      </div>
-		      <div class="hspace-5">
-			<button type="button" class="pg-btn" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
-		      </div>
-		    </div>
-                  </div>
-                </div>
-            </div>
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.INCOMING") }}</h2>
+				<span>{{ socialData.pending.length }}</span>
+			</div>
+			<ul v-if="socialData.pending.length > 0" id="follow-request-table-id" class="social-people">
+				<li v-for="req in socialData.pending" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(req.getEntry().ownerName) }}</span>
+					<span class="social-person__name" :title="req.getEntry().ownerName">{{ req.getEntry().ownerName }}</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn pg-btn--primary" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
+						<button type="button" class="pg-btn" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
 
-            <div>
-                <h3>{{ translate("SOCIAL.FOLLOWERS") }}</h3>
-                <div id='follower-table-id' class="table flex-container" style="flex-flow:column;">
-		  <div v-for="username in socialData.followers" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
-                    <div id='follower-id' style="font-size:1.5em;">
-		      {{ username }}
-		    </div>
-                    <div>
-		      <button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
-		    </div>
-                  </div>
-                </div>
-            </div>
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.FRIENDS") }}</h2>
+				<span>{{ socialData.friends.length }}</span>
+			</div>
+			<ul v-if="socialData.friends.length > 0" id="friend-table-id" class="social-people">
+				<li v-for="username in socialData.friends" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(username) }}</span>
+					<span class="social-person__name">
+						<button type="button" class="social-person__link" :title="username" @click="displayProfile(username)">{{ username }}</button>
+						<span v-if="isVerified(username)" class="pg-pill pg-tone--ok social-person__verified">
+							<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("VERIFY.VERIFIED") }}
+						</span>
+					</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+						<button type="button" class="pg-btn" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
 
-            <div class="social-groups">
-                <h3>{{ translate("GROUPS.TITLE") }}</h3>
-                <p class="social-groups__hint">{{ translate("GROUPS.BUILTIN") }}</p>
-                <div class="social-invite social-groups__create">
-                    <input
-                        class="social-groups__name pg-input"
-                        type="text"
-                        maxlength="100"
-                        v-model="newGroupName"
-                        :placeholder="translate('GROUPS.NAME')"
-                        v-on:keyup.enter="createGroup()"
-                    />
-                    <FormAutocomplete
-                        class="social-invite__field"
-                        is-multiple
-                        v-model="newGroupMembers"
-                        :minchars="0"
-                        :options="allFollowers"
-                        :maxitems="100"
-                        :placeholder="translate('GROUPS.MEMBERS.PICK')"
-                    />
-                    <button type="button" class="pg-btn pg-btn--primary" :disabled="newGroupName.trim().length == 0" @click="createGroup()">
-                        {{ translate("GROUPS.CREATE") }}
-                    </button>
-                </div>
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.FOLLOWERS") }}</h2>
+				<span>{{ socialData.followers.length }}</span>
+			</div>
+			<ul v-if="socialData.followers.length > 0" id="follower-table-id" class="social-people">
+				<li v-for="username in socialData.followers" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(username) }}</span>
+					<span class="social-person__name" :title="username">{{ username }}</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
 
-                <div v-for="uid in customGroupUids" :key="uid" class="social-group">
-                    <div class="flex-container" style="justify-content:space-between; max-width:700px;">
-                        <div style="font-size:1.5em;">
-                            {{ socialData.groupsUidToName[uid] }}
-                            <span class="social-group__count">{{ memberCountLabel(uid) }}</span>
-                        </div>
-                        <div class="flex-container" style="justify-content:space-evenly;">
-                            <div class="hspace-5">
-                                <button type="button" class="pg-btn" @click="toggleAddMember(uid)">{{ translate("GROUPS.ADD") }}</button>
-                            </div>
-                            <div class="hspace-5">
-                                <button type="button" class="pg-btn" @click="renameGroup(uid)">{{ translate("GROUPS.RENAME") }}</button>
-                            </div>
-                            <div class="hspace-5">
-                                <button type="button" class="pg-btn pg-btn--danger" @click="deleteGroup(uid)">{{ translate("GROUPS.DELETE") }}</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="social-group__members">
-                        <span v-for="member in (groupMembers[uid] || [])" :key="member" class="social-group__member">
-                            {{ member }}
-                            <button type="button" class="social-group__remove" :aria-label="translate('GROUPS.REMOVE')" :title="translate('GROUPS.REMOVE')" @click="removeMember(uid, member)">&times;</button>
-                        </span>
-                    </div>
-                    <div v-if="addingTo == uid" class="social-invite">
-                        <FormAutocomplete
-                            class="social-invite__field"
-                            is-multiple
-                            v-model="membersToAdd"
-                            :minchars="0"
-                            :options="nonMembers(uid)"
-                            :maxitems="100"
-                            :placeholder="translate('GROUPS.MEMBERS.PICK')"
-                        />
-                        <button type="button" class="pg-btn pg-btn--primary" :disabled="membersToAdd.length == 0" @click="addMembers(uid)">
-                            {{ translate("GROUPS.ADD") }}
-                        </button>
-                    </div>
-                </div>
-            </div>
+		<section class="social-section social-groups">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("GROUPS.TITLE") }}</h2>
+				<span>{{ customGroupUids.length }}</span>
+			</div>
+			<p class="pg-note social-groups__hint">{{ translate("GROUPS.BUILTIN") }}</p>
+			<div class="pg-card social-groups__card">
+				<div class="social-invite social-groups__create">
+					<input
+						class="social-groups__name pg-input"
+						type="text"
+						maxlength="100"
+						v-model="newGroupName"
+						:placeholder="translate('GROUPS.NAME')"
+						v-on:keyup.enter="createGroup()"
+					/>
+					<FormAutocomplete
+						class="social-invite__field"
+						is-multiple
+						v-model="newGroupMembers"
+						:minchars="0"
+						:options="allFollowers"
+						:maxitems="100"
+						:placeholder="translate('GROUPS.MEMBERS.PICK')"
+					/>
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="newGroupName.trim().length == 0" @click="createGroup()">
+						{{ translate("GROUPS.CREATE") }}
+					</button>
+				</div>
+			</div>
+			<ul v-if="customGroupUids.length > 0" class="social-people">
+				<li v-for="uid in customGroupUids" :key="uid" class="social-group">
+					<div class="social-group__head">
+						<span class="social-person__initial" aria-hidden="true">{{ initialOf(socialData.groupsUidToName[uid]) }}</span>
+						<span class="social-person__name">
+							<span class="social-group__name pg-clamp" :class="{'pg-clamp--open': expandedGroups[uid]}"
+								:title="socialData.groupsUidToName[uid]" @click="toggleGroupName(uid)">{{ socialData.groupsUidToName[uid] }}</span>
+							<span class="social-group__count">{{ memberCountLabel(uid) }}</span>
+						</span>
+						<span class="social-person__actions">
+							<button type="button" class="pg-btn" @click="toggleAddMember(uid)">{{ translate("GROUPS.ADD") }}</button>
+							<button type="button" class="pg-btn" @click="renameGroup(uid)">{{ translate("GROUPS.RENAME") }}</button>
+							<button type="button" class="pg-btn pg-btn--danger" @click="deleteGroup(uid)">{{ translate("GROUPS.DELETE") }}</button>
+						</span>
+					</div>
+					<div v-if="(groupMembers[uid] || []).length > 0" class="social-group__members">
+						<span v-for="member in (groupMembers[uid] || [])" :key="member" class="social-group__member">
+							{{ member }}
+							<button type="button" class="social-group__remove" :aria-label="translate('GROUPS.REMOVE')" :title="translate('GROUPS.REMOVE')" @click="removeMember(uid, member)">&times;</button>
+						</span>
+					</div>
+					<div v-if="addingTo == uid" class="social-invite social-group__add">
+						<FormAutocomplete
+							class="social-invite__field"
+							is-multiple
+							v-model="membersToAdd"
+							:minchars="0"
+							:options="nonMembers(uid)"
+							:maxitems="100"
+							:placeholder="translate('GROUPS.MEMBERS.PICK')"
+						/>
+						<button type="button" class="pg-btn pg-btn--primary" :disabled="membersToAdd.length == 0" @click="addMembers(uid)">
+							{{ translate("GROUPS.ADD") }}
+						</button>
+					</div>
+				</li>
+			</ul>
+		</section>
 
-            <div>
-                <h3>{{ translate("SOCIAL.FOLLOWING") }}</h3>
-                <div class="table flex-container" style="flex-flow:column;">
-                  <tr v-for="user in socialData.following" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
-                    <div style="font-size:1.5em;">
-                        <a v-on:click="displayProfile(user)" style="cursor: pointer">{{ user }}</a>
-		    </div>
-                    <div>
-		      <button type="button" class="pg-btn pg-btn--danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
-		    </div>
-                  </tr>
-		</div>
-            </div>
-            <div>
-                <h3>{{ translate("SOCIAL.BLOCKED") }}</h3>
-                <div class="table flex-container" style="flex-flow:column;">
-                  <tr v-for="user in socialData.blocked" class="flex-container vspace-5" style="justify-content:space-between; max-width:700px;">
-                        <div style="font-size:1.5em;">
-                            {{ user }}
-            		    </div>
-                        <div>
-            		      <button type="button" class="pg-btn" @click="unblock(user)">{{ translate("SOCIAL.UNBLOCK") }}</button>
-            		    </div>
-                  </tr>
-                </div>
-            </div>
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.FOLLOWING") }}</h2>
+				<span>{{ socialData.following.length }}</span>
+			</div>
+			<ul v-if="socialData.following.length > 0" class="social-people">
+				<li v-for="user in socialData.following" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(user) }}</span>
+					<span class="social-person__name">
+						<button type="button" class="social-person__link" :title="user" @click="displayProfile(user)">{{ user }}</button>
+					</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
+
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.BLOCKED") }}</h2>
+				<span>{{ socialData.blocked.length }}</span>
+			</div>
+			<ul v-if="socialData.blocked.length > 0" class="social-people">
+				<li v-for="user in socialData.blocked" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(user) }}</span>
+					<span class="social-person__name" :title="user">{{ user }}</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn" @click="unblock(user)">{{ translate("SOCIAL.UNBLOCK") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
 		</main>
    </article>
 </template>
@@ -213,7 +231,7 @@
 const AppButton = require("../components/AppButton.vue");
 const AppHeader = require("../components/AppHeader.vue");
 const Choice = require("../components/choice/Choice.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
+const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
@@ -230,7 +248,7 @@ module.exports = {
 		AppButton,
 		AppHeader,
 		Choice,
-		Prompt,
+		AppPrompt,
 		Spinner,
 	},
     data() {
@@ -266,15 +284,24 @@ module.exports = {
             choice_consumer_func: () => {},
             showPrompt: false,
             prompt_message: "",
+            prompt_name: null,
+            prompt_action: "",
             prompt_placeholder: "",
             prompt_value: "",
-            prompt_consumer_func: () => {}
+            prompt_consumer_func: () => {},
+            // the lists are empty until the first load, which says nothing about the account
+            loaded: false,
+            expandedGroups: {}
         }
     },
     props: [],
 	mixins:[routerMixins, i18n],
 
 	computed: {
+        nobody() {
+            const d = this.socialData;
+            return this.loaded && d.pending.length + d.friends.length + d.followers.length + d.following.length + d.blocked.length == 0;
+        },
 		...Vuex.mapState([
 			'context',
 			'socialData'
@@ -307,6 +334,7 @@ module.exports = {
         this.showSpinner = true;
         this.updateSocial(() => {
             that.showSpinner = false;
+            that.loaded = true;
             that.loadGroupMembers();
         });
     },
@@ -505,6 +533,16 @@ module.exports = {
             });
         },
 
+        // title tooltips never fire on touch, so a group name cut short opens on a tap as well
+        toggleGroupName(uid) {
+            Vue.set(this.expandedGroups, uid, ! this.expandedGroups[uid]);
+        },
+
+        // the first letter of a name, for the round mark beside it
+        initialOf(name) {
+            return name ? name.charAt(0).toUpperCase() : "";
+        },
+
         close () {
             this.$emit("hide-social");
         },
@@ -579,7 +617,10 @@ module.exports = {
         renameGroup(uid) {
             let that = this;
             let current = this.socialData.groupsUidToName[uid];
-            this.prompt_message = this.translate("GROUPS.RENAME.TITLE").replace("$NAME", current);
+            // the name goes in on its own, so the dialog can cut a long one short, as the drive's rename does
+            this.prompt_message = this.translate("GROUPS.RENAME.TITLE").replace("$NAME", "\u201c{n}\u201d");
+            this.prompt_name = current;
+            this.prompt_action = this.translate("GROUPS.RENAME");
             this.prompt_placeholder = this.translate("GROUPS.NAME");
             this.prompt_value = current;
             this.prompt_consumer_func = (name) => {
@@ -639,6 +680,21 @@ module.exports = {
 </script>
 
 <style>
+/* The people you follow and who follow you, on the surfaces the sync and mount views use:
+   the page is .pg-view, each list a .pg-sectionhead over rows in a card, the actions
+   .pg-btn. Only the look changes - every action is the one this view always had. */
+
+/* the headings of the lists and the cards; the empty state keeps the size it has in
+   every other view */
+.social-view .pg-sectionhead h2,
+.social-view .pg-card h2 {
+	font-size: 15px;
+}
+
+.social-send {
+	gap: 12px;
+}
+
 /* the field and the action that sends it belong on one line, with the field taking the
    room: stacked, with the component's own bottom margin between them, they read as two
    unrelated controls */
@@ -648,7 +704,6 @@ module.exports = {
 	align-items: stretch;
 	gap: 10px;
 	max-width: 560px;
-	margin-bottom: var(--app-margin);
 }
 
 .social-invite__field {
@@ -657,16 +712,191 @@ module.exports = {
 	margin-bottom: 0;
 }
 
-.social-groups {
-	align-self: stretch;
-	max-width: 700px;
+.social-section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
-.social-groups__hint,
+/* the rows of one list share a card, parted by hairlines, as a list does in the drive */
+.social-people {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow);
+}
+
+.social-person {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding: 12px 16px;
+}
+
+.social-person + .social-person {
+	border-top: 1px solid var(--border-color);
+}
+
+.social-person__initial {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	font-weight: var(--bold);
+	color: var(--pg-on-ok);
+	background-color: var(--pg-tint-ok);
+}
+
+.social-person__name {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+	flex: 1 1 160px;
+	min-width: 0;
+	font-size: 15px;
+	overflow-wrap: anywhere;
+}
+
+/* a name that opens the profile: a link to look at, a button to the keyboard. Its box is
+   the height of a tap target, and gives the extra back so the row keeps its height */
+.social-person__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	padding: 0;
+	margin: -10px 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: var(--pg-link);
+	text-align: left;
+	overflow-wrap: anywhere;
+	cursor: pointer;
+}
+
+/* hover only where something can hover: on a touch screen it sticks after the tap */
+@media (hover: hover) {
+	.social-person__link:hover {
+		text-decoration: underline;
+	}
+
+	.social-group__remove:hover {
+		background-color: var(--pg-surface-2);
+		color: var(--color);
+	}
+}
+
+.social-person__link:focus-visible,
+.social-group__remove:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+	border-radius: var(--radius-control);
+}
+
+/* a long group name takes two lines, and the rest on a tap, as sync's long values do */
+.social-group__name {
+	overflow-wrap: anywhere;
+}
+
+.social-group__name:not(.pg-clamp--open) {
+	-webkit-line-clamp: 2;
+}
+
+.social-person__verified {
+	padding: 3px 10px;
+	font-size: var(--text-mini);
+}
+
+.social-person__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-left: auto;
+}
+
+/* no margin carried in from a page-wide button rule: the row spaces them with its gap */
+.social-person__actions .pg-btn {
+	margin: 0;
+}
+
+/* a group is a row like a person's, with its members as chips under it */
+.social-group + .social-group {
+	border-top: 1px solid var(--border-color);
+}
+
+.social-group__head {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding: 12px 16px;
+}
+
 .social-group__count {
-	opacity: 0.7;
+	color: var(--pg-muted);
+	font-size: var(--text-small);
 }
 
+.social-group__members {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	padding: 0 16px 12px 64px;
+}
+
+.social-group__member {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	padding: 2px 2px 2px 10px;
+	font-size: var(--text-small);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+}
+
+.social-group__remove {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	color: var(--pg-muted);
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+/* a finger needs more than the pointer does */
+@media (pointer: coarse) {
+	.social-group__member {
+		padding-top: 0;
+		padding-bottom: 0;
+	}
+
+	.social-group__remove {
+		width: 40px;
+		height: 40px;
+	}
+}
+
+.social-group__add {
+	padding: 0 16px 12px 64px;
+}
+
+/* the group's name, then who is in it, then the button: on a wide screen one line */
 .social-groups__create {
 	flex-wrap: wrap;
 	max-width: none;
@@ -677,60 +907,32 @@ module.exports = {
 	min-width: 0;
 }
 
-.social-group {
-	margin-bottom: var(--app-margin);
+/* on a phone the actions go under the name, sharing the row between them */
+@media (max-width: 600px) {
+	.social-invite {
+		flex-direction: column;
+	}
+
+	.social-person__actions {
+		flex-basis: 100%;
+		margin-left: 0;
+	}
+
+	/* each takes the width its label needs and the row grows them to fill it: an even
+	   split would squeeze "Allow and follow back" into four lines beside "Deny". A label
+	   wider than the row, as some translations are, wraps inside its button */
+	.social-person__actions .pg-btn {
+		flex: 1 0 auto;
+		max-width: 100%;
+	}
+
+	.social-group__members,
+	.social-group__add {
+		padding-left: 16px;
+	}
+
+	.social-groups__name {
+		flex-basis: 100%;
+	}
 }
-
-.social-group__members {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	margin: 6px 0;
-}
-
-.social-group__member {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 4px 2px 10px;
-	border-radius: 12px;
-	border: 1px solid var(--border-color, currentColor);
-}
-
-.social-group__remove {
-	border: none;
-	background: none;
-	color: inherit;
-	cursor: pointer;
-	font-size: 1.1em;
-	line-height: 1;
-	padding: 0 4px;
-}
-
-
-/* the view is the screenful and its main fills what the header leaves, as the drive
-   and the status card views do: asking for 100vh here as well put the header's height
-   past the bottom and left the page scrolling over nothing */
-.social-view {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-.social-view main{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    flex: 1 1 auto;
-    /* the sides take the gutter the title keeps rather than the wider page margin,
-       so the view's first word sits under its name */
-    padding: var(--app-margin) 32px;
-}
-
-@media (max-width: 1024px) {
-    .social-view main{
-        padding: var(--app-margin) 16px;
-    }
-}
-
 </style>
