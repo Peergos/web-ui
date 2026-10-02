@@ -150,7 +150,30 @@ public class NewsFeedViewTest {
         d.waitForScript("posting allowed", "!document.querySelector('#prompt-button-id').disabled", 10_000);
         d.script("document.querySelector('#prompt-button-id').click(); return 1;");
         // saving a post is a write and a share, which a busy runner can take over a minute over
-        d.waitForScript("the composer closed", "!document.querySelector('#social-post-text')", 120_000);
+        try {
+            d.waitForScript("the composer closed", "!document.querySelector('#social-post-text')", 120_000);
+        } catch (RuntimeException neverClosed) {
+            sayWhereThePostIs(d);
+            throw neverClosed;
+        }
+    }
+
+    /** A post is the write, then the share with the chosen group, then the composer closing,
+     *  and a bare timeout names none of them - so say whether it is still busy, which groups
+     *  it could share with and what the page has shown. Once the post is done the composer is
+     *  gone from the feed and only its dialog stays, for as long as it takes to fade out. */
+    static void sayWhereThePostIs(WebDriver d) {
+        try {
+            System.out.println("  the composer: " + d.script("const feed = document.querySelector('.newsfeed-view').__vue__, q = [feed]; let p = null;"
+                    + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(...c.$children); }"
+                    + " const text = document.querySelector('#social-post-text'), dialog = text && text.closest('.pg-dialog__mask');"
+                    + " return JSON.stringify({open: !! p, posting: p && p.isPosting, spinner: p && p.showSpinner, shareWith: p && p.shareWith,"
+                    + "   dialog: dialog && dialog.className, groups: Object.keys(feed.$store.state.socialData.groupsNameToUid),"
+                    + "   friends: feed.$store.state.socialData.friends,"
+                    + "   toasts: [...document.querySelectorAll('.Vue-Toastification__toast')].map(t => t.textContent.trim())});"));
+        } catch (RuntimeException e) {
+            System.out.println("  the composer could not be read: " + e.getMessage());
+        }
     }
 
     /** Clicks the control with that label in the part of the feed holding the given text. */
