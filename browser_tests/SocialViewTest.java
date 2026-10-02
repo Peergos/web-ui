@@ -164,6 +164,9 @@ public class SocialViewTest {
     private static void openSocial(WebDriver d) {
         Page.gotoView(d, "Social", "sendInitialFollowRequest", "__social");
         d.waitForScript("the lists", "document.querySelectorAll('.social-section').length === 6", 60_000);
+        // the sections are drawn from what the store already holds; the lists are only this
+        // account's once the view's own load has come back
+        d.waitForScript("the lists loaded", "window.__social.loaded", 60_000);
     }
 
     private static final String SECTION = "[...document.querySelectorAll('.social-section')].find(s => s.querySelector('h2').textContent.trim() === arguments[0])";
