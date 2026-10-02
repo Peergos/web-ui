@@ -69,10 +69,15 @@ public class CustomGroupsTest {
 
             // --- share a folder with it from the drive's own dialog --------------------------
             openShareDialog(d, "holidays");
-            String groups = String.valueOf(d.script("return [...document.querySelectorAll('.share-groups label')]"
-                    + ".map(l => l.innerText.replace(/\\s+/g, ' ').trim()).join(' | ')"));
-            if (! groups.equals("Friends (2) | Followers (Includes Friends) (2) | family (1)"))
-                throw new AssertionError("The share dialog lists the groups as: " + groups);
+            // each count arrives on its own, so Friends can still read (empty) when family is in
+            String expected = "Friends (2) | Followers (Includes Friends) (2) | family (1)";
+            String labels = "[...document.querySelectorAll('.share-groups label')]"
+                    + ".map(l => l.innerText.replace(/\\s+/g, ' ').trim()).join(' | ')";
+            try {
+                d.waitForScript("the share dialog's group counts", labels + " === '" + expected + "'", 60_000);
+            } catch (RuntimeException e) {
+                throw new AssertionError("The share dialog lists the groups as: " + d.script("return " + labels));
+            }
             shot(d, "2-share-dialog");
             d.script("[...document.querySelectorAll('.share-groups label')].find(l => l.innerText.includes('family'))"
                     + ".querySelector('input').click(); return 1;");
