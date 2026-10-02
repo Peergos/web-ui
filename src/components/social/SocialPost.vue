@@ -1,65 +1,46 @@
 <template>
 	<transition name="modal" appear>
-		<div class="social-post post-modal__overlay" @click="close()" v-bind:style="{top:modelTop}" style="position: absolute;">
-
-	        <Spinner v-if="showSpinner"></Spinner>
-			<div class="social-post__container" @click.stop>
-				<header class="social-post__header">
-					<AppButton class="close" icon="close" @click.native="close()"/>
-					<h3>{{title}}</h3>
+		<div class="pg-dialog__mask social-post" @click="close()">
+			<Spinner v-if="showSpinner"></Spinner>
+			<div class="pg-dialog social-post__dialog" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">{{title}}</h3>
+					<DialogClose @close="close()"/>
 				</header>
-				<div class="social-post__body">
-                    <p>
-                        <span>
-                            <button v-if="socialPostAction=='add' || socialPostAction=='reply'" class="btn btn-success" @click="triggerUpload">Upload Media</button>
-                            <div v-for="filename in mediaFilenames">{{filename}}</div>
-                        </span>
-                        <input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple accept="audio/*,video/*,image/*" />
-                    </p>
-
-                    <textarea id="social-post-text" style="resize: none;" rows="7" :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
-                    <div>
-                        <span>
-                            <label style="font-weight: normal;">{{ translate("NEWSFEED.POST.SHARE.WITH") }}</label>
-                        </span>
-                    </div>
-					 <div v-if="isReady" class="flex-container">
-                        <div v-if="shareWithSharerOnly" class="hspace-15">
-                            <label class="checkbox__group">
-                                <input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
-                                <span class="checkmark"></span>
-                                {{currentSocialPostEntry.sharer}}
-                            </label>
-                        </div>
-                        <div v-if="!shareWithSharerOnly" class="hspace-15">
-                            <label class="checkbox__group">
-                                <input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
-                                <span class="checkmark"></span>
-                                {{ translate("NEWSFEED.POST.SHARE.WITH.FRIENDS") }}
-                            </label>
-                        </div>
-                        <div v-if="!shareWithSharerOnly" class="hspace-15">
-                            <label class="checkbox__group">
-                                <input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
-                                <span class="checkmark"></span>
-                                {{ translate("NEWSFEED.POST.SHARE.WITH.FOLLOWERS") }}
-                            </label>
-                        </div>
-                    </div>
+				<div class="pg-dialog__body social-post__body">
+					<textarea id="social-post-text" class="pg-input social-post__text" rows="6" :placeholder="textAreaPlaceholder" maxlength="1000" v-model="post"></textarea>
+					<div v-if="socialPostAction=='add' || socialPostAction=='reply'" class="social-post__media">
+						<button type="button" class="pg-btn" @click="triggerUpload">Upload Media</button>
+						<ul v-if="mediaFilenames.length > 0" class="social-post__files">
+							<li v-for="filename in mediaFilenames">{{filename}}</li>
+						</ul>
+						<input type="file" id="uploadInput" @change="uploadFiles" style="display:none;" multiple accept="audio/*,video/*,image/*" />
+					</div>
+					<fieldset v-if="isReady" class="social-post__share">
+						<legend>{{ translate("NEWSFEED.POST.SHARE.WITH") }}</legend>
+						<label v-if="shareWithSharerOnly" class="social-post__option" :class="{'social-post__option--on': shareWith == 'Sharer'}">
+							<input :disabled="socialPostAction=='edit'" type="radio" id="sharer-option" value="Sharer" v-model="shareWith">
+							<span class="social-post__mark" aria-hidden="true"></span>
+							{{currentSocialPostEntry.sharer}}
+						</label>
+						<label v-if="!shareWithSharerOnly" class="social-post__option" :class="{'social-post__option--on': shareWith == 'Friends'}">
+							<input :disabled="socialPostAction=='edit'" type="radio" id="friends-option" value="Friends" v-model="shareWith">
+							<span class="social-post__mark" aria-hidden="true"></span>
+							{{ translate("NEWSFEED.POST.SHARE.WITH.FRIENDS") }}
+						</label>
+						<label v-if="!shareWithSharerOnly" class="social-post__option" :class="{'social-post__option--on': shareWith == 'Followers', 'social-post__option--off': !allowFollowerSharingOption || socialPostAction=='edit'}">
+							<input :disabled="!allowFollowerSharingOption || socialPostAction=='edit'" type="radio" id="followers-option" value="Followers" v-model="shareWith">
+							<span class="social-post__mark" aria-hidden="true"></span>
+							{{ translate("NEWSFEED.POST.SHARE.WITH.FOLLOWERS") }}
+						</label>
+					</fieldset>
 				</div>
-				<footer class="social-post__footer">
-					<AppButton outline @click.native="close()">
-						{{ translate("PROMPT.CANCEL") }}
-					</AppButton>
-					<AppButton
-    					:disabled="!isPostingAvailable()"
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click.native="submitPost()"
-					>
-                    {{ translate("NEWSFEED.POST.BUTTON") }}
-					</AppButton>
+				<footer class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" class="pg-btn" @click="close()">{{ translate("PROMPT.CANCEL") }}</button>
+						<button type="button" id="prompt-button-id" class="pg-btn pg-btn--primary" :disabled="!isPostingAvailable()" @click="submitPost()">{{ translate("NEWSFEED.POST.BUTTON") }}</button>
+					</div>
 				</footer>
 			</div>
 		</div>
@@ -68,14 +49,14 @@
 
 <script>
 const i18n = require("../../i18n/index.js");
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const helpers = require("../../mixins/storage/index.js");
 const ProgressBar = require("../drive/ProgressBar.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
         ProgressBar,
         Spinner
     },
@@ -93,13 +74,12 @@ module.exports = {
             shareWithSharerOnly: false,
             thumbnailImage: "",
             mediaFiles: [],
-            mediaFilenames: "",
+            mediaFilenames: [],
             progressMonitors: [],
             isReady: false,
-            modelTop: "100px",
 		}
 	},
-    props: ['closeSocialPostForm', 'socialFeed', 'socialPostAction', 'currentSocialPostEntry', 'top'],
+    props: ['closeSocialPostForm', 'socialFeed', 'socialPostAction', 'currentSocialPostEntry'],
     computed: {
         ...Vuex.mapState([
             'quotaBytes',
@@ -112,7 +92,6 @@ module.exports = {
         },
     },
     created: function() {
-        this.modelTop = this.top;
         let that = this;
         if (this.socialPostAction == 'reply') {
             if (this.currentSocialPostEntry != null) {
@@ -433,14 +412,6 @@ module.exports = {
 }
 </script>
 <style>
-.social-post.post-modal__overlay{
-	display:flex;
-	align-items: center;
-	justify-content: center;
-    margin-left: -200px;
-    left: 50%;
-}
-
 .modal-mask {
   position: fixed;
   z-index: 2500;
@@ -452,37 +423,140 @@ module.exports = {
   transition: opacity .3s ease;
 }
 
-.social-post__container{
-	width: 400px;
-	padding: 16px;
-	border-radius: 4px;
-	color: var(--color);
-	background-color:var(--bg);
-	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+/* A post, a reply or an edit, on the surface the other dialogs use: the words, what goes
+   with them, and who sees it, as one row of choices. */
+
+.social-post__dialog {
+	width: 480px;
 }
 
-@media (max-width: 400px) {
-    .social-post.post-modal__overlay{
-        margin-left: -175px;
-    }
-    .social-post__container{
-        width: 350px;
-    }
-}
-
-.social-post__header h3{
-	border-top:0;
-	font-weight: var(--regular);
-}
-.social-post__body{
-	margin: var(--app-margin) 0;
-}
-.social-post__footer{
+.social-post__body {
 	display: flex;
-	justify-content: flex-end;
+	flex-direction: column;
+	gap: 14px;
 }
-.social-post__footer button{
-	margin-left: 16px;
+
+/* over the page-wide textarea rules this file has long carried, which ring it in green and
+   paint a wide inset shadow on focus: here it is a field like the others */
+.social-post .social-post__text,
+.social-post .social-post__text:focus,
+.social-post .social-post__text:active,
+.social-post .social-post__text:focus-visible {
+	width: 100%;
+	min-height: 140px;
+	padding: 10px 12px;
+	resize: vertical;
+	font-size: 15px;
+	line-height: 1.4;
+	color: var(--color);
+	-webkit-text-fill-color: var(--color);
+	background-color: var(--bg-2);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-control);
+	box-shadow: none;
+	-webkit-box-shadow: none;
+}
+
+.social-post .social-post__text:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 1px;
+}
+
+.social-post__media {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+.social-post__files {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	font-size: var(--text-small);
+	color: var(--pg-muted);
+	overflow-wrap: anywhere;
+}
+
+.social-post__share {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.social-post__share legend {
+	width: 100%;
+	margin: 0 0 2px;
+	padding: 0;
+	border: 0;
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: .07em;
+	color: var(--pg-muted);
+}
+
+.social-post__option {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 40px;
+	margin: 0;
+	padding: 6px 14px 6px 10px;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-pill);
+	cursor: pointer;
+}
+
+.social-post__option--on {
+	border-color: var(--green-500);
+	background-color: var(--pg-tint-ok);
+}
+
+.social-post__option--off {
+	opacity: .55;
+	cursor: default;
+}
+
+.social-post__option input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+}
+
+.social-post__mark {
+	position: relative;
+	flex: none;
+	width: 16px;
+	height: 16px;
+	border: 2px solid var(--pg-muted);
+	border-radius: 50%;
+}
+
+.social-post__option--on .social-post__mark {
+	border-color: var(--green-500);
+}
+
+.social-post__option--on .social-post__mark:after {
+	content: "";
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background-color: var(--green-500);
+}
+
+.social-post__option input:focus-visible + .social-post__mark {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
 }
 
 
