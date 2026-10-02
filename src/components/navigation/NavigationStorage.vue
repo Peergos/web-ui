@@ -173,13 +173,16 @@ module.exports = {
 		flex-grow: 0;
 	}
 
-	/* the rail leaves 64px, which "Upgrade" fits and a longer label ("Αναβάθμιση", "Mettre à
-	   niveau", "Zmień subskrypcję") did not: it spilled past both edges and lost its first
-	   letters. At 10px the longest word of each is under 61px in Inter and in the wider
-	   fallback shown until Inter loads, so labels wrap between words; breaking inside one is
-	   only for a word no translation has yet */
+	/* "Upgrade" fits the rail and a longer label ("Αναβάθμιση", "Mettre à niveau", "Zmień
+	   subskrypcję") did not: it spilled past both edges and lost its first letters. At 10px
+	   the longest word of each measures about 61px, which engines that round each glyph to
+	   a whole pixel push past the 64px inside the gutters, so the label takes the rail's
+	   full 72px; its background is clear, so only the text shows. Labels wrap between
+	   words; breaking inside one is only for a word no translation has yet */
 	.app-navigation:not(.expanded) .navigation-storage .upgrade {
-		max-width: 100%;
+		width: calc(100% + 8px);
+		max-width: none;
+		margin: -7px -4px;
 		white-space: normal;
 		overflow-wrap: anywhere;
 		text-align: center;
