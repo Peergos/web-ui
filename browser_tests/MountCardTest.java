@@ -34,6 +34,16 @@ public class MountCardTest {
             Page.gotoView(d, "Mount", "onAddMount", "__mount");
             WebDriver.sleep(1500);
 
+            // the page has nothing to mount on macOS yet, so the cards below cannot be reached there
+            if (Boolean.TRUE.equals(d.script("return window.__mount.isMac"))) {
+                String shown = String.valueOf(d.script("return window.__mount.$el.innerText"));
+                if (! shown.contains("Coming soon to macOS."))
+                    throw new AssertionError("On macOS the page should say it is coming soon: " + shown);
+                System.out.println("  skip macOS has no mounts yet, and says so; the cards are not exercised");
+                System.out.println("PASS");
+                return;
+            }
+
             // Android: calendars and contacts go to the phone's own apps. The note says which, and there
             // is no card, which would hold nothing but its status
             String[][] platform = {
