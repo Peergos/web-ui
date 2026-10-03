@@ -789,7 +789,7 @@ module.exports = {
                 let func = function() {
                     that.postMessage({type: 'init', appName: appName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,
-                    username: that.context.username, props: props});
+                    username: that.context.username, props: props, lang: that.languageCode()});
                 };
                 that.setupIFrameMessaging(iframe, func);
             });

@@ -19,7 +19,7 @@ let msgHandler = function (e) {
         mainWindow.postMessage({action:'pong'}, e.origin);
       } else if (e.data.type == "init") {
           load(e.data.appName, e.data.appPath, e.data.allowBrowsing, e.data.theme, e.data.chatId,
-            e.data.username, e.data.props);
+            e.data.username, e.data.props, e.data.lang);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
       }
@@ -52,8 +52,8 @@ function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, 
     mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, api: api, apiMethod: apiMethod,
     bytes: bytes, hasFormData: hasFormData, params: params, isFromRedirect: isFromRedirect, isNavigate: isNavigate}, origin);
 }
-function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
-    lastLoadParams = [appName, appPath, allowBrowsing, theme, chatId, username, props];
+function load(appName, appPath, allowBrowsing, theme, chatId, username, props, lang) {
+    lastLoadParams = [appName, appPath, allowBrowsing, theme, chatId, username, props, lang];
     var reinit = reinitializingPort;
     reinitializingPort = false;
     let that = this;
@@ -70,6 +70,9 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props) {
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
                 path = path + '&username=' + username;
+                if (lang) {
+                    path = path + '&lang=' + encodeURIComponent(lang);
+                }
                 if (props.isPathWritable == true) {
                     path = path + '&isPathWritable=' + props.isPathWritable;
                 }
