@@ -59,6 +59,21 @@ public class Server implements AutoCloseable {
     }
 
     private static Server start(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
+        // A free port is only free when asked: the server binds it seconds later, once its jvm is
+        // up, and any connection made meanwhile can be handed the same one. Losing that race ends
+        // the process at startup, so it is started again on new ports rather than failing a test.
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return launch(serverDir, maxUsers, extraArgs);
+            } catch (IllegalStateException e) {
+                if (attempt == 3 || ! String.valueOf(e.getMessage()).contains("Address already in use"))
+                    throw e;
+                System.out.println("  the test server lost its port before binding it, starting it again");
+            }
+        }
+    }
+
+    private static Server launch(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
         int port = freePort();
         // proxy-target is the second http server this starts, and it defaults to a fixed
         // 127.0.0.1:8003 - so without its own port a test server collides with any other Peergos
