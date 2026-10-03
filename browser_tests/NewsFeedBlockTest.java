@@ -38,7 +38,7 @@ public class NewsFeedBlockTest {
             String me = "maria" + s, friend = "anna" + s, commenter = "ben" + s;
             String post = "Hello from " + friend, comment = "A reply from " + commenter;
             Crypto crypto = Builder.initCrypto();
-            UserContext mine = seed(url, crypto, me, friend, commenter, post, comment);
+            seed(url, crypto, me, friend, commenter, post, comment);
             d.setWindowRect(1280, 900);
 
             NewsFeedViewTest.signIn(d, url, me);
@@ -49,7 +49,8 @@ public class NewsFeedBlockTest {
                 throw new AssertionError("Nothing is hidden before blocking anyone");
             System.out.println("  ok   a friend's post and a comment on it reach the feed");
 
-            mine.block(commenter).join();
+            // a session of its own, as the browser has written since the seeding one began
+            NewsFeedViewTest.signInApi(url, me, crypto).block(commenter).join();
             Page.logout(d);
             NewsFeedViewTest.signIn(d, url, me);
             NewsFeedViewTest.openFeed(d);
