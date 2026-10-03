@@ -105,6 +105,8 @@ module.exports = {
             this.friendsSelected = [];
         },
         applyChange: function() {
+            // include a friend picked in the box but not yet added with the invite button
+            this.addFriends();
             this.updateChat(this.addedFriends, this.chatTitle);
             this.close();
         }

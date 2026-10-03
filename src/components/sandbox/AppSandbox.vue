@@ -21,7 +21,7 @@
         </ViewProfile>
         <AddToChat
                 v-if="showInviteFriends"
-                v-on:hide-add-to-chat="showInviteFriends = false"
+                v-on:hide-add-to-chat="inviteFriendsHidden"
                 :appDisplayName="appDisplayName"
                 :maxFriendsToAdd="maxFriendsToAdd"
                 :chatTitle="chatTitle"
@@ -3131,26 +3131,45 @@ module.exports = {
                 // not implemented
             }
         },
+        // The app's create-chat request is answered exactly once: by updateChat, or as a failure when
+        // the invite dialog is closed without applying.
+        inviteFriendsHidden: function() {
+            this.showInviteFriends = false;
+            if (this.chatResponseHeader != null) {
+                let header = this.chatResponseHeader;
+                this.chatResponseHeader = null;
+                this.buildResponse(header, null, this.ACTION_FAILED);
+            }
+        },
         updateChat: function(usersToAdd, chatTitle) {
             let that = this;
+            let header = this.chatResponseHeader;
+            this.chatResponseHeader = null;
+            if (header == null) {
+                return;
+            }
+            if (usersToAdd.length == 0) {
+                that.buildResponse(header, null, that.ACTION_FAILED);
+                return;
+            }
             let messenger = new peergos.shared.messaging.Messenger(this.context);
             messenger.createAppChat(this.currentAppName).thenApply(function(controller){
                 that.inviteChatParticipants(messenger, controller, usersToAdd).thenApply(updatedController => {
                     messenger.setGroupProperty(updatedController, "title", chatTitle).thenApply(function(updatedController2) {
                         let encoder = new TextEncoder();
                         let chatIdBytes = encoder.encode(updatedController2.chatUuid);
-                        that.buildResponse(that.chatResponseHeader, chatIdBytes, that.CREATE_SUCCESS);
+                        that.buildResponse(header, chatIdBytes, that.CREATE_SUCCESS);
                     }).exceptionally(err => {
                         console.log('setTitle call failed: ' + err);
-                        that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                        that.buildResponse(header, null, that.ACTION_FAILED);
                     });
                 }).exceptionally(err => {
                     console.log('inviteChatParticipants call failed: ' + err);
-                    that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                    that.buildResponse(header, null, that.ACTION_FAILED);
                 });
             }).exceptionally(err => {
                 console.log('createAppChat call failed: ' + err);
-                that.buildResponse(that.chatResponseHeader, null, that.ACTION_FAILED);
+                that.buildResponse(header, null, that.ACTION_FAILED);
             });
         },
         getPublicKeyHashes: function(usernames) {
