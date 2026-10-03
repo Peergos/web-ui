@@ -125,6 +125,10 @@ public class Browsers {
                 "user_pref(\"toolkit.startup.max_resumed_crashes\", -1);",
                 "user_pref(\"browser.tabs.warnOnClose\", false);",
                 "user_pref(\"datareporting.healthreport.uploadEnabled\", false);",
+                // straight to the server: the default follows the system's proxy settings, and on
+                // a windows runner a first load has sat on about:blank for minutes while the
+                // server was answering
+                "user_pref(\"network.proxy.type\", 0);",
                 "");
         Files.writeString(profile.resolve("user.js"), prefs);
 
