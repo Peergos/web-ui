@@ -56,6 +56,7 @@ public class SocialViewTest {
             // a friend follows and is followed, and is listed once, as a friend
             expect(d, "Followers", 1, List.of(p.follower));
             expect(d, "Following", 1, List.of(p.followed));
+            expect(d, "Unfollowed", 1, List.of(p.unfollowed));
             expect(d, "Blocked", 1, List.of(p.blocked));
             String verifiedRow = rowText(d, "Friends", p.verified);
             if (! verifiedRow.contains("Verified") || rowText(d, "Friends", p.friend).contains("Verified"))
@@ -89,24 +90,39 @@ public class SocialViewTest {
             awaitCount(d, "Friends", 3);
             click(d, "Followers", p.follower, "button.pg-btn");
             awaitCount(d, "Followers", 0);
-            // unfollowing someone also blocks them
+            // unfollowing someone doesn't block them
             click(d, "Following", p.followed, "button.pg-btn");
             awaitCount(d, "Following", 0);
+            awaitCount(d, "Unfollowed", 2);
+            if (count(d, "Blocked") != 1)
+                throw new AssertionError("Unfollowing should not block");
+            click(d, "Unfollowed", p.unfollowed, "button.pg-btn");
+            awaitCount(d, "Unfollowed", 1);
+            awaitCount(d, "Following", 1);
+            System.out.println("  ok   allow and follow back, remove a follower, unfollow and follow again each take effect");
+
+            // blocking a friend removes them as a friend
+            click(d, "Friends", p.friend, "button.pg-btn--danger:nth-of-type(3)");
+            awaitCount(d, "Friends", 2);
             awaitCount(d, "Blocked", 2);
+            if (names(d, "Unfollowed").contains(p.friend))
+                throw new AssertionError("A blocked user is only listed as blocked");
+            // unblocking leaves them unfollowed
             click(d, "Blocked", p.blocked, "button.pg-btn");
             awaitCount(d, "Blocked", 1);
-            System.out.println("  ok   allow and follow back, remove a follower, unfollow and unblock each take effect");
+            d.waitUntil("the unblocked user to be listed as unfollowed", () -> names(d, "Unfollowed").contains(p.blocked) ? Boolean.TRUE : null, 60_000);
+            System.out.println("  ok   block removes a friend and lists them as blocked, and unblocking leaves them unfollowed");
 
             d.navigate(url + "/");
             Page.login(d, p.me, People.PASSWORD);
             openSocial(d);
-            expect(d, "Friends", 3, List.of(p.verified, p.friend, p.pending));
+            expect(d, "Friends", 2, List.of(p.verified, p.pending));
             if (names(d, "Followers").contains(p.follower))
                 throw new AssertionError("The removed follower came back");
-            if (names(d, "Following").contains(p.followed))
-                throw new AssertionError("The unfollowed user is still followed");
-            if (! names(d, "Blocked").contains(p.followed) || names(d, "Blocked").contains(p.blocked))
-                throw new AssertionError("Unfollowing blocks, and unblocking unblocks: " + names(d, "Blocked"));
+            if (! names(d, "Following").contains(p.unfollowed) || names(d, "Following").contains(p.followed))
+                throw new AssertionError("Following should be the user followed again, not the unfollowed one: " + names(d, "Following"));
+            expect(d, "Unfollowed", 2, List.of(p.followed, p.blocked));
+            expect(d, "Blocked", 1, List.of(p.friend));
             System.out.println("  ok   and they are still so after signing in again");
             System.out.println("PASS");
         } finally {
@@ -115,22 +131,23 @@ public class SocialViewTest {
         }
     }
 
-    /** Seven accounts, one of them looking at the view, in every relation the view lists. */
+    /** Nine accounts, one of them looking at the view, in every relation the view lists. */
     static class People {
         static final String PASSWORD = "testpassword";
-        final String me, verified, friend, follower, followed, pending, blocked, stranger;
+        final String me, verified, friend, follower, followed, pending, blocked, unfollowed, stranger;
         UserContext strangerContext;
 
         People(String s) {
             me = "maria" + s; verified = "anna" + s; friend = "ben" + s; follower = "carl" + s;
             followed = "dora" + s; pending = "emil" + s; blocked = "fred" + s; stranger = "gina" + s;
+            unfollowed = "hugo" + s;
         }
 
         static People seed(String url) throws Exception {
             People p = new People(Long.toString(System.currentTimeMillis() % 100000));
             Crypto crypto = Builder.initCrypto();
             NetworkAccess network = Builder.buildJavaNetworkAccess(URI.create(url).toURL(), false, Optional.empty(), Optional.empty()).join();
-            List<String> everyone = List.of(p.me, p.verified, p.friend, p.follower, p.followed, p.pending, p.blocked, p.stranger);
+            List<String> everyone = List.of(p.me, p.verified, p.friend, p.follower, p.followed, p.pending, p.blocked, p.unfollowed, p.stranger);
             for (String name : everyone)
                 UserContext.signUp(name, PASSWORD, "", network.clear(), crypto).join();
             // signed in again once all exist: each connection knows the usernames there were when it began
@@ -144,7 +161,9 @@ public class SocialViewTest {
             follow(u.get(p.follower), me, false);
             follow(u.get(p.me), u.get(p.followed), false);
             follow(u.get(p.me), u.get(p.blocked), false);
-            me.unfollow(p.blocked).join();
+            me.block(p.blocked).join();
+            follow(u.get(p.me), u.get(p.unfollowed), false);
+            me.unfollow(p.unfollowed).join();
             u.get(p.pending).sendInitialFollowRequest(p.me).join();
             me.addFriendAnnotation(new FriendAnnotation(p.verified, true, me.generateFingerPrint(p.verified).join().left)).join();
             p.strangerContext = u.get(p.stranger);
@@ -163,7 +182,7 @@ public class SocialViewTest {
 
     private static void openSocial(WebDriver d) {
         Page.gotoView(d, "Social", "sendInitialFollowRequest", "__social");
-        d.waitForScript("the lists", "document.querySelectorAll('.social-section').length === 6", 60_000);
+        d.waitForScript("the lists", "document.querySelectorAll('.social-section').length === 7", 60_000);
         // the sections are drawn from what the store already holds; the lists are only this
         // account's once the view's own load has come back
         d.waitForScript("the lists loaded", "window.__social.loaded", 60_000);

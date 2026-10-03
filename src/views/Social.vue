@@ -77,6 +77,7 @@
 						<button type="button" class="pg-btn pg-btn--primary" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
 						<button type="button" class="pg-btn" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
 						<button type="button" class="pg-btn pg-btn--danger" @click="reject(req)">{{ translate("SOCIAL.DENY") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="block(req.getEntry().ownerName)">{{ translate("SOCIAL.BLOCK") }}</button>
 					</span>
 				</li>
 			</ul>
@@ -99,6 +100,7 @@
 					<span class="social-person__actions">
 						<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
 						<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="block(username)">{{ translate("SOCIAL.BLOCK") }}</button>
 						<button type="button" class="pg-btn" @click="showFingerPrint(username)">{{ translate("SOCIAL.VERIFICATION") }}</button>
 					</span>
 				</li>
@@ -116,6 +118,7 @@
 					<span class="social-person__name" :title="username">{{ username }}</span>
 					<span class="social-person__actions">
 						<button type="button" class="pg-btn pg-btn--danger" @click="removeFollower(username)">{{ translate("SOCIAL.REMOVE") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="block(username)">{{ translate("SOCIAL.BLOCK") }}</button>
 					</span>
 				</li>
 			</ul>
@@ -203,6 +206,25 @@
 					</span>
 					<span class="social-person__actions">
 						<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(user)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="block(user)">{{ translate("SOCIAL.BLOCK") }}</button>
+					</span>
+				</li>
+			</ul>
+		</section>
+
+		<section v-if="! nobody" class="social-section">
+			<div class="pg-sectionhead">
+				<h2>{{ translate("SOCIAL.UNFOLLOWED") }}</h2>
+				<span>{{ socialData.unfollowed.length }}</span>
+			</div>
+			<p class="pg-note">{{ translate("SOCIAL.UNFOLLOWED.HINT") }}</p>
+			<ul v-if="socialData.unfollowed.length > 0" class="social-people">
+				<li v-for="user in socialData.unfollowed" class="social-person">
+					<span class="social-person__initial" aria-hidden="true">{{ initialOf(user) }}</span>
+					<span class="social-person__name" :title="user">{{ user }}</span>
+					<span class="social-person__actions">
+						<button type="button" class="pg-btn" @click="followAgain(user)">{{ translate("SOCIAL.FOLLOW.AGAIN") }}</button>
+						<button type="button" class="pg-btn pg-btn--danger" @click="block(user)">{{ translate("SOCIAL.BLOCK") }}</button>
 					</span>
 				</li>
 			</ul>
@@ -213,6 +235,7 @@
 				<h2>{{ translate("SOCIAL.BLOCKED") }}</h2>
 				<span>{{ socialData.blocked.length }}</span>
 			</div>
+			<p class="pg-note">{{ translate("SOCIAL.BLOCKED.HINT") }}</p>
 			<ul v-if="socialData.blocked.length > 0" class="social-people">
 				<li v-for="user in socialData.blocked" class="social-person">
 					<span class="social-person__initial" aria-hidden="true">{{ initialOf(user) }}</span>
@@ -300,7 +323,7 @@ module.exports = {
 	computed: {
         nobody() {
             const d = this.socialData;
-            return this.loaded && d.pending.length + d.friends.length + d.followers.length + d.following.length + d.blocked.length == 0;
+            return this.loaded && d.pending.length + d.friends.length + d.followers.length + d.following.length + d.blocked.length + d.unfollowed.length == 0;
         },
 		...Vuex.mapState([
 			'context',
@@ -519,6 +542,34 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.STOPPED")+` ${username}`)
                 });
+            });
+        },
+
+        followAgain(username) {
+            let that = this;
+            this.showSpinner = true;
+            this.context.followAgain(username).thenApply(function(success) {
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(that.translate("SOCIAL.FOLLOWING.AGAIN") + ` ${username}`);
+                });
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                that.$toast.error(throwable.getMessage());
+            });
+        },
+
+        block(username) {
+            let that = this;
+            this.showSpinner = true;
+            this.context.block(username).thenApply(function(success) {
+                that.updateSocial(() => {
+                    that.showSpinner = false;
+                    that.$toast(`${username} ` + that.translate("SOCIAL.BLOCKED.DONE"));
+                });
+            }).exceptionally(function(throwable) {
+                that.showSpinner = false;
+                that.$toast.error(throwable.getMessage());
             });
         },
 

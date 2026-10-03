@@ -2585,7 +2585,11 @@ module.exports = {
                                                 text = body[0].inlineText();
                                             }
                                             let attachments = [];
-                                            if(type == 'Application' || type == 'ReplyTo') {
+                                            let hiddenBlocked = that.isBlockedUser(author) && text != null;
+                                            if (hiddenBlocked) {
+                                                text = that.translate("NEWSFEED.HIDDEN.BLOCKED");
+                                            }
+                                            if(! hiddenBlocked && (type == 'Application' || type == 'ReplyTo')) {
                                                 let body = type == 'Application' ? payload.body.toArray() : payload.content.body.toArray();
                                                 for(var i = 1; i < body.length; i++) {
                                                     let refPath = body[i].reference().ref.path;
@@ -3179,6 +3183,9 @@ module.exports = {
             });
             return future;
         },
+        isBlockedUser: function(username) {
+            return username != null && this.socialData.blocked.indexOf(username) > -1;
+        },
         buildOutputMessages: function(chatController, index, messages, accumulator, future) {
             let that = this;
             if (index == messages.length) {
@@ -3192,7 +3199,7 @@ module.exports = {
                     let author = chatController.getUsername(envelope.author);
                     if(type == 'Application') {
                         let body = payload.body.toArray();
-                        let text = body[0].inlineText();
+                        let text = that.isBlockedUser(author) ? that.translate("NEWSFEED.HIDDEN.BLOCKED") : body[0].inlineText();
                         accumulator.messages.push({type: type, id: messageRef.toString(), text: text, author: author, timestamp: timestamp});
                     } else if(type== 'Join') {
                         let username = envelope.payload.username;

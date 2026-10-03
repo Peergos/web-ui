@@ -66,6 +66,7 @@ public class Suite {
             run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
             run(failures, "custom sharing groups", () -> CustomGroupsTest.run(args1));
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
+            run(failures, "a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
             run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));

@@ -162,7 +162,10 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div v-if="displayPost(entry, rowIndex, row)" class="feed-post" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                        <div v-if="displayPost(entry, rowIndex, row) && row.hiddenBlocked" class="feed-post feed-post--hidden" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                            <div class="post-content pg-note">{{ translate("NEWSFEED.HIDDEN.BLOCKED") }}</div>
+                                        </div>
+                                        <div v-if="displayPost(entry, rowIndex, row) && !row.hiddenBlocked" class="feed-post" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
                                                 <div class="feed-meta">
                                                     <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" class="feed-avatar-link">
                                                         <img v-if="row.sharerThumbnail.length > 0" v-bind:src="row.sharerThumbnail" class="profile-thumbnail" alt="">
@@ -373,6 +376,9 @@ module.exports = {
             }
         },
         displayMedia: function(entry, rowIndex, row) {
+            if (row.hiddenBlocked) {
+                return false;
+            }
             if (this.displaySharingItem(entry)) {
                 return rowIndex >= 2 && row.isMedia;
             } else {
@@ -1206,8 +1212,11 @@ module.exports = {
             this.filesToViewInGallery = [entry.file];
             this.showEmbeddedGallery = true;
         },
+        isBlockedUser: function(username) {
+            return username != null && this.socialData.blocked.indexOf(username) > -1;
+        },
         canComment: function(item) {
-            if (item.isDirectory) {
+            if (item.isDirectory || item.hiddenBlocked) {
                 return false;
             }
             let isFriend = this.friendnames.indexOf(item.sharer) > -1;
@@ -1326,6 +1335,14 @@ module.exports = {
                 }
             }
             let isNewChat = this.isNewChat(filePath, isChat);
+            // comments and parent posts are loaded directly, so anything from a blocked user is hidden here
+            let author = socialPost != null ? socialPost.author : owner;
+            let hiddenBlocked = this.isBlockedUser(author) || this.isBlockedUser(owner);
+            if (hiddenBlocked) {
+                info = "";
+                name = "";
+                status = "";
+            }
             let item = {
                 sharer: sharer,
                 sharerThumbnail: "",
@@ -1336,8 +1353,8 @@ module.exports = {
                 path: path,
                 name: name,
                 fullName: props.name,
-                hasThumbnail: props.thumbnail.ref != null,
-                thumbnail: props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
+                hasThumbnail: ! hiddenBlocked && props.thumbnail.ref != null,
+                thumbnail: hiddenBlocked || props.thumbnail.ref == null ? null : file.getBase64Thumbnail(),
                 isDirectory: props.isDirectory,
                 file: file,
                 isLastEntry: false,
@@ -1350,7 +1367,8 @@ module.exports = {
                 isMedia: isMedia,
                 isChat: isChat,
                 isNewChat: isNewChat,
-                appName: appName
+                appName: appName,
+                hiddenBlocked: hiddenBlocked
             };
             return item;
         },

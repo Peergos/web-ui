@@ -52,6 +52,7 @@ module.exports = new Vuex.Store({
 			pending: [],
 			pendingOutgoing: [],
 			blocked: [],
+			unfollowed: [],
 			groupsNameToUid: {},
 			groupsUidToName: {},
 			groupUids: []
@@ -248,6 +249,9 @@ module.exports = new Vuex.Store({
 		SET_BLOCKED(state, payload) {
 			state.socialData.blocked = payload;
 		},
+		SET_UNFOLLOWED(state, payload) {
+			state.socialData.unfollowed = payload;
+		},
         //sandboxed Apps
         SET_FILE_EXTENSION_REGISTRATIONS(state, payload) {
             state.sandboxedApps.appFileExtensionRegistrationMap = payload;
@@ -392,6 +396,10 @@ module.exports = new Vuex.Store({
 				let blockedUsernames = [];
 				socialState.blocked.toArray([]).filter(u => u.length > 0).map(i => blockedUsernames.push(i));
 				commit('SET_BLOCKED', blockedUsernames)
+
+				// someone blocked is also unfollowed, but is only listed as blocked
+				let unfollowedUsernames = socialState.unfollowed.toArray([]).filter(u => u.length > 0 && ! blockedUsernames.includes(u));
+				commit('SET_UNFOLLOWED', unfollowedUsernames)
 
 				if (callback != null) {
 					callback()
