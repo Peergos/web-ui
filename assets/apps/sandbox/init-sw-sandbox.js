@@ -41,13 +41,23 @@ window.onmessage = event => {
                     return swReg.active.postMessage(data, [ports[0]])
                 }
 
-		swRegTmp.onstatechange = () => {
+                // A listener of its own for each download: a second one started while the worker
+                // installs would otherwise replace the first's, whose port then never arrives.
+                let onState = () => {
                     if (swRegTmp.state === 'activated') {
-                        swRegTmp.onstatechange = null
-                        swReg.active.postMessage(data, [ports[0]])
-                        keepAlive(swReg.active)
+                        swRegTmp.removeEventListener('statechange', onState)
+                        keepAlive(swRegTmp)
+                        swRegTmp.postMessage(data, [ports[0]])
+                    } else if (swRegTmp.state === 'redundant') {
+                        // replaced before it ever ran: hand over to whichever worker does
+                        swRegTmp.removeEventListener('statechange', onState)
+                        navigator.serviceWorker.ready.then(ready => {
+                            keepAlive(ready.active)
+                            ready.active.postMessage(data, [ports[0]])
+                        })
+                    }
                 }
-            }
+                swRegTmp.addEventListener('statechange', onState)
     })
 }
 

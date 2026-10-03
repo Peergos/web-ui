@@ -1,4 +1,5 @@
 import peergos.server.Builder;
+import peergos.shared.Crypto;
 import peergos.shared.NetworkAccess;
 
 import java.io.*;
@@ -58,6 +59,21 @@ public class Server implements AutoCloseable {
     }
 
     private static Server start(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
+        // A free port is only free when asked: the server binds it seconds later, once its jvm is
+        // up, and any connection made meanwhile can be handed the same one. Losing that race ends
+        // the process at startup, so it is started again on new ports rather than failing a test.
+        for (int attempt = 1; ; attempt++) {
+            try {
+                return launch(serverDir, maxUsers, extraArgs);
+            } catch (IllegalStateException e) {
+                if (attempt == 3 || ! String.valueOf(e.getMessage()).contains("Address already in use"))
+                    throw e;
+                System.out.println("  the test server lost its port before binding it, starting it again");
+            }
+        }
+    }
+
+    private static Server launch(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
         int port = freePort();
         // proxy-target is the second http server this starts, and it defaults to a fixed
         // 127.0.0.1:8003 - so without its own port a test server collides with any other Peergos
@@ -89,6 +105,7 @@ public class Server implements AutoCloseable {
         Server server = new Server(p, port, dataDir, log);
         server.awaitReady();
         server.awaitAccount();
+        server.awaitBootstrapped();
         return server;
     }
 
@@ -134,6 +151,33 @@ public class Server implements AutoCloseable {
             WebDriver.sleep(1000);
         }
         throw new IllegalStateException("The " + USERNAME + " account never appeared\n" + tailLog(), last);
+    }
+
+    /** pki-init goes on writing to the peergos account after it can log in: it makes releases and
+     *  recommended-apps public, the latter last. A test that signs in and writes before then races
+     *  it, and the server's own write losing that race ends the whole process - main exits on any
+     *  failure there. So the server is only handed over once that last folder is public.
+     */
+    private void awaitBootstrapped() {
+        long end = System.currentTimeMillis() + 300_000;
+        RuntimeException last = null;
+        Path lastFile = Paths.get(USERNAME, "recommended-apps", "index.html");
+        Crypto crypto = Builder.initCrypto();
+        while (System.currentTimeMillis() < end) {
+            if (! process.isAlive())
+                throw new IllegalStateException("Peergos server exited while setting up the "
+                        + USERNAME + " account with " + process.exitValue() + "\n" + tailLog());
+            try {
+                NetworkAccess network = Builder.buildJavaNetworkAccess(
+                        URI.create(url()).toURL(), false, Optional.empty(), Optional.empty()).join();
+                if (peergos.shared.user.UserContext.getPublicFile(lastFile, network, crypto).join().isPresent())
+                    return;
+            } catch (RuntimeException | java.io.IOException e) {
+                last = e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
+            }
+            WebDriver.sleep(1000);
+        }
+        throw new IllegalStateException("The " + USERNAME + " account was never fully set up\n" + tailLog(), last);
     }
 
     private String tailLog() {

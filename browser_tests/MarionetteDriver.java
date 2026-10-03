@@ -1,8 +1,12 @@
 import peergos.shared.io.ipfs.api.JSONParser;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.URI;
+import java.net.http.*;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.*;
 
 /** Firefox over Marionette, the protocol built into the browser.
@@ -48,30 +52,37 @@ public class MarionetteDriver implements WebDriver {
             this.in = s.getInputStream();
             this.out = s.getOutputStream();
             readFrame(); // the server's handshake
-            // Eager: navigation is done once the document is parsed, not once every
-            // subresource has settled. Every navigate in this suite is followed by a wait for
-            // what the test actually needs, so the load event was only ever an extra thing to
-            // hang on - and on a loaded windows runner it has hung, taking a page that was
-            // there and usable for one that was never coming.
-            try {
-                command("WebDriver:NewSession", Map.of("capabilities",
-                        Map.of("alwaysMatch", Map.of("pageLoadStrategy", "eager"))));
-            } catch (RuntimeException unsupported) {
-                command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
-            }
-            // Long enough that a page which is merely slow is not read as a page that will
-            // never come. Two minutes covers an ordinary machine; the runners flagged as slow
-            // have been seen to spend six and a half minutes on a single test, and a load
-            // that overran two of them there failed a test with nothing wrong with it.
-            long pageLoad = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 300_000 : 120_000;
-            try {
-                command("WebDriver:SetTimeouts", Map.of("pageLoad", pageLoad));
-            } catch (RuntimeException e) {
-                // an older marionette without the command; the default stands
-            }
+            startSession();
             focusAWindow();
         } catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /** Opens a session with the settings every navigation in the suite relies on. Used again
+     *  when a session is rebuilt: a new session starts from marionette's defaults, which wait
+     *  for the load event for five minutes - the very hang the settings below are there for. */
+    private void startSession() {
+        // Eager: navigation is done once the document is parsed, not once every
+        // subresource has settled. Every navigate in this suite is followed by a wait for
+        // what the test actually needs, so the load event was only ever an extra thing to
+        // hang on - and on a loaded windows runner it has hung, taking a page that was
+        // there and usable for one that was never coming.
+        try {
+            command("WebDriver:NewSession", Map.of("capabilities",
+                    Map.of("alwaysMatch", Map.of("pageLoadStrategy", "eager"))));
+        } catch (RuntimeException unsupported) {
+            command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+        }
+        // Long enough that a page which is merely slow is not read as a page that will
+        // never come. Two minutes covers an ordinary machine; the runners flagged as slow
+        // have been seen to spend six and a half minutes on a single test, and a load
+        // that overran two of them there failed a test with nothing wrong with it.
+        long pageLoad = "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 300_000 : 120_000;
+        try {
+            command("WebDriver:SetTimeouts", Map.of("pageLoad", pageLoad));
+        } catch (RuntimeException e) {
+            // an older marionette without the command; the default stands
         }
     }
 
@@ -174,7 +185,7 @@ public class MarionetteDriver implements WebDriver {
             } catch (RuntimeException e) {
                 // it is already unusable, which is why we are here
             }
-            command("WebDriver:NewSession", Map.of("capabilities", Map.of()));
+            startSession();
             frames.clear();
             focusAWindow();
             recovery = "restarted the session";
@@ -322,19 +333,90 @@ public class MarionetteDriver implements WebDriver {
                     return;
                 if (attempt + 1 < attempts) {
                     System.out.println("  page load timed out, navigating again: " + url);
-                    // A load that never finished leaves the session waiting on it, so asking
-                    // that same session for that same page is the step which has already
-                    // failed - two attempts at it spend ten minutes proving it twice. The
-                    // session is rebuilt first, which is what makes the second attempt a
-                    // different one. Only at the top level: inside a frame a restart throws
-                    // away the document under test, and there the plain retry is the safer of
-                    // the two.
-                    if (frames.isEmpty())
+                    // A load that never finished leaves the tab waiting on it, so asking that
+                    // tab for the same page again is the step which has already failed - even
+                    // with the load stopped, a windows runner has seen it go on loading nothing.
+                    // The next attempt is made in a new tab instead. Not by rebuilding the
+                    // session: a new session waits for the stuck load itself, so a rebuild costs
+                    // the whole socket timeout. Only at the top level: inside a frame, leaving
+                    // the tab would take the document under test with it.
+                    if (frames.isEmpty() && ! moveToFreshTab())
                         restartSession();
                 }
             }
         }
-        throw last;
+        throw new IllegalStateException(last.getMessage() + "\n  " + whyTheLoadHung(url), last);
+    }
+
+    /** Stops the stuck load and leaves its tab for a new one, which the session moves to. */
+    private boolean moveToFreshTab() {
+        try {
+            chromeScript("gBrowser.selectedBrowser.stop();");
+            Object created = command("WebDriver:NewWindow", Map.of("type", "tab", "focus", true));
+            Object handle = created instanceof Map ? ((Map<?, ?>) created).get("handle") : null;
+            if (handle == null)
+                return false;
+            // the session is still on the stuck tab, so this closes that one
+            command("WebDriver:CloseWindow", Map.of());
+            command("WebDriver:SwitchToWindow", Map.of("handle", String.valueOf(handle)));
+            return true;
+        } catch (RuntimeException e) {
+            System.out.println("  could not move to a fresh tab: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /** What was stuck when a page never came: the server, the browser's view of the page, or
+     *  the browser's own idea of what it is loading. The server is asked for the page itself,
+     *  since it routes on the host name, along with where that name resolves. */
+    private String whyTheLoadHung(String url) {
+        StringBuilder why = new StringBuilder("why the load hung:");
+        URI page = URI.create(url.contains("#") ? url.substring(0, url.indexOf('#')) : url);
+        try {
+            why.append("\n  ").append(page.getHost()).append(" is ")
+                    .append(Arrays.toString(InetAddress.getAllByName(page.getHost())));
+        } catch (IOException e) {
+            why.append("\n  ").append(page.getHost()).append(" does not resolve: ").append(e.getMessage());
+        }
+        long start = System.currentTimeMillis();
+        String answer;
+        try {
+            HttpResponse<byte[]> res = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                    .send(HttpRequest.newBuilder(page).timeout(Duration.ofSeconds(15)).build(),
+                            HttpResponse.BodyHandlers.ofByteArray());
+            answer = res.statusCode() + ", " + res.body().length + " bytes";
+        } catch (Exception e) {
+            answer = e.getClass().getSimpleName() + " " + e.getMessage();
+        }
+        why.append("\n  server: ").append(answer)
+                .append(" in ").append(System.currentTimeMillis() - start).append("ms");
+        try {
+            why.append("\n  page: ").append(value(command("WebDriver:ExecuteScript", Map.of("script",
+                    "return document.readyState + ' ' + location.href + ', '"
+                            + " + performance.getEntriesByType('resource').length + ' resources loaded'",
+                    "args", List.of()))));
+        } catch (RuntimeException e) {
+            why.append("\n  page: unreachable (").append(e.getMessage()).append(")");
+        }
+        try {
+            why.append("\n  tab: ").append(value(chromeScript(
+                    "const b = gBrowser.selectedBrowser;"
+                            + " return b.currentURI.spec + ' loading=' + b.webProgress.isLoadingDocument"
+                            + " + ' tabs=' + gBrowser.tabs.length + ' offline=' + Services.io.offline"
+                            + " + ' process=' + b.remoteType;")));
+        } catch (RuntimeException e) {
+            why.append("\n  tab: unreachable (").append(e.getMessage()).append(")");
+        }
+        // a navigation that never leaves about:blank can be one waiting on a content process
+        try {
+            why.append("\n  content processes: ").append(value(chromeScript(
+                    "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
+                            + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));")));
+        } catch (RuntimeException e) {
+            why.append("\n  content processes: unavailable (").append(e.getMessage()).append(")");
+        }
+        why.append("\n  ").append(windowSummary());
+        return why.toString();
     }
 
     /** Stamps the document we are leaving, so a navigation that times out can be told apart

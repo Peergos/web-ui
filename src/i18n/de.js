@@ -598,6 +598,7 @@ module.exports = {
     "ADMIN.TITLE":"Admin-Bereich",
     "ADMIN.REQUESTS":"Speicheranfragen",
     "ADMIN.REQUESTS.NONE":"Niemand wartet auf mehr Speicherplatz.",
+    "ADMIN.REQUESTS.FAILED":"Die Speicheranfragen konnten nicht geladen werden: $REASON",
     "ADMIN.DENY":"Ablehnen",
     "ADMIN.APPROVE":"Genehmigen",
     "ADMIN.APPROVED":"Speicheranfrage von $USER genehmigt",

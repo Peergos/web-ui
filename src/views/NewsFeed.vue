@@ -232,6 +232,7 @@ const fileIcon = require("../mixins/fileicon/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
+const errors = require("../mixins/errors/index.js");
 
 module.exports = {
     components: {
@@ -315,11 +316,11 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins, mixins, i18n, fileIcon],
+	mixins:[routerMixins, mixins, i18n, fileIcon, errors],
   	created: function() {
         let that = this;
         this.entryTree = new this.Tree(this);
-        this.context.getSocialFeed().thenApply(function(socialFeed) {
+        this.retryOnConflict(() => this.context.getSocialFeed()).thenApply(function(socialFeed) {
                 that.socialFeed = socialFeed;
                 that.messenger = new peergos.shared.messaging.Messenger(that.context);
                 that.showSpinner = true;

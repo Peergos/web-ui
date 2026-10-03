@@ -534,6 +534,7 @@ module.exports = {
     "ADMIN.TITLE":"管理面板",
     "ADMIN.REQUESTS":"空间申请",
     "ADMIN.REQUESTS.NONE":"没有人在等待更多空间。",
+    "ADMIN.REQUESTS.FAILED":"无法加载空间请求：$REASON",
     "ADMIN.DENY":"拒绝",
     "ADMIN.APPROVE":"批准",
     "ADMIN.APPROVED":"已批准 $USER 的空间申请",
