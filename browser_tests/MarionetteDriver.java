@@ -333,13 +333,14 @@ public class MarionetteDriver implements WebDriver {
                     return;
                 if (attempt + 1 < attempts) {
                     System.out.println("  page load timed out, navigating again: " + url);
-                    // A load that never finished leaves the tab waiting on it, so asking for
-                    // that same page again is the step which has already failed. The load is
-                    // stopped first, which is what makes the next attempt a different one.
-                    // Not by rebuilding the session: a new session waits for the stuck load
-                    // itself, so a rebuild costs the whole socket timeout. Only at the top level:
-                    // inside a frame the stop would take the document under test with it.
-                    if (frames.isEmpty() && ! stopLoading())
+                    // A load that never finished leaves the tab waiting on it, so asking that
+                    // tab for the same page again is the step which has already failed - even
+                    // with the load stopped, a windows runner has seen it go on loading nothing.
+                    // The next attempt is made in a new tab instead. Not by rebuilding the
+                    // session: a new session waits for the stuck load itself, so a rebuild costs
+                    // the whole socket timeout. Only at the top level: inside a frame, leaving
+                    // the tab would take the document under test with it.
+                    if (frames.isEmpty() && ! moveToFreshTab())
                         restartSession();
                 }
             }
@@ -347,12 +348,20 @@ public class MarionetteDriver implements WebDriver {
         throw new IllegalStateException(last.getMessage() + "\n  " + whyTheLoadHung(url), last);
     }
 
-    private boolean stopLoading() {
+    /** Stops the stuck load and leaves its tab for a new one, which the session moves to. */
+    private boolean moveToFreshTab() {
         try {
             chromeScript("gBrowser.selectedBrowser.stop();");
+            Object created = command("WebDriver:NewWindow", Map.of("type", "tab", "focus", true));
+            Object handle = created instanceof Map ? ((Map<?, ?>) created).get("handle") : null;
+            if (handle == null)
+                return false;
+            // the session is still on the stuck tab, so this closes that one
+            command("WebDriver:CloseWindow", Map.of());
+            command("WebDriver:SwitchToWindow", Map.of("handle", String.valueOf(handle)));
             return true;
         } catch (RuntimeException e) {
-            System.out.println("  could not stop the load: " + e.getMessage());
+            System.out.println("  could not move to a fresh tab: " + e.getMessage());
             return false;
         }
     }
@@ -394,9 +403,17 @@ public class MarionetteDriver implements WebDriver {
                     "const b = gBrowser.selectedBrowser;"
                             + " return b.currentURI.spec + ' loading=' + b.webProgress.isLoadingDocument"
                             + " + ' tabs=' + gBrowser.tabs.length + ' offline=' + Services.io.offline"
-                            + " + ' proxy=' + Services.prefs.getIntPref('network.proxy.type');")));
+                            + " + ' process=' + b.remoteType;")));
         } catch (RuntimeException e) {
             why.append("\n  tab: unreachable (").append(e.getMessage()).append(")");
+        }
+        // a navigation that never leaves about:blank can be one waiting on a content process
+        try {
+            why.append("\n  content processes: ").append(value(chromeScript(
+                    "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
+                            + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));")));
+        } catch (RuntimeException e) {
+            why.append("\n  content processes: unavailable (").append(e.getMessage()).append(")");
         }
         why.append("\n  ").append(windowSummary());
         return why.toString();
