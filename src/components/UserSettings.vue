@@ -165,7 +165,7 @@ module.exports = {
 		return {
 		    profileImage: "",
                     showAdmin: false,
-                    admindata: {pending:[]},
+                    admindata: {pending: null, error: null},
                     showSettingsSpinner: false,
                     chatResponseHeader: null,
                     showPrompt: false,
@@ -326,18 +326,22 @@ module.exports = {
 				}
 			});
 		},
+		// the panel opens at once: it also holds the invites, and a request list that fails to
+		// arrive is something to say inside it rather than a menu item that does nothing
 		showAdminPanel() {
 		    if (this.context == null) return;
-		    const that = this;
-		    this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
-			that.admindata.pending = reqs.toArray([]);
-			that.showAdmin = true;
-		    });
+		    this.admindata = {pending: null, error: null};
+		    this.showAdmin = true;
+		    this.recalculateAdminData();
 		},
 		recalculateAdminData() {
 		    const that = this;
             this.context.getAndDecodePendingSpaceRequests().thenApply(reqs => {
                 that.admindata.pending = reqs.toArray([]);
+                that.admindata.error = null;
+            }).exceptionally(t => {
+                that.admindata.error = String(t && t.getMessage ? t.getMessage() : t);
+                return null;
             });
 		},
 	    showRequestStorage() {

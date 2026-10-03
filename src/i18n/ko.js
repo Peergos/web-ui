@@ -598,6 +598,7 @@ module.exports = {
     "ADMIN.TITLE":"관리자 패널",
     "ADMIN.REQUESTS":"저장 공간 요청",
     "ADMIN.REQUESTS.NONE":"저장 공간을 기다리는 사용자가 없습니다.",
+    "ADMIN.REQUESTS.FAILED":"저장 공간 요청을 불러올 수 없습니다: $REASON",
     "ADMIN.DENY":"거절",
     "ADMIN.APPROVE":"승인",
     "ADMIN.APPROVED":"$USER 님의 저장 공간 요청을 승인했습니다",

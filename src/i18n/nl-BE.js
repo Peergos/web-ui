@@ -614,6 +614,7 @@ module.exports = {
     "ADMIN.TITLE":"Administratorspaneel",
     "ADMIN.REQUESTS":"Opslagaanvragen",
     "ADMIN.REQUESTS.NONE":"Niemand wacht op meer opslagruimte.",
+    "ADMIN.REQUESTS.FAILED":"De opslagaanvragen konden niet worden geladen: $REASON",
     "ADMIN.DENY":"Weigeren",
     "ADMIN.APPROVE":"Goedkeuren",
     "ADMIN.APPROVED":"Opslagaanvraag van $USER goedgekeurd",
