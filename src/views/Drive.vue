@@ -1747,7 +1747,7 @@ module.exports = {
                             }
                             let allowedFiles = arr.filter(function (f) {
                                 return that.disallowedFilenames.get(f.name()) == null
-                                    && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".from-friends.cborstream", ".groups-from-friends.cborstream", ".from-us.cborstream", ".feed", ".posts", ".annotations", ".blocked-usernames.txt", ".profile", ".messaging", ".social-state.cbor", ".transactions", "shared"].indexOf(f.name()) == -1);
+                                    && !f.name().includes("/") && (that.path.length != 1 || [".keystore", ".apps", ".capabilitycache", ".from-friends.cborstream", ".groups-from-friends.cborstream", ".from-us.cborstream", ".feed", ".posts", ".annotations", ".blocked-usernames.txt", ".blocked-users.cbor", ".profile", ".messaging", ".social-state.cbor", ".transactions", "shared"].indexOf(f.name()) == -1);
                             });
                             if (arr.length != allowedFiles.length && that.path.length != 1) {
                                 console.log('Folder contains files with disallowed filenames!');
@@ -1766,9 +1766,10 @@ module.exports = {
                                     
                                 current.getChildrenFromCaps(peergos.client.JsUtil.asSet(allowedFiles), {accept:function(results) {
                                     var arr = results.toArray();
-                                    let notHiddenFiles = arr.filter(function (f) {
-                                        return !f.getFileProperties().isHidden;
-                                    });
+                                    // the names above are listed before we know which are hidden
+                                    let hiddenWrappers = arr.filter(f => f.getFileProperties().isHidden).map(f => byName[f.getName()]);
+                                    if (hiddenWrappers.length > 0)
+                                        that.files = that.files.filter(w => hiddenWrappers.indexOf(w) == -1);
                                     for (var idx=0; idx < arr.length; idx++) {
                                         var wrapper = byName[arr[idx].getName()];
                                         var file = arr[idx];
