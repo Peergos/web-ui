@@ -407,7 +407,11 @@ module.exports = new Vuex.Store({
 
 
 			}).exceptionally(function(throwable) {
-				return `Error retrieving social state ${throwable.getMessage()}`
+				console.log(`Error retrieving social state ${throwable.getMessage()}`);
+				// let the caller finish, e.g. stop its spinner, rather than wait for ever
+				if (callback != null) {
+					callback(throwable)
+				}
 			});
 		}
 	}

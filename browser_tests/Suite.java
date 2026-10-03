@@ -68,6 +68,7 @@ public class Suite {
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
             run(failures, "a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             run(failures, "hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
+            run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
             run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));

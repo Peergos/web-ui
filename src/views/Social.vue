@@ -498,6 +498,8 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.RECIPROCATED"))
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
             });
         },
 
@@ -509,6 +511,8 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.ACCEPTED"))
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
             });
         },
 
@@ -520,6 +524,8 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.REJECTED"))
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
             });
         },
 
@@ -531,6 +537,8 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.REMOVED")+` ${username}`)
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
             });
         },
 
@@ -542,6 +550,17 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(that.translate("SOCIAL.STOPPED")+` ${username}`)
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
+            });
+        },
+
+        // show what went wrong, and the lists as they now are, rather than leave the spinner going
+        failed(throwable) {
+            let that = this;
+            this.$toast.error(throwable.getMessage());
+            this.updateSocial(() => {
+                that.showSpinner = false;
             });
         },
 
@@ -554,8 +573,7 @@ module.exports = {
                     that.$toast(that.translate("SOCIAL.FOLLOWING.AGAIN") + ` ${username}`);
                 });
             }).exceptionally(function(throwable) {
-                that.showSpinner = false;
-                that.$toast.error(throwable.getMessage());
+                that.failed(throwable);
             });
         },
 
@@ -568,8 +586,7 @@ module.exports = {
                     that.$toast(`${username} ` + that.translate("SOCIAL.BLOCKED.DONE"));
                 });
             }).exceptionally(function(throwable) {
-                that.showSpinner = false;
-                that.$toast.error(throwable.getMessage());
+                that.failed(throwable);
             });
         },
 
@@ -581,6 +598,8 @@ module.exports = {
                     that.showSpinner = false;
                     that.$toast(`${username} ` + that.translate("SOCIAL.UNBLOCKED"));
                 });
+            }).exceptionally(function(throwable) {
+                that.failed(throwable);
             });
         },
 
