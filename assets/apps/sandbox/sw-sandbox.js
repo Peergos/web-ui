@@ -131,6 +131,7 @@ function AppData() {
     this.fileMap = new Map();
     this.mimeTypeMap = new Map();
     this.etagMap = new Map();
+    this.sizeMap = new Map();
     this.fileStatusMap = new Map();
     this.isReady = function(fullPath) {
         var status = this.fileStatusMap.get(fullPath)
@@ -141,18 +142,22 @@ function AppData() {
         let mimeType = this.mimeTypeMap.get(fullPath);
         let result = this.resultMap.get(fullPath);
         let etag = this.etagMap.get(fullPath);
+        let size = this.sizeMap.get(fullPath);
 
         this.resultMap.delete(fullPath);
         this.fileMap.delete(fullPath);
         this.mimeTypeMap.delete(fullPath);
         this.etagMap.delete(fullPath);
+        this.sizeMap.delete(fullPath);
         this.fileStatusMap.delete(fullPath);
-        return {file: fileData, mimeType: mimeType, statusCode: result, etag: etag};
+        return {file: fileData, mimeType: mimeType, statusCode: result, etag: etag, size: size};
     }
     this.convertStatusCode = function(code) {
         if (code == '0') {        //              APP_FILE_MODE = 0
             return 200;
         } else if (code == '11') {     //              APP_STREAMING_MODE = 11
+            return 200;
+        } else if (code == '12') {     //              APP_HEAD_MODE = 12
             return 200;
         } else if (code == '2') { //            FILE_NOT_FOUND: 2,
             return 404;
@@ -195,7 +200,7 @@ function AppData() {
         let etag = etagSize > 0 ? new TextDecoder().decode(moreData.subarray(offset, offset + etagSize)) : null;
         offset = offset + etagSize;
         var fileSize = -1;
-        if (mode == 11) {
+        if (mode == 11 || mode == 12) {
             let sizeHigh = readUnsignedLeb128(moreData.subarray(offset, offset + 4));
             offset += unsignedLeb128Size(sizeHigh);
             let sizeLow = readUnsignedLeb128(moreData.subarray(offset, offset + 4));
@@ -219,7 +224,11 @@ function AppData() {
         newFile.set(moreData.subarray(offset), file.byteLength);
         this.fileMap.set(filePath, newFile);
 
-        if (mode == 11) {
+        if (mode == 12) {
+            // HEAD: header only, carrying the size of the file
+            this.sizeMap.set(filePath, fileSize);
+            this.fileStatusMap.set(filePath, true);
+        } else if (mode == 11) {
             if (combinedSize == fileSize) {
                 this.fileStatusMap.set(filePath, true);
             }
@@ -571,7 +580,7 @@ function returnAppData(method, filePath, uniqueId, ignoreBody) {
             });
         } else {
             respHeaders.push(['Content-Type', fileData.mimeType]);
-            respHeaders.push(['Content-Length', fileData.file.byteLength]);
+            respHeaders.push(['Content-Length', fileData.size != null ? fileData.size : fileData.file.byteLength]);
             if (fileData.etag) respHeaders.push(['ETag', fileData.etag]);
             return new Response(fileData.file.byteLength == 0 || ignoreBody ? null : fileData.file, {
                 status: fileData.statusCode,

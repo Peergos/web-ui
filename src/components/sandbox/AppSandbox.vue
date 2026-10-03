@@ -879,7 +879,9 @@ module.exports = {
             var offset = 0;
             var mode = 0;
             if (streamingInfo != null) {
-                if (streamingInfo.appFileStreaming) {
+                if (streamingInfo.headOnly) {
+                    mode = 12;
+                } else if (streamingInfo.appFileStreaming) {
                     mode = 11;
                 } else {
                     mode = 1;
@@ -926,6 +928,7 @@ module.exports = {
         actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
             let that = this;
             let headerFunc = (mimeType, streamingInfo, etag = null) => that.buildHeader(path, mimeType, requestId, streamingInfo, etag);
+            headerFunc.isHead = requestId.startsWith("HEAD-");
             if (this.browserMode) {
                 if (this.isAppGalleryMode) {
                     if (!(apiMethod == 'GET' || apiMethod == 'POST' )) {
@@ -3932,7 +3935,11 @@ module.exports = {
             let treeHash = props.treeHash;
             let etag = treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
             let maxChunkSize = 1024 * 1024 * 10;
-            if (size < maxChunkSize) {
+            if (headerFunc.isHead) {
+                // answer HEAD from the file properties without reading the file
+                let headInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), headOnly: true};
+                that.postData(convertToByteArray(headerFunc(props.mimeType, headInfo, etag)));
+            } else if (size < maxChunkSize) {
                 let header = headerFunc(props.mimeType, null, etag);
                 file.getLatest(this.context.network).thenApply(updatedFile => {
                     updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
