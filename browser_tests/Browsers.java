@@ -95,7 +95,22 @@ public class Browsers {
         }
     }
 
+    /** A launched firefox: its marionette port, its process and its profile directory. */
+    public record Launched(int port, Process process, String profile) {}
+
     private static WebDriver firefox(Path downloadDir, boolean headless) throws IOException {
+        Launched l = launchFirefox(downloadDir, headless);
+        // the driver can start a fresh browser itself when a first load is lost, see navigate()
+        return new MarionetteDriver(l.port(), l.process(), l.profile(), () -> {
+            try {
+                return launchFirefox(downloadDir, headless);
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    private static Launched launchFirefox(Path downloadDir, boolean headless) throws IOException {
         Path profile = Temp.directory("peergos-ff-profile-");
         int port = freePort();
         // Marionette reads its port from the profile, so there is no race with a fixed one.
@@ -135,8 +150,7 @@ public class Browsers {
         if (headless)
             cmd.add("--headless");
         cmd.add("about:blank");
-        Process p = start(cmd);
-        return new MarionetteDriver(port, p, profile.toString());
+        return new Launched(port, start(cmd), profile.toString());
     }
 
     /** user.js is javascript, so a windows path's backslashes have to be escaped or the pref
