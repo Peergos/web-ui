@@ -129,7 +129,13 @@ public class NewsFeedViewTest {
 
     static void openFeed(WebDriver d) {
         Page.gotoView(d, "Newsfeed", "addNewPost", "__feed");
-        d.waitForScript("the feed", "!window.__feed.buildingFeed && !!document.querySelector('#feed')", 120_000);
+        try {
+            d.waitForScript("the feed", "!window.__feed.buildingFeed && !!document.querySelector('#feed')", 120_000);
+        } catch (RuntimeException neverBuilt) {
+            System.out.println("  the feed never built, the page showing: " + d.script(
+                    "return JSON.stringify([...document.querySelectorAll('.Vue-Toastification__toast')].map(t => t.textContent.trim()))"));
+            throw neverBuilt;
+        }
     }
 
     static String feedText(WebDriver d) {
@@ -147,8 +153,28 @@ public class NewsFeedViewTest {
         d.script("const t = document.querySelector('#social-post-text'); t.value = arguments[0];"
                 + " t.dispatchEvent(new Event('input', {bubbles: true}));"
                 + " if (arguments[1] && document.querySelector('#friends-option')) document.querySelector('#friends-option').click(); return 1;", text, toFriends);
-        d.waitForScript("posting allowed", "!document.querySelector('#prompt-button-id').disabled", 10_000);
-        d.script("document.querySelector('#prompt-button-id').click(); return 1;");
+        // the composer's own button: every prompt in the app shares this id, and one of those
+        // mounted elsewhere would be the button waited on and clicked instead
+        String button = "document.querySelector('.social-post #prompt-button-id')";
+        d.waitForScript("posting allowed", "!" + button + ".disabled", 10_000);
+        // a post that fails says so in a toast that has faded long before a timeout here, so keep
+        // every toast from the click on
+        d.script("window.__toastsSeen = []; if (window.__toastWatch) window.__toastWatch.disconnect();"
+                + " window.__toastWatch = new MutationObserver(() => document.querySelectorAll('.Vue-Toastification__toast').forEach(t => {"
+                + "   const x = t.textContent.trim(); if (x && ! window.__toastsSeen.includes(x)) window.__toastsSeen.push(x); }));"
+                + " window.__toastWatch.observe(document.body, {childList: true, subtree: true, characterData: true}); return 1;");
+        // and count the composer's own steps, so a post that never closes can say whether the
+        // click reached it at all, and whether it asked to be closed
+        d.script("const feed = document.querySelector('.newsfeed-view').__vue__, q = [feed]; let p = null;"
+                + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(...c.$children); }"
+                + " window.__postCalls = {submit: 0, close: 0, errors: []};"
+                + " if (p) { const s = p.submitPost, c = p.closeSocialPostForm;"
+                + "   p.submitPost = function() { window.__postCalls.submit++; return s.apply(this, arguments); };"
+                + "   p.closeSocialPostForm = function() { window.__postCalls.close++; return c.apply(this, arguments); }; }"
+                + " window.addEventListener('error', e => window.__postCalls.errors.push(String(e.message)));"
+                + " window.addEventListener('unhandledrejection', e => window.__postCalls.errors.push('rejected: ' + String(e.reason)));"
+                + " return !! p;");
+        d.script(button + ".click(); return 1;");
         // saving a post is a write and a share, which a busy runner can take over a minute over
         try {
             d.waitForScript("the composer closed", "!document.querySelector('#social-post-text')", 120_000);
@@ -169,7 +195,9 @@ public class NewsFeedViewTest {
                     + " const text = document.querySelector('#social-post-text'), dialog = text && text.closest('.pg-dialog__mask');"
                     + " return JSON.stringify({open: !! p, posting: p && p.isPosting, spinner: p && p.showSpinner, shareWith: p && p.shareWith,"
                     + "   dialog: dialog && dialog.className, groups: Object.keys(feed.$store.state.socialData.groupsNameToUid),"
-                    + "   friends: feed.$store.state.socialData.friends,"
+                    + "   friends: feed.$store.state.socialData.friends, text: p && p.post,"
+                    + "   toastsSinceThePost: window.__toastsSeen || [],"
+                    + "   calls: window.__postCalls,"
                     + "   toasts: [...document.querySelectorAll('.Vue-Toastification__toast')].map(t => t.textContent.trim())});"));
         } catch (RuntimeException e) {
             System.out.println("  the composer could not be read: " + e.getMessage());
