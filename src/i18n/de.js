@@ -624,5 +624,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Einladung widerrufen",
     "ADMIN.INVITES.CANCELLED":"Einladung wurde widerrufen",
     "ADMIN.INVITES.USED":"Diese Einladung wurde bereits verwendet",
-    "ADMIN.INVITES.CANCEL.ERROR":"Die Einladung konnte nicht widerrufen werden: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Die Einladung konnte nicht widerrufen werden: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME möchte einen Ordner Ihrer Wahl lesen",
+    "APP.GRANT.TITLE.WRITE":"$NAME möchte Dateien in einem Ordner Ihrer Wahl speichern",
+    "APP.GRANT.CHOICES":"Zugriff",
+    "APP.GRANT.WRITE":"Dieser App erlauben, hier Dateien zu ändern",
+    "APP.GRANT.PERSIST":"Merken, bis ich es widerrufe",
+    "APP.GRANT.REFUSED":"$PATH konnte der App nicht freigegeben werden",
+    "APP.GRANT.STALE.CHANGED":"$NAME hatte Zugriff auf $PATH, das sich geändert hat. Erneut erlauben?",
+    "APP.GRANT.STALE.GONE":"Der Ordner, auf den $NAME Zugriff hatte, existiert nicht mehr. Vergessen?",
+    "APP.GRANT.STALE.RESTORED":"$PATH ist für die App wieder verfügbar",
+    "APPDETAILS.FOLDERS":"Ordnerzugriff",
+    "APPDETAILS.FOLDERS.READ":"Nur lesen",
+    "APPDETAILS.FOLDERS.WRITE":"Lesen und schreiben",
+    "APPDETAILS.FOLDERS.STALE":"Nicht mehr verfügbar",
+    "APPDETAILS.FOLDERS.REVOKE":"Widerrufen",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Alle widerrufen",
+    "APPDETAILS.FOLDERS.NOTE":"Durch das Widerrufen kann diese App den Ordner nicht mehr verwenden. Der Ordner und seine Dateien bleiben unverändert."
 }

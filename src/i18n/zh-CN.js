@@ -560,5 +560,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"取消邀请",
     "ADMIN.INVITES.CANCELLED":"已取消邀请",
     "ADMIN.INVITES.USED":"该邀请已被使用",
-    "ADMIN.INVITES.CANCEL.ERROR":"无法取消邀请：$REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"无法取消邀请：$REASON",
+    "APP.GRANT.TITLE.READ":"$NAME 想要读取您选择的文件夹",
+    "APP.GRANT.TITLE.WRITE":"$NAME 想要在您选择的文件夹中保存文件",
+    "APP.GRANT.CHOICES":"访问权限",
+    "APP.GRANT.WRITE":"允许此应用更改此处的文件",
+    "APP.GRANT.PERSIST":"记住此授权，直到我撤销",
+    "APP.GRANT.REFUSED":"无法将 $PATH 授予该应用",
+    "APP.GRANT.STALE.CHANGED":"$NAME 曾有权访问 $PATH，但该文件夹已更改。是否再次允许？",
+    "APP.GRANT.STALE.GONE":"$NAME 曾有权访问的文件夹已不存在。是否忘记它？",
+    "APP.GRANT.STALE.RESTORED":"该应用可以再次使用 $PATH",
+    "APPDETAILS.FOLDERS":"文件夹访问",
+    "APPDETAILS.FOLDERS.READ":"只读",
+    "APPDETAILS.FOLDERS.WRITE":"读写",
+    "APPDETAILS.FOLDERS.STALE":"已不可用",
+    "APPDETAILS.FOLDERS.REVOKE":"撤销",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"全部撤销",
+    "APPDETAILS.FOLDERS.NOTE":"撤销后此应用将不再使用该文件夹。文件夹及其文件不会被更改。"
 }

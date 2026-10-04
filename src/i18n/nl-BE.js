@@ -640,5 +640,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Uitnodiging annuleren",
     "ADMIN.INVITES.CANCELLED":"Uitnodiging geannuleerd",
     "ADMIN.INVITES.USED":"Die uitnodiging was al gebruikt",
-    "ADMIN.INVITES.CANCEL.ERROR":"Kan de uitnodiging niet annuleren: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Kan de uitnodiging niet annuleren: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME wil een map van uw keuze lezen",
+    "APP.GRANT.TITLE.WRITE":"$NAME wil bestanden opslaan in een map van uw keuze",
+    "APP.GRANT.CHOICES":"Toegang",
+    "APP.GRANT.WRITE":"Deze app hier bestanden laten wijzigen",
+    "APP.GRANT.PERSIST":"Onthouden tot ik het intrek",
+    "APP.GRANT.REFUSED":"Kon de app geen toegang geven tot $PATH",
+    "APP.GRANT.STALE.CHANGED":"$NAME had toegang tot $PATH, dat is gewijzigd. Opnieuw toestaan?",
+    "APP.GRANT.STALE.GONE":"De map waartoe $NAME toegang had, bestaat niet meer. Vergeten?",
+    "APP.GRANT.STALE.RESTORED":"$PATH is weer beschikbaar voor de app",
+    "APPDETAILS.FOLDERS":"Toegang tot mappen",
+    "APPDETAILS.FOLDERS.READ":"Alleen lezen",
+    "APPDETAILS.FOLDERS.WRITE":"Lezen en schrijven",
+    "APPDETAILS.FOLDERS.STALE":"Niet meer beschikbaar",
+    "APPDETAILS.FOLDERS.REVOKE":"Intrekken",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Alles intrekken",
+    "APPDETAILS.FOLDERS.NOTE":"Intrekken zorgt ervoor dat deze app de map niet meer gebruikt. De map en de bestanden erin worden niet gewijzigd."
 }

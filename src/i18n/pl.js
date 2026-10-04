@@ -584,5 +584,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Anuluj zaproszenie",
     "ADMIN.INVITES.CANCELLED":"Anulowano zaproszenie",
     "ADMIN.INVITES.USED":"To zaproszenie zostało już wykorzystane",
-    "ADMIN.INVITES.CANCEL.ERROR":"Nie udało się anulować zaproszenia: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Nie udało się anulować zaproszenia: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME chce odczytać wybrany przez Ciebie folder",
+    "APP.GRANT.TITLE.WRITE":"$NAME chce zapisywać pliki w wybranym przez Ciebie folderze",
+    "APP.GRANT.CHOICES":"Dostęp",
+    "APP.GRANT.WRITE":"Pozwól tej aplikacji zmieniać tu pliki",
+    "APP.GRANT.PERSIST":"Zapamiętaj, dopóki tego nie cofnę",
+    "APP.GRANT.REFUSED":"Nie udało się udostępnić aplikacji $PATH",
+    "APP.GRANT.STALE.CHANGED":"$NAME miała dostęp do $PATH, który się zmienił. Zezwolić ponownie?",
+    "APP.GRANT.STALE.GONE":"Folder, do którego $NAME miała dostęp, już nie istnieje. Zapomnieć go?",
+    "APP.GRANT.STALE.RESTORED":"$PATH jest ponownie dostępny dla aplikacji",
+    "APPDETAILS.FOLDERS":"Dostęp do folderów",
+    "APPDETAILS.FOLDERS.READ":"Tylko odczyt",
+    "APPDETAILS.FOLDERS.WRITE":"Odczyt i zapis",
+    "APPDETAILS.FOLDERS.STALE":"Już niedostępny",
+    "APPDETAILS.FOLDERS.REVOKE":"Cofnij",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Cofnij wszystkie",
+    "APPDETAILS.FOLDERS.NOTE":"Cofnięcie sprawia, że ta aplikacja przestaje używać folderu. Folder i jego pliki nie zostają zmienione."
 }

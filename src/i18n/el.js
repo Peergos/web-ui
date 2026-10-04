@@ -765,5 +765,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Ακύρωση πρόσκλησης",
     "ADMIN.INVITES.CANCELLED":"Η πρόσκληση ακυρώθηκε",
     "ADMIN.INVITES.USED":"Αυτή η πρόσκληση είχε ήδη χρησιμοποιηθεί",
-    "ADMIN.INVITES.CANCEL.ERROR":"Δεν ήταν δυνατή η ακύρωση της πρόσκλησης: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Δεν ήταν δυνατή η ακύρωση της πρόσκλησης: $REASON",
+    "APP.GRANT.TITLE.READ":"Η εφαρμογή $NAME θέλει να διαβάσει έναν φάκελο της επιλογής σας",
+    "APP.GRANT.TITLE.WRITE":"Η εφαρμογή $NAME θέλει να αποθηκεύσει αρχεία σε έναν φάκελο της επιλογής σας",
+    "APP.GRANT.CHOICES":"Πρόσβαση",
+    "APP.GRANT.WRITE":"Να επιτρέπεται σε αυτή την εφαρμογή να αλλάζει αρχεία εδώ",
+    "APP.GRANT.PERSIST":"Να θυμάται μέχρι να το ανακαλέσω",
+    "APP.GRANT.REFUSED":"Δεν ήταν δυνατή η παραχώρηση του $PATH στην εφαρμογή",
+    "APP.GRANT.STALE.CHANGED":"Η εφαρμογή $NAME είχε πρόσβαση στο $PATH, το οποίο έχει αλλάξει. Να επιτραπεί ξανά;",
+    "APP.GRANT.STALE.GONE":"Ο φάκελος στον οποίο είχε πρόσβαση η εφαρμογή $NAME δεν υπάρχει πια. Να ξεχαστεί;",
+    "APP.GRANT.STALE.RESTORED":"Το $PATH είναι ξανά διαθέσιμο στην εφαρμογή",
+    "APPDETAILS.FOLDERS":"Πρόσβαση σε φακέλους",
+    "APPDETAILS.FOLDERS.READ":"Μόνο ανάγνωση",
+    "APPDETAILS.FOLDERS.WRITE":"Ανάγνωση και εγγραφή",
+    "APPDETAILS.FOLDERS.STALE":"Δεν είναι πλέον διαθέσιμος",
+    "APPDETAILS.FOLDERS.REVOKE":"Ανάκληση",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Ανάκληση όλων",
+    "APPDETAILS.FOLDERS.NOTE":"Η ανάκληση σταματά τη χρήση του φακέλου από αυτή την εφαρμογή. Ο φάκελος και τα αρχεία του δεν αλλάζουν."
 }

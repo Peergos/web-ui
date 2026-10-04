@@ -17,6 +17,8 @@ let mailboxRequest = apiRequest + "/mailbox/";
 let saveRequest = apiRequest + "/save/";
 let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
+let grantsRequest = apiRequest + "/grants/";
+let folderRequest = apiRequest + "/folder/";
 let printRequest = apiRequest + "/print/";
 let profileRequest = apiRequest + "/profile/";
 let installAppRequest = apiRequest + "/install-app/";
@@ -177,6 +179,8 @@ function AppData() {
             return 204;
         } else if (code == '10') { //            NAVIGATE_TO: 10,
             return 404;
+        } else if (code == '13') { //            FORBIDDEN: 13,
+            return 403;
         } else {
             return 400;
         }
@@ -448,6 +452,15 @@ function appFetch(event) {
                 }
                 restFilePath = restFilePath.substring(foldersRequest.length);
                 api = foldersRequest;
+            } else if (filePath.startsWith(grantsRequest) || filePath + '/' == grantsRequest) {
+                if (!(method == 'GET' || method == 'DELETE')) {
+                    return new Response('Unknown grants action!', {status: 400})
+                }
+                restFilePath = filePath.length > grantsRequest.length ? restFilePath.substring(grantsRequest.length) : '';
+                api = grantsRequest;
+            } else if (filePath.startsWith(folderRequest)) {
+                restFilePath = restFilePath.substring(folderRequest.length);
+                api = folderRequest;
             } else if (filePath.startsWith(profileRequest)) {
                 if (method != 'GET') {
                     return new Response('Unknown profile action!', {status: 400})

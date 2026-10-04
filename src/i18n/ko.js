@@ -624,5 +624,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"초대 취소",
     "ADMIN.INVITES.CANCELLED":"초대를 취소했습니다",
     "ADMIN.INVITES.USED":"이미 사용된 초대입니다",
-    "ADMIN.INVITES.CANCEL.ERROR":"초대를 취소하지 못했습니다: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"초대를 취소하지 못했습니다: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME 앱이 선택한 폴더를 읽으려고 합니다",
+    "APP.GRANT.TITLE.WRITE":"$NAME 앱이 선택한 폴더에 파일을 저장하려고 합니다",
+    "APP.GRANT.CHOICES":"접근 권한",
+    "APP.GRANT.WRITE":"이 앱이 여기에서 파일을 변경하도록 허용",
+    "APP.GRANT.PERSIST":"취소할 때까지 기억",
+    "APP.GRANT.REFUSED":"앱에 $PATH 접근 권한을 줄 수 없습니다",
+    "APP.GRANT.STALE.CHANGED":"$NAME 앱이 접근하던 $PATH 폴더가 변경되었습니다. 다시 허용하시겠습니까?",
+    "APP.GRANT.STALE.GONE":"$NAME 앱이 접근하던 폴더가 더 이상 존재하지 않습니다. 삭제하시겠습니까?",
+    "APP.GRANT.STALE.RESTORED":"앱에서 $PATH 폴더를 다시 사용할 수 있습니다",
+    "APPDETAILS.FOLDERS":"폴더 접근",
+    "APPDETAILS.FOLDERS.READ":"읽기 전용",
+    "APPDETAILS.FOLDERS.WRITE":"읽기 및 쓰기",
+    "APPDETAILS.FOLDERS.STALE":"더 이상 사용할 수 없음",
+    "APPDETAILS.FOLDERS.REVOKE":"취소",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"모두 취소",
+    "APPDETAILS.FOLDERS.NOTE":"취소하면 이 앱은 더 이상 폴더를 사용할 수 없습니다. 폴더와 파일은 변경되지 않습니다."
 }
