@@ -400,15 +400,20 @@ module.exports = {
 		// App.vue from a secret link
 	    } else {
             this.updateMirrorBatId();
+            // none of these need the launcher, so a launcher that fails to come up at sign-in
+            // leaves the account its usage, plan, admin rights and apps all the same
+            this.updateUsage();
+            this.updateQuota();
+            this.updatePayment();
+            this.updateAdmin();
+            this.initSandboxedApps();
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
                     that.$store.commit("SET_SHORTCUTS", shortcutsMap);
-                    that.updateUsage();
-                    that.updateQuota();
-                    that.updatePayment();
-                    that.updateAdmin();
-                    that.initSandboxedApps();
-                })
+                });
+            }).exceptionally(t => {
+                console.log("Couldn't start the launcher: " + t);
+                return null;
             });
             this.checkForNewerRelease();
 	    }
