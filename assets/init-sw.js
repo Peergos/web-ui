@@ -41,7 +41,7 @@ window.onmessage = event => {
 
 		let swRegTmp = swReg.installing || swReg.waiting
                 // A registration can have no worker in any of the three states, briefly, while
-                // one is being replaced. Reading onstatechange off nothing throws, and with no
+                // one is being replaced. Listening on nothing throws, and with no
                 // catch on this chain the port is simply never handed over: the download then
                 // waits for a url that cannot arrive, showing progress it is not making.
                 if (swRegTmp == null) {
@@ -51,13 +51,23 @@ window.onmessage = event => {
                     })
                 }
 
-		swRegTmp.onstatechange = () => {
+                // A listener of its own for each download: a second one started while the worker
+                // installs would otherwise replace the first's, whose port then never arrives.
+                let onState = () => {
                     if (swRegTmp.state === 'activated') {
-                        swRegTmp.onstatechange = null
-                        swReg.active.postMessage(data, [ports[0]])
-                        keepAlive(swReg.active)
+                        swRegTmp.removeEventListener('statechange', onState)
+                        keepAlive(swRegTmp)
+                        swRegTmp.postMessage(data, [ports[0]])
+                    } else if (swRegTmp.state === 'redundant') {
+                        // replaced before it ever ran: hand over to whichever worker does
+                        swRegTmp.removeEventListener('statechange', onState)
+                        navigator.serviceWorker.ready.then(ready => {
+                            keepAlive(ready.active)
+                            ready.active.postMessage(data, [ports[0]])
+                        })
+                    }
                 }
-            }
+                swRegTmp.addEventListener('statechange', onState)
     }).catch(e => {
         // Nothing downstream is watching this chain, so a failure here is otherwise invisible
         console.log('could not hand the download to the service worker', e)
