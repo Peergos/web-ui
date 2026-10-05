@@ -585,5 +585,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Annuler l'invitation",
     "ADMIN.INVITES.CANCELLED":"Invitation annulée",
     "ADMIN.INVITES.USED":"Cette invitation avait déjà été utilisée",
-    "ADMIN.INVITES.CANCEL.ERROR":"Impossible d'annuler l'invitation : $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Impossible d'annuler l'invitation : $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME souhaite lire un dossier de votre choix",
+    "APP.GRANT.TITLE.WRITE":"$NAME souhaite enregistrer des fichiers dans un dossier de votre choix",
+    "APP.GRANT.CHOICES":"Accès",
+    "APP.GRANT.WRITE":"Autoriser cette application à modifier des fichiers ici",
+    "APP.GRANT.PERSIST":"S'en souvenir jusqu'à ce que je le révoque",
+    "APP.GRANT.REFUSED":"Impossible de donner $PATH à l'application",
+    "APP.GRANT.STALE.CHANGED":"$NAME avait accès à $PATH, qui a changé. L'autoriser à nouveau ?",
+    "APP.GRANT.STALE.GONE":"Le dossier auquel $NAME avait accès n'existe plus. L'oublier ?",
+    "APP.GRANT.STALE.RESTORED":"$PATH est de nouveau disponible pour l'application",
+    "APPDETAILS.FOLDERS":"Accès aux dossiers",
+    "APPDETAILS.FOLDERS.READ":"Lecture seule",
+    "APPDETAILS.FOLDERS.WRITE":"Lecture et écriture",
+    "APPDETAILS.FOLDERS.STALE":"N'est plus disponible",
+    "APPDETAILS.FOLDERS.REVOKE":"Révoquer",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Tout révoquer",
+    "APPDETAILS.FOLDERS.NOTE":"Révoquer empêche cette application d'utiliser le dossier. Le dossier et ses fichiers ne sont pas modifiés."
 }

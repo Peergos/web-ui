@@ -127,9 +127,9 @@ module.exports = {
     created: function() {
         let that = this;
         this.folderPickerTitle = this.pickerTitle != null ? this.pickerTitle : this.translate("FOLDER.PICKER.TITLE");
-        // start every choice off: the picker is recreated per use, and inheriting the
-        // previous answer would silently apply it to the next folder
-        this.choices.forEach(c => Vue.set(this.chosen, c.key, false));
+        // start every choice as the caller states it, else off: the picker is recreated per use,
+        // and inheriting the previous answer would silently apply it to the next folder
+        this.choices.forEach(c => Vue.set(this.chosen, c.key, c.checked === true));
         this.selectedFoldersList = this.initiallySelectedPaths.slice();
         let numberOfFriends = this.friendnames.length;
         let doNotShowDriveSelection = this.noDriveSelection !=null && this.noDriveSelection === true;

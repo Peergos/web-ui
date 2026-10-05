@@ -585,5 +585,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Annulla invito",
     "ADMIN.INVITES.CANCELLED":"Invito annullato",
     "ADMIN.INVITES.USED":"Quell'invito era già stato usato",
-    "ADMIN.INVITES.CANCEL.ERROR":"Impossibile annullare l'invito: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Impossibile annullare l'invito: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME vuole leggere una cartella a tua scelta",
+    "APP.GRANT.TITLE.WRITE":"$NAME vuole salvare file in una cartella a tua scelta",
+    "APP.GRANT.CHOICES":"Accesso",
+    "APP.GRANT.WRITE":"Consenti a questa app di modificare i file qui",
+    "APP.GRANT.PERSIST":"Ricorda finché non lo revoco",
+    "APP.GRANT.REFUSED":"Impossibile concedere $PATH all'app",
+    "APP.GRANT.STALE.CHANGED":"$NAME aveva accesso a $PATH, che è cambiato. Consentire di nuovo?",
+    "APP.GRANT.STALE.GONE":"La cartella a cui $NAME aveva accesso non esiste più. Dimenticarla?",
+    "APP.GRANT.STALE.RESTORED":"$PATH è di nuovo disponibile per l'app",
+    "APPDETAILS.FOLDERS":"Accesso alle cartelle",
+    "APPDETAILS.FOLDERS.READ":"Sola lettura",
+    "APPDETAILS.FOLDERS.WRITE":"Lettura e scrittura",
+    "APPDETAILS.FOLDERS.STALE":"Non più disponibile",
+    "APPDETAILS.FOLDERS.REVOKE":"Revoca",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Revoca tutto",
+    "APPDETAILS.FOLDERS.NOTE":"La revoca impedisce a questa app di usare la cartella. La cartella e i suoi file non vengono modificati."
 }

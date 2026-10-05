@@ -45,7 +45,11 @@
             :baseFolder="folderPickerBaseFolder"
             :selectedFolder_func="selectedFoldersFromPicker"
             :multipleFolderSelection="multipleFolderSelection"
-            :initiallySelectedPaths="initiallySelectedPaths">
+            :initiallySelectedPaths="initiallySelectedPaths"
+            :noDriveSelection="folderPickerNoDriveSelection"
+            :pickerTitle="folderPickerTitle"
+            :pickerChoices="folderPickerChoices"
+            :pickerChoicesTitle="folderPickerChoicesTitle">
         </FolderPicker>
         <AppPrompt
             v-if="showPrompt"
@@ -195,6 +199,7 @@ module.exports = {
             GET_SUCCESS: 8,
             PATCH_SUCCESS: 9,
             NAVIGATE_TO: 10,
+            FORBIDDEN: 13,
             isIframeInitialised: false,
             appPath: '',
             appSubdomain: '',
@@ -240,6 +245,12 @@ module.exports = {
             folderPickerBaseFolder: "",
             multipleFolderSelection: true,
             initiallySelectedPaths: [],
+            folderPickerNoDriveSelection: false,
+            folderPickerTitle: null,
+            folderPickerChoices: null,
+            folderPickerChoicesTitle: null,
+            grantsInUse: new Map(),
+            staleGrantsPrompted: new Set(),
             filePickerBaseFolder: "",
             selectedFolders: [],
             selectedFolderStems: [],
@@ -814,6 +825,16 @@ module.exports = {
             if (this.browserMode && streamFilePath.includes('/.')) {
                 that.showError('Path not accessible: ' + streamFilePath);
             } else {
+                let grantPrefix = that.apiRequest + '/folder/';
+                if (!this.browserMode && streamFilePath.startsWith(grantPrefix)) {
+                    let grantPath = streamFilePath.substring(grantPrefix.length);
+                    this.resolveGrantedPath(grantPath).thenApply(fileOpt => {
+                        if (fileOpt.ref != null && !fileOpt.get().isDirectory()) {
+                            that.stream(seekHi, seekLo, seekLength, fileOpt.get(), originalStreamFilePath);
+                        }
+                    }).exceptionally(t => console.log(t.getMessage()));
+                    return;
+                }
                 var prefix = '';
                 if (!this.browserMode && !streamFilePath.startsWith(this.appPath)) {
                     if(streamFilePath.startsWith(that.apiRequest + '/data')) {
@@ -978,6 +999,10 @@ module.exports = {
                     that.handleFilePickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/folders/') {
                     that.handleFolderPickerRequest(headerFunc, path, apiMethod, data, hasFormData, params);
+                } else if (api =='/peergos-api/v0/grants/') {
+                    that.handleGrantsRequest(headerFunc, path, apiMethod);
+                } else if (api =='/peergos-api/v0/folder/') {
+                    that.handleGrantedFolderRequest(headerFunc, path, apiMethod, data, hasFormData, params);
                 } else if (api =='/peergos-api/v0/profile/') {
                     that.handleProfileRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
                 } else {
@@ -1231,6 +1256,26 @@ module.exports = {
                     this.multipleFolderSelection = false;
                 }
                 this.folderPickerBaseFolder = "/" + this.context.username;
+                let writeParam = params.get('write');
+                let persistParam = params.get('persist');
+                if (writeParam != null || persistParam != null) {
+                    if (this.sandboxedApp == null) {
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        return;
+                    }
+                    let wantWrite = writeParam != null && writeParam.toLowerCase() == 'true';
+                    let wantPersist = persistParam != null && persistParam.toLowerCase() == 'true';
+                    this.showGrantPicker(wantWrite, wantPersist, grants => {
+                        let encoder = new TextEncoder();
+                        let data = encoder.encode(JSON.stringify(grants));
+                        that.buildResponse(headerFunc("application/json"), data, that.UPDATE_SUCCESS);
+                    });
+                    return;
+                }
+                this.folderPickerNoDriveSelection = false;
+                this.folderPickerTitle = null;
+                this.folderPickerChoices = null;
+                this.folderPickerChoicesTitle = null;
                 this.selectedFoldersFromPicker = function (chosenFolders) {
                     that.selectedFolders = chosenFolders;
                     that.selectedFolderStems = chosenFolders.map(n => n + '/');
@@ -1244,6 +1289,243 @@ module.exports = {
                 that.showError("App attempted unexpected action: " + apiMethod);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        appNameForDisplay: function() {
+            return this.appProperties != null && this.appProperties.displayName ? this.appProperties.displayName : this.currentAppName;
+        },
+        // the picker is the consent dialog: the switches start as the app asked and the user may change either
+        showGrantPicker: function(wantWrite, wantPersist, callback) {
+            let that = this;
+            this.folderPickerNoDriveSelection = true;
+            this.folderPickerTitle = this.translate(wantWrite ? "APP.GRANT.TITLE.WRITE" : "APP.GRANT.TITLE.READ")
+                .replace("$NAME", this.appNameForDisplay());
+            this.folderPickerChoicesTitle = this.translate("APP.GRANT.CHOICES");
+            this.folderPickerChoices = [
+                {key: "write", label: this.translate("APP.GRANT.WRITE"), checked: wantWrite},
+                {key: "persist", label: this.translate("APP.GRANT.PERSIST"), checked: wantPersist},
+            ];
+            this.initiallySelectedPaths = [];
+            this.selectedFoldersFromPicker = function (chosenFolders, chosen) {
+                that.showFolderPicker = false;
+                let write = chosen != null && chosen.write === true;
+                let persist = chosen != null && chosen.persist === true;
+                that.addGrants(chosenFolders, write, persist).thenApply(callback);
+            };
+            this.showFolderPicker = true;
+        },
+        addGrants: function(folders, write, persist) {
+            let that = this;
+            let future = peergos.shared.util.Futures.incomplete();
+            let grants = [];
+            let next = function(i) {
+                if (i >= folders.length) {
+                    future.complete(grants);
+                    return;
+                }
+                let folderPath = folders[i];
+                that.context.getByPath(folderPath).thenCompose(opt => {
+                    if (opt.ref == null) {
+                        throw new Error("Folder not found: " + folderPath);
+                    }
+                    return that.sandboxedApp.addGrant(opt.get(), folderPath, write, persist);
+                }).thenApply(info => {
+                    grants.push(that.grantToJson(info));
+                    next(i + 1);
+                }).exceptionally(t => {
+                    that.showToastError(that.translate("APP.GRANT.REFUSED").replace("$PATH", folderPath)
+                        + ": " + (t.getMessage ? t.getMessage() : t));
+                    next(i + 1);
+                });
+            };
+            next(0);
+            return future;
+        },
+        grantToJson: function(info) {
+            let res = {grantId: info.grantId, write: info.write, persist: info.persist, granted: info.granted, stale: info.stale};
+            if (!info.stale) {
+                res.path = info.path;
+            }
+            return res;
+        },
+        handleGrantsRequest: function(headerFunc, path, apiMethod) {
+            let that = this;
+            if (this.sandboxedApp == null) {
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                return;
+            }
+            let failed = t => {
+                console.log(t.getMessage ? t.getMessage() : t);
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            };
+            if (apiMethod == 'GET' && path.length == 0) {
+                this.sandboxedApp.listGrants().thenApply(list => {
+                    let encoder = new TextEncoder();
+                    let data = encoder.encode(JSON.stringify(list.toArray([]).map(that.grantToJson)));
+                    that.buildResponse(headerFunc("application/json"), data, that.GET_SUCCESS);
+                }).exceptionally(failed);
+            } else if (apiMethod == 'DELETE' && path.length > 0 && !path.includes('/')) {
+                this.sandboxedApp.revokeGrant(path).thenApply(done => {
+                    that.grantsInUse.delete(path);
+                    that.updateGrantDisplay();
+                    that.buildResponse(headerFunc(), null, that.DELETE_SUCCESS);
+                }).exceptionally(failed);
+            } else {
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+            }
+        },
+        splitGrantPath: function(path) {
+            let slash = path.indexOf('/');
+            return slash < 0 ? {grantId: path, relativePath: ''} : {grantId: path.substring(0, slash), relativePath: path.substring(slash + 1)};
+        },
+        resolveGrantedPath: function(path) {
+            let that = this;
+            let parts = this.splitGrantPath(path);
+            return this.sandboxedApp.getGranted(parts.grantId, parts.relativePath).thenApply(fileOpt => {
+                if (fileOpt.ref == null) {
+                    if (that.sandboxedApp.isGrantStale(parts.grantId)) {
+                        that.promptStaleGrant(parts.grantId);
+                    }
+                } else {
+                    that.noteGrantInUse(parts.grantId);
+                }
+                return fileOpt;
+            });
+        },
+        noteGrantInUse: function(grantId) {
+            if (this.grantsInUse.has(grantId)) {
+                return;
+            }
+            let that = this;
+            this.grantsInUse.set(grantId, '');
+            this.sandboxedApp.getGrantInfo(grantId).thenApply(info => {
+                that.grantsInUse.set(grantId, info.path + (info.write ? '' : ' (Read-only)'));
+                that.updateGrantDisplay();
+            });
+        },
+        updateGrantDisplay: function() {
+            if (this.browserMode || this.appPath.length > 0 || this.pickerSelectedFile.length > 0) {
+                return;
+            }
+            this.fullPathForDisplay = Array.from(this.grantsInUse.values()).filter(p => p.length > 0).join(', ');
+        },
+        handleGrantedFolderRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
+            let that = this;
+            if (this.sandboxedApp == null) {
+                that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                return;
+            }
+            let parts = this.splitGrantPath(path);
+            let grantId = parts.grantId;
+            let relativePath = parts.relativePath;
+            let failed = t => {
+                console.log(t.getMessage ? t.getMessage() : t);
+                if (that.sandboxedApp.isGrantStale(grantId)) {
+                    that.promptStaleGrant(grantId);
+                    that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
+                } else {
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                }
+            };
+            if (apiMethod == 'GET') {
+                this.resolveGrantedPath(path).thenApply(fileOpt => {
+                    if (fileOpt.ref == null) {
+                        that.buildResponse(headerFunc(), null, that.FILE_NOT_FOUND);
+                        return;
+                    }
+                    let file = fileOpt.get();
+                    if (file.isDirectory()) {
+                        that.readFolderListing(false, headerFunc("text/plain"), file);
+                    } else if (params.get('preview') == 'true') {
+                        let fileType = file.getFileProperties().getType();
+                        if (fileType == 'image' || fileType == 'video') {
+                            that.readInThumbnail(headerFunc("text/plain"), file);
+                        } else {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                        }
+                    } else {
+                        that.readInFile(headerFunc, file);
+                    }
+                }).exceptionally(failed);
+                return;
+            }
+            let bytes = convertToByteArray(new Int8Array(data));
+            let location = relPath => {
+                let encoder = new TextEncoder();
+                return encoder.encode(that.apiRequest + '/folder/' + grantId + '/' + relPath);
+            };
+            let write = (relPath, isNew) => that.sandboxedApp.writeGranted(grantId, relPath, bytes).thenApply(done => {
+                that.noteGrantInUse(grantId);
+                if (isNew) {
+                    that.buildResponse(headerFunc(), location(relPath), that.CREATE_SUCCESS);
+                } else {
+                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+                }
+            });
+            let withRelative = name => relativePath.length == 0 ? name : relativePath + '/' + name;
+            this.sandboxedApp.getGrantInfo(grantId).thenApply(info => {
+                if (!info.write) {
+                    that.showError("App attempted to change a folder it may only read: " + apiMethod);
+                    that.buildResponse(headerFunc(), null, that.FORBIDDEN);
+                } else if (apiMethod == 'DELETE') {
+                    that.sandboxedApp.deleteGranted(grantId, relativePath)
+                        .thenApply(done => that.buildResponse(headerFunc(), null, that.DELETE_SUCCESS))
+                        .exceptionally(failed);
+                } else if (apiMethod == 'PATCH') {
+                    that.sandboxedApp.appendGranted(grantId, relativePath, bytes)
+                        .thenApply(done => that.buildResponse(headerFunc(), location(relativePath), that.PATCH_SUCCESS))
+                        .exceptionally(failed);
+                } else if (apiMethod == 'POST' && params.get('type') == 'directory') {
+                    that.sandboxedApp.mkdirGranted(grantId, relativePath)
+                        .thenApply(done => that.buildResponse(headerFunc(), location(relativePath), that.CREATE_SUCCESS))
+                        .exceptionally(failed);
+                } else if (apiMethod == 'POST') {
+                    write(hasFormData ? relativePath : withRelative(that.generateUUID()), !hasFormData).exceptionally(failed);
+                } else if (apiMethod == 'PUT') {
+                    that.sandboxedApp.existsGranted(grantId, relativePath).thenCompose(existing =>
+                        existing == 1 ? write(withRelative(that.generateUUID()), true) : write(relativePath, existing == -1)
+                    ).exceptionally(failed);
+                } else {
+                    that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                }
+            }).exceptionally(failed);
+        },
+        // ask once per run, and only when the app touches the grant, so stale grants of apps not in use never nag
+        promptStaleGrant: function(grantId) {
+            if (this.staleGrantsPrompted.has(grantId)) {
+                return;
+            }
+            this.staleGrantsPrompted.add(grantId);
+            let that = this;
+            let name = this.appNameForDisplay();
+            this.sandboxedApp.getGrantInfo(grantId).thenApply(info => {
+                that.context.getByPath(info.path).thenApply(opt => {
+                    let folder = opt.ref != null && opt.get().isDirectory() ? opt.get() : null;
+                    that.confirm_body = '';
+                    that.confirm_consumer_cancel_func = () => {
+                        that.showConfirm = false;
+                        that.sandboxedApp.revokeGrant(grantId);
+                    };
+                    if (folder != null) {
+                        that.confirm_message = that.translate("APP.GRANT.STALE.CHANGED")
+                            .replace("$NAME", name).replace("$PATH", info.path);
+                        that.confirm_consumer_func = () => {
+                            that.showConfirm = false;
+                            that.sandboxedApp.rebindGrant(grantId, folder, info.path).thenApply(done => {
+                                that.staleGrantsPrompted.delete(grantId);
+                                that.$toast(that.translate("APP.GRANT.STALE.RESTORED").replace("$PATH", info.path));
+                            }).exceptionally(t => that.showToastError(t.getMessage()));
+                        };
+                    } else {
+                        that.confirm_message = that.translate("APP.GRANT.STALE.GONE").replace("$NAME", name);
+                        that.confirm_consumer_cancel_func = () => that.showConfirm = false;
+                        that.confirm_consumer_func = () => {
+                            that.showConfirm = false;
+                            that.sandboxedApp.revokeGrant(grantId);
+                        };
+                    }
+                    that.showConfirm = true;
+                });
+            });
         },
         parsePositiveInt: function(num) {
             let number = parseInt(num, 10);

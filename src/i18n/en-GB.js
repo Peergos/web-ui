@@ -821,5 +821,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Cancel invite",
     "ADMIN.INVITES.CANCELLED":"Invite cancelled",
     "ADMIN.INVITES.USED":"That invite had already been used",
-    "ADMIN.INVITES.CANCEL.ERROR":"Couldn't cancel the invite: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"Couldn't cancel the invite: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME wants to read a folder you choose",
+    "APP.GRANT.TITLE.WRITE":"$NAME wants to save files in a folder you choose",
+    "APP.GRANT.CHOICES":"Access",
+    "APP.GRANT.WRITE":"Let this app change files here",
+    "APP.GRANT.PERSIST":"Remember this until I revoke it",
+    "APP.GRANT.REFUSED":"Couldn't give the app $PATH",
+    "APP.GRANT.STALE.CHANGED":"$NAME had access to $PATH, which has changed. Allow it again?",
+    "APP.GRANT.STALE.GONE":"The folder $NAME had access to no longer exists. Forget it?",
+    "APP.GRANT.STALE.RESTORED":"$PATH is available to the app again",
+    "APPDETAILS.FOLDERS":"Folder access",
+    "APPDETAILS.FOLDERS.READ":"Read only",
+    "APPDETAILS.FOLDERS.WRITE":"Read and write",
+    "APPDETAILS.FOLDERS.STALE":"No longer available",
+    "APPDETAILS.FOLDERS.REVOKE":"Revoke",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Revoke all",
+    "APPDETAILS.FOLDERS.NOTE":"Revoking stops this app using the folder. The folder and its files are not changed."
 }

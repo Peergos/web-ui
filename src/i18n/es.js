@@ -585,5 +585,21 @@ module.exports = {
     "ADMIN.INVITES.CANCEL":"Cancelar invitación",
     "ADMIN.INVITES.CANCELLED":"Invitación cancelada",
     "ADMIN.INVITES.USED":"Esa invitación ya se había usado",
-    "ADMIN.INVITES.CANCEL.ERROR":"No se pudo cancelar la invitación: $REASON"
+    "ADMIN.INVITES.CANCEL.ERROR":"No se pudo cancelar la invitación: $REASON",
+    "APP.GRANT.TITLE.READ":"$NAME quiere leer una carpeta que elijas",
+    "APP.GRANT.TITLE.WRITE":"$NAME quiere guardar archivos en una carpeta que elijas",
+    "APP.GRANT.CHOICES":"Acceso",
+    "APP.GRANT.WRITE":"Permitir que esta aplicación cambie archivos aquí",
+    "APP.GRANT.PERSIST":"Recordarlo hasta que lo revoque",
+    "APP.GRANT.REFUSED":"No se pudo dar acceso a $PATH a la aplicación",
+    "APP.GRANT.STALE.CHANGED":"$NAME tenía acceso a $PATH, que ha cambiado. ¿Permitirlo de nuevo?",
+    "APP.GRANT.STALE.GONE":"La carpeta a la que $NAME tenía acceso ya no existe. ¿Olvidarla?",
+    "APP.GRANT.STALE.RESTORED":"$PATH vuelve a estar disponible para la aplicación",
+    "APPDETAILS.FOLDERS":"Acceso a carpetas",
+    "APPDETAILS.FOLDERS.READ":"Solo lectura",
+    "APPDETAILS.FOLDERS.WRITE":"Lectura y escritura",
+    "APPDETAILS.FOLDERS.STALE":"Ya no está disponible",
+    "APPDETAILS.FOLDERS.REVOKE":"Revocar",
+    "APPDETAILS.FOLDERS.REVOKE.ALL":"Revocar todo",
+    "APPDETAILS.FOLDERS.NOTE":"Revocar impide que esta aplicación use la carpeta. La carpeta y sus archivos no cambian."
 }
