@@ -49,6 +49,7 @@
 
 <script>
 const i18n = require("../../i18n/index.js");
+const errors = require("../../mixins/errors/index.js");
 const DialogClose = require("../dialog/DialogClose.vue");
 const helpers = require("../../mixins/storage/index.js");
 const ProgressBar = require("../drive/ProgressBar.vue");
@@ -60,7 +61,7 @@ module.exports = {
         ProgressBar,
         Spinner
     },
-    mixins:[i18n],
+    mixins:[i18n, errors],
 	data() {
 		return {
             title: "Post a Message",
@@ -391,8 +392,9 @@ module.exports = {
         savePost: function(socialPost) {
             let that = this;
             let readerToAdd = this.readerToAdd();
-            this.socialFeed.createNewPost(socialPost).thenApply(function(result) {
-                that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([readerToAdd])).thenApply(function(b) {
+            // each step taken again on its own, so a share that loses does not post twice
+            this.retryOnConflict(() => this.socialFeed.createNewPost(socialPost)).thenApply(function(result) {
+                that.retryOnConflict(() => that.context.shareReadAccessWith(result.left, peergos.client.JsUtil.asSet([readerToAdd]))).thenApply(function(b) {
                     that.showSpinner = false;
                     that.closeSocialPostForm("save", result.left.toString(), socialPost, result.right
                         , that.currentSocialPostEntry == null ? null : that.currentSocialPostEntry.path);

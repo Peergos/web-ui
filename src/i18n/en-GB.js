@@ -794,6 +794,7 @@ module.exports = {
     "ADMIN.TITLE":"Admin panel",
     "ADMIN.REQUESTS":"Space requests",
     "ADMIN.REQUESTS.NONE":"No one is waiting for more space.",
+    "ADMIN.REQUESTS.FAILED":"Couldn't load the space requests: $REASON",
     "ADMIN.DENY":"Deny",
     "ADMIN.APPROVE":"Approve",
     "ADMIN.APPROVED":"Space request from $USER approved",

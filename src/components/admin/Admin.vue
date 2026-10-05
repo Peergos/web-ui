@@ -10,8 +10,9 @@
         <div class="pg-dialog__body admin-panel__body">
             <section class="admin-panel__section">
                 <h3 class="admin-panel__heading">{{ translate("ADMIN.REQUESTS") }}</h3>
-                <p v-if="data.pending.length == 0" class="pg-note">{{ translate("ADMIN.REQUESTS.NONE") }}</p>
-                <ul v-else class="admin-panel__requests">
+                <p v-if="data.error != null" class="pg-callout admin-panel__requests-failed">{{ requestsFailed }}</p>
+                <p v-else-if="data.pending != null && data.pending.length == 0" class="pg-note">{{ translate("ADMIN.REQUESTS.NONE") }}</p>
+                <ul v-else-if="data.pending != null" class="admin-panel__requests">
                     <li v-for="req in data.pending" class="admin-panel__request">
                         <span class="admin-panel__who">
                             <span class="admin-panel__name">{{ req.getUsername() }}</span>
@@ -88,6 +89,10 @@ module.exports = {
     props: ['data', 'context'],
     mixins: [i18n],
     computed: {
+        requestsFailed: function() {
+            const reason = this.data.error;
+            return this.translate("ADMIN.REQUESTS.FAILED").replace("$REASON", () => reason);
+        },
         // until the list first arrives, a change made here could be overwritten by it
         invitesBusy: function() {
             return this.showSpinner || ! (this.invitesLoaded || this.invitesError != null);

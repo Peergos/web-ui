@@ -139,6 +139,12 @@ public class AdminInviteTest {
         d.waitForScript("the admin menu item", adminItem, 60_000);
         d.script(adminItem + ".click(); return 1;");
         d.waitForScript("the admin panel", "!!document.querySelector('.admin-invites')", 60_000);
+        // the space requests arrive after the panel opens, and a failure to fetch them is said there
+        d.waitForScript("the space requests", "document.querySelector('.admin-panel__requests-failed, .admin-panel__requests')"
+                + " || document.querySelector('.admin-panel__section:not(.admin-invites) > .pg-note')", 60_000);
+        Object failed = d.script("const f = document.querySelector('.admin-panel__requests-failed'); return f ? f.textContent.trim() : null;");
+        if (failed != null)
+            throw new AssertionError("The admin panel could not load the space requests: " + failed);
     }
 
     @SuppressWarnings("unchecked")

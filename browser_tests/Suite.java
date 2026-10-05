@@ -116,6 +116,9 @@ public class Suite {
         }
         if (failures.isEmpty()) {
             System.out.println("all tests passed on " + engine);
+            // Explicitly, as on failure: peergos' retry executors keep a non-daemon thread once
+            // a java-side client has used one, and that alone holds the job open until timeout.
+            System.exit(0);
         } else {
             System.out.println(failures.size() + " failed on " + engine + ": " + failures);
             System.exit(1);
@@ -129,13 +132,47 @@ public class Suite {
     private static void run(List<String> failures, String name, Test test) {
         System.out.println("\n--- " + name);
         long start = System.currentTimeMillis();
+        java.io.PrintStream out = System.out;
+        java.io.ByteArrayOutputStream seen = new java.io.ByteArrayOutputStream();
+        System.setOut(new java.io.PrintStream(new java.io.OutputStream() {
+            public void write(int b) { out.write(b); seen.write(b); }
+            public void write(byte[] b, int off, int len) { out.write(b, off, len); seen.write(b, off, len); }
+            public void flush() { out.flush(); }
+        }, true));
         try {
             test.run();
             System.out.println("--- " + name + " passed in " + (System.currentTimeMillis() - start) / 1000 + "s");
         } catch (Throwable t) {
+            String printed = seen.toString();
             System.out.println("--- " + name + " FAILED: " + t);
             t.printStackTrace(System.out);
             failures.add(name);
+            annotate(name, t, printed);
+        } finally {
+            System.setOut(out);
         }
+    }
+
+    /** On GitHub Actions, a failure also becomes an annotation: those can be read through the API
+     *  without signing in, where the job's log cannot. It carries what the test itself printed,
+     *  without the server's and the java client's log lines. */
+    private static void annotate(String name, Throwable t, String printed) {
+        if (! "true".equals(System.getenv("GITHUB_ACTIONS")))
+            return;
+        List<String> lines = new ArrayList<>();
+        for (String line : printed.split("\n")) {
+            String l = line.stripTrailing();
+            if (l.isEmpty() || l.startsWith("INFO: ") || l.startsWith("WARNING: ") || l.startsWith("\tat ")
+                    || l.matches("^[A-Z][a-z]{2} \\d{2}, \\d{4} .*"))
+                continue;
+            lines.add(l);
+        }
+        List<String> tail = lines.subList(Math.max(0, lines.size() - 40), lines.size());
+        String body = t + "\n" + String.join("\n", tail);
+        if (body.length() > 3500)
+            body = body.substring(body.length() - 3500);
+        String escaped = body.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A");
+        String title = name.replace("%", "%25").replace(",", "%2C").replace(":", "%3A");
+        System.out.println("::error title=" + title + "::" + escaped);
     }
 }

@@ -102,7 +102,8 @@ public class LauncherViewTest {
             System.out.println("  ok   a long name shows in full on a tap and is cut again on another, and a short name still launches");
 
             tileMenu(d, "Sketch", "button");
-            d.waitForScript("the app menu", "!!document.querySelector('.app-grid-flex-container #appMenu')", 10_000);
+            // the menu's items render a moment after the menu itself
+            d.waitForScript("the remove item", "[...document.querySelectorAll('.app-grid-flex-container #appMenu li')].some(li => li.textContent.trim() === 'Remove')", 10_000);
             d.script("[...document.querySelectorAll('#appMenu li')].find(li => li.textContent.trim() === 'Remove').click(); return 1;");
             d.waitForScript("the removal to confirm", "!!document.querySelector('.pg-dialog') && document.querySelector('.pg-dialog').textContent.includes('Sketch')", 30_000);
             d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'Yes').click(); return 1;");

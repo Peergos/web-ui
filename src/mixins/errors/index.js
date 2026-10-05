@@ -25,5 +25,35 @@ module.exports = {
             }
             return out;
         },
+        /** Whether a write failed only because another write to the same account got in
+         *  first, which the step that lost leaves unwritten. */
+        isWriteConflict(e) {
+            return /CAS exception|CasException/.test(this.errText(e));
+        },
+        /** Takes a write again while it keeps losing a compare-and-set to another write the
+         *  app makes to the same account at the same moment - the social state an account
+         *  settles after signing in among them - rather than leaving the user to press the
+         *  button again. attempt returns a fresh future each time it is called. */
+        retryOnConflict(attempt, tries) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let left = tries == null ? 3 : tries;
+            let fail = e => {
+                if (--left > 0 && this.isWriteConflict(e))
+                    setTimeout(run, 1000);
+                else
+                    future.completeExceptionally(e);
+                return null;
+            };
+            // a throw from attempt itself fails the future too, rather than leaving it pending
+            let run = () => {
+                try {
+                    attempt().thenApply(r => future.complete(r)).exceptionally(fail);
+                } catch (e) {
+                    future.completeExceptionally(e);
+                }
+            };
+            run();
+            return future;
+        },
     },
 };

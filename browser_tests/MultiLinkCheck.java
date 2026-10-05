@@ -70,6 +70,14 @@ public class MultiLinkCheck {
                         return true;
                     }).exceptionally(t => { window.__r = {error: '' + t}; return null; });
                     """;
+                // A create started while sign-in's social read still has the drive root's writer
+                // busy can deadlock: the writable member is moved into its own writing space under
+                // the root's lock, its existing links are then rewritten under the identity key's,
+                // and from there both locks stay taken for good - the create never settles, nor does
+                // any later write to either. It has never happened once that read has finished, so
+                // the create waits for it, as a person would, rather than racing sign-in.
+                d.waitForScript("sign-in's social read", "window.__drive.$store.state.socialData.groupUids.length > 0", 60_000);
+
                 // The suite shares one account, so this write can lose a compare-and-set against
                 // one the app is making at the same moment. A create that fails that way writes
                 // nothing, so it is safe to take again - but only once that is checked, since a

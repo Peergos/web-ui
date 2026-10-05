@@ -9,6 +9,11 @@ function shallow(val) {
     return val;
 }
 let mirrorBatIdLookup = null;
+// Reading the social state also takes in replies to follow requests, writing to the account's
+// own files, and a read that finishes after a newer one would put older state back in the
+// store. So only one runs at a time, and calls made meanwhile share one more read after it.
+let socialReading = false;
+let socialWaiting = null;
 module.exports = new Vuex.Store({
 	state: {
 		windowWidth: window.innerWidth,
@@ -358,9 +363,22 @@ module.exports = new Vuex.Store({
 			});
 		},
 
-		updateSocial({ commit, state }, callback) {
-
-			return state.context.getSocialState().thenApply(function (socialState) {
+		updateSocial({ commit, state, dispatch }, callback) {
+			if (socialReading) {
+				if (socialWaiting == null)
+					socialWaiting = [];
+				socialWaiting.push(callback);
+				return;
+			}
+			socialReading = true;
+			let read;
+			try {
+				read = state.context.getSocialState();
+			} catch (e) {
+				socialReading = false;
+				throw e;
+			}
+			return read.thenApply(function (socialState) {
 
 				let annotations = {}
 				socialState.friendAnnotations.keySet().toArray([]).map(name => annotations[name]=socialState.friendAnnotations.get(name))
@@ -410,8 +428,19 @@ module.exports = new Vuex.Store({
 				console.log(`Error retrieving social state ${throwable.getMessage()}`);
 				// let the caller finish, e.g. stop its spinner, rather than wait for ever
 				if (callback != null) {
-					callback(throwable)
+					try {
+						callback(throwable)
+					} catch (e) {
+						console.log(e)
+					}
 				}
+			}).thenApply(function (result) {
+				socialReading = false;
+				let waiting = socialWaiting;
+				socialWaiting = null;
+				if (waiting != null)
+					dispatch('updateSocial', err => waiting.forEach(c => { if (c != null) c(err) }));
+				return result;
 			});
 		}
 	}

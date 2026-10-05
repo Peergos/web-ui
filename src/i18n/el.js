@@ -739,6 +739,7 @@ module.exports = {
     "ADMIN.TITLE":"Πίνακας διαχείρισης",
     "ADMIN.REQUESTS":"Αιτήματα χώρου",
     "ADMIN.REQUESTS.NONE":"Κανείς δεν περιμένει για περισσότερο χώρο.",
+    "ADMIN.REQUESTS.FAILED":"Δεν ήταν δυνατή η φόρτωση των αιτημάτων χώρου: $REASON",
     "ADMIN.DENY":"Απόρριψη",
     "ADMIN.APPROVE":"Έγκριση",
     "ADMIN.APPROVED":"Το αίτημα χώρου του $USER εγκρίθηκε",

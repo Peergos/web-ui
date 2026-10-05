@@ -558,6 +558,7 @@ module.exports = {
     "ADMIN.TITLE":"Panel de administración",
     "ADMIN.REQUESTS":"Solicitudes de espacio",
     "ADMIN.REQUESTS.NONE":"Nadie está esperando más espacio.",
+    "ADMIN.REQUESTS.FAILED":"No se pudieron cargar las solicitudes de espacio: $REASON",
     "ADMIN.DENY":"Denegar",
     "ADMIN.APPROVE":"Aprobar",
     "ADMIN.APPROVED":"Solicitud de espacio de $USER aprobada",

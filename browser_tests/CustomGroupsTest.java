@@ -156,9 +156,33 @@ public class CustomGroupsTest {
         Page.gotoDrive(d);
         Page.waitForInDrive(d, name, 120_000);
         Page.select(d, name);
+        // the drive opens the dialog only for exactly one selected file, and says nothing when
+        // the selection has not landed yet - so make sure it has, and that the dialog did open
+        d.waitForScript("the selection", "window.__drive.selectedFiles.length === 1", 10_000);
         d.script("window.__drive.showShareWith(); return 1;");
-        d.waitForScript("the share dialog's groups", "document.querySelectorAll('.share-groups label').length >= 3"
-                + " && ![...document.querySelectorAll('.share-groups label')].some(l => /family\\s*$/.test(l.innerText.trim()))", 60_000);
+        d.waitForScript("the share dialog", "!!document.querySelector('.drive-share')", 30_000);
+        try {
+            d.waitForScript("the share dialog's groups", "document.querySelectorAll('.share-groups label').length >= 3"
+                    + " && ![...document.querySelectorAll('.share-groups label')].some(l => /family\\s*$/.test(l.innerText.trim()))", 60_000);
+        } catch (IllegalStateException e) {
+            // a custom group's count is its own read, so say what the dialog shows and what that read gives
+            d.script("window.__members = null; const s = window.__drive.$store.state.socialData;"
+                    + " const uid = s.groupsNameToUid['family'];"
+                    + " if (uid == null) window.__members = 'no family in the store';"
+                    + " else window.__drive.context.getGroupMembers(uid).thenApply(m => { window.__members = 'members ' + m.toArray([]); return true; })"
+                    + "   .exceptionally(t => { window.__members = 'failed: ' + t; return null; }); return 1;");
+            String members;
+            try {
+                d.waitForScript("family's members", "window.__members", 30_000);
+                members = String.valueOf(d.script("return window.__members"));
+            } catch (IllegalStateException again) {
+                members = "no answer";
+            }
+            throw new IllegalStateException(e.getMessage() + "; the dialog shows " + d.scriptQuiet(
+                    "return JSON.stringify([...document.querySelectorAll('.share-groups label')].map(l => l.innerText.replace(/\\s+/g, ' ').trim()))")
+                    + ", the store has groups " + d.scriptQuiet("return JSON.stringify(window.__drive.$store.state.socialData.groupUids)")
+                    + ", asked for family's members: " + members, e);
+        }
     }
 
     /** Sets an input the way typing does, so the vue model sees it. */
