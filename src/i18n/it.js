@@ -531,6 +531,7 @@ module.exports = {
     "SANDBOX.READ.FOLDER":"Può leggere i file selezionati dei tipi associati dalla cartella scelta dall'utente",
     "SANDBOX.MESSAGES":"Può scambiare messaggi con gli amici",
     "SANDBOX.MAILBOX":"Può gestire una casella di posta elettronica",
+    "SANDBOX.CONTACTS":"Può leggere e modificare i tuoi contatti",
     "SANDBOX.PROFILE.PHOTO":"Può recuperare le foto del profilo dei tuoi amici",
     "SANDBOX.UNSAFE":"Consenti all'app di modificare il proprio codice",
     "SANDBOX.UNKNOWN":"Autorizzazione sconosciuta",

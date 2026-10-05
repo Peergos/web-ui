@@ -14,6 +14,7 @@ let formRequest = apiRequest + "/form/";
 let chatRequest = apiRequest + "/chat/";
 let chatRequestV1 = "/peergos-api/v1" + "/chat/";
 let mailboxRequest = apiRequest + "/mailbox/";
+let contactsRequest = apiRequest + "/contacts/";
 let saveRequest = apiRequest + "/save/";
 let filePickerRequest = apiRequest + "/file-picker/";
 let foldersRequest = apiRequest + "/folders/";
@@ -431,6 +432,12 @@ function appFetch(event) {
             } else if (filePath.startsWith(mailboxRequest)) {
                 restFilePath = restFilePath.substring(mailboxRequest.length);
                 api = mailboxRequest;
+            } else if (filePath.startsWith(contactsRequest) || filePath + '/' == contactsRequest) {
+                if (!(method == 'GET' || method == 'PUT' || method == 'POST' || method == 'DELETE')) {
+                    return new Response('Unknown contacts action!', {status: 400})
+                }
+                restFilePath = filePath.length > contactsRequest.length ? restFilePath.substring(contactsRequest.length) : '';
+                api = contactsRequest;
             } else if (filePath.startsWith(installAppRequest)) {
                 restFilePath = restFilePath.substring(installAppRequest.length);
                 api = installAppRequest;

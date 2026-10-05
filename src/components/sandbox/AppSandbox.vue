@@ -210,6 +210,8 @@ module.exports = {
             PERMISSION_READ_CHOSEN_FOLDER: 'READ_CHOSEN_FOLDER',
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             PERMISSION_USE_MAILBOX: 'USE_MAILBOX',
+            PERMISSION_MANAGE_CONTACTS: 'MANAGE_CONTACTS',
+            DEFAULT_ADDRESS_BOOK: 'default',
             PERMISSION_ACCESS_PROFILE_PHOTO: 'ACCESS_PROFILE_PHOTO',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
@@ -293,6 +295,7 @@ module.exports = {
             mailboxClientProperties: null,
             clientMailboxAddress: "",
             mailboxClient: null,
+            contactsApp: null,
             MAILBOX_CONFIG_FILENAME: 'App.config',
             EMAIL_FILE_EXTENSION: '.cbor',
             messageToTimestamp: new Map(),
@@ -986,6 +989,13 @@ module.exports = {
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleMailboxRequest(headerFunc(), path, apiMethod, data, hasFormData, params);
+                    }
+                }else if (api =='/peergos-api/v0/contacts/') {
+                    if (!that.permissionsMap.get(that.PERMISSION_MANAGE_CONTACTS)) {
+                        that.showError("App attempted to access contacts without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else {
+                        that.handleContactsRequest(headerFunc, path, apiMethod, data);
                     }
                 } else if (api =='/peergos-api/v0/print/') {
                     that.handlePrintPreviewRequest(headerFunc, path, apiMethod, data, hasFormData, params);
@@ -2641,6 +2651,166 @@ module.exports = {
             return val;
         },
         // need to add error handling, null params, invalid chars etc... look at chat api handling for checks
+        // The same layout the CardDAV bridge (ContactStore) serves, so edits here reach synced phones:
+        //   <user>/.apps/contacts/data/<book>/addressbook.inf  {"name"}
+        //   <user>/.apps/contacts/data/<book>/<uid>.vcf
+        // App.config is left alone; the bridge only reads it, and nothing writes it yet.
+        contactsCall: function(future) {
+            return new Promise((resolve, reject) => {
+                future.thenApply(res => resolve(res)).exceptionally(t => {
+                    reject(t);
+                    return null;
+                });
+            });
+        },
+        getContactsApp: async function() {
+            if (this.contactsApp == null) {
+                this.contactsApp = await this.contactsCall(peergos.shared.user.App.init(this.context, "contacts"));
+            }
+            return this.contactsApp;
+        },
+        contactsPath: function(parts) {
+            return peergos.client.PathUtils.directoryToPath(parts);
+        },
+        isValidContactsSegment: function(name) {
+            return name.length > 0 && name.length <= 255 && !name.includes('/') && !name.includes('\\') && !name.startsWith('.');
+        },
+        listAddressBooks: async function() {
+            let dataPath = this.context.username + '/.apps/contacts/data';
+            let dirOpt = await this.contactsCall(this.context.getByPath(dataPath));
+            let books = [];
+            if (dirOpt.ref != null) {
+                let children = (await this.contactsCall(dirOpt.get().getChildren(this.context.crypto.hasher, this.context.network))).toArray();
+                for (const child of children.filter(c => c.isDirectory())) {
+                    books.push({id: child.getName(), name: await this.readAddressBookName(child.getName())});
+                }
+            }
+            if (books.filter(b => b.id == this.DEFAULT_ADDRESS_BOOK).length == 0) {
+                // the bridge serves this one even before it exists on disk
+                books.push({id: this.DEFAULT_ADDRESS_BOOK, name: "Contacts"});
+            }
+            return books;
+        },
+        readAddressBookName: async function(book) {
+            let app = await this.getContactsApp();
+            try {
+                let data = await this.contactsCall(app.readInternal(this.contactsPath([book, 'addressbook.inf']), null));
+                let json = JSON.parse(new TextDecoder().decode(new Uint8Array(data)));
+                return typeof json.name == 'string' ? json.name : book;
+            } catch (e) {
+                return book == this.DEFAULT_ADDRESS_BOOK ? "Contacts" : book;
+            }
+        },
+        writeAddressBookName: async function(book, name) {
+            let app = await this.getContactsApp();
+            let bytes = convertToByteArray(new TextEncoder().encode(JSON.stringify({name: name})));
+            await this.contactsCall(app.writeInternal(this.contactsPath([book, 'addressbook.inf']), bytes, null));
+        },
+        handleContactsRequest: function(headerFunc, path, apiMethod, data) {
+            let that = this;
+            let parts = path.length == 0 ? [] : path.split('/');
+            let json = obj => convertToByteArray(new TextEncoder().encode(JSON.stringify(obj)));
+            let location = rel => new TextEncoder().encode(that.apiRequest + '/contacts/' + rel);
+            let body = () => new TextDecoder().decode(new Uint8Array(data));
+            let fail = mode => that.buildResponse(headerFunc(), null, mode);
+            if (parts.length > 2 || parts.filter(p => !that.isValidContactsSegment(p)).length > 0) {
+                fail(that.ACTION_FAILED);
+                return;
+            }
+            let run = async () => {
+                let app = await that.getContactsApp();
+                if (parts.length == 0) {
+                    if (apiMethod == 'GET') {
+                        that.buildResponse(headerFunc("application/json"), json(await that.listAddressBooks()), that.GET_SUCCESS);
+                    } else if (apiMethod == 'POST') {
+                        let name = (JSON.parse(body()).name || '').trim();
+                        if (name.length == 0) {
+                            return fail(that.ACTION_FAILED);
+                        }
+                        let book = that.generateUUID();
+                        await that.writeAddressBookName(book, name);
+                        that.buildResponse(headerFunc(), location(book), that.CREATE_SUCCESS);
+                    } else {
+                        fail(that.ACTION_FAILED);
+                    }
+                    return;
+                }
+                let book = parts[0];
+                let bookExists = await that.contactsCall(app.existsInternal(that.contactsPath([book]), null)) == 1;
+                if (parts.length == 1) {
+                    if (apiMethod == 'GET') {
+                        if (!bookExists && book != that.DEFAULT_ADDRESS_BOOK) {
+                            return fail(that.FILE_NOT_FOUND);
+                        }
+                        let names = bookExists ? (await that.contactsCall(app.dirInternal(that.contactsPath([book]), null))).toArray() : [];
+                        let cards = await Promise.all(names.filter(n => n.endsWith('.vcf')).map(async n => {
+                            let bytes = await that.contactsCall(app.readInternal(that.contactsPath([book, n]), null));
+                            return {file: n, vcard: new TextDecoder().decode(new Uint8Array(bytes))};
+                        }));
+                        that.buildResponse(headerFunc("application/json"), json(cards), that.GET_SUCCESS);
+                    } else if (apiMethod == 'PUT') {
+                        let name = (JSON.parse(body()).name || '').trim();
+                        if (name.length == 0) {
+                            return fail(that.ACTION_FAILED);
+                        }
+                        await that.writeAddressBookName(book, name);
+                        if (bookExists) {
+                            that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+                        } else {
+                            that.buildResponse(headerFunc(), location(book), that.CREATE_SUCCESS);
+                        }
+                    } else if (apiMethod == 'DELETE') {
+                        if (book == that.DEFAULT_ADDRESS_BOOK) {
+                            // the bridge would only recreate it empty
+                            return fail(that.FORBIDDEN);
+                        }
+                        if (!bookExists) {
+                            return fail(that.FILE_NOT_FOUND);
+                        }
+                        await that.contactsCall(app.deleteInternal(that.contactsPath([book]), null));
+                        that.buildResponse(headerFunc(), null, that.DELETE_SUCCESS);
+                    } else {
+                        fail(that.ACTION_FAILED);
+                    }
+                    return;
+                }
+                let file = parts[1];
+                if (!file.endsWith('.vcf') || (!bookExists && book != that.DEFAULT_ADDRESS_BOOK && apiMethod != 'GET')) {
+                    return fail(bookExists ? that.ACTION_FAILED : that.FILE_NOT_FOUND);
+                }
+                let filePath = that.contactsPath([book, file]);
+                let fileExists = bookExists && await that.contactsCall(app.existsInternal(filePath, null)) == 0;
+                if (apiMethod == 'GET') {
+                    if (!fileExists) {
+                        return fail(that.FILE_NOT_FOUND);
+                    }
+                    let bytes = await that.contactsCall(app.readInternal(filePath, null));
+                    that.buildResponse(headerFunc("text/vcard"), new Uint8Array(bytes), that.GET_SUCCESS);
+                } else if (apiMethod == 'PUT') {
+                    if (!/^BEGIN:VCARD/i.test(body().trim())) {
+                        return fail(that.ACTION_FAILED);
+                    }
+                    await that.contactsCall(app.writeInternal(filePath, convertToByteArray(new Uint8Array(data)), null));
+                    if (fileExists) {
+                        that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
+                    } else {
+                        that.buildResponse(headerFunc(), location(book + '/' + file), that.CREATE_SUCCESS);
+                    }
+                } else if (apiMethod == 'DELETE') {
+                    if (!fileExists) {
+                        return fail(that.FILE_NOT_FOUND);
+                    }
+                    await that.contactsCall(app.deleteInternal(filePath, null));
+                    that.buildResponse(headerFunc(), null, that.DELETE_SUCCESS);
+                } else {
+                    fail(that.ACTION_FAILED);
+                }
+            };
+            run().catch(t => {
+                console.log(t && t.getMessage ? t.getMessage() : t);
+                fail(that.ACTION_FAILED);
+            });
+        },
         handleMailboxRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
             let encoder = new TextEncoder();
