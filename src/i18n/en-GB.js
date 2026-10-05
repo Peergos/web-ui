@@ -623,6 +623,7 @@ module.exports = {
     "SANDBOX.READ.FOLDER":"Can read selected files of the associated types from folder chosen by user",
     "SANDBOX.MESSAGES":"Can exchange messages with friends",
     "SANDBOX.MAILBOX":"Can manage an email mailbox",
+    "SANDBOX.CONTACTS":"Can read and change your contacts",
     "SANDBOX.PROFILE.PHOTO":"Can retrieve profile photos of your friends",
     "SANDBOX.UNSAFE":"Allow app to modify its own code",
     "SANDBOX.UNKNOWN":"Unknown permission",

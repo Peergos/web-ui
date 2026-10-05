@@ -535,6 +535,7 @@ module.exports = {
     "SANDBOX.READ.FOLDER":"사용자가 선택한 폴더에서 관련 유형의 파일을 읽을 수 있습니다",
     "SANDBOX.MESSAGES":"친구와 메시지를 주고받을 수 있습니다",
     "SANDBOX.MAILBOX":"이메일 사서함을 관리할 수 있습니다",
+    "SANDBOX.CONTACTS":"연락처를 읽고 변경할 수 있습니다",
     "SANDBOX.PROFILE.PHOTO":"친구의 프로필 사진을 가져올 수 있습니다",
     "SANDBOX.UNSAFE":"앱이 자체 코드를 수정하도록 허용",
     "SANDBOX.UNKNOWN":"알 수 없는 권한",

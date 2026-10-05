@@ -43,6 +43,8 @@ module.exports = {
               return this.translate("SANDBOX.MESSAGES");
           } else if (permission === 'USE_MAILBOX') {
               return this.translate("SANDBOX.MAILBOX");
+          } else if (permission === 'MANAGE_CONTACTS') {
+              return this.translate("SANDBOX.CONTACTS");
           } else if (permission === 'ACCESS_PROFILE_PHOTO') {
               return this.translate("SANDBOX.PROFILE.PHOTO");
           } else if (permission === 'CSP_UNSAFE_EVAL') {
@@ -67,8 +69,10 @@ module.exports = {
                   let stringFields = ["displayName", "description", "version", "author", "appIcon", "source", "template", "chatId", "templateIconBase64"];
                   let existingCreateMenuItems = ["upload files","upload folder","new folder","new file", "new app"];
                   let validPermissions = ["STORE_APP_DATA", "EDIT_CHOSEN_FILE", "READ_CHOSEN_FOLDER",
-                    "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
+                    "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "MANAGE_CONTACTS", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
                   let validTemplateValues = ["messaging", "messaging-instance"];
+                  // these share .apps/<name> with built-in data, which uninstalling an app would delete
+                  let reservedAppNames = ["calendar", "contacts", "launcher"];
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);
@@ -93,6 +97,9 @@ module.exports = {
                                     errors.push("Invalid permission: " + permission);
                                 }
                             });
+                        }
+                        if (reservedAppNames.includes(props.name)) {
+                            errors.push("Invalid displayName property. The name '" + props.name + "' is reserved");
                         }
                         if (props.displayName.length > 25) {
                             errors.push("Invalid displayName property. Length must not exceed 25 characters");
@@ -389,7 +396,7 @@ module.exports = {
       },
       loadAllAppProperties: function(appDirectoryNames) {
           var appDirectories = appDirectoryNames.filter(n => n.getName() != "calendar" &&
-                                    n.getName() != "launcher");
+                                    n.getName() != "contacts" && n.getName() != "launcher");
           let future = peergos.shared.util.Futures.incomplete();
           this.readAllAppProperties(appDirectories).thenApply(props => {
               future.complete(props);
