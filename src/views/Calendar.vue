@@ -397,8 +397,7 @@ module.exports = {
             },
             deleteShared: function(data) {
                 that.queueForEntry(that.sharedLane(data), function(done) {
-                    that.deleteSharedEntry(calendar, data);
-                    done();
+                    that.deleteSharedEntry(calendar, data, done);
                 });
             },
             saveAll: function(data) { that.saveAllEvents(calendar, data); },
@@ -1057,6 +1056,7 @@ module.exports = {
         let removed = index === -1 ? null : this.calendarProperties.calendars.splice(index, 1)[0];
         this.updatePropertiesFile(calendar, this.calendarProperties).thenApply(res => {
             that.removeSpinner();
+            that.mirrorToDevice();
             that.postMessage({type: 'respondDeleteCalendar', calendar: data});
         }).exceptionally(function(throwable) {
             // The list is updated before the file is written, so a failed
@@ -1578,6 +1578,14 @@ module.exports = {
 	        });
 	    });
     },
+    // The Android app mirrors these calendars into the phone's own, which is where reminders go
+    // off, but only every half an hour by itself: an event starting sooner than that would ring
+    // late or not at all. So it is told whenever what they hold changes.
+    mirrorToDevice: function() {
+        if (typeof window.Android !== "undefined" && typeof window.Android.calendarChanged === "function") {
+            window.Android.calendarChanged();
+        }
+    },
     // One lane per entry: `work` runs once everything already asked for that entry has
     // finished, and the place in the lane is taken here, as the message arrives, rather
     // than when the work starts. The order the frame asked for things in is the order the
@@ -1600,6 +1608,7 @@ module.exports = {
             }
             that.removeSpinner();
             mine.complete(true);
+            that.mirrorToDevice();
         };
         // A synchronous failure still has to free the entry, or everything behind it waits
         // for ever. Saying what went wrong is the caller's job; this reopens the lane.
@@ -1817,6 +1826,7 @@ module.exports = {
         items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
         this.bulkUpload(uploads).thenApply(function(done) {
             that.removeSpinner();
+            that.mirrorToDevice();
             if (done) {
                 that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
                 return;
@@ -2327,14 +2337,19 @@ module.exports = {
         this.updatePropertiesFile(calendar, this.calendarProperties);
     },
     // Only ever our own snapshot. The entry belongs to whoever shared it.
-    deleteSharedEntry: function(calendar, data) {
+    // Finished once the file is gone, not when asked: the entry's lane, and the copy of the
+    // calendar on the phone, would otherwise go on from a store that still holds it.
+    deleteSharedEntry: function(calendar, data, finished) {
         let dirPath = this.sharedDirPath(data.calendarName);
         let pointer = {owner: data.owner, uid: data.uid};
         if (dirPath == null || ! this.isSafeEventId(data.uid) || ! this.isSafeEventId(data.owner)) {
+            finished();
             return;
         }
         let filePath = peergos.client.PathUtils.toPath(dirPath.split('/'), this.sharedSnapshotName(pointer));
-        calendar.deleteInternal(filePath, this.context.username);
+        calendar.deleteInternal(filePath, this.context.username)
+            .thenApply(function(res) { finished(); return null; })
+            .exceptionally(function(throwable) { finished(); return null; });
     },
     readSharedSnapshot: function(calendar, data) {
         let that = this;
@@ -2427,14 +2442,14 @@ module.exports = {
     // --- Reminders ---------------------------------------------------------
     // The app sends the whole upcoming list whenever its entries change, and
     // this replaces what was scheduled before - so a deleted or moved entry
-    // cannot leave an alarm behind. Nothing is sent anywhere: Android hands
-    // the list to AlarmManager, and everything else keeps timers for the ones
-    // due while the app is open.
+    // cannot leave an alarm behind. Nothing is sent anywhere: Android rings
+    // them from the phone's own calendar, and everywhere else the page keeps
+    // timers for the ones due while it is open.
     scheduleReminders: function(items) {
-        // Android needs nothing here: the sync adapter has already written a
-        // Reminders row beside the event in the phone's own calendar, and the
-        // system rings that whether this app is open or not. Everywhere else
-        // the page raises them for as long as it is open.
+        // Android needs nothing here: the sync adapter writes a Reminders row
+        // beside the event in the phone's own calendar, and the Android app
+        // rings that whether this page is open or not. Everywhere else the
+        // page raises them for as long as it is open.
         if (typeof window.Android !== "undefined" && window.Android) {
             return;
         }

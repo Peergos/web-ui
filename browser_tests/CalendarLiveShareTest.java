@@ -6,7 +6,8 @@ import java.util.*;
  *  Bob does not get a copy: he gets a snapshot of Alice's file beside a pointer back to it,
  *  so when she changes the entry his calendar catches up instead of quietly showing what she
  *  used to have. Both directions are checked - her change reaching him, and, when the share
- *  was writable, his change reaching her own file.
+ *  was writable, his change reaching her own file. Removing it at his end takes his snapshot
+ *  and nothing of hers, and the Android app is told only once the snapshot is gone.
  *
  *  Usage: java -cp ../server/Peergos.jar CalendarLiveShareTest.java [engine] [url]
  */
@@ -178,6 +179,41 @@ public class CalendarLiveShareTest {
             if (owned.contains("X-PEERGOS-SRC-"))
                 throw new AssertionError("The reader's pointer was written into the owner's file: " + owned);
             System.out.println("  ok   and it landed in the owner's own file, saying the same thing");
+
+            // --- the reader removes it, which takes his snapshot and nothing of hers ---------
+            signIn(d, url, bob);
+            CalendarApp.open(d);
+            CalendarApp.waitInFrame(d, "the writable entry on the grid", drawn(writableId), 120_000);
+            CalendarApp.standInForAndroid(d, bobDir + "/shared");
+            d.waitUntil("the entry to offer deleting", () -> {
+                CalendarApp.openPopover(d, WRITABLE);
+                return Boolean.TRUE.equals(CalendarApp.inFrame(d,
+                        "let del = document.getElementById('popover-delete');"
+                                + "return !!del && del.offsetParent !== null;")) ? true : null;
+            }, 120_000);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.waitInFrame(d, "the delete question",
+                    "document.getElementById('confirm-modal-backdrop').classList.contains('open')", 30_000);
+            int told = CalendarApp.timesTold(d);
+            CalendarApp.inFrame(d, CalendarApp.click("confirm-ok") + "return 1;");
+            // The phone copies the calendar when it is told, so it has to be told once the
+            // snapshot is gone, or its copy keeps the entry and the entry's reminder.
+            List<String> whenTold = CalendarApp.listedWhenTold(d, told + 1);
+            if (whenTold.contains(bobsSnapshot))
+                throw new AssertionError("The Android app was told before the removal reached the"
+                        + " store: " + whenTold);
+            d.waitUntil("the reader's snapshot to be gone", () ->
+                    CalendarApp.list(d, bobDir + "/shared").contains(bobsSnapshot) ? null : true, 90_000);
+            // Read again from the store: the other entry is drawn, this one does not come back.
+            CalendarApp.open(d);
+            CalendarApp.waitInFrame(d, "the read-only entry on the grid", drawn(sharedId), 120_000);
+            if (Boolean.TRUE.equals(CalendarApp.inFrame(d, "return " + drawn(writableId) + ";")))
+                throw new AssertionError("The entry the reader removed came back when the calendar was read again");
+            signIn(d, url, alice);
+            CalendarApp.open(d);
+            if (! CalendarApp.list(d, month).contains(writableFile))
+                throw new AssertionError("The reader removing the entry deleted the owner's own file");
+            System.out.println("  ok   the reader removed it, which took only their own snapshot");
             System.out.println("PASS");
         } finally {
             if (own != null)

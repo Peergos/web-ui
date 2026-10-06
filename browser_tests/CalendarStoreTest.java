@@ -8,6 +8,9 @@ import java.util.*;
  *  ends with has to be nothing. And deleting a calendar removes that calendar's directory and
  *  no other: the account's own calendar keeps every file it had.
  *
+ *  Both times the Android app, which copies the calendar into the phone's own when told, is
+ *  told only once the change is in the store.
+ *
  *  Usage: java -cp ../server/Peergos.jar CalendarStoreTest.java [engine] [url]
  */
 public class CalendarStoreTest {
@@ -45,6 +48,7 @@ public class CalendarStoreTest {
             java.time.LocalDate today = java.time.LocalDate.now();
             String month = calendar + "/" + today.getYear() + "/" + today.getMonthValue();
             System.out.println("calendar open, this month under " + month);
+            CalendarApp.standInForAndroid(d, month);
 
             // --- create, edit, delete, back to back ------------------------------------------
             CalendarApp.newEntry(d, "add-menu-event", "event-modal-backdrop");
@@ -57,10 +61,13 @@ public class CalendarStoreTest {
             // either name is otherwise just as true before the entry was ever stored as it is
             // after it was properly removed. This entry's own, not any file: the month is the
             // one the tests before this shared, and it is not empty.
+            String[] stored = {null};
             d.waitUntil("the entry to reach the store", () -> {
                 for (String name : CalendarApp.list(d, month))
-                    if (CalendarApp.read(d, month, name).contains("SUMMARY:" + FIRST))
+                    if (CalendarApp.read(d, month, name).contains("SUMMARY:" + FIRST)) {
+                        stored[0] = name;
                         return true;
+                    }
                 return null;
             }, 120_000);
             CalendarApp.openPopover(d, FIRST);
@@ -102,6 +109,16 @@ public class CalendarStoreTest {
                     throw new AssertionError("The entry came back after the delete: " + timeline);
             }
             System.out.println("  ok   an edit and a delete fired together leave nothing behind");
+            // The phone copies the calendar each time it is told, so the last telling, the
+            // delete's, has to come once the file is gone.
+            int told = CalendarApp.timesTold(d);
+            if (told < 3)
+                throw new AssertionError("The Android app was told of " + told + " of the 3 writes");
+            List<String> whenTold = CalendarApp.listedWhenTold(d, told);
+            if (whenTold.contains(stored[0]))
+                throw new AssertionError("The Android app was told of the delete before it reached"
+                        + " the store: " + whenTold);
+            System.out.println("  ok   and the Android app was told of each, the delete once it had landed");
 
             // --- deleting a calendar takes only its own directory ----------------------------
             List<String> ownFiles = CalendarApp.list(d, month);
@@ -138,6 +155,7 @@ public class CalendarStoreTest {
                     + "  edit.click(); r(1); }, 300));");
             CalendarApp.waitInFrame(d, "the calendar dialog",
                     "document.getElementById('calendar-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.standInForAndroid(d, temp);
             CalendarApp.inFrame(d, CalendarApp.click("calendar-delete") + "return 1;");
             d.waitForScript("the host's delete question", "window.__cal.showConfirm === true", 30_000);
             d.script("window.__cal.showConfirm = false; window.__cal.confirm_consumer_func();");
@@ -154,6 +172,11 @@ public class CalendarStoreTest {
                 throw new AssertionError("Deleting " + TEMP + " changed the account's own month: "
                         + ownFiles + " became " + ownFilesAfter);
             System.out.println("  ok   deleting a calendar removes its directory and touches no other");
+            List<String> tempWhenTold = CalendarApp.listedWhenTold(d, 1);
+            if (! tempWhenTold.isEmpty())
+                throw new AssertionError("The Android app was told of the deleted calendar while"
+                        + " its directory still held " + tempWhenTold);
+            System.out.println("  ok   and the Android app was told once it had gone");
             System.out.println("PASS");
         } finally {
             if (own != null)

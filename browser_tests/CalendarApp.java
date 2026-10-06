@@ -196,6 +196,37 @@ public class CalendarApp {
         return String.valueOf(dir);
     }
 
+    /** Stands in for the Android app, which copies the calendar into the phone's own each time
+     *  the host calls calendarChanged on its bridge. Each call lists `subPath` there and then,
+     *  which is what that copy would be made from. Lasts until the page is loaded again. */
+    public static void standInForAndroid(WebDriver d, String subPath) {
+        d.script("let dir = arguments[0]; window.__told = [];"
+                + "window.Android = {calendarChanged: function() {"
+                + "  let call = {listing: null}; window.__told.push(call);"
+                + "  peergos.shared.user.App.init(window.__cal.context, 'calendar').thenApply(app =>"
+                + "    app.dirInternal(peergos.client.PathUtils.directoryToPath(dir.split('/')),"
+                + "        window.__cal.context.username)"
+                + "      .thenApply(names => { call.listing = names.toArray([]).map(n => String(n)); })"
+                + "      .exceptionally(t => { call.listing = []; }));"
+                + "}};", subPath);
+    }
+
+    /** How many times the stand-in has been told so far. */
+    public static int timesTold(WebDriver d) {
+        return ((Number) d.script("return window.__told.length;")).intValue();
+    }
+
+    /** What the stand-in listed when it was told for the `nth` time, counting from one. */
+    public static List<String> listedWhenTold(WebDriver d, int nth) {
+        d.waitForScript("the Android app to be told " + nth + " time(s)",
+                "window.__told.length >= " + nth + " && window.__told[" + (nth - 1) + "].listing !== null",
+                90_000);
+        List<String> names = new ArrayList<>();
+        for (Object name : (List<?>) d.script("return window.__told[" + (nth - 1) + "].listing;"))
+            names.add(String.valueOf(name));
+        return names;
+    }
+
     /** The files in one of the app's directories, e.g. "<calendar>/2026/9" or "<calendar>/tasks".
      *  Paths are relative to the calendar app's own data root, which is what the App handle takes. */
     public static List<String> list(WebDriver d, String subPath) {
