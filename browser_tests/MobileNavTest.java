@@ -95,11 +95,11 @@ public class MobileNavTest {
      */
     private static void toggleSidebar(WebDriver d) {
         Object toggled = d.scriptQuiet("let root = null;"
-                + "for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+                + "root = " + Page.VUE + ".root();"
                 + "const queue = root ? [root] : [];"
                 + "while (queue.length) { const c = queue.shift();"
                 + "  if (c && typeof c.toggleSidebar === 'function') { c.toggleSidebar(); return true; }"
-                + "  if (c && c.$children) for (const kid of c.$children) queue.push(kid); }"
+                + "  if (c) for (const kid of " + Page.VUE + ".children(c)) queue.push(kid); }"
                 + "return false;");
         if (! Boolean.TRUE.equals(toggled))
             throw new AssertionError("Nothing in the component tree offers a sidebar toggle");

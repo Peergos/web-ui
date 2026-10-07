@@ -203,7 +203,7 @@ public class CustomGroupsTest {
                     scope, name)) ? true : null, 60_000);
         } catch (RuntimeException e) {
             System.out.println("  picker state: " + d.scriptQuiet("const i = document.querySelector(arguments[0] + ' input.autocomplete');"
-                    + "const c = i ? i.closest('.form-autocomplete').__vue__ : null;"
+                    + "const c = i ? " + Page.VUE + ".of(i.closest('.form-autocomplete')) : null;"
                     + "return 'input=' + !!i + ' options=' + (c ? JSON.stringify(c.options) : 'n/a') + ' shown=' + (c ? c.isShow : 'n/a')"
                     + " + ' lis=' + [...document.querySelectorAll(arguments[0] + ' .options li')].map(li => li.innerText).join(',');", scope));
             throw e;

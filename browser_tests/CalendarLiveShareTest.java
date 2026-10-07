@@ -306,11 +306,11 @@ public class CalendarLiveShareTest {
             if (attempt > 0)
                 Page.gotoDrive(d);
             d.script("let root = null;"
-                    + "for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+                    + "root = " + Page.VUE + ".root();"
                     + "const stack = root ? [root] : [];"
                     + "while (stack.length) { const c = stack.pop();"
                     + "  if (typeof c.updateHistory === 'function') { window.__router = c; break; }"
-                    + "  (c.$children || []).forEach(k => stack.push(k)); }"
+                    + "  " + Page.VUE + ".children(c).forEach(k => stack.push(k)); }"
                     + "if (!window.__router) throw new Error('no component that routes');"
                     + "window.__router.updateHistory('Calendar', arguments[0], {filename: arguments[1]}, false);"
                     + "return 1;", directory, filename);
@@ -350,12 +350,7 @@ public class CalendarLiveShareTest {
             if (Boolean.TRUE.equals(d.scriptQuiet(
                     "return !!document.querySelector('input[name=username]')")))
                 return "signed out";
-            if (Boolean.TRUE.equals(d.scriptQuiet("return (() => {"
-                    + "  for (const el of document.querySelectorAll('*')) {"
-                    + "    const c = el.__vue__;"
-                    + "    if (c && typeof c.logout === 'function') return true;"
-                    + "  }"
-                    + "  return false; })()")))
+            if (Boolean.TRUE.equals(d.scriptQuiet("return " + Page.VUE + ".find('logout') != null")))
                 return "signed in";
             return null;
         }, 120_000);
@@ -372,7 +367,7 @@ public class CalendarLiveShareTest {
 
     static String settle(WebDriver d, String script, String... args) {
         d.script("window.__r = null;"
-                + "window.ctx = function() { return document.querySelector('#app').__vue__.$store.state.context; };"
+                + "window.ctx = function() { return " + Page.VUE + ".root().$store.state.context; };"
                 + script, (Object[]) args);
         try {
             d.waitForScript("the call to settle", "window.__r", 120_000);

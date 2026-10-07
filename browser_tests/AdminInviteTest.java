@@ -95,10 +95,10 @@ public class AdminInviteTest {
             // the link is what the invitee gets: it opens signup with the token in hand
             Page.logout(d);
             d.navigate(prefix + tokens.get(2));
-            d.waitForScript("signup with the token", "(() => { let r = null; for (const e of document.querySelectorAll('*')) if (e.__vue__) { r = e.__vue__.$root; break; }"
+            d.waitForScript("signup with the token", "(() => { let r = null; r = " + Page.VUE + ".root();"
                     + " const st = [r]; while (st.length) { const c = st.pop(); if (! c) continue;"
                     + "   if (c.$options && c.$options.props && 'token' in c.$options.props && c.token === '" + tokens.get(2) + "') return true;"
-                    + "   if (c.$children) st.push(...c.$children); } return false; })()", 60_000);
+                    + "   st.push(..." + Page.VUE + ".children(c)); } return false; })()", 60_000);
             System.out.println("  ok   opening an invite link brings up signup with its token");
 
             refused(() -> UserContext.signUp("inviteeb", "testpassword2", "", network, crypto).join(), "not currently accepting new sign ups");

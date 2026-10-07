@@ -342,9 +342,7 @@ public class CalendarMigrationTest {
             if (Boolean.TRUE.equals(d.scriptQuiet(
                     "return !!document.querySelector('input[name=username]')")))
                 return "signed out";
-            if (Boolean.TRUE.equals(d.scriptQuiet("return (() => { for (const el of"
-                    + " document.querySelectorAll('*')) { const c = el.__vue__;"
-                    + " if (c && typeof c.logout === 'function') return true; } return false; })()")))
+            if (Boolean.TRUE.equals(d.scriptQuiet("return " + Page.VUE + ".find('logout') != null")))
                 return "signed in";
             return null;
         }, 120_000);

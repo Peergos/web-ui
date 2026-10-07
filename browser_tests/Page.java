@@ -3,6 +3,27 @@ import java.util.*;
 /** The few app interactions every test needs. */
 public class Page {
 
+    /** Reaches the Vue 3 component tree from a script, as an expression that defines its helpers on first
+     *  use. Vue 3 has no $children and puts no instance on its elements outside a dev build, so the walk
+     *  starts from the vnode the app mounted into #app and goes down through each component's subTree,
+     *  and straight through functional components such as Transition, which have no proxy. */
+    static final String VUE = "(window.__pgVue || (window.__pgVue = {"
+            + "root() { const a = document.querySelector('#app'); return a && a._vnode && a._vnode.component ? a._vnode.component.proxy : null; },"
+            + "children(c) { const out = [];"
+            + "  const walk = v => { if (v == null || typeof v !== 'object') return;"
+            + "    if (Array.isArray(v)) { v.forEach(walk); return; }"
+            + "    if (v.component) { if (v.component.proxy) out.push(v.component.proxy); else walk(v.component.subTree); return; }"
+            + "    if (v.suspense) { walk(v.suspense.activeBranch); return; }"
+            + "    walk(v.children); };"
+            + "  walk(c.$.subTree); return out; },"
+            + "all() { const out = [], q = []; const r = this.root(); if (r) q.push(r);"
+            + "  while (q.length) { const c = q.shift(); out.push(c); q.push(...this.children(c)); } return out; },"
+            + "shown(c) { return c.$el != null && c.$el.nodeType === 1 && document.contains(c.$el); },"
+            + "find(method) { return this.all().find(c => typeof c[method] === 'function' && this.shown(c)) || null; },"
+            + "of(el) { return this.all().find(c => c.$el === el) || null; },"
+            + "owner(el) { const hits = this.all().filter(c => c.$el && c.$el.nodeType === 1 && c.$el.contains(el)); return hits.length ? hits[hits.length - 1] : null; }"
+            + "}))";
+
     /** Signs in and waits for the app to finish loading.
      *
      *  The username and password are set through the native value setter and an input event
@@ -240,17 +261,15 @@ public class Page {
      *  components the test could see instead of only what the page looked like. */
     private static String components(WebDriver d) {
         return String.valueOf(d.scriptQuiet("return (() => {" +
-                "  let root = null;" +
-                "  for (const el of document.querySelectorAll('*'))" +
-                "    if (el.__vue__) { root = el.__vue__.$root; break; }" +
+                "  const root = " + VUE + ".root();" +
                 "  if (! root) return 'no vue instance on the page';" +
                 "  const names = []; const stack = [root];" +
                 "  while (stack.length > 0) {" +
                 "    const c = stack.pop();" +
                 "    if (! c) continue;" +
                 "    const o = c.$options || {};" +
-                "    names.push(o.name || o._componentTag || 'anon');" +
-                "    if (c.$children) for (const kid of c.$children) stack.push(kid);" +
+                "    names.push(o.name || c.$.type.__name || 'anon');" +
+                "    for (const kid of " + VUE + ".children(c)) stack.push(kid);" +
                 "  }" +
                 "  return names.slice(0, 40).join(',');" +
                 "})()"));
@@ -268,13 +287,10 @@ public class Page {
     /** Finds a component exposing the named method, by walking the component tree and taking
      *  only one whose element is in the document.
      *
-     *  Both halves matter. The element has to be on the page because the router builds a view's
-     *  component before it is shown, and a plain tree walk finds a Drive that has never been
-     *  opened, returns without clicking the nav, and leaves every later wait asking a view that
-     *  was never asked to load anything. The walk has to be the tree and not el.__vue__: a view's
-     *  root element carries that only until the <transition> wrapping the views claims it, and
-     *  it is handed back when the transition re-renders - so a view that has been on screen
-     *  since the swap, and has not re-rendered since, is invisible to the dom.
+     *  The element has to be on the page because the router builds a view's component before it
+     *  is shown, and a plain tree walk finds a Drive that has never been opened, returns without
+     *  clicking the nav, and leaves every later wait asking a view that was never asked to load
+     *  anything.
      *
      *  Breadth first, so the shallowest match wins: downloadFile comes from a mixin that
      *  seven components carry, and a depth first walk hands back whichever child of the
@@ -286,9 +302,7 @@ public class Page {
         boolean first = true;
         String find = "(() => {" +
                 "  const wanted = '" + methodName + "';" +
-                "  let root = null;" +
-                "  for (const el of document.querySelectorAll('*'))" +
-                "    if (el.__vue__) { root = el.__vue__.$root; break; }" +
+                "  const root = " + VUE + ".root();" +
                 "  if (! root) return false;" +
                 "  const queue = [root];" +
                 "  while (queue.length > 0) {" +
@@ -296,7 +310,7 @@ public class Page {
                 "    if (! c) continue;" +
                 "    if (typeof c[wanted] === 'function' && c.$el && c.$el.nodeType === 1" +
                 "        && document.contains(c.$el)) { window." + handle + " = c; return true; }" +
-                "    if (c.$children) for (const kid of c.$children) queue.push(kid);" +
+                "    for (const kid of " + VUE + ".children(c)) queue.push(kid);" +
                 "  }" +
                 "  return false;" +
                 "})()";

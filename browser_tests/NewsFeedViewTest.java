@@ -85,10 +85,10 @@ public class NewsFeedViewTest {
             System.out.println("  ok   one's own post opens for editing from its menu, the composer closes on escape, the menu closes on a click elsewhere or escape, and the post is deleted from it once confirmed");
 
             d.script("[...document.querySelectorAll('#feed a')].find(a => a.textContent.trim() === arguments[0]).click(); return 1;", folder);
-            d.waitForScript("the shared folder in the drive", "(() => { let r = null; for (const e of document.querySelectorAll('*')) if (e.__vue__) { r = e.__vue__.$root; break; }"
+            d.waitForScript("the shared folder in the drive", "(() => { let r = null; r = " + Page.VUE + ".root();"
                     + " const q = [r]; while (q.length) { const c = q.shift(); if (! c) continue;"
                     + "   if (typeof c.downloadFile === 'function' && c.currentDir) return c.currentDir.getName() === " + js(folder) + ";"
-                    + "   q.push(...(c.$children || [])); } return false; })()", 60_000);
+                    + "   q.push(..." + Page.VUE + ".children(c)); } return false; })()", 60_000);
             System.out.println("  ok   the shared folder's name opens it in the drive");
             System.out.println("PASS");
         } finally {
@@ -165,8 +165,8 @@ public class NewsFeedViewTest {
                 + " window.__toastWatch.observe(document.body, {childList: true, subtree: true, characterData: true}); return 1;");
         // and count the composer's own steps, so a post that never closes can say whether the
         // click reached it at all, and whether it asked to be closed
-        d.script("const feed = document.querySelector('.newsfeed-view').__vue__, q = [feed]; let p = null;"
-                + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(...c.$children); }"
+        d.script("const feed = " + Page.VUE + ".of(document.querySelector('.newsfeed-view')), q = [feed]; let p = null;"
+                + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(..." + Page.VUE + ".children(c)); }"
                 + " window.__postCalls = {submit: 0, close: 0, errors: []};"
                 + " if (p) { const s = p.submitPost, c = p.closeSocialPostForm;"
                 + "   p.submitPost = function() { window.__postCalls.submit++; return s.apply(this, arguments); };"
@@ -190,8 +190,8 @@ public class NewsFeedViewTest {
      *  gone from the feed and only its dialog stays, for as long as it takes to fade out. */
     static void sayWhereThePostIs(WebDriver d) {
         try {
-            System.out.println("  the composer: " + d.script("const feed = document.querySelector('.newsfeed-view').__vue__, q = [feed]; let p = null;"
-                    + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(...c.$children); }"
+            System.out.println("  the composer: " + d.script("const feed = " + Page.VUE + ".of(document.querySelector('.newsfeed-view')), q = [feed]; let p = null;"
+                    + " while (q.length && ! p) { const c = q.shift(); if (typeof c.submitPost === 'function') p = c; else q.push(..." + Page.VUE + ".children(c)); }"
                     + " const text = document.querySelector('#social-post-text'), dialog = text && text.closest('.pg-dialog__mask');"
                     + " return JSON.stringify({open: !! p, posting: p && p.isPosting, spinner: p && p.showSpinner, shareWith: p && p.shareWith,"
                     + "   dialog: dialog && dialog.className, groups: Object.keys(feed.$store.state.socialData.groupsNameToUid),"

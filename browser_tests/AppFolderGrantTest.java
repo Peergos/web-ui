@@ -258,7 +258,7 @@ public class AppFolderGrantTest {
         d.script("const queue = [window.__launcher];"
                 + "while (queue.length > 0) { const c = queue.shift();"
                 + "  if (typeof c.closeSandbox === 'function') { c.closeSandbox(); return 1; }"
-                + "  queue.push(...c.$children); }"
+                + "  queue.push(..." + Page.VUE + ".children(c)); }"
                 + "throw new Error('no sandbox to close');");
         d.waitForScript("the app to close", "!document.querySelector('" + OUTER + "')", 60_000);
     }

@@ -67,7 +67,7 @@ public class CalendarWholeShareTest {
 
             // --- The reader takes the writable one in, in the dark -----------------------------
             CalendarLiveShareTest.signIn(d, url, bob);
-            d.script("document.querySelector('#app').__vue__.$store.commit('SET_THEME', true); return 1;");
+            d.script("" + Page.VUE + ".root().$store.commit('SET_THEME', true); return 1;");
             // Opened once and left, the way anybody who uses their own calendar before
             // somebody shares one with them would have left it.
             CalendarApp.open(d);
@@ -201,11 +201,11 @@ public class CalendarWholeShareTest {
     /** Routes to a calendar the way the drive does, and answers the question it asks. */
     static void answer(WebDriver d, String path, String reply) {
         d.script("let root = null;"
-                + "for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+                + "root = " + Page.VUE + ".root();"
                 + "const stack = root ? [root] : [];"
                 + "while (stack.length) { const c = stack.pop();"
                 + "  if (typeof c.updateHistory === 'function') { window.__router = c; break; }"
-                + "  (c.$children || []).forEach(k => stack.push(k)); }"
+                + "  " + Page.VUE + ".children(c).forEach(k => stack.push(k)); }"
                 + "if (!window.__router) throw new Error('no component that routes');"
                 + "window.__router.updateHistory('Calendar', arguments[0], {}, false); return 1;", path);
         d.waitUntil("the question about taking " + path + " in", () -> Boolean.TRUE.equals(d.scriptQuiet(

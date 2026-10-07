@@ -122,9 +122,8 @@ public class LinkEditorCheck {
 
             // removing asks first, and Yes has to actually take the item out: the confirm hides
             // itself before it calls back, which once dropped the item it was asked about
-            d.script("""
-                // the element belongs to the <transition> the dialog renders through, so climb to it
-                let vm = document.querySelector('.secret-link').parentElement.__vue__;
+            d.script("let vm = " + Page.VUE + ".owner(document.querySelector('.secret-link'));" + """
+                // the innermost component holding the element may be a child of the dialog, so climb to it
                 while (vm && ! Array.isArray(vm.members)) vm = vm.$parent;
                 vm.addMember(vm.members[0].path + '/removal-check', false);
                 """);
