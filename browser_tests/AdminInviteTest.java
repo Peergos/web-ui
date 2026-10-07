@@ -135,7 +135,8 @@ public class AdminInviteTest {
      *  says nothing about who is an admin. */
     private static void openPanel(WebDriver d) {
         d.script("document.querySelector('.user-settings .drive-user').click(); return 1;");
-        String adminItem = "[...document.querySelectorAll('.user-settings li')].find(li => li.textContent.trim() === 'Admin Panel')";
+        // the menu is rendered each time it opens, so once a language is chosen it is in that language
+        String adminItem = "[...document.querySelectorAll('.user-settings li')].find(li => ['Admin Panel', 'Πίνακας διαχείρισης'].includes(li.textContent.trim()))";
         d.waitForScript("the admin menu item", adminItem, 60_000);
         d.script(adminItem + ".click(); return 1;");
         d.waitForScript("the admin panel", "!!document.querySelector('.admin-invites')", 60_000);

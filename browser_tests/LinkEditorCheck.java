@@ -47,10 +47,10 @@ public class LinkEditorCheck {
 
             // A render error inside the modal drops the whole thing, Create button included, and
             // never reaches showShareWith - so catch what Vue itself reports while it renders.
-            d.script("""
+            d.script("const config = " + Page.VUE + ".root().$.appContext.config;" + """
                 window.__vueErrs = [];
-                const before = Vue.config.errorHandler;
-                Vue.config.errorHandler = function (err, vm, info) {
+                const before = config.errorHandler;
+                config.errorHandler = function (err, vm, info) {
                     window.__vueErrs.push(info + ': ' + err + (err && err.stack ? ' @ ' + String(err.stack).split('\\n')[1] : ''));
                     if (before) before(err, vm, info);
                 };
