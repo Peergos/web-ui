@@ -10,7 +10,7 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click.native="toggle()"
+			@click="toggle()"
 		>
 			<slot name="trigger"></slot>
 		</AppButton>

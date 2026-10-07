@@ -3,13 +3,13 @@
 
 		<div class="nav-dismiss" @click="toggleSidebar()" aria-hidden="true"></div>
 
-		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click.native="toggleSidebar()"/>
+		<AppIcon class="logo" :icon="isOpen ? 'logo-full' : 'logo-min'" @click="toggleSidebar()"/>
 
 		<AppButton
 			class="toggle-theme"
 			size="small"
 			:icon="isDark ? 'sun' : 'moon'"
-			@click.native="toggleTheme()"
+			@click="toggleTheme()"
 			aria-label="Toggle themes"
 		/>
 

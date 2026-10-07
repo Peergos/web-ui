@@ -133,7 +133,7 @@
 			size="small"
 			round
 			icon="dot-menu"
-			@click.native="toggleSidebar()"
+			@click="toggleSidebar()"
 			aria-label="Open menu"
 		/>
 	</nav>

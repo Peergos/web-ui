@@ -16,9 +16,9 @@
                         <h2>{{ translate("LINK.UNAVAILABLE") }}</h2>
                         <p>{{ secretLinkError }}</p>
                     </div>
-                    <center v-else>
+                    <div class="pg-center" v-else>
 			<h2>Loading file...</h2>
-                    </center>
+                    </div>
                     <LinkPassword
                         v-if="showLinkPassword"
                         v-on:hide-modal="showLinkPassword = false"
@@ -59,7 +59,7 @@
 							:disabled="desktopServerBusy || desktopServerUrl.trim().length === 0"
 							type="primary"
 							accent
-							@click.native="saveDesktopServer()"
+							@click="saveDesktopServer()"
 						>
 							{{ translate("LOGIN.SERVER.SAVE") }}
 						</AppButton>
@@ -305,7 +305,7 @@ module.exports = {
 	window.addEventListener("resize", this.onWindowResize, { passive: true });
     },
 
-    beforeDestroy() {
+    beforeUnmount() {
 	window.removeEventListener("hashchange", this.onUrlChange);
 	window.removeEventListener("resize", this.onWindowResize);
 	if (this.coarsePointerQuery)

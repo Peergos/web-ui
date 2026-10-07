@@ -9,7 +9,7 @@
 					:class="`modal--${position}`"
 					@click.stop
 				>
-					<AppButton class="close" icon="close" @click.native="closeModal()"/>
+					<AppButton class="close" icon="close" @click="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
 					<footer><slot name="footer"></slot></footer>

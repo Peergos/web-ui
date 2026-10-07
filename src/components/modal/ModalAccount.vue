@@ -28,14 +28,14 @@
 
 			<div class="modal__warning account" v-if="warning">
 				<p><AppIcon icon="warning"/>{{ translate("DELETE.ACCOUNT.CONFIRM") }}</p>
-				<AppButton @click.native="deleteAccount()" accent >{{ translate("DELETE.ACCOUNT.YES") }}</AppButton>
-				<AppButton @click.native="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</AppButton>
+				<AppButton @click="deleteAccount()" accent >{{ translate("DELETE.ACCOUNT.YES") }}</AppButton>
+				<AppButton @click="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</AppButton>
 			</div>
 
 		</template>
 		<template #footer>
 
-			 <AppButton @click.native="showWarning()" type="primary" block accent>{{ translate("DELETE.ACCOUNT") }}</AppButton>
+			 <AppButton @click="showWarning()" type="primary" block accent>{{ translate("DELETE.ACCOUNT") }}</AppButton>
 
 		</template>
 	</AppModal>

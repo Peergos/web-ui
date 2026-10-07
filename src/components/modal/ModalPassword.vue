@@ -15,7 +15,7 @@
             </MultiFactorAuth>
 			<FormPassword v-model="existing" :placeholder="translate('PASSWORD.EXISTING')"/>
 
-			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
+			<AppButton class="generate-password" type="primary" block accent @click="generatePassword()">
 				{{ translate("PASSWORD.GENERATE") }}
 			</AppButton>
 
@@ -26,7 +26,7 @@
 		</template>
 		<template #footer>
 
-			 <AppButton  @click.native="updatePassword()" type="primary" block accent>{{ translate("PASSWORD.CHANGE") }}</AppButton>
+			 <AppButton  @click="updatePassword()" type="primary" block accent>{{ translate("PASSWORD.CHANGE") }}</AppButton>
 
 		</template>
 	</AppModal>

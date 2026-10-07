@@ -6,13 +6,13 @@
 			autocomplete="current-password"
                         :placeholder="placeholder"
 			:type="passwordIsVisible ? 'text' : 'password'"
-			:value="value"
-    		@input="$emit('input', $event.target.value)"
+			:value="modelValue"
+    		@input="$emit('update:modelValue', $event.target.value)"
 			@blur="validatePassword()"
 		/>
 
 		<AppButton class="eye"
-			@click.native="togglePassword()"
+			@click="togglePassword()"
 			:icon="passwordIsVisible ? 'eye-open' : 'eye-closed'"
 		/>
 
@@ -28,8 +28,9 @@ module.exports = {
 	components: {
 	    AppButton,
 	},
+    emits: ['update:modelValue'],
     props: {
-	value:{
+	modelValue:{
 	    type: [String, Array],
 	},
 	placeholder: {
@@ -59,10 +60,10 @@ module.exports = {
 	},
         
 	validatePassword() {
-	    if (!this.firstOfTwo || this.value == '')
+	    if (!this.firstOfTwo || this.modelValue == '')
 		return
             
-	    let passwd = this.value
+	    let passwd = this.modelValue
 	    let index = CommonPasswords.indexOf(passwd);
 	    let suffix = ["th", "st", "nd", "rd", "th", "th", "th", "th", "th", "th"][(index+1) % 10];
             

@@ -5,7 +5,7 @@
 			<meter min="0" low="0" high="90" max="100" v-bind:value="percentage"></meter>
 		</div>
 
-		<AppButton class="upgrade" size="small" v-if="!isPro" @click.native="showRequestStorage()">
+		<AppButton class="upgrade" size="small" v-if="!isPro" @click="showRequestStorage()">
 			{{ translate("APPNAV.UPGRADE") }}
 		</AppButton>
 	</div>

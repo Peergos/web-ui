@@ -605,7 +605,7 @@ module.exports = {
 
         // title tooltips never fire on touch, so a group name cut short opens on a tap as well
         toggleGroupName(uid) {
-            Vue.set(this.expandedGroups, uid, ! this.expandedGroups[uid]);
+            this.expandedGroups[uid] = ! this.expandedGroups[uid];
         },
 
         // the first letter of a name, for the round mark beside it
@@ -623,7 +623,7 @@ module.exports = {
         loadMembers(uid) {
             let that = this;
             return this.context.getGroupMembers(uid).thenApply(members => {
-                that.$set(that.groupMembers, uid, members.toArray([]));
+                that.groupMembers[uid] = members.toArray([]);
             });
         },
         memberCountLabel(uid) {

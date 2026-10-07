@@ -61,7 +61,7 @@ module.exports = {
   created() {
     this.registerTreeItem(this);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.unregisterTreeItem(this);
   },
   computed: {

@@ -312,7 +312,7 @@ module.exports = {
         };
     },
     mixins: [routerMixins, i18n, localServer, paths, errors, network],
-    destroyed() {
+    unmounted() {
         clearTimeout(this.pollTimeoutId);
         this.stopWorking();
     },

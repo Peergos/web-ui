@@ -142,7 +142,7 @@ module.exports = {
         this.folderPickerTitle = this.pickerTitle != null ? this.pickerTitle : this.translate("FOLDER.PICKER.TITLE");
         // start every choice as the caller states it, else off: the picker is recreated per use,
         // and inheriting the previous answer would silently apply it to the next folder
-        this.choices.forEach(c => Vue.set(this.chosen, c.key, c.checked === true));
+        this.choices.forEach(c => this.chosen[c.key] = c.checked === true);
         this.selectedFoldersList = this.initiallySelectedPaths.slice();
         let numberOfFriends = this.friendnames.length;
         let doNotShowDriveSelection = this.noDriveSelection !=null && this.noDriveSelection === true;
@@ -193,7 +193,7 @@ module.exports = {
             this.loadSubFolders(path, callback);
         },
         setChoice: function(key, value) {
-            Vue.set(this.chosen, key, value);
+            this.chosen[key] = value;
         },
         // the tree row owns the reload of its own children, so creation is delegated to it
         treeItemFor: function(path) {

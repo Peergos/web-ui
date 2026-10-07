@@ -5,13 +5,13 @@
             <div class="modal-container" @click.stop>
                 
                 <div class="modal-header">
-                    <center>
+                    <div class="pg-center">
                         <h3 id="confirm-header-id">{{message}}</h3>
-                    </center>
+                    </div>
                 </div>
                 
                 <div class="modal-body">
-                    <center>
+                    <div class="pg-center">
                         <div class="container" style="word-wrap:break-word;width:auto">
                             <p id='confirm-body-id' style="text-align:center;">{{body}}</p>
                         </div>
@@ -19,7 +19,7 @@
                         <a class="btn btn-success btn-lg" @click="yes()" v-bind:href="href" style="width:50%" target="_blank">
                             Ok
                         </a>
-                    </center>
+                    </div>
                 </div>
             </div>
         </div>

@@ -131,7 +131,7 @@
                                 </div>
                                 <div v-if="!entry[0].isPost && !entry[0].isMedia" class="feed-preview">
                                     <a v-if="!entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__icon">
-                                        <AppIcon @click.stop.native="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
+                                        <AppIcon @click.stop="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
                                     </a>
                                     <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
                                     <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>

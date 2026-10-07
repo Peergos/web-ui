@@ -4,7 +4,7 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
+					<AppButton class="close" icon="close" @click="closePrompt()"/>
 					<h3>{{message}}</h3>
 				</header>
                 <div class="prompt__body">
@@ -60,7 +60,7 @@
                     </label>
                 </div>
 				<footer class="prompt__footer">
-					<AppButton outline @click.native="closePrompt()">
+					<AppButton outline @click="closePrompt()">
 						Cancel
 					</AppButton>
 
@@ -68,7 +68,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="getPrompt()"
+						@click="getPrompt()"
 					>
 					{{action}}
 					</AppButton>

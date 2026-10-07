@@ -5,7 +5,7 @@
     <div @click.stop class="folder-properties-container">
         <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
         <div class="modal-header">
-            <center><h2>Folder: {{folderName}}</h2></center>
+            <div class="pg-center"><h2>Folder: {{folderName}}</h2></div>
         </div>
         <div class="modal-body">
             <div class="folder-properties-view">

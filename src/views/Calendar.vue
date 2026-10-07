@@ -117,7 +117,7 @@ module.exports = {
             // What the frame was last sent, so a frame that comes up after it can be given
             // the same thing rather than nothing at all.
             lastLoad: null,
-            // Both undone in beforeDestroy: the window outlives this view.
+            // Both undone in beforeUnmount: the window outlives this view.
             messageListener: null,
             shareRetry: null,
             // Writes this host has started and not yet seen land, by entry id. A share
@@ -231,7 +231,7 @@ module.exports = {
 	mounted(){
         document.body.style.overflow = 'hidden';
     },
-    beforeDestroy(){
+    beforeUnmount(){
         document.body.style.overflow = '';
         this.cancelSweeps();
         clearTimeout(this.listenerRetry);

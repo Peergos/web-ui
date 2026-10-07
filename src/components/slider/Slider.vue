@@ -30,14 +30,14 @@
 		<!-- <AppButton
 			class="slider__button button--prev"
 			aria-label="Previous slide"
-			@click.native="slide(-1)"
+			@click="slide(-1)"
 			icon="arrow-right"
 		>
 		</AppButton> -->
 		<AppButton
 			class="slider__button button--next"
 			aria-label="Next slide"
-			@click.native="slide(1)"
+			@click="slide(1)"
 			icon="arrow-right"
 			accent
 		>

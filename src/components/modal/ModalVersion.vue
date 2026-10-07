@@ -12,7 +12,7 @@
 		</template>
 		<template #footer>
 
-			<AppButton @click.native="close()" type="primary" block accent>{{ translate("VERSION.CLOSE") }}</AppButton>
+			<AppButton @click="close()" type="primary" block accent>{{ translate("VERSION.CLOSE") }}</AppButton>
 		</template>
 	</AppModal>
 </template>

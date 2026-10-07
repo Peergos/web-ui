@@ -7,7 +7,7 @@
             :accent="totalFiles == selectedFiles.length"
             :icon="totalFiles == selectedFiles.length ? 'check' : null"
             aria-label="Select All"
-            @click.native="$emit('selectAllOrNone', 0 )">
+            @click="$emit('selectAllOrNone', 0 )">
         </AppButton>
         <AppDropdown
           v-if="selectedFiles.length"

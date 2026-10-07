@@ -125,7 +125,7 @@
               :filename="file.getFileProperties().name"
               :src="getThumbnailURL(file)"
               :type="file.getFileProperties().getType()"
-              @click.native="openOrSelect(file, $event)"
+              @click="openOrSelect(file, $event)"
               @openMenu="openMenu(file)"
               :dragstartFunc="dragStart"
               :dropFunc="drop"
@@ -1046,7 +1046,7 @@ module.exports = {
         this.init();
 	},
 
-	beforeDestroy() {
+	beforeUnmount() {
 		window.removeEventListener('resize', this.onResize );
 
 	},

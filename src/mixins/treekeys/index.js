@@ -101,7 +101,7 @@ module.exports = {
             tree.addEventListener("keydown", this.treeKeysHandler);
         },
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.treeKeysEl != null)
             this.treeKeysEl.removeEventListener("keydown", this.treeKeysHandler);
     },

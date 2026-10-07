@@ -31,7 +31,7 @@
 				<span class="checkmark"></span>
 			</label>
 
-			<AppButton class="signup" type="primary" block accent @click.native="mirror()" icon="arrow-right">
+			<AppButton class="signup" type="primary" block accent @click="mirror()" icon="arrow-right">
 				{{ signupButtonText }}
 			</AppButton>
 		</template>
@@ -51,7 +51,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
+                                <AppButton @click="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
@@ -60,7 +60,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price2() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer Account</h3>
@@ -69,7 +69,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price3() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
+                                <AppButton @click="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
                         </div>
                 </template>

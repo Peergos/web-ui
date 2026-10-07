@@ -18,7 +18,7 @@
                 :consumer_cancel_func="consumer_cancel_func"
                 :consumer_func="consumer_func">
         </MultiFactorAuth>
-		<FormPassword v-model="password" :placeholder="translate('LOGIN.PASSWORD')" @keyup.native.enter="login()"/>
+		<FormPassword v-model="password" :placeholder="translate('LOGIN.PASSWORD')" @keyup.enter="login()"/>
 
         <label class="checkbox__group">
             {{ translate('LOGIN.STAY') }}
@@ -33,7 +33,7 @@
 		<p class="login__server-hint" v-if="network == null && !networkLoading && isLocalhost">
 			{{ translate('LOGIN.SERVER.CONFIGURE_FIRST') }}
 		</p>
-		<AppButton :disabled="isLoggingIn || network == null" class="login" @click.native="login()" type="primary" block accent  icon="arrow-right">
+		<AppButton :disabled="isLoggingIn || network == null" class="login" @click="login()" type="primary" block accent  icon="arrow-right">
 			{{ translate('LOGIN.BUTTON') }}
 		</AppButton>
 	</div>

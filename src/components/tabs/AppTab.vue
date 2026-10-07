@@ -23,7 +23,7 @@ module.exports = {
 	created() {
 		this.registerTab(this);
 	},
-	beforeDestroy() {
+	beforeUnmount() {
 		this.unregisterTab(this);
 	},
 };

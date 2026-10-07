@@ -98,9 +98,6 @@ module.exports = {
 		window.addEventListener("focus", this.onFocus);
 		this.startTimer();
 	},
-	beforeDestroy() {
-		this.cleanUp();
-	},
 	beforeUnmount() {
 		this.cleanUp();
 	},

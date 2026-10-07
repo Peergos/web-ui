@@ -255,3 +255,12 @@ select:active{
 		visibility: visible !important;
 	}
 } */
+
+/* what <center> did, which Vue 3 no longer treats as an HTML element */
+.pg-center {
+	text-align: center;
+}
+.pg-center > table {
+	margin-left: auto;
+	margin-right: auto;
+}

@@ -11,14 +11,14 @@
             :icon="selected ? 'check' : null"
             round 
             outline 
-            @click.stop.native="toggleSelection($event)"
+            @click.stop="toggleSelection($event)"
         />
         <AppButton
 			v-if="! menuStandsDown(file)"
 			class="card__menu"
 			icon="dot-menu"
 			aria-label="menu"
-			@click.stop.native="showMenu($event)"
+			@click.stop="showMenu($event)"
 		/>
 
 		<figure :id="itemIndex" 

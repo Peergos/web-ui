@@ -139,7 +139,7 @@
 		</template>
 		<template #footer>
                     
-			 <!-- <AppButton @click.native="showWarning()" type="primary" block accent>Delete account</AppButton> -->
+			 <!-- <AppButton @click="showWarning()" type="primary" block accent>Delete account</AppButton> -->
 
 		</template>
 	</AppModal>

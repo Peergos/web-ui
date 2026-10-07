@@ -2,7 +2,7 @@
 	<header class="drive-header" :class="{'drive-header--path-open': pathExpanded}">
 
 			<nav ref="breadcrumb" class="drive-breadcrumb" :class="{'drive-breadcrumb--expanded': pathExpanded, 'drive-breadcrumb--tight': pathTight}">
-				<AppButton v-if="!(path.length >2 && path[1] == '.apps')" class="breadcrumb__root" :class="{'breadcrumb__root--current': !path.length}" aria-label="global files" @click.native="$emit('goBackToLevel', 0 )">
+				<AppButton v-if="!(path.length >2 && path[1] == '.apps')" class="breadcrumb__root" :class="{'breadcrumb__root--current': !path.length}" aria-label="global files" @click="$emit('goBackToLevel', 0 )">
 					<AppIcon icon="globe--24"/>
 				</AppButton>
 				<AppIcon v-if="path.length && !(path.length >2 && path[1] == '.apps')" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
@@ -17,14 +17,14 @@
 				     line on a separator and starts the next on a name -->
 				<template v-if="!(path.length >2 && path[1] == '.apps')" v-for="(dir, index) in path">
 					<span v-if="index >= firstShown" :key="index" class="breadcrumb__crumb" :class="{'breadcrumb__crumb--current': index == path.length - 1}">
-						<AppButton class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="openLevel(index)">{{ dir }}</AppButton>
+						<AppButton class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click="openLevel(index)">{{ dir }}</AppButton>
 						<AppIcon v-if="index < path.length - 1" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
 					</span>
 				</template>
                 <template v-if="path.length >2 && path[1] == '.apps'" v-for="(dir, index) in path">
                     <span v-if="index >= firstShown" :key="index" class="breadcrumb__crumb" :class="{'breadcrumb__crumb--current': index == path.length - 1}">
-                        <AppButton v-if="index>2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="openLevel(index)">{{ dir }}</AppButton>
-                        <AppButton v-if="index==2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click.native="index == path.length - 1 && togglePath()">{{ dir }}</AppButton>
+                        <AppButton v-if="index>2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click="openLevel(index)">{{ dir }}</AppButton>
+                        <AppButton v-if="index==2" class="breadcrumb__item" :class="{'breadcrumb__item--current': index == path.length - 1}" :aria-label="dir" :title="dir" tabindex="-1" @click="index == path.length - 1 && togglePath()">{{ dir }}</AppButton>
                         <AppIcon v-if="index < path.length - 1" icon="chevron--24" class="breadcrumb__separator" aria-hidden="true"/>
                     </span>
                 </template>
@@ -36,7 +36,7 @@
 					:icon="gridView ? 'list' : 'grid'"
 					:aria-label="gridView ? 'list view' : 'grid view'"
 					@keyup.enter="$emit('switchView')"
-					@click.native="$emit('switchView')"
+					@click="$emit('switchView')"
 				/>
 
 				<AppDropdown
@@ -65,7 +65,7 @@
 					icon="search"
 					aria-label="search"
 					@keyup.enter="$emit('search')"
-					@click.native="$emit('search')"
+					@click="$emit('search')"
 				/>
 
 				<AppDropdown
@@ -144,7 +144,7 @@ module.exports = {
             window.addEventListener("resize", this.measurePath);
         }
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.pathObserver)
             this.pathObserver.disconnect();
         else

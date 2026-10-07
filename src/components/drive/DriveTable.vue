@@ -52,7 +52,7 @@
 						class="table__menu"
 						icon="dot-menu"
 						aria-label="menu"
-						@click.stop.native="showMenu($event, file)"
+						@click.stop="showMenu($event, file)"
 					/>
 				</td>
 			</tr>

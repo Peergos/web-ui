@@ -1,5 +1,5 @@
 // Replaces vue-toastification, keeping its $toast API and DOM classes so callers and CSS are unchanged.
-// It renders through <Toaster/> in App.vue, which works the same under Vue 2 and Vue 3.
+// It renders through <Toaster/> in App.vue.
 
 const POSITIONS = ["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"];
 
@@ -20,7 +20,7 @@ const defaults = {
     filterBeforeCreate: toast => toast,
 };
 
-const state = (Vue.reactive || Vue.observable)({
+const state = Vue.reactive({
     toasts: [],
     options: Object.assign({}, defaults),
 });
@@ -28,7 +28,7 @@ const state = (Vue.reactive || Vue.observable)({
 let nextId = 0;
 
 function raw(content) {
-    if (content != null && typeof content === "object" && content.component != null && Vue.markRaw)
+    if (content != null && typeof content === "object" && content.component != null)
         Vue.markRaw(content.component);
     return content;
 }
@@ -109,12 +109,8 @@ module.exports = {
     state: state,
     toast: toast,
     visible: visible,
-    install: function(target, options) {
+    install: function(app, options) {
         Object.assign(state.options, options);
-        // Vue 3 app, or the Vue 2 constructor
-        if (target.config != null && target.config.globalProperties != null)
-            target.config.globalProperties.$toast = toast;
-        else
-            target.prototype.$toast = toast;
+        app.config.globalProperties.$toast = toast;
     },
 };

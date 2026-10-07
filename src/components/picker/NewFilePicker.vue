@@ -4,7 +4,7 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
+					<AppButton class="close" icon="close" @click="closePrompt()"/>
 					<h3>{{title}}</h3>
 				</header>
                 <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
@@ -50,7 +50,7 @@
 					</input>
 				</div>
 				<footer class="prompt__footer">
-					<AppButton outline @click.native="closePrompt()">
+					<AppButton outline @click="closePrompt()">
 						Cancel
 					</AppButton>
 
@@ -58,7 +58,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="getPrompt(this.prompt_result)"
+						@click="getPrompt(this.prompt_result)"
 					>
 					{{action}}
 					</AppButton>
