@@ -1,6 +1,6 @@
 /** Uploads and downloads that can be cancelled from their progress toast.
  *
- *  Keyed by the toast's id, which vue-toastification hands the ProgressBar as its toast-id, so the
+ *  Keyed by the toast's id, which the toaster hands the ProgressBar as its toast-id, so the
  *  bar knows to offer Cancel without every $toast.update having to carry a handler along.
  */
 const transfers = {};

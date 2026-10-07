@@ -14,6 +14,7 @@ Vue.config.productionTip = false;
 Vue.use(Vuex);
 var store = require('./store/index.js');
 const ProgressBar = require('./components/drive/ProgressBar.vue');
+const toasts = require('./components/toast/index.js');
 
 const ToastOptions = {
 	hideProgressBar: true,
@@ -30,7 +31,7 @@ const ToastOptions = {
 	}
 };
 
-Vue.use( VueToastification.default, ToastOptions);
+Vue.use(toasts, ToastOptions);
 
 // Initializing Vue after GWT has finished
 setTimeout(function() {

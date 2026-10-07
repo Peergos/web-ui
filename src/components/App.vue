@@ -111,11 +111,13 @@
 
 
 
+		<Toaster/>
 	</div>
 </template>
 
 <script>
 const AppIcon = require("AppIcon.vue");
+const Toaster = require("./toast/Toaster.vue");
 const localServer = require("../mixins/localserver/index.js");
 const AppButton = require("AppButton.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
@@ -176,6 +178,7 @@ const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
+		Toaster,
 	    AppIcon,
 		AppButton,
 		AppNavigation,
