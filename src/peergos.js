@@ -33,8 +33,20 @@ const ToastOptions = {
 
 Vue.use(toasts, ToastOptions);
 
+// Vue 3 wraps reactive state in proxies; a proxied Java object breaks Java's == and has every
+// field read tracked. __v_skip on java.lang.Object's prototype (the one with GWT's typeMarker)
+// keeps them raw, as markRaw would. Vue 2 ignores it.
+function markJavaObjectsRaw() {
+    let p = Object.getPrototypeOf(java.util.Optional.empty());
+    while (p != null && ! Object.prototype.hasOwnProperty.call(p, "typeMarker"))
+        p = Object.getPrototypeOf(p);
+    if (p != null)
+        Object.defineProperty(p, "__v_skip", {value: true});
+}
+
 // Initializing Vue after GWT has finished
 setTimeout(function() {
+    markJavaObjectsRaw();
     var vueRoot = new Vue({
 		el: '#app',
 		store,
