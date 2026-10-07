@@ -135,11 +135,15 @@ extension WebDAVClient: URLSessionTaskDelegate {
                     didReceive challenge: URLAuthenticationChallenge,
                     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
         let method = challenge.protectionSpace.authenticationMethod
-        if method == NSURLAuthenticationMethodHTTPDigest || method == NSURLAuthenticationMethodHTTPBasic {
+        let host = challenge.protectionSpace.host
+        if (method == NSURLAuthenticationMethodHTTPDigest || method == NSURLAuthenticationMethodHTTPBasic)
+            && (host == "localhost" || host == "127.0.0.1" || host == "::1") {
             let cred = URLCredential(user: username, password: password, persistence: .forSession)
             completionHandler(.useCredential, cred)
         } else {
-            completionHandler(.performDefaultHandling, nil)
+            // Never hand our Basic/Digest credentials to a non-loopback host (e.g. after a
+            // malicious redirect), which would leak them over an unencrypted connection.
+            completionHandler(.cancelAuthenticationChallenge, nil)
         }
     }
 }
