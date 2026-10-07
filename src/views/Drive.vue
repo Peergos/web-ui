@@ -1053,9 +1053,10 @@ module.exports = {
 
 
 	watch: {
-		// an empty selection is not a selection, whichever way it emptied
-		selectedFiles(files) {
-			if (files.length == 0)
+		// an empty selection is not a selection, whichever way it emptied: on the length, as
+		// a watch on the array itself misses a splice
+		"selectedFiles.length"(count) {
+			if (count == 0)
 				this.picking = false;
 		},
 
@@ -1752,14 +1753,10 @@ module.exports = {
                             if (arr.length != allowedFiles.length && that.path.length != 1) {
                                 console.log('Folder contains files with disallowed filenames!');
                             }
-                            that.files = [];
+                            that.files = allowedFiles.map(cap => that.buildCapWrapper(cap));
+                            // the reactive copies, so filling them in below re-renders their rows
                             const byName = {};
-                            for (idx in allowedFiles) {
-                                var cap = allowedFiles[idx];
-                                var wrap = that.buildCapWrapper(cap);
-                                that.files.push(wrap);
-                                byName[cap.name()] = wrap;
-                            }
+                            that.files.forEach(w => byName[w.getName()] = w);
                             const remaining = {"count":allowedFiles.length}
                             that.context.getDirectorySharingState(directoryPath).thenApply(function (updatedSharedWithState) {
                                 that.sharedWithState = updatedSharedWithState;
