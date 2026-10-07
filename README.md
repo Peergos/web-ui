@@ -20,7 +20,7 @@ apksigner verify --print-certs <path_to_apk>
 
 ## Building
 
-We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds and future proof our build system (we should be able to build any commit any number of years into the future with only a JVM). The one exception to this is precompiling vue.js templates, which is done using @vue/compiler-dom run in a vendored copy of [GraalJS](https://www.graalvm.org/reference-manual/js/).
+We avoid JS based build tools and managers like npm, webpack etc. to maintain greater control over the build process. This allows us to achieve cross-platform reproducible builds and future proof our build system (we should be able to build any commit any number of years into the future with only a JVM). Vue templates are precompiled by vue3-template-compiler-java, a Java port of Vue's template compiler bundled into JPack.
 
 All our assets are vendored and served from a single domain, for improved privacy, security and reliability. We use a very simple custom replacement for webpack written in Java which can handle vue components, called [JPack](https://github.com/ianopolous/jpack). 
 
