@@ -23,8 +23,15 @@ module.exports = {
 			tabs: [],
 		};
 	},
-	created() {
-		this.tabs = this.$children;
+	provide() {
+		return {
+			registerTab: tab => this.tabs.push(tab),
+			unregisterTab: tab => {
+				let i = this.tabs.indexOf(tab);
+				if (i >= 0)
+					this.tabs.splice(i, 1);
+			},
+		};
 	},
 	mounted() {
 		this.selectTab(0);

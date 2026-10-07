@@ -43,6 +43,7 @@ const paths = require("../../mixins/paths/index.js");
 module.exports = {
   name: 'TreeItem', // necessary for self-reference
   mixins: [paths],
+  inject: ["registerTreeItem", "unregisterTreeItem"],
   props: {
     model: Object,
     multiple: Boolean,
@@ -56,6 +57,12 @@ module.exports = {
     return {
       loading: false,
     }
+  },
+  created() {
+    this.registerTreeItem(this);
+  },
+  beforeDestroy() {
+    this.unregisterTreeItem(this);
   },
   computed: {
     isFolder() {

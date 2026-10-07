@@ -87,6 +87,19 @@ module.exports = {
         Spinner,
         TreeItem
     },
+    provide: function() {
+        // not reactive: only looked up when creating a folder
+        this.treeItems = [];
+        let items = this.treeItems;
+        return {
+            registerTreeItem: item => items.push(item),
+            unregisterTreeItem: item => {
+                let i = items.indexOf(item);
+                if (i >= 0)
+                    items.splice(i, 1);
+            },
+        };
+    },
     data: function() {
         return {
             showSpinner: false,
@@ -184,14 +197,7 @@ module.exports = {
         },
         // the tree row owns the reload of its own children, so creation is delegated to it
         treeItemFor: function(path) {
-            let queue = this.$children.slice();
-            while (queue.length > 0) {
-                let child = queue.shift();
-                if (child.model != null && (path == null ? child.model.isRoot : child.model.path === path))
-                    return child;
-                queue = queue.concat(child.$children);
-            }
-            return null;
+            return this.treeItems.find(item => path == null ? item.model.isRoot : item.model.path === path) || null;
         },
         createFolder: function() {
             let parent = this.selectedFoldersList.length === 1 ? this.selectedFoldersList[0] : null;
