@@ -162,10 +162,10 @@
                                                 </button>
                                             </div>
                                         </div>
-                                        <div v-if="displayPost(entry, rowIndex, row) && row.hiddenBlocked" class="feed-post feed-post--hidden" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                        <div v-if="displayPost(entry, rowIndex, row) && isHidden(row)" class="feed-post feed-post--hidden" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
                                             <div class="post-content pg-note">{{ translate("NEWSFEED.HIDDEN.BLOCKED") }}</div>
                                         </div>
-                                        <div v-if="displayPost(entry, rowIndex, row) && !row.hiddenBlocked" class="feed-post" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
+                                        <div v-if="displayPost(entry, rowIndex, row) && !isHidden(row)" class="feed-post" :class="{'feed-post--reply': row.indent > 1}" v-bind:style="{ marginLeft: threadIndent(row) }">
                                                 <div class="feed-meta">
                                                     <a v-if="row.sharer != context.username && canLoadProfile(row.sharer)" v-on:click="displayProfile(row.sharer)" class="feed-avatar-link">
                                                         <img v-if="row.sharerThumbnail.length > 0" v-bind:src="row.sharerThumbnail" class="profile-thumbnail" alt="">
@@ -377,7 +377,7 @@ module.exports = {
             }
         },
         displayMedia: function(entry, rowIndex, row) {
-            if (row.hiddenBlocked) {
+            if (this.isHidden(row)) {
                 return false;
             }
             if (this.displaySharingItem(entry)) {
@@ -1216,8 +1216,12 @@ module.exports = {
         isBlockedUser: function(username) {
             return username != null && this.socialData.blocked.indexOf(username) > -1;
         },
+        // decided when shown rather than when the item is built, as the blocked list can arrive after the feed
+        isHidden: function(item) {
+            return item.hiddenBlocked || this.isBlockedUser(item.author) || this.isBlockedUser(item.owner);
+        },
         canComment: function(item) {
-            if (item.isDirectory || item.hiddenBlocked) {
+            if (item.isDirectory || this.isHidden(item)) {
                 return false;
             }
             let isFriend = this.friendnames.indexOf(item.sharer) > -1;
@@ -1369,6 +1373,7 @@ module.exports = {
                 isChat: isChat,
                 isNewChat: isNewChat,
                 appName: appName,
+                author: author,
                 hiddenBlocked: hiddenBlocked
             };
             return item;
