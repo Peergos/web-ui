@@ -31,8 +31,8 @@ public class LanguageTest {
                 throw new AssertionError("Chosen Greek, the sign in button should read Σύνδεση: " + button);
             if (! "el".equals(d.script("return document.documentElement.lang")))
                 throw new AssertionError("Chosen Greek, the page should say lang=el, not " + d.script("return document.documentElement.lang"));
-            if (! String.valueOf(d.script("let r = null; for (const e of document.querySelectorAll('*')) if (e.__vue__) { r = e.__vue__.$root; break; }"
-                    + " const st = [r]; while (st.length) { const c = st.pop(); if (c && typeof c.getLanguages === 'function') return c.getLanguages().join(','); if (c && c.$children) st.push(...c.$children); } return '';"))
+            if (! String.valueOf(d.script("let r = null; r = " + Page.VUE + ".root();"
+                    + " const st = [r]; while (st.length) { const c = st.pop(); if (c && typeof c.getLanguages === 'function') return c.getLanguages().join(','); if (c) st.push(..." + Page.VUE + ".children(c)); } return '';"))
                     .contains("Ελληνικά"))
                 throw new AssertionError("The language list should offer Ελληνικά");
             System.out.println("  ok   Greek translates the page, marks it lang=el, and is on the language list");
@@ -55,7 +55,7 @@ public class LanguageTest {
                 set(ins.find(i => i.name === 'username'), 'peergos'); set(ins.find(i => i.type === 'password'), 'testpassword');
                 const b = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Σύνδεση' && ! b.disabled);
                 if (b) b.click(); return 1;""");
-            d.waitForScript("signed in", "(() => { const a = document.querySelector('#app'); const s = a && a.__vue__ && a.__vue__.$store.state;"
+            d.waitForScript("signed in", "(() => { const r = " + Page.VUE + ".root(); const s = r && r.$store.state;"
                     + " return !! (s && s.context && s.context.username); })()", 120_000);
             d.waitForScript("the drive in Greek", "[...document.querySelectorAll('h1')].some(h => h.textContent.trim() === 'Drive') && document.body.innerText.includes('Ροή ειδήσεων')", 60_000);
             System.out.println("  ok   signed in, the navigation is Greek and Drive keeps its name, as in the other languages");
@@ -71,7 +71,7 @@ public class LanguageTest {
             System.out.println("  ok   the rail's Upgrade label, Αναβάθμιση, fits the rail whole");
 
             // picking a language is all the dialog is for, so it closes, and says what happens next
-            d.script("document.querySelector('#app').__vue__.$store.commit('CURRENT_MODAL', 'ModalLanguage'); return 1;");
+            d.script("" + Page.VUE + ".root().$store.commit('CURRENT_MODAL', 'ModalLanguage'); return 1;");
             d.waitForScript("the language dialog", "[...document.querySelectorAll('.app-modal button')].some(b => b.textContent.trim() === 'English')", 30_000);
             d.script("[...document.querySelectorAll('.app-modal button')].find(b => b.textContent.trim() === 'English').click(); return 1;");
             d.waitForScript("the dialog to close", "! document.querySelector('.app-modal')", 10_000);

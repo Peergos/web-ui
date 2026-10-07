@@ -15,8 +15,8 @@
 
 		</template>
 		<template #footer>
-			<AppButton @click.native="close()" type="primary" block accent>{{ translate("PAID.CANCEL.OK") }}</AppButton>
-			<AppButton :disabled="disabled" @click.native="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL.CONFIRM") }}</AppButton>
+			<AppButton @click="close()" type="primary" block accent>{{ translate("PAID.CANCEL.OK") }}</AppButton>
+			<AppButton :disabled="disabled" @click="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL.CONFIRM") }}</AppButton>
 		</template>
 	</AppModal>
 </template>

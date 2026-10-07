@@ -43,6 +43,7 @@ const paths = require("../../mixins/paths/index.js");
 module.exports = {
   name: 'TreeItem', // necessary for self-reference
   mixins: [paths],
+  inject: ["registerTreeItem", "unregisterTreeItem"],
   props: {
     model: Object,
     multiple: Boolean,
@@ -57,7 +58,21 @@ module.exports = {
       loading: false,
     }
   },
+  created() {
+    this.registerTreeItem(this);
+  },
+  beforeUnmount() {
+    this.unregisterTreeItem(this);
+  },
   computed: {
+    /** As SimpleTreeItem: only where more than one folder can be taken does an unselected row
+        say so, and the root cannot be taken at all. */
+    ariaSelected() {
+      if (this.model.isRoot)
+        return null;
+      const selected = this.selectedPaths.includes(this.model.path);
+      return this.multiple ? String(selected) : (selected ? 'true' : null);
+    },
     isFolder() {
       return this.model.children && this.model.children.length
     },

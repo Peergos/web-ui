@@ -180,7 +180,7 @@ public class MarkdownLinksTest {
                     + "    const c = stack.pop();"
                     + "    if (! c) continue;"
                     + "    if (typeof c.goToPage === 'function') { v = c; break; }"
-                    + "    if (c.$children) for (const kid of c.$children) stack.push(kid);"
+                    + "    for (const kid of " + Page.VUE + ".children(c)) stack.push(kid);"
                     + "  }"
                     + "  if (! v) return 'no markup viewer mounted';"
                     + "  const f = document.getElementById('md-editor');"

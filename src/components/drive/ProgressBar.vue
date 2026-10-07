@@ -33,7 +33,7 @@ module.exports = {
 	},
 	mixins: [i18n],
 	props: {
-		// set by vue-toastification on whatever it renders inside a toast
+		// set by the toaster on whatever it renders inside a toast
 		toastId: {
 			type: [String, Number],
 			default: null

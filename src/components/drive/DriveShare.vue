@@ -71,7 +71,7 @@
 							class=""
 							accent
 							aria-label="Share"
-							@click.native="shareWith()"
+							@click="shareWith()"
 						>
 							{{ translate("DRIVE.SHARE") }}
 						</AppButton>
@@ -154,14 +154,14 @@
 						<AppButton
 							accent
 							aria-label="Create Secret Link"
-							@click.native="createSecretLink()"
+							@click="createSecretLink()"
 						>
 							{{ translate("DRIVE.SHARE.LINK") }}
 						</AppButton>
 						<AppButton
 							v-if="otherLinks.length > 0"
 							aria-label="Add to an existing link"
-							@click.native="showAddToExisting = !showAddToExisting"
+							@click="showAddToExisting = !showAddToExisting"
 						>
 							{{ translate("DRIVE.SHARE.LINK.ADD.TO.EXISTING") }}
 						</AppButton>
@@ -318,7 +318,7 @@ module.exports = {
             let that = this;
             this.groupUids.filter(uid => ! this.isBuiltInGroup(uid)).forEach(uid => {
                 that.context.getGroupMembers(uid).thenApply(members => {
-                    that.$set(that.customGroupMembers, uid, members.toArray([]));
+                    that.customGroupMembers[uid] = members.toArray([]);
                 });
             });
         },

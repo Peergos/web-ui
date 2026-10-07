@@ -216,7 +216,7 @@ select:active{
 .fade-enter-active, .fade-leave-active {
   transition: opacity .5s;
 }
-.fade-enter, .fade-leave-to {
+.fade-enter-from, .fade-leave-to {
   opacity: 0;
 }
 
@@ -255,3 +255,12 @@ select:active{
 		visibility: visible !important;
 	}
 } */
+
+/* what <center> did, which Vue 3 no longer treats as an HTML element */
+.pg-center {
+	text-align: center;
+}
+.pg-center > table {
+	margin-left: auto;
+	margin-right: auto;
+}

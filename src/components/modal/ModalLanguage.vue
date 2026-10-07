@@ -6,7 +6,7 @@
 		<template #body>
 
                 <div v-for="lang in getLanguages()" >
-                    <AppButton @click.native="choose(lang)">
+                    <AppButton @click="choose(lang)">
                         {{ lang }}
                     </AppButton>
                 </div>

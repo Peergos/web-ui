@@ -13,7 +13,7 @@
 		</template>
 		<template #footer>
 
-			 <AppButton @click.native="sendFeedback()" type="primary" block accent>{{ translate("FEEDBACK.SUBMIT") }}</AppButton>
+			 <AppButton @click="sendFeedback()" type="primary" block accent>{{ translate("FEEDBACK.SUBMIT") }}</AppButton>
 
 		</template>
 	</AppModal>

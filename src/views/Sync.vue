@@ -436,7 +436,7 @@ module.exports = {
 			that.updateStatus();
 		}, 1000);
 	},
-	destroyed() {
+	unmounted() {
 		clearInterval(this.updateStatusIntervalID);
 		clearTimeout(this.syncPendingTimeoutID);
 		this.stopFastPoll();
@@ -487,7 +487,7 @@ module.exports = {
 		/** windows paths arrive with backslashes, so the leaf is after whichever comes last */
 		// title tooltips never fire on touch, so the full value needs a tap as well
 		toggleExpand(key) {
-			Vue.set(this.expanded, key, ! this.expanded[key]);
+			this.expanded[key] = ! this.expanded[key];
 		},
 		stateOf(pair) {
 			if (this.paused)
@@ -643,9 +643,9 @@ module.exports = {
 					// it last did rather than flicking to "waiting" on its way out
 					if (s == null || (! s.msg && p.msg))
 						continue;
-					Vue.set(p, 'msg', s.msg);
-					Vue.set(p, 'state', s.state ? s.state : 'SYNCED');
-					Vue.set(p, 'error', s.error);
+					p.msg = s.msg;
+					p.state = s.state ? s.state : 'SYNCED';
+					p.error = s.error;
 				}
 				that.lastStatusAt = Date.now();
 			}).catch(function(e) {
@@ -758,7 +758,7 @@ module.exports = {
 		setAllowOnMobile(pair, allow) {
 			const previous = pair.allowOnMobile;
 			// optimistic; reverted on failure so the control tracks server state
-			Vue.set(pair, 'allowOnMobile', allow);
+			pair.allowOnMobile = allow;
 			this.localPost("/peergos/v0/sync/set-allow-mobile?label=" + pair.label + "&allow=" + allow)
 				.then(() => {
 					// the worker reads this flag when a pass starts, so a change made
@@ -766,7 +766,7 @@ module.exports = {
 					this.$toast(this.translate(allow ? "SYNC.MOBILEDATA.ON" : "SYNC.MOBILEDATA.OFF"));
 				})
 				.catch((err) => {
-					Vue.set(pair, 'allowOnMobile', previous);
+					pair.allowOnMobile = previous;
 					this.$toast.error(this.translate("SYNC.ERROR.SETTING") + " " + this.errText(err), {});
 				});
 		},

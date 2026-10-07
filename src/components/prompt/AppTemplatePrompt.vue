@@ -4,7 +4,7 @@
 
 			<div class="app-template-prompt__container" @click.stop>
 				<header class="template-prompt__header">
-					<AppButton class="close" icon="close" @click.native="closePrompt()"/>
+					<AppButton class="close" icon="close" @click="closePrompt()"/>
 					<h3>{{message}}</h3>
 				</header>
 				<div class="modal-body" style="padding: 15px;">
@@ -35,7 +35,7 @@
 					</input>
 				</div>
 				<footer class="template-prompt__footer">
-					<AppButton outline @click.native="closePrompt()">
+					<AppButton outline @click="closePrompt()">
 						{{ translate("PROMPT.CANCEL") }}
 					</AppButton>
 
@@ -43,7 +43,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="getPrompt(this.prompt_result)"
+						@click="getPrompt(this.prompt_result)"
 					>
 					{{action}}
 					</AppButton>

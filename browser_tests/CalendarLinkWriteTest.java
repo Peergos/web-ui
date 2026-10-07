@@ -51,7 +51,7 @@ public class CalendarLinkWriteTest {
 
             String entryPath = "/" + Server.USERNAME + "/.apps/calendar/data/" + month + "/" + stored;
             d.script("window.__w = null; window.__wErr = null;"
-                    + "let ctx = document.querySelector('#app').__vue__.$store.state.context;"
+                    + "let ctx = " + Page.VUE + ".root().$store.state.context;"
                     + "ctx.createSecretLink(arguments[0], true, java.util.Optional.empty(), '', '', true)"
                     + "  .thenApply(props => { window.__w = ctx.getLinkString(props); })"
                     + "  .exceptionally(t => { window.__wErr = String(t); });", entryPath);

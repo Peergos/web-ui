@@ -4,7 +4,7 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="close()"/>
+					<AppButton class="close" icon="close" @click="close()"/>
 					<h3>Multi Factor Authentication</h3>
 				</header>
 				<div v-if="isReady">
@@ -15,7 +15,7 @@
 					    id='prompt-totpbutton-id'
 					    type="primary"
 					    accent
-					    @click.native="useTotp()"
+					    @click="useTotp()"
                                             class="mfa_button"
                                             style="margin:10px;"
 					    >
@@ -26,7 +26,7 @@
 					    id='prompt-webauthn-button-id'
 					    type="primary"
 					    accent
-					    @click.native="confirmWebauthn()"
+					    @click="confirmWebauthn()"
 					    class="mfa_button"
 					    style="margin:10px;"
 					    >
@@ -37,7 +37,7 @@
 					    id='prompt-backupcodes-button-id'
 					    type="primary"
 					    accent
-					    @click.native="useBackupCode()"
+					    @click="useBackupCode()"
 					    class="mfa_button"
 					    style="margin:10px;"
 					    >
@@ -46,7 +46,7 @@
                                     </div>
                                 </div>
                     <div>
-                        <center v-if="showCodeEntry">
+                        <div class="pg-center" v-if="showCodeEntry">
                             {{ codeLabel }}&nbsp;<input
                                 type="text"
                                 autofocus
@@ -56,7 +56,7 @@
                                 style="width:200px"
                                 v-on:keyup.enter="confirmCode"
                             />
-                        </center>
+                        </div>
                     </div>
                 </div>
 				<footer class="mfa_login">
@@ -65,7 +65,7 @@
 					id='prompt-button-id'
 					type="primary"
 					accent
-					@click.native="confirmCode()"
+					@click="confirmCode()"
 					>
 					Confirm
 				    </AppButton>

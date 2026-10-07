@@ -16,9 +16,9 @@
                         <h2>{{ translate("LINK.UNAVAILABLE") }}</h2>
                         <p>{{ secretLinkError }}</p>
                     </div>
-                    <center v-else>
+                    <div class="pg-center" v-else>
 			<h2>Loading file...</h2>
-                    </center>
+                    </div>
                     <LinkPassword
                         v-if="showLinkPassword"
                         v-on:hide-modal="showLinkPassword = false"
@@ -59,7 +59,7 @@
 							:disabled="desktopServerBusy || desktopServerUrl.trim().length === 0"
 							type="primary"
 							accent
-							@click.native="saveDesktopServer()"
+							@click="saveDesktopServer()"
 						>
 							{{ translate("LOGIN.SERVER.SAVE") }}
 						</AppButton>
@@ -111,11 +111,14 @@
 
 
 
+		<Toaster/>
 	</div>
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 const AppIcon = require("AppIcon.vue");
+const Toaster = require("./toast/Toaster.vue");
 const localServer = require("../mixins/localserver/index.js");
 const AppButton = require("AppButton.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
@@ -176,6 +179,7 @@ const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
+		Toaster,
 	    AppIcon,
 		AppButton,
 		AppNavigation,
@@ -302,7 +306,7 @@ module.exports = {
 	window.addEventListener("resize", this.onWindowResize, { passive: true });
     },
 
-    beforeDestroy() {
+    beforeUnmount() {
 	window.removeEventListener("hashchange", this.onUrlChange);
 	window.removeEventListener("resize", this.onWindowResize);
 	if (this.coarsePointerQuery)
@@ -604,7 +608,7 @@ module.exports = {
             
 	    peergos.shared.user.UserContext.fromSecretLinkV2(
 		 window.location.pathname + "#" + props.linkpassword,
-                 {get_0:() => this.getLinkPassword()},
+                 callbacks.supplier(() => this.getLinkPassword()),
 		 that.network,
 		 that.crypto
 	    )

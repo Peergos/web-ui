@@ -11,7 +11,7 @@ module.exports = {
         window.addEventListener("online", this.readNetworkState);
         window.addEventListener("offline", this.readNetworkState);
     },
-    destroyed() {
+    unmounted() {
         window.removeEventListener("online", this.readNetworkState);
         window.removeEventListener("offline", this.readNetworkState);
     },

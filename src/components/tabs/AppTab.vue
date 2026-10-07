@@ -8,6 +8,7 @@
 
 <script>
 module.exports = {
+	inject: ["registerTab", "unregisterTab"],
 	props: {
 		title: {
 			type: String,
@@ -18,6 +19,12 @@ module.exports = {
 		return {
 			isActive: false,
 		};
+	},
+	created() {
+		this.registerTab(this);
+	},
+	beforeUnmount() {
+		this.unregisterTab(this);
 	},
 };
 </script>

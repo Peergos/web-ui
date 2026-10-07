@@ -4,18 +4,18 @@
     <div class="modal-container hex-viewer" @click.stop style="width:95%;overflow-y:auto">
         <Spinner v-if="showSpinner"></Spinner>
         <div class="modal-header" style="padding:0">
-            <center>
+            <div class="pg-center">
                 <h2 v-if="file != null">
                     <p>{{ file.getFileProperties().name }} (hex view)&nbsp;
                         <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button>
                     </p>
                 </h2>
-            </center>
+            </div>
             <span style="position:absolute;top:0;right:4.25em;">
                 <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
             </span>
         </div>
-        <center style="height:75%;max-width:100%;font-family: monospace;">
+        <div class="pg-center" style="height:75%;max-width:100%;font-family: monospace;">
             <table>
                 <tr v-for="line in lines">
                     <td style="color:#990012">
@@ -38,7 +38,7 @@
                     </td>
                 <tr/>
             </table>
-        </center>
+        </div>
     </div>
 </div>
 </transition>

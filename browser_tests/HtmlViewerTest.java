@@ -199,13 +199,7 @@ public class HtmlViewerTest {
                 // Read the live Drive component, not the handle captured earlier: closing the
                 // sandbox can reload the drive, which replaces the component, and the stale one
                 // then reports a pristine state that says nothing about what happened.
-                "function findDrive() {" +
-                "  for (const el of document.querySelectorAll('*')) {" +
-                "    const c = el.__vue__;" +
-                "    if (c && typeof c.downloadFile === 'function') return c;" +
-                "  }" +
-                "  return null;" +
-                "}" +
+                "function findDrive() { return " + Page.VUE + ".find('downloadFile'); }" +
                 "const live = findDrive();" +
                 "const dr = live || window.__drive || {};" +
                 "return 'driveReloaded=' + (live != null && live !== window.__drive)" +

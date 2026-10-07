@@ -11,13 +11,13 @@
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
-			<AppButton class="generate-password" type="primary" block accent @click.native="generatePassword()">
+			<AppButton class="generate-password" type="primary" block accent @click="generatePassword()">
 				{{ translate("SIGNUP.GENERATE") }}
 			</AppButton>
 
 			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.CLICKGEN')" firstOfTwo />
 
-			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" @keyup.native.enter="signup()"/>
+			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" @keyup.enter="signup()"/>
 
 			<label class="checkbox__group">
 				{{ translate("SIGNUP.AGREE") }}
@@ -39,7 +39,7 @@
 				<span class="checkmark"></span>
 			</label>
 
-			<AppButton class="signup" type="primary" block accent @click.native="signup()" icon="arrow-right">
+			<AppButton class="signup" type="primary" block accent @click="signup()" icon="arrow-right">
 				{{ signupButtonText }}
 			</AppButton>
 		</template>
@@ -59,7 +59,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
+                                <AppButton @click="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary Account</h3>
@@ -68,7 +68,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price2() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
+                                <AppButton @click="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer Account</h3>
@@ -77,7 +77,7 @@
 				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
 				    <li>&#x00A3;{{ price3() }}</li>
 				</ul>
-                                <AppButton @click.native="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
+                                <AppButton @click="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
@@ -104,7 +104,7 @@
 			    placeholder="Email"
 			/>
 			<AppButton
-			    @click.native="addToWaitList()"
+			    @click="addToWaitList()"
 			    class="waiting-list"
 			    type="primary"
                             block

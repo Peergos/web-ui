@@ -74,6 +74,7 @@
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 const AppHeader = require("../components/AppHeader.vue");
 const AppIcon = require("../components/AppIcon.vue");
 const Share = require("../components/drive/DriveShare.vue");
@@ -204,7 +205,7 @@ module.exports = {
                 b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
                 return c;
             }
-            this.context.processShared({accept_2: (path, sharedWithState) => {
+            this.context.processShared(callbacks.biConsumer((path, sharedWithState) => {
                 if (!( path.startsWith("/.messaging/")
                     || path.startsWith("/.shared/")
                     || path.startsWith("/.apps/")
@@ -227,7 +228,7 @@ module.exports = {
                         });
                     });
                 }
-            }}).thenApply(res => {
+            })).thenApply(res => {
                 that.showSpinner = false;
                 let searchButton = document.getElementById("submit-search");
                 searchButton.disabled = false;

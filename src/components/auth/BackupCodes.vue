@@ -4,22 +4,22 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="close()"/>
+					<AppButton class="close" icon="close" @click="close()"/>
 					<h3>{{ translate("MFA.BACKUP.TITLE") }}</h3>
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
                 <div class="prompt__body">
-                    <center>{{ translate("MFA.BACKUP.BLURB") }}</center>
+                    <div class="pg-center">{{ translate("MFA.BACKUP.BLURB") }}</div>
                     <div class="backup-codes" v-if="codes.length > 0">
                         <div class="backup-code" v-for="code in codes">{{ code }}</div>
                     </div>
                 </div>
 				<footer class="prompt__footer">
-					<AppButton outline @click.native="copy()" :disabled="codes.length == 0">
+					<AppButton outline @click="copy()" :disabled="codes.length == 0">
 						{{ translate("MFA.BACKUP.COPY") }}
 					</AppButton>
 
-					<AppButton outline @click.native="download()" :disabled="codes.length == 0">
+					<AppButton outline @click="download()" :disabled="codes.length == 0">
 						{{ translate("MFA.BACKUP.DOWNLOAD") }}
 					</AppButton>
 
@@ -27,7 +27,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="close()"
+						@click="close()"
 					>
 					{{ translate("MFA.BACKUP.DONE") }}
 					</AppButton>

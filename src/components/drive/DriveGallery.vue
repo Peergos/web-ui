@@ -429,7 +429,7 @@ module.exports = {
             prefetch(index) {
                 if (this.cache[index] != null)
                     return;
-                if (index > this.showableFiles.length)
+                if (index >= this.showableFiles.length)
                     return;
                 if (index - 10 > 0) // keep cache small
                     this.cache[index-10] = null;

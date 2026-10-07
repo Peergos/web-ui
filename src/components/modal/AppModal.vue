@@ -9,7 +9,7 @@
 					:class="`modal--${position}`"
 					@click.stop
 				>
-					<AppButton class="close" icon="close" @click.native="closeModal()"/>
+					<AppButton class="close" icon="close" @click="closeModal()"/>
 					<header><slot name="header"></slot></header>
 					<section><slot name="body"></slot></section>
 					<footer><slot name="footer"></slot></footer>
@@ -122,7 +122,7 @@ module.exports = {
 .modal-leave-active{
 	transition: opacity 0.2s ease-in;
 }
-.modal-enter,
+.modal-enter-from,
 .modal-leave-to {
   opacity: 0;
 }
@@ -133,7 +133,7 @@ module.exports = {
 				opacity 0.2s ease-out;
 	transform: translateX(0);
 }
-.modal-content--right-enter,
+.modal-content--right-enter-from,
 .modal-content--right-leave-to {
 	opacity: 0;
 	transform: translateX(100px);
@@ -143,7 +143,7 @@ module.exports = {
 .modal-content--center-enter-active{
 	transition: opacity 0.2s ease-out;
 }
-.modal-content--center-enter,
+.modal-content--center-enter-from,
 .modal-content--center-leave-to {
 	opacity: 0;
 }

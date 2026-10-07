@@ -1,20 +1,13 @@
 // TODO: split store in modules (UI, Settings, Storage, Drive,...)
 
 const helpers = require("../mixins/storage/index.js");
-function shallow(val) {
-    // tag a value so vue will only shallow watch it
-    if (val != null) {
-        val._isVue = true;
-    }
-    return val;
-}
 let mirrorBatIdLookup = null;
 // Reading the social state also takes in replies to follow requests, writing to the account's
 // own files, and a read that finishes after a newer one would put older state back in the
 // store. So only one runs at a time, and calls made meanwhile share one more read after it.
 let socialReading = false;
 let socialWaiting = null;
-module.exports = new Vuex.Store({
+module.exports = Vuex.createStore({
 	state: {
 		windowWidth: window.innerWidth,
 		// whether the primary input can hover, which is not the same question as the width
@@ -156,16 +149,16 @@ module.exports = new Vuex.Store({
 
 		// Settings
 		SET_CRYPTO(state, payload) {
-		    state.crypto = shallow(payload);
+		    state.crypto = payload;
 		},
 		SET_NETWORK(state, payload) {
-		    state.network = shallow(payload);
+		    state.network = payload;
 		},
 		SET_NETWORK_LOADING(state, payload) {
 		    state.networkLoading = payload;
 		},
 		SET_CONTEXT(state, payload) {
-		    state.context = shallow(payload);
+		    state.context = payload;
 		},
 		SET_DOWNLOAD(state, payload) {
 			state.download = payload;

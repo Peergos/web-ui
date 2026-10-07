@@ -26,12 +26,12 @@ public class CalendarReadOnlyTest {
      *  signed-in account. */
     static final String CALENDAR_VIEW = "(() => {"
             + "  let root = null;"
-            + "  for (const el of document.querySelectorAll('*')) if (el.__vue__) { root = el.__vue__.$root; break; }"
+            + "  root = " + Page.VUE + ".root();"
             + "  const stack = root ? [root] : [];"
             + "  while (stack.length) {"
             + "    const c = stack.pop();"
             + "    if (typeof c.downloadIcsFile === 'function') { window.__cal = c; return true; }"
-            + "    (c.$children || []).forEach(k => stack.push(k));"
+            + "    " + Page.VUE + ".children(c).forEach(k => stack.push(k));"
             + "  }"
             + "  return false; })()";
 
@@ -73,7 +73,7 @@ public class CalendarReadOnlyTest {
             // --- a read-only link to the calendar's directory, as the share dialog makes it ----
             String shared = "/" + Server.USERNAME + "/.apps/calendar/data/" + calendar;
             d.script("window.__link = null; window.__linkErr = null;"
-                    + "let context = document.querySelector('#app').__vue__.$store.state.context;"
+                    + "let context = " + Page.VUE + ".root().$store.state.context;"
                     + "context.createSecretLink(arguments[0] + '/', false, java.util.Optional.empty(), '', '', true)"
                     + "  .thenApply(props => { window.__link = context.getLinkString(props); })"
                     + "  .exceptionally(t => { window.__linkErr = String(t); });", shared);
@@ -87,19 +87,19 @@ public class CalendarReadOnlyTest {
             // --- and now a stranger, in the same browser with the account signed out ----------
             Page.logout(d);
             d.navigate(url + "/" + link + "?open=true");
-            d.waitForScript("the linked folder", "!!document.querySelector('#app') && !!document.querySelector('#app').__vue__"
-                    + " && document.querySelector('#app').__vue__.$store.state.context != null", 120_000);
+            d.waitForScript("the linked folder", "!!" + Page.VUE + ".root()"
+                    + " && " + Page.VUE + ".root().$store.state.context != null", 120_000);
             // The same mark signing in waits for: if it is still here the sign out did nothing,
             // and everything below would be the owner looking at their own calendar.
             if (Boolean.TRUE.equals(d.script("return /upgrade/i.test(document.body.innerText);")))
                 throw new AssertionError("The link opened with the owner still signed in, so nothing"
                         + " below is about what a stranger can do");
             // Opened the way the drive opens a folder in an app: by its path, the link kept.
-            d.script("let stack = [document.querySelector('#app').__vue__];"
+            d.script("let stack = [" + Page.VUE + ".root()];"
                     + "while (stack.length) {"
                     + "  let c = stack.pop();"
                     + "  if (typeof c.openFileOrDir === 'function') { c.openFileOrDir('Calendar', arguments[0], {filename: ''}); return; }"
-                    + "  (c.$children || []).forEach(k => stack.push(k));"
+                    + "  " + Page.VUE + ".children(c).forEach(k => stack.push(k));"
                     + "}"
                     + "throw new Error('no component that opens a path in an app');", shared);
             d.waitForScript("the calendar view", CALENDAR_VIEW, 120_000);
@@ -155,7 +155,7 @@ public class CalendarReadOnlyTest {
             // sits in. There is no account in a link, so it is shown and nothing is imported.
             String entryPath = "/" + Server.USERNAME + "/.apps/calendar/data/" + month + "/" + stored;
             d.script("window.__one = null; window.__oneErr = null;"
-                    + "let ctx = document.querySelector('#app').__vue__.$store.state.context;"
+                    + "let ctx = " + Page.VUE + ".root().$store.state.context;"
                     + "ctx.createSecretLink(arguments[0], false, java.util.Optional.empty(), '', '', true)"
                     + "  .thenApply(props => { window.__one = ctx.getLinkString(props); })"
                     + "  .exceptionally(t => { window.__oneErr = String(t); });", entryPath);

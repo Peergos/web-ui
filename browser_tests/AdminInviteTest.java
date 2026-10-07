@@ -95,10 +95,10 @@ public class AdminInviteTest {
             // the link is what the invitee gets: it opens signup with the token in hand
             Page.logout(d);
             d.navigate(prefix + tokens.get(2));
-            d.waitForScript("signup with the token", "(() => { let r = null; for (const e of document.querySelectorAll('*')) if (e.__vue__) { r = e.__vue__.$root; break; }"
+            d.waitForScript("signup with the token", "(() => { let r = null; r = " + Page.VUE + ".root();"
                     + " const st = [r]; while (st.length) { const c = st.pop(); if (! c) continue;"
                     + "   if (c.$options && c.$options.props && 'token' in c.$options.props && c.token === '" + tokens.get(2) + "') return true;"
-                    + "   if (c.$children) st.push(...c.$children); } return false; })()", 60_000);
+                    + "   st.push(..." + Page.VUE + ".children(c)); } return false; })()", 60_000);
             System.out.println("  ok   opening an invite link brings up signup with its token");
 
             refused(() -> UserContext.signUp("inviteeb", "testpassword2", "", network, crypto).join(), "not currently accepting new sign ups");
@@ -135,7 +135,8 @@ public class AdminInviteTest {
      *  says nothing about who is an admin. */
     private static void openPanel(WebDriver d) {
         d.script("document.querySelector('.user-settings .drive-user').click(); return 1;");
-        String adminItem = "[...document.querySelectorAll('.user-settings li')].find(li => li.textContent.trim() === 'Admin Panel')";
+        // the menu is rendered each time it opens, so once a language is chosen it is in that language
+        String adminItem = "[...document.querySelectorAll('.user-settings li')].find(li => ['Admin Panel', 'Πίνακας διαχείρισης'].includes(li.textContent.trim()))";
         d.waitForScript("the admin menu item", adminItem, 60_000);
         d.script(adminItem + ".click(); return 1;");
         d.waitForScript("the admin panel", "!!document.querySelector('.admin-invites')", 60_000);

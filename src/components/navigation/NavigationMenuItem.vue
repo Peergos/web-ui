@@ -1,6 +1,6 @@
 <template>
 	<li class="menu-item" :class="{ 'active': isCurrentView }">
-		<AppButton @click.native="setView(view)" :disabled="disabled">
+		<AppButton @click="setView(view)" :disabled="disabled">
 			<AppIcon class="menu__icon" :icon="icon"></AppIcon>
 			<span class="menu__name">{{ label }} </span>
 		</AppButton>

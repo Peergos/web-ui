@@ -3,7 +3,7 @@
 <div class="modal-mask" @click="close"> 
     <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
         <div class="modal-header" style="padding:0">
-            <center>
+            <div class="pg-center">
                 <h2>
                     <span v-if="!isSecretLink && !isArchiveEntry && fullPathForDisplay.length > 0" style="z-index:9999">
                           <img v-if="displayToBookmark" src="/images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
@@ -11,7 +11,7 @@
                     </span>
                     {{ getFullPathForDisplay() }}
                 </h2>
-            </center>
+            </div>
           <span style="position:absolute;top:0;right:0.2em;">
             <span v-if="isWritable() && isMarkdown()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
             <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>

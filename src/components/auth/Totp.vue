@@ -4,7 +4,7 @@
 
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="close()"/>
+					<AppButton class="close" icon="close" @click="close()"/>
 					<h3>Setup Authenticator App</h3>
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
@@ -14,13 +14,13 @@
                                 :message="manualCode">
                         </Message>
                 <div class="prompt__body">
-                    <center v-if="QRCodeURL.length > 0">
+                    <div class="pg-center" v-if="QRCodeURL.length > 0">
                       <div class="auth-qrcode-container">
                             <img v-bind:src="QRCodeURL" alt="QR code" class="auth-qrcode"></img>
                       </div>
-                    </center>
-                    <center v-if="isReady"><a href="#" @click="enterCodeManually()"><u>Enter code manually</u></a></center>
-                    <center>
+                    </div>
+                    <div class="pg-center" v-if="isReady"><a href="#" @click="enterCodeManually()"><u>Enter code manually</u></a></div>
+                    <div class="pg-center">
                         Verification code from app:&nbsp;<input
                             type="text"
                             autofocus
@@ -32,10 +32,10 @@
                             v-on:keyup.enter="confirm"
                             style="width:200px"
                         />
-                    </center>
+                    </div>
                 </div>
 				<footer class="prompt__footer">
-					<AppButton outline @click.native="close()">
+					<AppButton outline @click="close()">
 						Cancel
 					</AppButton>
 
@@ -43,7 +43,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="confirm()"
+						@click="confirm()"
 					>
 					Confirm
 					</AppButton>

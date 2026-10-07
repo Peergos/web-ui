@@ -21,17 +21,17 @@
 
 			<div class="modal__warning account" v-if="warning">
 				<p><AppIcon icon="warning"/>{{ translate("MIGRATE.ACCOUNT.CONFIRM") }}</p>
-				<AppButton @click.native="migrateAccount()" accent >{{ translate("MIGRATE.ACCOUNT.YES") }}</AppButton>
-				<AppButton @click.native="warning=false">{{ translate("MIGRATE.ACCOUNT.CANCEL") }}</AppButton>
+				<AppButton @click="migrateAccount()" accent >{{ translate("MIGRATE.ACCOUNT.YES") }}</AppButton>
+				<AppButton @click="warning=false">{{ translate("MIGRATE.ACCOUNT.CANCEL") }}</AppButton>
 			</div>
 
 		</template>
 		<template #footer>
-                         <AppButton v-if="!isHome" @click.native="mirrorHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR") }}</AppButton>
+                         <AppButton v-if="!isHome" @click="mirrorHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR") }}</AppButton>
                          <br/>
-                         <AppButton v-if="!isHome" @click.native="mirrorLoginHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR.LOGIN") }}</AppButton>
+                         <AppButton v-if="!isHome" @click="mirrorLoginHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR.LOGIN") }}</AppButton>
                          <br/>
-			 <AppButton v-if="!isHome" @click.native="showWarning()" type="primary" block accent>{{ translate("MIGRATE.ACCOUNT") }}</AppButton>
+			 <AppButton v-if="!isHome" @click="showWarning()" type="primary" block accent>{{ translate("MIGRATE.ACCOUNT") }}</AppButton>
 
 		</template>
 	</AppModal>

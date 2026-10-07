@@ -11,13 +11,13 @@
                         <div v-if="willCharge()" class="card__meta">
                             Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}
                         </div>
-                        <center><div v-if="!showCard" class="button-group-container">
+                        <div class="pg-center"><div v-if="!showCard" class="button-group-container">
                             <div class="priceslider" data-select="billing"> 
                                 <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
                                 <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
                             </div>
                         </div>
-                        </center>
+                        </div>
                         <div v-if="!showCard" class="options_container">
                             
 			    <div class="card__meta options">
@@ -27,7 +27,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price1() }}</li>
 				</ul>
-                                <AppButton @click.native="confirmUpdate(200000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
+                                <AppButton @click="confirmUpdate(200000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
@@ -36,7 +36,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
 				</ul>
-                                <AppButton @click.native="confirmUpdate(1000000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
+                                <AppButton @click="confirmUpdate(1000000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
 			    </div>
                             <div class="card__meta options">
 				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
@@ -45,7 +45,7 @@
 				    <li>{{ translate("PAID.APPS") }}</li>
 				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
 				</ul>
-                                <AppButton @click.native="confirmUpdate(3000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
+                                <AppButton @click="confirmUpdate(3000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
 			    </div>
                         </div>
 
@@ -63,8 +63,8 @@
 
 		</template>
 		<template #footer>
-			<AppButton v-if="isPaid" @click.native="updateCardDetails()" type="primary" block accent>{{ translate("PAID.CARD") }}</AppButton>
-			<AppButton v-if="isPaid" @click.native="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL") }}</AppButton>
+			<AppButton v-if="isPaid" @click="updateCardDetails()" type="primary" block accent>{{ translate("PAID.CARD") }}</AppButton>
+			<AppButton v-if="isPaid" @click="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL") }}</AppButton>
 		</template>
 	</AppModal>
 </template>

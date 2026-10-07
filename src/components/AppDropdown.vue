@@ -10,7 +10,7 @@
 			:accent="accent"
 			:area-expanded="isActive"
 			:icon="icon"
-			@click.native="toggle()"
+			@click="toggle()"
 		>
 			<slot name="trigger"></slot>
 		</AppButton>
@@ -99,7 +99,7 @@ module.exports = {
   transition: all 0.2s ease-out;
 }
 
-.drop-enter, .drop-leave-to {
+.drop-enter-from, .drop-leave-to {
 	opacity: 0;
 	transform: translateY(-10px)
 }

@@ -24,7 +24,7 @@ module.exports = {
         if (this.scrollShadowEl != null)
             update(this.scrollShadowEl);
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.scrollShadowEl != null) {
             this.scrollShadowEl.removeEventListener("scroll", this.scrollShadowHandler);
             window.removeEventListener("resize", this.scrollShadowHandler);

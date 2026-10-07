@@ -24,7 +24,7 @@
 		</template>
 		<template #footer>
 
-			<AppButton @click.native="requestStorage()" type="primary" block accent>{{ translate("SPACE.TITLE") }}</AppButton>
+			<AppButton @click="requestStorage()" type="primary" block accent>{{ translate("SPACE.TITLE") }}</AppButton>
 		</template>
 	</AppModal>
 </template>

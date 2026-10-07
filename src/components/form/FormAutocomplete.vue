@@ -3,7 +3,7 @@
 		<div v-if="!isMultiple">
 			<input id="input-tokenfield"
 				class="autocomplete pg-input"
-				v-if="!value"
+				v-if="!modelValue"
 				v-model="textSearch"
 				type="text"
 				:placeholder="placeholder"
@@ -12,9 +12,9 @@
 				@keyup.esc="hideOptions"
 			/>
 			<div class="items-selected">
-				<div class="item-selected" v-if="value">
-					<slot name="selected" :item="value">{{ value }}</slot>
-					<AppButton icon="close" @click.native="clearItem" />
+				<div class="item-selected" v-if="modelValue">
+					<slot name="selected" :item="modelValue">{{ modelValue }}</slot>
+					<AppButton icon="close" @click="clearItem" />
 				</div>
 			</div>
 			<ul class="options pg-menu" v-show="isOpen">
@@ -35,10 +35,10 @@
 				@keyup.esc="hideOptions"
 			/>
 			<div class="items-selected">
-				<div class="item-selected" v-for="(v, k) in value">
+				<div class="item-selected" v-for="(v, k) in modelValue">
 					<slot name="selected" :item="v">{{ v }}</slot>
 					<!-- <button @click="removeItem(k)">remove</button> -->
-					<AppButton icon="close" @click.native="removeItem(k)" />
+					<AppButton icon="close" @click="removeItem(k)" />
 				</div>
 			</div>
 			<ul class="options pg-menu" v-show="isOpen">
@@ -87,7 +87,7 @@ module.exports = {
 				return [];
 			},
 		},
-		value: {
+		modelValue: {
 			type: [Object, Array],
 			// default() {
 			// 	return {
@@ -122,7 +122,7 @@ module.exports = {
 	    },
 	    selectedItems() {
 		if (this.isMultiple) {
-		    return this.value.map((v) => v);
+		    return this.modelValue.map((v) => v);
 		}
 		return [];
 	    },
@@ -149,7 +149,7 @@ module.exports = {
 			this.textSearch = "";
 			this.isShow = false;
 			// this.$emit('update:item', item);
-			this.$emit("input", item);
+			this.$emit("update:modelValue", item);
 			this.$emit("onSelectItem", item);
 		},
 		clearItem() {
@@ -158,7 +158,7 @@ module.exports = {
 			//   id: undefined,
 			//   title: undefined,
 			// });
-			this.$emit("input", {
+			this.$emit("update:modelValue", {
 				// id: undefined,
 				// title: undefined,
 			});
@@ -168,19 +168,19 @@ module.exports = {
 			if (!this.inSelectedItems(item)) {
 				this.textSearch = "";
 				this.isShow = false;
-				const items = JSON.parse(JSON.stringify(this.value));
+				const items = JSON.parse(JSON.stringify(this.modelValue));
 				items.push(item);
 				// this.$emit('update:item', items);
-				this.$emit("input", items);
+				this.$emit("update:modelValue", items);
 				this.$emit("onAddItem", items);
 			}
 		},
 		removeItem(index) {
 			this.textSearch = "";
-			const items = JSON.parse(JSON.stringify(this.value));
+			const items = JSON.parse(JSON.stringify(this.modelValue));
 			items.splice(index, 1);
 			// this.$emit('update:item', items);
-			this.$emit("input", items);
+			this.$emit("update:modelValue", items);
 			this.$emit("onRemoveItem", items);
 		},
             levenshtein: function(a, b) {

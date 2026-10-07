@@ -84,7 +84,7 @@ module.exports = {
     }
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     const at = open.indexOf(this);
     if (at > -1)
       open.splice(at, 1);

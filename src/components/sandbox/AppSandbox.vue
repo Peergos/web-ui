@@ -114,7 +114,7 @@
                 :consumer_func="file_picker_consumer_func"
             />
             <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
-                <center><h2>
+                <div class="pg-center"><h2>
                 <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
                       <img v-if="displayToBookmark" src="./images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
                       <img v-if="!displayToBookmark" src="./images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
@@ -124,7 +124,7 @@
                     <img src="./images/arrows-alt.svg" style="height:24px;width:24px;cursor:pointer">
                 </span>
                 </h2>
-                </center>
+                </div>
               <span style="position:absolute;top:0;right:0.2em;">
                 <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
               </span>

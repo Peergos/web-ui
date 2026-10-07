@@ -3,12 +3,12 @@
 		<div class="app-prompt app-modal__overlay" @click="close()">
 			<div class="app-prompt__container" @click.stop>
 				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click.native="close()"/>
+					<AppButton class="close" icon="close" @click="close()"/>
 					<h3>Add new Security Key</h3>
 				</header>
                 <Spinner v-if="showSpinner"></Spinner>
                 <div class="prompt__body">
-                    <center>
+                    <div class="pg-center">
                         Name:&nbsp;<input
                             type="text"
                             autofocus
@@ -18,10 +18,10 @@
                             v-on:keyup.enter="confirm"
                             style="width:200px"
                         />
-                    </center>
+                    </div>
                 </div>
 				<footer class="prompt__footer">
-					<AppButton outline @click.native="close()">
+					<AppButton outline @click="close()">
 						Cancel
 					</AppButton>
 
@@ -29,7 +29,7 @@
 						id='prompt-button-id'
 						type="primary"
 						accent
-						@click.native="confirm()"
+						@click="confirm()"
 					>
 					Confirm
 					</AppButton>

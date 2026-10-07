@@ -30,14 +30,14 @@
 		<!-- <AppButton
 			class="slider__button button--prev"
 			aria-label="Previous slide"
-			@click.native="slide(-1)"
+			@click="slide(-1)"
 			icon="arrow-right"
 		>
 		</AppButton> -->
 		<AppButton
 			class="slider__button button--next"
 			aria-label="Next slide"
-			@click.native="slide(1)"
+			@click="slide(1)"
 			icon="arrow-right"
 			accent
 		>
@@ -135,7 +135,7 @@ module.exports = {
 .slide-next-leave-active {
 	transition: transform 0.5s ease-in-out;
 }
-.slide-next-enter {
+.slide-next-enter-from {
 	transform: translate(100%);
 }
 .slide-next-leave-to {
@@ -147,7 +147,7 @@ module.exports = {
 .slide-prev-leave-active {
 	transition: transform 0.5s ease-in-out;
 }
-.slide-prev-enter {
+.slide-prev-enter-from {
 	transform: translate(-100%);
 }
 .slide-prev-leave-to {

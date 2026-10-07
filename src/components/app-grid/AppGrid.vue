@@ -56,7 +56,7 @@ module.exports = {
                 return;
             event.stopPropagation();
             event.preventDefault();
-            Vue.set(this.expanded, app.name, ! this.expanded[app.name]);
+            this.expanded[app.name] = ! this.expanded[app.name];
         },
       	menuLeave: function(event) {
             this.showAppMenu = false;
