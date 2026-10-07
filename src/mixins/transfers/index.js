@@ -1,3 +1,4 @@
+const callbacks = require("../callbacks/index.js");
 /** Uploads and downloads that can be cancelled from their progress toast.
  *
  *  Keyed by the toast's id, which the toaster hands the ProgressBar as its toast-id, so the
@@ -18,7 +19,7 @@ module.exports = {
             cancelled: false,
             listeners: []
         };
-        transfer.isCancelled = {get_0: () => transfer.cancelled};
+        transfer.isCancelled = callbacks.supplier(() => transfer.cancelled);
         transfer.onCancel = function(listener) {
             if (transfer.cancelled)
                 listener();
@@ -30,7 +31,7 @@ module.exports = {
     },
 
     /** For the uploads nobody can cancel from a toast. */
-    never: {get_0: () => false},
+    never: callbacks.supplier(() => false),
 
     get(toastId) {
         return transfers[toastId];

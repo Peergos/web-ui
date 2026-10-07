@@ -116,6 +116,7 @@
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 const AppIcon = require("AppIcon.vue");
 const Toaster = require("./toast/Toaster.vue");
 const localServer = require("../mixins/localserver/index.js");
@@ -607,7 +608,7 @@ module.exports = {
             
 	    peergos.shared.user.UserContext.fromSecretLinkV2(
 		 window.location.pathname + "#" + props.linkpassword,
-                 {get_0:() => this.getLinkPassword()},
+                 callbacks.supplier(() => this.getLinkPassword()),
 		 that.network,
 		 that.crypto
 	    )

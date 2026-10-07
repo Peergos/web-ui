@@ -81,6 +81,7 @@
 </template>
 
 <script>
+const callbacks = require("../../mixins/callbacks/index.js");
 const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
@@ -462,7 +463,7 @@ module.exports = {
                                 file.getInputStream(that.context.network, that.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), function(read){})
                                     .thenApply(function(reader) {
                                         filesProcessedCounter++;
-                                        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, {get_0: () => reader},
+                                        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(fileProps.name, callbacks.supplier(() => reader),
                                             (fileProps.size_0 - (fileProps.size_0 % Math.pow(2, 32))) / Math.pow(2, 32), fileProps.size_0, java.util.Optional.empty(), java.util.Optional.empty(), false,
                                             true, x => {});
                                         fileUploadList.push(fup);
@@ -567,11 +568,9 @@ module.exports = {
             if (appDataFiles.length == 0) {
                 future.complete(true);
             } else {
-                var commitWatcher = {
-                    get_0: function() {
-                        return true;
-                    }
-                };
+                var commitWatcher = callbacks.supplier(function() {
+                    return true;
+                });
                 let folderStream = appDataFiles.stream();
                 let resumeFileUpload = function(f) {
                     let resumeFuture = peergos.shared.util.Futures.incomplete();

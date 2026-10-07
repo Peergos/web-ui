@@ -57,6 +57,7 @@
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 const AppHeader = require("../components/AppHeader.vue");
 const Choice = require('../components/choice/Choice.vue');
 const Confirm = require("../components/confirm/Confirm.vue");
@@ -1664,14 +1665,12 @@ module.exports = {
                let folderUP = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(pathList, filePropsList);
                folderUPList.push(folderUP);
            }
-           var commitWatcher = {
-               get_0: function() {
-                   if (uploadParams.progress.done >= uploadParams.progress.max) {
-                       setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
-                   }
-                   return true;
+           var commitWatcher = callbacks.supplier(function() {
+               if (uploadParams.progress.done >= uploadParams.progress.max) {
+                   setTimeout(() => that.$toast.dismiss(uploadParams.progress.name), 1000);
                }
-           };
+               return true;
+           });
 
            let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
            // uploadSubtree asks two questions as it goes - resume this partial
@@ -1779,7 +1778,7 @@ module.exports = {
             foundDirectoryIndex = uploadParams.uploadPaths.length -1;
         }
         let reader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(bytes);
-        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, {get_0: () => reader},
+        let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(filename, callbacks.supplier(() => reader),
             (fileSize - (fileSize % Math.pow(2, 32))) / Math.pow(2, 32), fileSize, java.util.Optional.empty(), java.util.Optional.empty(), false,
             true, updateProgressBar);
         let fileUploadList = uploadParams.fileUploadProperties[foundDirectoryIndex];

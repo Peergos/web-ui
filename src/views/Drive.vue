@@ -442,6 +442,7 @@
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 
 const AppHeader = require("../components/AppHeader.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
@@ -2458,14 +2459,13 @@ module.exports = {
                 let commitContext = {
                     completed: false
                 }
-                var commitWatcher = {
-                    get_0: function() {
-                        if (uploadParams.triggerRefresh) {
-                            uploadParams.triggerRefresh = false;
-                            if (!that.isSecretLink) {
-                                that.context.getSpaceUsage(false).thenApply(u => {
-                                    that.$store.commit('SET_USAGE', u);
-                                });
+                var commitWatcher = callbacks.supplier(function() {
+                    if (uploadParams.triggerRefresh) {
+                        uploadParams.triggerRefresh = false;
+                        if (!that.isSecretLink) {
+                            that.context.getSpaceUsage(false).thenApply(u => {
+                                that.$store.commit('SET_USAGE', u);
+                });
                             }
                             that.updateCurrentDirectory();
                         }
@@ -2475,8 +2475,7 @@ module.exports = {
                             that.addUploadProgressMessage(uploadParams, title, '', '', '', true);
                         }
                         return true;
-                    }
-                };
+                    });
 
                 let folderStream = peergos.client.JsUtil.asList(folderUPList).stream();
                 let resumeFileUpload = f => peergos.shared.util.Futures.of(false);
@@ -2713,7 +2712,7 @@ module.exports = {
             file.size, peergos.shared.user.fs.FileProperties.chunkSizeForNewFiles(), that.context.crypto.hasher, 8).thenCompose(function(hashtree) {
 
                 return java_reader.reset().thenApply(function(resetReader) {
-                    let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, {get_0: () => resetReader},
+                    let fup = new peergos.shared.user.fs.FileWrapper.FileUploadProperties(file.name, callbacks.supplier(() => resetReader),
                         (file.size - (file.size % Math.pow(2, 32))) / Math.pow(2, 32), file.size, java.util.Optional.of(fileModifiedDateTime), java.util.Optional.of(hashtree), false,
                         overwriteExisting ? true : false, updateProgressBar);
 
@@ -2899,7 +2898,7 @@ module.exports = {
                 target.getLatest(this.context.network).thenApply(updatedTarget => {
                     parent.getLatest(that.context.network).thenApply(updatedParent => {
                         fileTreeNode.getLatest(that.context.network)
-                        .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()})).thenApply(() => {
+                        .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, callbacks.supplier(() => that.confirmMove()))).thenApply(() => {
                             multiSelectParams.progress.done += 1;
                             let title = '[' + multiSelectParams.progress.done + '/' + multiSelectParams.progress.max + '] '
                                 + multiSelectParams.title;
@@ -3127,7 +3126,7 @@ module.exports = {
                                         target.getLatest(this.context.network).thenApply(updatedTarget => {
                                             clipboard.parent.getLatest(that.context.network).thenApply(updatedParent => {
                                             clipboard.fileTreeNode.getLatest(that.context.network)
-                                            .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, {get_0:() => that.confirmMove()})
+                                            .thenCompose(updatedFile => updatedFile.moveTo(updatedTarget, updatedParent, filePath, that.context, callbacks.supplier(() => that.confirmMove()))
 						.thenApply(function () {
 							that.currentDirChanged();
 							that.onUpdateCompletion.push(function () {
@@ -3631,7 +3630,7 @@ module.exports = {
         		    var name = clipboard.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     let filePath = peergos.client.PathUtils.toPath(that.path, name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context, {get_0:() => that.confirmMove()})
+                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context, callbacks.supplier(() => that.confirmMove()))
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
@@ -3743,7 +3742,7 @@ module.exports = {
             let appManifest = convertToByteArray(manifestUint8Array);
             let manifestReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appManifest);
             let manifestProps =
-                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("peergos-app.json", {get_0: () => manifestReader}, 0,
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("peergos-app.json", callbacks.supplier(() => manifestReader), 0,
                         manifestUint8Array.byteLength, java.util.Optional.empty(), java.util.Optional.empty(), false, true, x => {});
             let html = '<!DOCTYPE html>\n' +
             '<html lang="en">\n' +
@@ -3760,7 +3759,7 @@ module.exports = {
             let appIndexPage = convertToByteArray(indexUint8Array);
             let indexReader = new peergos.shared.user.fs.AsyncReader.ArrayBacked(appIndexPage);
             let indexPageProps =
-                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("index.html", {get_0: () => indexReader}, 0,
+                    new peergos.shared.user.fs.FileWrapper.FileUploadProperties("index.html", callbacks.supplier(() => indexReader), 0,
                         indexUint8Array.byteLength, java.util.Optional.empty(), java.util.Optional.empty(), false, true, x => {});
             let folderUPList = [];
             let appFolderProps = new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
@@ -3776,11 +3775,9 @@ module.exports = {
                 future.complete(true);
                 return future;
             }
-            var commitWatcher = {
-                get_0: function() {
-                    return true;
-                }
-            };
+            var commitWatcher = callbacks.supplier(function() {
+                return true;
+            });
             this.currentDir.uploadSubtree(folderStream, this.getMirrorBatId(this.currentDir), this.context.network,
                 this.context.crypto, this.context.getTransactionService(),
                 f => alwaysResumeFileUpload(f),

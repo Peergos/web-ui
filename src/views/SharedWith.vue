@@ -74,6 +74,7 @@
 </template>
 
 <script>
+const callbacks = require("../mixins/callbacks/index.js");
 const AppHeader = require("../components/AppHeader.vue");
 const AppIcon = require("../components/AppIcon.vue");
 const Share = require("../components/drive/DriveShare.vue");
@@ -204,10 +205,7 @@ module.exports = {
                 b.forEach((bItem) => (c.some((cItem) => predicate(bItem, cItem)) ? null : c.push(bItem)))
                 return c;
             }
-            // a BiConsumer to GWT, whose compiled name for accept (accept_2, accept_5, ...) changes from
-            // one peergos build to the next, so answer to any of them
-            const processor = fn => new Proxy({}, {get: (target, key) => typeof key === 'string' && key.startsWith('accept') ? fn : undefined});
-            this.context.processShared(processor((path, sharedWithState) => {
+            this.context.processShared(callbacks.biConsumer((path, sharedWithState) => {
                 if (!( path.startsWith("/.messaging/")
                     || path.startsWith("/.shared/")
                     || path.startsWith("/.apps/")
