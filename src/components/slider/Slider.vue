@@ -135,7 +135,7 @@ module.exports = {
 .slide-next-leave-active {
 	transition: transform 0.5s ease-in-out;
 }
-.slide-next-enter, .slide-next-enter-from {
+.slide-next-enter-from {
 	transform: translate(100%);
 }
 .slide-next-leave-to {
@@ -147,7 +147,7 @@ module.exports = {
 .slide-prev-leave-active {
 	transition: transform 0.5s ease-in-out;
 }
-.slide-prev-enter, .slide-prev-enter-from {
+.slide-prev-enter-from {
 	transform: translate(-100%);
 }
 .slide-prev-leave-to {
