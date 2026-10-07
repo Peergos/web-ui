@@ -127,7 +127,7 @@ module.exports = {
          * that, resting a thumb on a tile while the grid moves would select it.
          */
         longpress: {
-            bind: function (el, binding) {
+            beforeMount: function (el, binding) {
                 let timer = null;
                 let held = false;
                 let startX = 0;
@@ -185,7 +185,7 @@ module.exports = {
                 });
             },
 
-            unbind: function (el) {
+            unmounted: function (el) {
                 if (el.__cancelLongPress != null) {
                     el.__cancelLongPress();
                     delete el.__cancelLongPress;
