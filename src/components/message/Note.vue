@@ -10,7 +10,7 @@
         <div class="modal-body">
             <div class="container">
                 <div>
-                    <textarea id="note-text" style="resize: none;width:90%" rows="12" readonly v-model="note"></textarea>
+                    <textarea id="note-text" style="resize: none;width:90%" rows="12" readonly :value="note"></textarea>
                 </div>
                 <p/>
                 <button class="btn btn-success" @click="closeNote">

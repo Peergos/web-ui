@@ -5,7 +5,7 @@
 		        name="password"
 			autocomplete="current-password"
                         :placeholder="placeholder"
-			:type="passwordIsVisible ? 'text' : 'password'"
+			:type="visible ? 'text' : 'password'"
 			:value="modelValue"
     		@input="$emit('update:modelValue', $event.target.value)"
 			@blur="validatePassword()"
@@ -13,7 +13,7 @@
 
 		<AppButton class="eye"
 			@click="togglePassword()"
-			:icon="passwordIsVisible ? 'eye-open' : 'eye-closed'"
+			:icon="visible ? 'eye-open' : 'eye-closed'"
 		/>
 
 	</div>
@@ -49,14 +49,21 @@ module.exports = {
     data() {
 	return {
 	    passwordThreshold: 12,
-	    passwordUpdate: false
+	    passwordUpdate: false,
+	    // a copy, as props can't be written to: the toggle flips this, and the parent can still reveal it
+	    visible: this.passwordIsVisible
+	}
+    },
+    watch: {
+	passwordIsVisible(v) {
+	    this.visible = v
 	}
     },
 
     mixins:[i18n],
     methods: {
 	togglePassword() {
-	    this.passwordIsVisible = !this.passwordIsVisible
+	    this.visible = !this.visible
 	},
         
 	validatePassword() {
