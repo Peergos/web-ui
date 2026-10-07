@@ -4164,7 +4164,7 @@ module.exports = {
   transition: opacity .18s ease;
 }
 
-.drive-swap-enter,
+.drive-swap-enter, .drive-swap-enter-from,
 .drive-swap-leave-to {
   opacity: 0;
 }
