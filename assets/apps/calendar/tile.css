@@ -109,6 +109,17 @@ html, body {
   color: var(--tile-foreground);
 }
 
+.tile-row.description {
+  margin-top: 8px;
+  color: var(--tile-foreground);
+  white-space: pre-line;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
 .tile-status {
   color: var(--tile-danger);
   font-weight: 600;

@@ -59,14 +59,15 @@ public class FeedTileTest {
                 d.switchToFrame(FRAME);
                 try {
                     String text = String.valueOf(d.scriptQuiet("return document.body ? document.body.textContent : ''"));
-                    return text.contains(title) && text.contains(place) && text.contains("Weekly") ? true : null;
+                    return text.contains(title) && text.contains(place) && text.contains("Weekly")
+                            && text.contains("Agenda for " + title) ? true : null;
                 } finally {
                     d.switchToTop();
                 }
             }, 60_000);
             d.waitForScript("the tile shown in place of its placeholder",
                     "!document.querySelector('.feed-tile__placeholder')", 30_000);
-            System.out.println("  ok   a shared event is drawn in the feed: its title, place and repeat");
+            System.out.println("  ok   a shared event is drawn in the feed: its title, place, repeat and description");
 
             String src = String.valueOf(d.script("return document.querySelector('" + FRAME + "').src"));
             String expected = String.valueOf(d.script("return location.protocol + '//calendar.' + location.host + '/apps/calendar/tile.html'"));
@@ -120,6 +121,7 @@ public class FeedTileTest {
                 + "BEGIN:VEVENT\r\nUID:feed-tile-" + title.replace(' ', '-') + "\r\n"
                 + "DTSTAMP:20260101T000000Z\r\nDTSTART:20260105T090000Z\r\nDTEND:20260105T093000Z\r\n"
                 + "RRULE:FREQ=WEEKLY\r\nSUMMARY:" + title + "\r\nLOCATION:" + place + "\r\n"
+                + "DESCRIPTION:Agenda for " + title + "\\nBring updates\r\n"
                 + "END:VEVENT\r\nEND:VCALENDAR\r\n";
         byte[] data = ics.getBytes(StandardCharsets.UTF_8);
         FileWrapper root = b.getUserRoot().join();

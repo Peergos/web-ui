@@ -118,6 +118,7 @@ function eventRows(ev) {
         return p && p.name === 'ATTENDEE';
     }).length;
     if (attendees) out.push(row(attendees + (attendees === 1 ? ' attendee' : ' attendees')));
+    if (extra.description) out.push(row(extra.description, 'description'));
     return { rows: out, color: entryColor(lines) };
 }
 
@@ -130,6 +131,7 @@ function taskRows(task) {
         out.push(row('No due date', 'time'));
     }
     if (task.recur) out.push(row(describeRecur(task.recur)));
+    if (task.description) out.push(row(task.description, 'description'));
     return { rows: out, color: entryColor(task.sourceLines) };
 }
 
