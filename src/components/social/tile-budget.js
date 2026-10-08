@@ -4,10 +4,9 @@
 // budget is full the live tile furthest from the viewport is evicted, if it
 // is further away than the one asking.
 //
-// A tile with a key shares something with every other tile of that key - a
-// custom app's origin, whose service worker answers one host at a time - so
-// at most one per key is live, and none while the key is blocked (the full
-// app is open).
+// A tile with a key belongs to a custom app, and none with a blocked key is
+// live: while the app itself is open in the feed its tiles step aside, since the
+// app's service worker refuses requests it cannot place while a tile is running.
 //
 // A tile here is any object with key, distance(), grant() and evict().
 module.exports = function TileBudget(max) {
@@ -15,17 +14,8 @@ module.exports = function TileBudget(max) {
     let waiting = new Set();
     let blocked = new Set();
 
-    function keyIsLive(key) {
-        for (let t of live)
-            if (t.key === key)
-                return true;
-        return false;
-    }
-
     function grantable(tile) {
-        if (tile.key == null)
-            return true;
-        return ! blocked.has(tile.key) && ! keyIsLive(tile.key);
+        return tile.key == null || ! blocked.has(tile.key);
     }
 
     function furthest(tiles) {

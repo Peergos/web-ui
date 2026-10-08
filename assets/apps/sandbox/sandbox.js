@@ -7,6 +7,9 @@ var portReinitPending = false;
 // Set when the host is the feed rather than the full app: the page loaded is the app's tile,
 // and the only messages that cross between it and the host are the tile's own.
 var tileMode = false;
+// Which sandbox this is, to the service worker every sandbox of this app shares. Kept across a
+// re-registration so the document already loaded still names it.
+var instanceId = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 let msgHandler = function (e) {
       let appFrame = document.getElementById("appSandboxId");
       if (tileMode && appFrame != null && e.source === appFrame.contentWindow) {
@@ -54,7 +57,7 @@ function tileSrc(props, theme, username, lang) {
     let page = String(props.tilePage || '');
     if (!/^[A-Za-z0-9_-][A-Za-z0-9_.\/-]*$/.test(page) || page.split('/').some(part => part == '..'))
         return null;
-    return page + '?theme=' + encodeURIComponent(theme) + '&username=' + encodeURIComponent(username)
+    return page + '?pgi=' + instanceId + '&theme=' + encodeURIComponent(theme) + '&username=' + encodeURIComponent(username)
         + '&name=' + encodeURIComponent(props.tileName || '')
         + (lang ? '&lang=' + encodeURIComponent(lang) : '');
 }
@@ -109,6 +112,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
                 path = path + '&username=' + username;
+                path = path + '&pgi=' + instanceId;
                 if (lang) {
                     path = path + '&lang=' + encodeURIComponent(lang);
                 }
@@ -132,7 +136,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
         }, 0
         ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate){
             that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate);
-        }
+        }, {id: instanceId, tile: tileMode}
     );
     that.streamWriter = fileStream.getWriter();
 }

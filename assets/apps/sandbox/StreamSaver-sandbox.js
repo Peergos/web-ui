@@ -125,7 +125,7 @@
    * @param  {number} size     depricated
    * @return {WritableStream}
    */
-  function createWriteStream (filename, mimeType, urlCallback, seekCallback, size, fileDataCallback) {
+  function createWriteStream (filename, mimeType, urlCallback, seekCallback, size, fileDataCallback, instance) {
     let opts = {
       size: size,
       pathname: null,
@@ -150,6 +150,7 @@
         .replace(/\*/g, '%2A')
 
       const response = {
+        instance: instance,
         transferringReadable: supportsTransferable,
         pathname: opts.pathname || Math.random().toString().slice(-6) + '/' + filename,
         headers: {

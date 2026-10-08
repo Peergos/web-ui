@@ -76,7 +76,6 @@ module.exports = {
         // What the budget sees: the component itself carries reactive state the
         // budget has no business touching.
         this.handle = {
-            // A custom app's origin answers one host at a time, so its tiles take turns.
             key: this.builtin ? null : 'app:' + this.tileApp.name,
             distance: () => that.distance(),
             grant: () => that.mount(),

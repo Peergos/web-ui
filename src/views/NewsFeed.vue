@@ -1747,7 +1747,8 @@ module.exports = {
         },
     },
     watch: {
-        // The full app and a tile of it would share one service worker port.
+        // The app's service worker refuses a navigation it cannot place while a tile of
+        // that app runs, which an app moving between its own pages would hit.
         openSandboxTileKey(key, previous) {
             if (previous != null)
                 this.tileBudget.unblock(previous);
