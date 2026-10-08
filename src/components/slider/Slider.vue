@@ -1,58 +1,28 @@
 <template>
 	<div class="app-slider">
-		<transition-group
-			tag="div"
-			:name="transitionName"
-			class="slider__container"
-		>
-			<div
-				v-if="show"
-				:key="current"
-				class="slide"
-			>
-				<img
-					v-if="slides[current].image"
-					:src="slides[current].image"
-					:alt="slides[current].title"
-					class="slide__image"
-				/>
-				<h2 class="slide__title">
-					{{ slides[current].title }}
-				</h2>
-				<p class="slide__description">
-					{{ slides[current].description }}
-				</p>
-			</div>
-		</transition-group>
-		<span class="slider__pagination">
-			{{ current + 1 }} / {{ slidesLength }}
-		</span>
-		<!-- <AppButton
-			class="slider__button button--prev"
-			aria-label="Previous slide"
-			@click="slide(-1)"
-			icon="arrow-right"
-		>
-		</AppButton> -->
-		<AppButton
-			class="slider__button button--next"
-			aria-label="Next slide"
-			@click="slide(1)"
-			icon="arrow-right"
-			accent
-		>
-			next
-		</AppButton>
+		<transition name="fade" mode="out-in">
+			<figure :key="current" class="slide">
+				<div v-if="slides[current].image" class="slide__frame">
+					<img :src="slides[current].image" :alt="slides[current].title" class="slide__image"/>
+				</div>
+				<figcaption class="slide__text">
+					<h4 class="slide__title">{{ slides[current].title }}</h4>
+					<p class="slide__description">{{ slides[current].description }}</p>
+				</figcaption>
+			</figure>
+		</transition>
+		<div class="slider__controls">
+			<span class="slider__pagination">{{ current + 1 }} / {{ slidesLength }}</span>
+			<button type="button" class="pg-btn pg-btn--primary" aria-label="Next slide" @click="slide(1)">
+				Next
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+			</button>
+		</div>
 	</div>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
-
 module.exports = {
-    components: {
-        AppButton,
-    },
 	props: {
 		slides: {
 			type: Array,
@@ -62,9 +32,6 @@ module.exports = {
 	data() {
 		return {
 			current: 0,
-			direction: 1,
-			transitionName: "fade",
-			show: false,
 		};
 	},
 	computed: {
@@ -74,92 +41,77 @@ module.exports = {
 	},
 	methods: {
 		slide(dir) {
-			this.direction = dir;
-			// dir === 1
-			// 	? (this.transitionName = "slide-next")
-			// 	: (this.transitionName = "slide-prev");
 			this.current = (this.current + (dir % this.slidesLength) + this.slidesLength) % this.slidesLength;
 		},
-	},
-	mounted() {
-		this.show = true;
 	},
 };
 </script>
 
 <style>
+/* One slide at a time, in the flow of the dialog: the picture in a frame of fixed proportions
+   and the words under it, so neither the dialog nor the controls jump as the slides change. */
 .app-slider {
-	position: relative;
-}
-.slider__container {
-	min-width: 420px;
-	min-height: 420px;
-}
-.app-slider .slide {
-	position: absolute;
-	top:0;
-	left: 0;
-	width: 100%;
 	display: flex;
 	flex-direction: column;
+	gap: 16px;
+}
 
+.app-slider .slide {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin: 0;
+}
+
+/* the pictures are screenshots on white, so they keep a white frame in either theme */
+.app-slider .slide__frame {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	aspect-ratio: 16 / 10;
+	padding: 8px;
+	background-color: #ffffff;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-control);
+	overflow: hidden;
 }
 
 .app-slider .slide__image {
-	width: 100%;
-	height: auto;
+	display: block;
+	max-width: 100%;
+	max-height: 100%;
+	object-fit: contain;
 }
 
-
-.slider__button {
-	transition: transform 0.3s ease-in-out;
-	user-select: none;
+/* room for a title and three lines of description, the longest any slide has */
+.app-slider .slide__text {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	min-height: 6.5em;
 }
 
-.slider__button.button--next {
-	position: absolute;
-	right:0;
+.app-slider .slide__title {
+	margin: 0;
+	font-size: 17px;
+	font-weight: 600;
 }
 
-.slider__button--prev svg{
-	transform: rotate(180deg);
+.app-slider .slide__description {
+	margin: 0;
+	color: var(--pg-muted);
 }
 
-
-.slider__pagination{
-	line-height: 36px;
+.slider__controls {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
 }
 
-/* Next Slide */
-.slide-next-enter-active,
-.slide-next-leave-active {
-	transition: transform 0.5s ease-in-out;
+.slider__pagination {
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	font-variant-numeric: tabular-nums;
 }
-.slide-next-enter-from {
-	transform: translate(100%);
-}
-.slide-next-leave-to {
-	transform: translate(-100%);
-}
-
-/* Prev slide */
-.slide-prev-enter-active,
-.slide-prev-leave-active {
-	transition: transform 0.5s ease-in-out;
-}
-.slide-prev-enter-from {
-	transform: translate(-100%);
-}
-.slide-prev-leave-to {
-	transform: translate(100%);
-}
-
-@media (max-width: 540px) {
-
-	.slider__container {
-		min-width: 320px;
-		min-height: 420px;
-	}
-}
-
 </style>
