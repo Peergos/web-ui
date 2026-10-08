@@ -33,106 +33,80 @@
 			:groups="groups"
 			:messages="messages">
 		    </Share>
-                    <div class="modal-body">
-
-                        <div class="flex-thumbnail-container">
-                            <div style="padding:20px;">
-		                <img id="profile-image" alt="Profile image" v-if="hasProfileImage()" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
-	                    </div>
-                            <div class="flex-image-button-container">
-                                <div class="flex-container">
-		                    <button class="btn btn-success flex-grow" @click="triggerUpload">{{ translate("PROFILE.UPLOAD") }}</button>
-		                    <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
-		                </div>
-                                <div class="flex-container">
-		                    <button class="btn btn-danger flex-grow vertical-margin" v-if="hasProfileImage()" v-on:click="removeImage()" >{{ translate("PROFILE.REMOVE") }}</button>
-		                </div>
-                                <div class="flex-container">
-		                    <button class="btn btn-success flex-grow" v-if="hasProfileImage()" @click="share('photo', 'Profile image')" >{{ translate("DRIVE.SHARE") }}</button>
-		                </div>
-                            </div>
-                        </div>
-                        <div class="flex-profile-container">
-                            <div class="flex-item-left">
-		                <label style="margin-right:10px;">{{ translate("PROFILE.FIRSTNAME") }}</label>
-		                <div style="flex-grow:1; display:flex; flex-wrap: wrap;">
-                                    <input id="profile-first-name" class="form-control-profile" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
-                                    <button v-if="firstNameReadyToBeShared" class="btn btn-success" @click="share('firstname', 'First name')">{{ translate("DRIVE.SHARE") }}</button>
-		                </div>
-                            </div>
-                            <div class="flex-item-right">
-		                <label style="margin-right:10px;">{{ translate("PROFILE.LASTNAME") }}</label>
-		                <div class="flex-container flex-grow">
-                                    <input id="profile-last-name" class="form-control-profile" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
-                                    <button v-if="lastNameReadyToBeShared" class="btn btn-success" @click="share('lastname', 'Last name')">{{ translate("DRIVE.SHARE") }}</button>
-		                </div>
-                            </div>
-                            <div class="flex-item-left">
-		                <label style="margin-right:10px;">{{ translate("PROFILE.PHONE") }}</label>
-		                <div class="flex-container flex-grow">
-                                    <input id="profile-primary-phone" class="form-control-profile" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
-                                    <button v-if="primaryPhoneReadyToBeShared" class="btn btn-success" @click="share('phone', 'Phone number')">{{ translate("DRIVE.SHARE") }}</button>
-		                </div>
-                            </div>
-                            <div class="flex-item-right">
-		                <label style="margin-right:10px;">{{ translate("PROFILE.EMAIL") }}</label>
-		                <div class="flex-container flex-grow">
-                                    <input id="profile-primary-email" class="form-control-profile" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
-                                    <button v-if="primaryEmailReadyToBeShared" class="btn btn-success" @click="share('email', 'Email address')">{{ translate("DRIVE.SHARE") }}</button>
-		                </div>
-                            </div>
-                        </div>
-                        <div class="flex-item">
-                            <div><label>{{ translate("PROFILE.STATUS") }}</label></div>
-                        </div>
-                        <div class="flex-item">
-                            <div style="flex-grow: 2">
-                                <input id="profile-status" style="width: 100%;" class="form-control-profile" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
-                            </div>
-                            <div>
-                                <button v-if="statusReadyToBeShared" class="btn btn-success" @click="share('status', 'Status message')">{{ translate("DRIVE.SHARE") }}</button>
-                            </div>
-                        </div>
-                        <div class="flex-item">
-                            <div><label>{{ translate("PROFILE.BIO") }}</label></div>
-                        </div>
-                        <div class="flex-item">
-                            <div style="flex-grow: 2">
-                                <textarea id="profile-biography" spellcheck="true" class="form-control-profile" style="width: 100%;resize: none;" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
-                            </div>
-                            <div>
-                                <button v-if="biographyReadyToBeShared" class="btn btn-success" @click="share('bio', 'Biography')">{{ translate("DRIVE.SHARE") }}</button>
-                            </div>
-                        </div>
-                        <div class="flex-item">
-                            <div>
-                                <label>{{ translate("PROFILE.WWW") }}</label>&nbsp;<i class="fa fa-question-circle" aria-hidden="true"  @click="showPublishHelp()" style="cursor: pointer"></i>
-                            </div>
-                        </div>
-                        <div class="flex-item">
-                            <div>
-                                <input readonly id="profile-web-root" style="width:100%" class="form-control-profile" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
-                            </div>
-                            <div>
-                                <button class="btn btn-info" @click="openFolderPicker()">{{ translate("PROFILE.CHANGE.WWW") }}</button>
-                            </div>
-                            <div>
-                                <button v-if="webRootReadyToBePublished" class="btn btn-success" @click="publishWebroot()">{{ translate("PROFILE.PUBLISH") }}</button>
-                            </div>
-                        </div>
-                        <div class="flex-item" v-if="webRootUrl.length > 0">
-                            <div><span>{{ translate("PROFILE.PUBLIC") }}:</span>
-                            </div>
-                            <div>
-                                <a v-bind:href="webRootUrl" target="_blank" rel="noopener noreferrer">{{webRootUrl}}</a>
-                            </div>
-                        </div>
-                        <div class="flex-line-item">
-                            <div>
-                                <button class="btn btn-success" style = "width:100%" @click="update()">{{ translate("PROFILE.SAVE") }}</button>
-                            </div>
-                        </div>
-                    </div>
+			<div class="profile__photo">
+				<div class="profile__avatar">
+					<img v-if="hasProfileImage()" id="profile-image" alt="Profile image" v-bind:src="getProfileImage()"/>
+					<svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+				</div>
+				<div class="profile__photo-actions">
+					<button type="button" class="pg-btn" @click="triggerUpload">{{ translate("PROFILE.UPLOAD") }}</button>
+					<button v-if="hasProfileImage()" type="button" class="pg-btn" @click="share('photo', 'Profile image')">{{ translate("DRIVE.SHARE") }}</button>
+					<button v-if="hasProfileImage()" type="button" class="pg-btn pg-btn--danger" v-on:click="removeImage()">{{ translate("PROFILE.REMOVE") }}</button>
+					<input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
+				</div>
+			</div>
+			<div class="profile__grid">
+				<div class="app-modal__field">
+					<label for="profile-first-name">{{ translate("PROFILE.FIRSTNAME") }}</label>
+					<div class="profile__row">
+						<input id="profile-first-name" class="pg-input" v-model="firstName" placeholder="First Name" :maxlength="FIRSTNAME_MAX_LENGTH">
+						<button v-if="firstNameReadyToBeShared" type="button" class="pg-btn" @click="share('firstname', 'First name')">{{ translate("DRIVE.SHARE") }}</button>
+					</div>
+				</div>
+				<div class="app-modal__field">
+					<label for="profile-last-name">{{ translate("PROFILE.LASTNAME") }}</label>
+					<div class="profile__row">
+						<input id="profile-last-name" class="pg-input" v-model="lastName" placeholder="Last Name" :maxlength="LASTNAME_MAX_LENGTH">
+						<button v-if="lastNameReadyToBeShared" type="button" class="pg-btn" @click="share('lastname', 'Last name')">{{ translate("DRIVE.SHARE") }}</button>
+					</div>
+				</div>
+				<div class="app-modal__field">
+					<label for="profile-primary-phone">{{ translate("PROFILE.PHONE") }}</label>
+					<div class="profile__row">
+						<input id="profile-primary-phone" class="pg-input" v-model="primaryPhone" placeholder="Primary Phone Number" :maxlength="PHONE_MAX_LENGTH">
+						<button v-if="primaryPhoneReadyToBeShared" type="button" class="pg-btn" @click="share('phone', 'Phone number')">{{ translate("DRIVE.SHARE") }}</button>
+					</div>
+				</div>
+				<div class="app-modal__field">
+					<label for="profile-primary-email">{{ translate("PROFILE.EMAIL") }}</label>
+					<div class="profile__row">
+						<input id="profile-primary-email" class="pg-input" v-model="primaryEmail" placeholder="Primary Email Address" :maxlength="EMAIL_MAX_LENGTH">
+						<button v-if="primaryEmailReadyToBeShared" type="button" class="pg-btn" @click="share('email', 'Email address')">{{ translate("DRIVE.SHARE") }}</button>
+					</div>
+				</div>
+			</div>
+			<!-- STAUS is how every language file spells this key -->
+			<div class="app-modal__field">
+				<label for="profile-status">{{ translate("PROFILE.STAUS") }}</label>
+				<div class="profile__row">
+					<input id="profile-status" class="pg-input" v-model="status" placeholder="Status" :maxlength="STATUS_MAX_LENGTH">
+					<button v-if="statusReadyToBeShared" type="button" class="pg-btn" @click="share('status', 'Status message')">{{ translate("DRIVE.SHARE") }}</button>
+				</div>
+			</div>
+			<div class="app-modal__field">
+				<label for="profile-biography">{{ translate("PROFILE.BIO") }}</label>
+				<div class="profile__row">
+					<textarea id="profile-biography" spellcheck="true" class="pg-input" v-model="biography" placeholder="Biography" rows=3 :maxlength="BIO_MAX_LENGTH"></textarea>
+					<button v-if="biographyReadyToBeShared" type="button" class="pg-btn" @click="share('bio', 'Biography')">{{ translate("DRIVE.SHARE") }}</button>
+				</div>
+			</div>
+			<div class="app-modal__field">
+				<span class="profile__label">
+					<label for="profile-web-root">{{ translate("PROFILE.WWW") }}</label>
+					<button type="button" class="profile__help" aria-label="What is this?" @click="showPublishHelp()">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.9.7c0 1.6-2.4 2.3-2.4 2.3"/><path d="M12 17h.01"/></svg>
+					</button>
+				</span>
+				<div class="profile__row">
+					<input readonly id="profile-web-root" class="pg-input" v-model="webRoot" placeholder="Website Directory" :maxlength="WEBROOT_MAX_LENGTH">
+					<button type="button" class="pg-btn" @click="openFolderPicker()">{{ translate("PROFILE.CHANGE.WWW") }}</button>
+					<button v-if="webRootReadyToBePublished" type="button" class="pg-btn" @click="publishWebroot()">{{ translate("PROFILE.PUBLISH") }}</button>
+				</div>
+				<p v-if="webRootUrl.length > 0" class="pg-note">{{ translate("PROFILE.PUBLIC") }}: <a v-bind:href="webRootUrl" target="_blank" rel="noopener noreferrer">{{webRootUrl}}</a></p>
+			</div>
+		</template>
+		<template #footer>
+			<button type="button" class="pg-btn pg-btn--primary" @click="update()">{{ translate("PROFILE.SAVE") }}</button>
 		</template>
 	</AppModal>
 </template>
@@ -682,40 +656,88 @@ module.exports = {
 }
 </script>
 <style>
-.flex-profile-container {
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 20px;
-  text-align: left;
+/* The picture beside what can be done with it, then each detail with its label above it and,
+   once saved, a way to share just that detail. Name, phone and email pair up where there is room. */
+.profile__photo {
+	display: flex;
+	align-items: center;
+	gap: 16px;
 }
 
-.flex-thumbnail-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.profile__avatar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 88px;
+	height: 88px;
+	border-radius: 50%;
+	overflow: hidden;
+	color: var(--pg-muted);
+	background-color: var(--pg-surface-2);
 }
 
-.flex-image-button-container {
-  display: flex;
-  flex-direction: column;
+.profile__avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
 }
 
-.form-control-profile {
-    flex-grow: 1;
-    margin-right: 10px;
-    padding: 6px 12px;
-    font-size: 16px;
-    line-height: 1.42857143;
-    color: #555;
-    background-color: #fff;
-    background-image: none;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-    box-shadow: inset 0 1px 1px rgba(0,0,0,.075);
-    -webkit-transition: border-color ease-in-out .15s,-webkit-box-shadow ease-in-out .15s;
-    -o-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
-    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+.profile__avatar svg {
+	width: 44px;
+	height: 44px;
 }
 
+.profile__photo-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.profile__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 14px 16px;
+}
+
+.profile__row {
+	display: flex;
+	gap: 8px;
+	align-items: flex-start;
+}
+
+.profile__row .pg-input {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.profile__row .pg-btn {
+	flex: none;
+}
+
+.profile__label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.profile__help {
+	display: flex;
+	padding: 2px;
+	color: var(--pg-muted);
+	background: none;
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+}
+
+.profile__help svg {
+	width: 16px;
+	height: 16px;
+}
+
+.profile__help:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
 </style>
