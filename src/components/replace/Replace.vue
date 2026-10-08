@@ -1,10 +1,10 @@
 <template>
 <transition name="modal">
-<div class="pg-dialog__mask" @click="close">
+<div class="pg-dialog__mask" @click="no()">
   <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="replace_message" @click.stop>
     <header class="pg-dialog__head">
       <h3 class="pg-dialog__title" id="replace-header-id">{{replace_message}}</h3>
-      <DialogClose @close="close"/>
+      <DialogClose @close="no()"/>
     </header>
     <div class="pg-dialog__body">
       <p id='replace-body-id'>{{replace_body}}</p>
@@ -43,6 +43,8 @@ module.exports = {
         close: function() {
             this.$emit("hide-replace");
         },
+        // the X, Escape and a click outside come here too: whoever asked is waiting on an
+        // answer, and walking away from the question is not replacing the file
         no: function() {
             this.close();
             this.consumer_cancel_func(this.applyToAll);
