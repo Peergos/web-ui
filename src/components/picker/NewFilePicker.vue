@@ -1,81 +1,67 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-prompt app-modal__overlay" @click="closePrompt()">
-
-			<div class="app-prompt__container" @click.stop>
-				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click="closePrompt()"/>
-					<h3>{{title}}</h3>
+		<div class="pg-dialog__mask" @click="closePrompt()">
+			<div class="pg-dialog fp-picker" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+				<header class="pg-dialog__head">
+					<h2 class="pg-dialog__title">{{title}}</h2>
+					<DialogClose @close="closePrompt()"/>
 				</header>
-                <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-                <div class="prompt__body_no_margin">
-                    <select v-if="displayDriveSelection" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
-                        <option v-for="option in driveOptions" v-bind:value="option.value">
-                            {{ option.text }}
-                          </option>
-                    </select>
-                </div>
-                <div class="prompt__body_no_margin">
-                    <div class="folder-picker-view" class="scroll-style">
-                      <ul>
-                        <SelectableTreeItem class="item" :model="treeData" :load_func="loadFolderLazily" :select_func="selectFolder" :spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable" :selectLeafOnly="selectLeafOnly"></SelectableTreeItem>
-                      </ul>
-                    </div>
-                    <input style="background-color: lightgrey;"
-                        v-model="folder_result"
-                        type="text"
-                        disabled="true"
-                    >
-                    </input>
-                </div>
-                <div class="prompt__body_no_margin">
-                    <select v-if="pickerMultipleFileExtensions.length > 0" v-model="selectedFileExtension" @change="changeSelectedFileExtension">
-                        <option v-for="option in fileExtensionOptions" v-bind:value="option.value">
-                            {{ option.text }}
-                          </option>
-                    </select>
-                </div>
-				<div class="prompt__body_no_margin">
-					<input
-						v-if="placeholder"
-						id="prompt-input"
-						ref="prompt"
-						v-model="prompt_result"
-						type="text"
-						:placeholder="placeholder"
-						:maxlength="maxLength"
-						@keyup.enter="getPrompt(this.prompt_result)"
-						autofocus
-					>
-					</input>
+				<div v-if="displayDriveSelection" class="fp-picker__drive">
+					<select class="fp-select" v-model="selectedDrive" @change="changeSelectedDrive" :disabled='disableDriveSelection'>
+						<option v-for="option in driveOptions" :key="option.value" v-bind:value="option.value">{{ option.text }}</option>
+					</select>
 				</div>
-				<footer class="prompt__footer">
-					<AppButton outline @click="closePrompt()">
-						Cancel
-					</AppButton>
-
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click="getPrompt(this.prompt_result)"
-					>
-					{{action}}
-					</AppButton>
+				<div class="pg-dialog__body fp-picker__tree">
+					<SelectableTreeItem :model="treeData" :load_func="loadFolderLazily" :select_func="selectFolder"
+						:spinnerEnable_func="spinnerEnable" :spinnerDisable_func="spinnerDisable"
+						:selectLeafOnly="selectLeafOnly" :selectedPath="folder_result" :treeLabel="title"></SelectableTreeItem>
+				</div>
+				<footer class="pg-dialog__foot">
+					<div class="fp-selection">
+						<template v-if="folder_result">
+							<span class="fp-selection__label">{{ translate("FOLDER.PICKER.SELECTED") }}</span>
+							<SelectedPath :path="folder_result"/>
+						</template>
+						<span v-else class="fp-selection__empty">{{ translate("FOLDER.PICKER.NO.FOLDER") }}</span>
+					</div>
+					<div class="new-file__name">
+						<input
+							id="prompt-input"
+							ref="prompt"
+							class="pg-input"
+							v-model="prompt_result"
+							type="text"
+							:placeholder="placeholder"
+							:maxlength="maxLength"
+							@keyup.enter="getPrompt()"
+						>
+						<select v-if="pickerMultipleFileExtensions.length > 0" class="fp-select new-file__extension" v-model="selectedFileExtension" @change="changeSelectedFileExtension">
+							<option v-for="option in fileExtensionOptions" :key="option.value" v-bind:value="option.value">{{ option.text }}</option>
+						</select>
+					</div>
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" class="pg-btn" @click="closePrompt()">{{ translate("PROMPT.CANCEL") }}</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" :disabled="! canSubmit" @click="getPrompt()">{{action}}</button>
+					</div>
 				</footer>
+				<div v-if="showSpinner" class="pg-dialog__loading"><Spinner :message="spinnerMessage"></Spinner></div>
 			</div>
 		</div>
 	</transition>
 </template>
-const AppButton = require("../AppButton.vue");
+<script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const SelectableTreeItem = require("SelectableTreeItem.vue");
+const SelectedPath = require("SelectedPath.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const folderTreeMixin = require("../../mixins/tree-walker/index.js");
-<script>
+const i18n = require("../../i18n/index.js");
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
         SelectableTreeItem,
+        SelectedPath,
         Spinner,
     },
 	data() {
@@ -83,7 +69,7 @@ module.exports = {
 			prompt_result: '',
 			placeholder: '',
 			max_input_size: 30,
-			action: 'ok',
+			action: 'OK',
 			folder_result: '',
             showSpinner: false,
             spinnerMessage: 'Loading...',
@@ -115,7 +101,7 @@ module.exports = {
             default: []
         },
 	},
-    mixins:[folderTreeMixin],
+    mixins:[folderTreeMixin, i18n],
 	computed: {
         ...Vuex.mapState([
             'context',
@@ -126,6 +112,10 @@ module.exports = {
         },
 		maxLength() {
 			return this.max_input_size;
+		},
+		// a name and a folder to put it in, the two things getPrompt needs before it does anything
+		canSubmit() {
+			return this.prompt_result.length > 0 && this.folder_result.length > 0;
 		}
 	},
 
@@ -229,58 +219,20 @@ module.exports = {
 </script>
 
 <style>
-select{
-    min-width: 300px;
-    border: 2px solid var(--green-500);
-    margin: 8px 0;
-	color:var(--color);
-	background-color: transparent;
-	border-radious: 4px;
-	padding: 0 16px;
-	font-family: inherit;
-	font-size: inherit;
-	cursor: inherit;
-	line-height: 48px;
-}
-.app-prompt.app-modal__overlay{
-	display:flex;
-	align-items: center;
-	justify-content: center;
-}
-.app-prompt__container{
-	width: 400px;
-	padding: 16px;
-	border-radius: 4px;
-	color: var(--color);
-	background-color:var(--bg);
-	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-.prompt__header h3{
-	border-top:0;
-	font-weight: var(--regular);
-}
-.prompt__body_no_margin{
-	margin: 0;
-}
-.prompt__footer{
+/* the name and, where the app offers several, the type side by side under the tree */
+.new-file__name {
 	display: flex;
-	justify-content: flex-end;
-}
-.prompt__footer button{
-	margin-left: 16px;
+	flex-wrap: wrap;
+	gap: 8px;
 }
 
-.item {
-  cursor: pointer;
-  line-height: 1.5;
+.new-file__name .pg-input {
+	flex: 1 1 200px;
 }
-.bold {
-  font-weight: bold;
-}
-.scroll-style {
-    max-height: 250px;
-    overflow-y: scroll;
-    border: 2px solid var(--green-500);
-    margin: 8px 0;
+
+.new-file__name .new-file__extension {
+	flex: 1 1 160px;
+	min-width: 0;
+	margin: 0;
 }
 </style>
