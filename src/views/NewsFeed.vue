@@ -1120,7 +1120,8 @@ module.exports = {
             this.htmlAnchor = "";
         },
         openTile: function (entry) {
-            this.openFileOrDir("Calendar", entry.path, {filename: entry.file.getName()});
+            let app = entry.tile.kind == 'builtin' ? "Calendar" : entry.tile.name;
+            this.openFileOrDir(app, entry.path, {filename: entry.file.getName()});
         },
         viewFolder: function (entry) {
             this.openFileOrDir("Drive", entry.path, {filename:""})
@@ -1745,6 +1746,15 @@ module.exports = {
             });
         },
     },
+    watch: {
+        // The full app and a tile of it would share one service worker port.
+        openSandboxTileKey(key, previous) {
+            if (previous != null)
+                this.tileBudget.unblock(previous);
+            if (key != null)
+                this.tileBudget.block(key);
+        },
+    },
     computed: {
 		...Vuex.mapState([
 		    'quotaBytes',
@@ -1760,6 +1770,9 @@ module.exports = {
 		]),
         friendnames: function() {
             return this.socialData.friends;
+        },
+        openSandboxTileKey: function() {
+            return this.showAppSandbox ? 'app:' + this.sandboxAppName : null;
         },
     	followingnames: function() {
             return this.socialData.following;

@@ -3,17 +3,22 @@
         <div v-if="!ready" class="feed-tile__placeholder">
             <slot></slot>
         </div>
-        <iframe v-if="live" ref="frame" :src="frameSrc" v-show="ready"
+        <iframe v-if="live && builtin" ref="frame" :src="frameSrc" v-show="ready"
             class="feed-tile__frame" :title="entry.fullName"
             sandbox="allow-scripts allow-same-origin" allow="" frameBorder="0" scrolling="no"></iframe>
+        <AppTile v-if="live && !builtin" v-show="ready" :entry="entry" :appName="tileApp.name"
+            @resize="resize" @ready="onReady" @open="onOpen" @failed="fail"></AppTile>
     </div>
 </template>
 
 <script>
+const AppTile = require("AppTile.vue");
+
 const TILE_MIN = 64;
 const TILE_MAX = 480;
 const MAX_TILE_FILE_BYTES = 256 * 1024;
 const READY_TIMEOUT_MS = 15000;
+const DEFAULT_APP_TILE_HEIGHT = 160;
 
 // The page each built-in app draws its tiles with, on that app's own origin.
 const BUILTIN_TILES = {
@@ -21,6 +26,9 @@ const BUILTIN_TILES = {
 };
 
 module.exports = {
+    components: {
+        AppTile,
+    },
     props: {
         entry: {type: Object, required: true},
         tileApp: {type: Object, required: true},
@@ -28,13 +36,15 @@ module.exports = {
     },
     emits: ['open'],
     data: function() {
-        let app = BUILTIN_TILES[this.tileApp.name];
+        let builtin = this.tileApp.kind == 'builtin';
+        let app = builtin ? BUILTIN_TILES[this.tileApp.name] : null;
         return {
+            builtin: builtin,
             app: app,
             live: false,
             ready: false,
             failed: false,
-            height: app.height,
+            height: builtin ? app.height : (this.tileApp.height || DEFAULT_APP_TILE_HEIGHT),
             contents: null,
         };
     },
@@ -47,9 +57,11 @@ module.exports = {
             'currentTheme',
         ]),
         frameOrigin: function() {
+            if (! this.builtin) return null;
             return window.location.protocol + "//" + this.app.subdomain + "." + window.location.host;
         },
         frameSrc: function() {
+            if (! this.builtin) return null;
             let theme = this.currentTheme;
             return this.frameOrigin + this.app.page + (theme ? "?theme=" + encodeURIComponent(theme) : "");
         },
@@ -64,6 +76,8 @@ module.exports = {
         // What the budget sees: the component itself carries reactive state the
         // budget has no business touching.
         this.handle = {
+            // A custom app's origin answers one host at a time, so its tiles take turns.
+            key: this.builtin ? null : 'app:' + this.tileApp.name,
             distance: () => that.distance(),
             grant: () => that.mount(),
             evict: () => that.unmount(),
@@ -79,16 +93,9 @@ module.exports = {
         this.handlers = Object.assign(Object.create(null), {
             hello: function() { this.sendFile(); },
             pong: function() {},
-            resize: function(data) {
-                let h = Number(data.height);
-                if (! isFinite(h)) return;
-                this.height = Math.max(TILE_MIN, Math.min(TILE_MAX, Math.round(h)));
-            },
-            ready: function() {
-                clearTimeout(this.readyTimer);
-                this.ready = true;
-            },
-            open: function() { this.$emit('open', this.entry); },
+            resize: function(data) { this.resize(data.height); },
+            ready: function() { this.onReady(); },
+            open: function() { this.onOpen(); },
         });
     },
     mounted: function() {
@@ -117,6 +124,18 @@ module.exports = {
         this.unmount();
     },
     methods: {
+        resize: function(height) {
+            let h = Number(height);
+            if (! isFinite(h)) return;
+            this.height = Math.max(TILE_MIN, Math.min(TILE_MAX, Math.round(h)));
+        },
+        onReady: function() {
+            clearTimeout(this.readyTimer);
+            this.ready = true;
+        },
+        onOpen: function() {
+            this.$emit('open', this.entry);
+        },
         distance: function() {
             let root = this.$refs.root;
             if (root == null) return Infinity;
