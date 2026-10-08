@@ -38,7 +38,7 @@ Covered: sign in and reach the drive, upload a file, upload a group of files in 
 folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
 and into a subdirectory, render html with links and images from both its own directory and a
 subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
-as .ics, and the calendar itself: an event, a repeating event with a reminder, a task through
+as .ics, a calendar entry a friend shared drawn as a tile in the news feed, and the calendar itself: an event, a repeating event with a reminder, a task through
 completion, one occurrence taken out of a series and the rest of it ended, an .ics imported twice
 and exported again, a calendar left behind by the previous app opening unchanged and
 still workable by it afterwards, what this app writes read back by the server's own iCalendar
