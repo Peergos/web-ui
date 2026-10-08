@@ -1,13 +1,9 @@
 <template>
-    <div class="messagebar" >
-        <div class="" @click.stop>
-            <div class="">
-                <span>&nbsp;{{ date }}&nbsp;Message:&nbsp;{{ contents }}</span>
-            </div>
-            <div class="messagecontainer">
-                <button class="btn btn-success" @click="reply">Show</button>
-                <button class="btn btn-success" @click="close">Delete</button>
-            </div>
+    <div class="messagebar" @click.stop>
+        <p class="messagebar__text">{{ date }}&nbsp;Message:&nbsp;{{ contents }}</p>
+        <div class="messagebar__actions">
+            <button type="button" class="pg-btn" @click="close">Delete</button>
+            <button type="button" class="pg-btn pg-btn--primary" @click="reply">Show</button>
         </div>
     </div>
 </template>
@@ -35,14 +31,28 @@ module.exports = {
 </script>
 
 <style>
+/* a message from the server, on the surface the dialogs use, waiting to be read or put away */
 .messagebar {
-    color: var(--color);
-    background-color: var(--bg);
-    padding: 10px;
-    background-color: #fff;
-    transition: opacity .3s ease;
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33) inset;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 12px 14px;
+	color: var(--color);
+	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow-dialog);
 }
 
+.messagebar__text {
+	margin: 0;
+	font-size: var(--text-small);
+	overflow-wrap: anywhere;
+}
+
+.messagebar__actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
 </style>

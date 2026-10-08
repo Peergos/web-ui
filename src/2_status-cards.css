@@ -1325,6 +1325,33 @@ input.pg-input:focus {
 	overflow-wrap: anywhere;
 }
 
+/* Facts about a thing in a dialog: a small label over each value, as the sync and mount
+   views label theirs. */
+.pg-facts {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	margin: 0;
+}
+.pg-facts__item {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+.pg-facts__item dt {
+	font-size: 10px;
+	font-weight: var(--regular);
+	text-transform: uppercase;
+	letter-spacing: .07em;
+	color: var(--pg-muted);
+}
+.pg-facts__item dd {
+	margin: 0;
+	font-size: 15px;
+	overflow-wrap: anywhere;
+}
+
 /* shaded while there is more tree beyond that edge: a deep tree pans sideways, and
    without this nothing says so */
 .fp-scroll--left {
