@@ -1,10 +1,10 @@
 <template>
     <transition name="modal">
-        <div class="pg-dialog__mask" @click="$emit('hide-modal')">
+        <div class="pg-dialog__mask" @click="dismiss()">
             <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
                 <header class="pg-dialog__head">
                     <h3 class="pg-dialog__title" id="modal-header-id">{{ title }}</h3>
-                    <DialogClose @close="$emit('hide-modal')"/>
+                    <DialogClose @close="dismiss()"/>
                 </header>
                 <div class="pg-dialog__body">
                     <input ref="password" class="pg-input" v-model="password" v-on:keyup.enter="submit()">
@@ -41,6 +41,12 @@ const i18n = require("../i18n/index.js");
         methods: {
             submit: function() {
                 this.future.complete(this.password);
+                this.$emit('hide-modal');
+            },
+            // the link is waiting on an answer: going away gives it no password, which for a
+            // link that needs one is the wrong one, and the page says the link can't be opened
+            dismiss: function() {
+                this.future.complete("");
                 this.$emit('hide-modal');
             }
         }
