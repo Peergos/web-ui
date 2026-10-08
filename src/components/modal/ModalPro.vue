@@ -1,83 +1,68 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{upgradeTitle}}</h2>
-		</template>
+	<AppModal :title="upgradeTitle" wide>
 		<template #body>
-
-			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
-
-                        <p v-if="!isPaid">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
-                        <div v-if="willCharge()" class="card__meta">
-                            Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}
-                        </div>
-                        <div class="pg-center"><div v-if="!showCard" class="button-group-container">
-                            <div class="priceslider" data-select="billing"> 
-                                <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
-                                <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
-                            </div>
-                        </div>
-                        </div>
-                        <div v-if="!showCard" class="options_container">
-                            
-			    <div class="card__meta options">
-				<h3>Pro {{ translate("PAID.ACCOUNT") }}</h3>
-				<ul>
-				    <li>200 GB {{ translate("PAID.STORAGE") }}</li>
-				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;{{ price1() }}</li>
-				</ul>
-                                <AppButton @click="confirmUpdate(200000000000)" :disabled="disablePro" type="primary" block accent>{{proButtonText}}</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Visionary {{ translate("PAID.ACCOUNT") }}</h3>
-				<ul>
-				    <li>1000 GB {{ translate("PAID.STORAGE") }}</li>
-				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
-				</ul>
-                                <AppButton @click="confirmUpdate(1000000000000)" :disabled="disableVisionary" type="primary" block accent>{{visionaryButtonText}}</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Pioneer {{ translate("PAID.ACCOUNT") }}</h3>
-				<ul>
-				    <li>3000 GB {{ translate("PAID.STORAGE") }}</li>
-				    <li>{{ translate("PAID.APPS") }}</li>
-				    <li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
-				</ul>
-                                <AppButton @click="confirmUpdate(3000000000000)" :disabled="disablePioneer" type="primary" block accent>{{pioneerButtonText}}</AppButton>
-			    </div>
-                        </div>
-
-			<div v-if="showCard">
-			    <iframe id="paymentframe" style="border: none;" width="450px" height="420px" :src="paymentUrl" referrerpolicy="origin"/>
+			<p>{{ translate("SPACE.CURRENT") }}: {{ quota }}</p>
+			<p v-if="!isPaid" class="pg-note">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
+			<p v-if="willCharge()" class="pg-note">Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}</p>
+			<div v-if="!showCard" class="pro__billing" data-select="billing">
+				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': !annual}" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
+				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': annual}" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
 			</div>
-                        <Confirm
-                        v-if="showConfirm"
-                        v-on:hide-confirm="showConfirm = false"
-                        :confirm_message='confirm_message'
-                        :confirm_body="confirm_body"
-                        :consumer_cancel_func="confirm_consumer_cancel_func"
-                        :consumer_func="confirm_consumer_func">
-                        </Confirm>
-
+			<div v-if="!showCard" class="pro__plans">
+				<div class="pro__plan">
+					<h4>Pro {{ translate("PAID.ACCOUNT") }}</h4>
+					<ul>
+						<li>200 GB {{ translate("PAID.STORAGE") }}</li>
+						<li>{{ translate("PAID.APPS") }}</li>
+						<li>&#x00A3;{{ price1() }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePro" @click="confirmUpdate(200000000000)">{{proButtonText}}</button>
+				</div>
+				<div class="pro__plan">
+					<h4>Visionary {{ translate("PAID.ACCOUNT") }}</h4>
+					<ul>
+						<li>1000 GB {{ translate("PAID.STORAGE") }}</li>
+						<li>{{ translate("PAID.APPS") }}</li>
+						<li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="disableVisionary" @click="confirmUpdate(1000000000000)">{{visionaryButtonText}}</button>
+				</div>
+				<div class="pro__plan">
+					<h4>Pioneer {{ translate("PAID.ACCOUNT") }}</h4>
+					<ul>
+						<li>3000 GB {{ translate("PAID.STORAGE") }}</li>
+						<li>{{ translate("PAID.APPS") }}</li>
+						<li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePioneer" @click="confirmUpdate(3000000000000)">{{pioneerButtonText}}</button>
+				</div>
+			</div>
+			<div v-if="showCard" class="pro__payment">
+				<iframe id="paymentframe" :src="paymentUrl" referrerpolicy="origin"/>
+			</div>
+			<Confirm
+				v-if="showConfirm"
+				v-on:hide-confirm="showConfirm = false"
+				:confirm_message='confirm_message'
+				:confirm_body="confirm_body"
+				:consumer_cancel_func="confirm_consumer_cancel_func"
+				:consumer_func="confirm_consumer_func">
+			</Confirm>
 		</template>
-		<template #footer>
-			<AppButton v-if="isPaid" @click="updateCardDetails()" type="primary" block accent>{{ translate("PAID.CARD") }}</AppButton>
-			<AppButton v-if="isPaid" @click="cancelPaid()" type="primary" block class="alert" >{{ translate("PAID.CANCEL") }}</AppButton>
+		<template v-if="isPaid" #footer>
+			<button type="button" class="pg-btn" @click="updateCardDetails()">{{ translate("PAID.CARD") }}</button>
+			<button type="button" class="pg-btn pg-btn--danger" @click="cancelPaid()">{{ translate("PAID.CANCEL") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
-	    AppButton,
 	    AppModal,
             Confirm,
 	},
@@ -287,98 +272,88 @@ module.exports = {
 };
 </script>
 <style>
-
-.button-group-container {
-	margin-block: 24px;
-	display: flex;
-	justify-content: center;
-	gap: 8px;
+/* The plans side by side where there is room and one above the other where there is not,
+   each on the field surface with its price and a way to choose it at the foot. */
+.pro__billing {
+	display: inline-flex;
+	align-self: center;
+	gap: 2px;
+	padding: 3px;
+	border-radius: var(--radius-pill);
+	background-color: var(--pg-surface-2);
 }
 
-.priceslider {
+.pro__billing-entry {
 	display: flex;
 	align-items: center;
-	height: 36px;
-
-	border-radius: 36px;
-	background-color: #efefef;
-}
-
-.priceslider .entry {
-	display: flex;
-	align-items: center;
+	height: 34px;
+	margin: 0;
 	padding: 0 16px;
-	border-radius: 36px;
-	height: 36px;
+	border-radius: var(--radius-pill);
+	font-size: var(--text-small);
 	font-weight: var(--bold);
-	color: var(--gray-3);
+	color: var(--pg-muted);
 	cursor: pointer;
 }
 
-.entry:has(input:checked),
-.entry.active {
-	background-color: var(--green-500);
-	color: white;
+/* the chosen period in the primary button's colours, which keep their contrast in both themes */
+.pro__billing-entry--on {
+	background-color: var(--pg-primary);
+	color: var(--pg-on-primary);
 }
 
-input[type="radio"] {
-	height: 0;
-	width: 0;
-	visibility: hidden;
+.pro__billing input[type="radio"] {
 	display: none;
 }
 
-.app-modal__container h2{
-	font-size: var(--title);
-	font-weight: var(--bold);
+.pro__plans {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 12px;
 }
-.app-modal__container .card__meta{
-	background-color: var(--bg-2);
-	border-radius: 4px;
-	padding: 16px;
-	margin-top:var(--app-margin);
-	text-align: center;
-}
-.app-modal__container .card__meta > *{
-	margin-top: 0;
-}
-.app-modal__container .card__meta ul{
-	list-style:none;
-	padding: 0px;
-	text-align: left;
-	margin:16px 0;
-}
-.app-modal__container .card__meta li{
-	color: var(--color);
-	line-height: 32px;
-	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left center no-repeat;
-	background-size: 24px auto;
-    padding-left: 32px;
-}
-.app-modal__container h2.card__meta{
-	font-size: var(--text);
-}
-.app-modal__container .options_container{
+
+.pro__plan {
 	display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: space-around;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px;
+	border-radius: var(--radius-control);
+	background-color: var(--pg-surface-2);
 }
-.app-modal__container .options{
-	
+
+.pro__plan h4 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
 }
-.app-modal__container button:disabled{
-	background-color: gray;
+
+.pro__plan ul {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	flex: 1 1 auto;
+	margin: 0;
+	padding: 0;
+	list-style: none;
 }
-.app-modal__container button:disabled:hover{
-	background-color: gray;
+
+.pro__plan li {
+	padding-left: 26px;
+	font-size: var(--text-small);
+	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left 2px no-repeat;
+	background-size: 18px auto;
 }
-.app-modal__container .app-button.alert{
-	background-color: var(--alert);
-	color:var(--bg);
-	margin-top:8px;
+
+/* the payment provider's form keeps its own size where it fits and narrows where it does not */
+.pro__payment {
+	display: flex;
+	justify-content: center;
 }
-.app-modal__container .app-button.alert:hover{
-	background-color: var(--alert-hover);
+
+.pro__payment iframe {
+	width: 100%;
+	max-width: 450px;
+	height: 420px;
+	border: none;
 }
 </style>

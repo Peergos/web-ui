@@ -1,42 +1,34 @@
 <template>
-	<AppModal class="space">
-		<template #header>
-			<h2>{{ translate("SPACE.TITLE") }}</h2>
-		</template>
+	<AppModal :title="translate('SPACE.TITLE')">
 		<template #body>
-
-			<h2 class="card__meta"> {{ translate("SPACE.CURRENT") }}: {{ quota }}</h2>
-
-			<fieldset class="modal-space-form">
+			<p>{{ translate("SPACE.CURRENT") }}: {{ quota }}</p>
+			<div class="modal-space__form">
 				<input
+					class="pg-input"
 					type="text"
 					name="space"
 					@keyup="validateSpace()"
 					v-model="space"
 					:placeholder="translate('SPACE.PLACEHOLDER')"
 				>
-				<select v-model="unit">
+				<select class="fp-select modal-space__unit" v-model="unit">
 					<option value = "MB">MB</option>
 					<option value = "GB">GB</option>
 				</select>
-			</fieldset>
-
+			</div>
 		</template>
 		<template #footer>
-
-			<AppButton @click="requestStorage()" type="primary" block accent>{{ translate("SPACE.TITLE") }}</AppButton>
+			<button type="button" class="pg-btn pg-btn--primary" @click="requestStorage()">{{ translate("SPACE.TITLE") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
         AppModal,
     },
         mixins:[i18n],
@@ -96,11 +88,17 @@ module.exports = {
 };
 </script>
 <style>
-
-.modal-space-form{
-	display:flex;
-	margin: var(--app-margin) 0;
-
+.modal-space__form {
+	display: flex;
+	gap: 8px;
 }
 
+.modal-space__form .pg-input {
+	flex: 1 1 auto;
+}
+
+.modal-space__form .modal-space__unit {
+	flex: 0 0 88px;
+	width: 88px;
+}
 </style>

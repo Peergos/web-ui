@@ -107,4 +107,32 @@ module.exports = {
 	outline:none;
 	background-color: var(--bg-2);
 }
+
+/* in a dialog the field matches the dialog's other fields, with the eye inside its right edge */
+.pg-dialog .password__wrapper {
+	margin: 0;
+}
+.pg-dialog .password__wrapper input {
+	width: 100%;
+	height: 44px;
+	margin: 0;
+	padding: 0 48px 0 12px;
+	border: 1px solid var(--pg-track);
+	border-radius: var(--radius-field);
+	background-color: var(--pg-surface-2);
+	color: var(--color);
+	font-family: inherit;
+	font-size: 15px;
+}
+.pg-dialog .password__wrapper input:focus {
+	outline: none;
+	border-color: var(--green-500);
+	box-shadow: 0 0 0 3px var(--pg-tint-ok);
+}
+.pg-dialog .password__wrapper .eye {
+	top: 50%;
+	right: 4px;
+	transform: translateY(-50%);
+	background-color: transparent;
+}
 </style>

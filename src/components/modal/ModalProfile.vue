@@ -1,8 +1,5 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("PROFILE.TITLE") }}</h2>
-		</template>
+	<AppModal :title="translate('PROFILE.TITLE')" wide>
 		<template #body>
             <Spinner v-if="showSpinner"></Spinner>
 		    <Confirm
@@ -136,11 +133,6 @@
                             </div>
                         </div>
                     </div>
-		</template>
-		<template #footer>
-                    
-			 <!-- <AppButton @click="showWarning()" type="primary" block accent>Delete account</AppButton> -->
-
 		</template>
 	</AppModal>
 </template>

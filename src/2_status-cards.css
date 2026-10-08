@@ -1142,6 +1142,18 @@ a.pg-btn {
 	background-color: var(--border-color);
 }
 
+/* every dialog opens inside <transition name="modal">: a fade in, and a quicker one out */
+.modal-enter-active {
+	transition: opacity 0.5s ease-out;
+}
+.modal-leave-active {
+	transition: opacity 0.2s ease-in;
+}
+.modal-enter-from,
+.modal-leave-to {
+	opacity: 0;
+}
+
 /* Dialogs. A card centred on both axes at every width, sharing the surface of the
    status cards. Used by every modal in the app so they all have the same shape. */
 /* while a dialog is up, the page behind it stays put */

@@ -1,40 +1,42 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-modal app-modal__overlay" @click="closeModal()">
-			<transition :name="`modal-content--${position}`" appear>
-				<div
-					ref="modalContainer"
-					tabindex="0"
-					class="app-modal__container"
-					:class="`modal--${position}`"
-					@click.stop
-				>
-					<AppButton class="close" icon="close" @click="closeModal()"/>
-					<header><slot name="header"></slot></header>
-					<section><slot name="body"></slot></section>
-					<footer><slot name="footer"></slot></footer>
+		<div class="app-modal pg-dialog__mask" @click="closeModal()">
+			<div class="pg-dialog app-modal__dialog" :class="{'app-modal__dialog--wide': wide}" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">{{ title }}</h3>
+					<DialogClose @close="closeModal()"/>
+				</header>
+				<div class="pg-dialog__body app-modal__body">
+					<slot name="body"></slot>
 				</div>
-			</transition>
-
+				<footer v-if="$slots.footer" class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<slot name="footer"></slot>
+					</div>
+				</footer>
+			</div>
 		</div>
 	</transition>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 
 module.exports = {
 	components: {
-	    AppButton,
+	    DialogClose,
 	},
 	name: 'AppModal',
 	props: {
-		position:{
+		title: {
 			type: String,
-			default: 'right',
-			validator: function (value) {
-				return ['right', 'center'].indexOf(value) !== -1
-			}
+			default: ''
+		},
+		// for a modal whose content is laid out across the width, such as plans side by side
+		wide: {
+			type: Boolean,
+			default: false
 		},
 	},
 	methods: {
@@ -42,23 +44,79 @@ module.exports = {
 			this.$store.commit("SET_MODAL", false);
 		}
 	},
-
-	mounted(){
-		this.$refs.modalContainer.focus();
-	}
 }
 </script>
 
 <style>
+/* The account and settings modals, on the surface every other dialog uses: one column of
+   parts with the same gap between each, the actions along the foot. */
+.app-modal__dialog {
+	width: 520px;
+}
+
+.app-modal__dialog--wide {
+	width: 760px;
+}
+
+.app-modal__body {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.app-modal__body > * {
+	flex: none;
+}
+
+/* a label over its field, as the sync and mount dialogs set theirs */
+.app-modal__field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+}
+
+.app-modal__body textarea.pg-input {
+	min-height: 120px;
+	padding: 10px 12px;
+	resize: vertical;
+	font-size: 15px;
+	line-height: 1.4;
+	background-color: var(--pg-surface-2);
+	border: 1px solid var(--border-color);
+	box-shadow: none;
+}
+
+/* a switch sizes to its label rather than stretching across the dialog */
+.app-modal__switch {
+	align-self: flex-start;
+	max-width: 100%;
+}
+
+/* a second, explicit yes before something that cannot be undone */
+.app-modal__confirm p {
+	margin: 0;
+}
+
+.app-modal__confirm-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+/* the prompt-style dialogs not yet moved to the dialog surface still sit on this overlay */
 .app-modal__overlay{
 	position: fixed;
-	/* TODO: fix global z-index strategy */
- 	z-index: 400;
-  	top: 0;
-  	left: 0;
-  	width: 100%;
-  	height: 100%;
-  	background-color: rgba(0, 0, 0, .4);
+	z-index: 400;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, .4);
 	overflow-y: auto;
 	overflow-x: hidden;
 
@@ -66,92 +124,4 @@ module.exports = {
 	align-items: center;
 	justify-content: center;
 }
-
-.app-modal__container{
-
-	display:flex;
-	flex-direction: column;
-
-	padding: var(--app-margin);
-	color: var(--color);
-	background-color: var(--bg);
-}
-.app-modal__container:focus{
-	outline: none;
-}
-
-.app-modal__container.modal--right{
-	position: absolute;
-	top:0;
-	right:0;
-	width:50%;
-	min-height:100vh;
-}
-
-.app-modal__container.modal--center{
-	position: relative;
-	/* width:50%; */
-}
-
-.app-modal__container .close{
-	position:absolute;
-	right:var(--app-margin);
-	top:var(--app-margin);
-}
-
-.app-modal__container header{
-	padding-right: 50px;
-}
-
-.app-modal__container header > *{
-	margin-top: 0;
-}
-
-.app-modal__container section{
-	flex: 1 0 auto;
-}
-
-.app-modal__container footer{
-	min-height: auto;
-}
-
-/* overlay transition */
-.modal-enter-active{
-  transition: opacity 0.5s ease-out;
-}
-.modal-leave-active{
-	transition: opacity 0.2s ease-in;
-}
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-/* RIGHT content transtion */
-.modal-content--right-enter-active{
-	transition: transform 0.5s ease-out,
-				opacity 0.2s ease-out;
-	transform: translateX(0);
-}
-.modal-content--right-enter-from,
-.modal-content--right-leave-to {
-	opacity: 0;
-	transform: translateX(100px);
-}
-
-/* CENTER content transtion */
-.modal-content--center-enter-active{
-	transition: opacity 0.2s ease-out;
-}
-.modal-content--center-enter-from,
-.modal-content--center-leave-to {
-	opacity: 0;
-}
-
-@media (max-width: 1024px) {
-	.app-modal__container.modal--right{
-		width: 100%
-	}
-}
-
 </style>

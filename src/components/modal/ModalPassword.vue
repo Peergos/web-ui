@@ -1,39 +1,27 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("PASSWORD.CHANGE") }}</h2>
-		</template>
+	<AppModal :title="translate('PASSWORD.CHANGE')">
 		<template #body>
-            <Spinner v-if="showSpinner"></Spinner>
-            <MultiFactorAuth
-                    v-if="showMultiFactorAuth"
-                    v-on:hide-confirm="showMultiFactorAuth = false"
-                    :mfaMethods="mfaMethods"
-                    :challenge="challenge"
-                    :consumer_cancel_func="consumer_cancel_func"
-                    :consumer_func="consumer_func">
-            </MultiFactorAuth>
+			<Spinner v-if="showSpinner"></Spinner>
+			<MultiFactorAuth
+				v-if="showMultiFactorAuth"
+				v-on:hide-confirm="showMultiFactorAuth = false"
+				:mfaMethods="mfaMethods"
+				:challenge="challenge"
+				:consumer_cancel_func="consumer_cancel_func"
+				:consumer_func="consumer_func">
+			</MultiFactorAuth>
 			<FormPassword v-model="existing" :placeholder="translate('PASSWORD.EXISTING')"/>
-
-			<AppButton class="generate-password" type="primary" block accent @click="generatePassword()">
-				{{ translate("PASSWORD.GENERATE") }}
-			</AppButton>
-
+			<button type="button" class="pg-btn generate-password" @click="generatePassword()">{{ translate("PASSWORD.GENERATE") }}</button>
 			<FormPassword v-model="password" :placeholder="translate('PASSWORD.NEW')" :passwordIsVisible="showPasswords" firstOfTwo />
-
 			<FormPassword v-model="password2" :placeholder="translate('PASSWORD.REENTER')" :passwordIsVisible="showPasswords"/>
-
 		</template>
 		<template #footer>
-
-			 <AppButton  @click="updatePassword()" type="primary" block accent>{{ translate("PASSWORD.CHANGE") }}</AppButton>
-
+			<button type="button" class="pg-btn pg-btn--primary" @click="updatePassword()">{{ translate("PASSWORD.CHANGE") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const Bip39 = require('../../mixins/password/bip-0039-english.json');
@@ -44,7 +32,6 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
         AppModal,
 	    FormPassword,
 	    MultiFactorAuth,
@@ -125,6 +112,3 @@ module.exports = {
     },
 };
 </script>
-<style>
-
-</style>

@@ -1,46 +1,37 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("MIGRATE.TITLE") }}</h2>
-		</template>
+	<AppModal :title="translate('MIGRATE.TITLE')">
 		<template #body>
-            <MultiFactorAuth
-                    v-if="showMultiFactorAuth"
-                    v-on:hide-confirm="showMultiFactorAuth = false"
-                    :mfaMethods="mfaMethods"
-                    :challenge="challenge"
-                    :consumer_cancel_func="consumer_cancel_func"
-                    :consumer_func="consumer_func">
-            </MultiFactorAuth>
+			<MultiFactorAuth
+				v-if="showMultiFactorAuth"
+				v-on:hide-confirm="showMultiFactorAuth = false"
+				:mfaMethods="mfaMethods"
+				:challenge="challenge"
+				:consumer_cancel_func="consumer_cancel_func"
+				:consumer_func="consumer_func">
+			</MultiFactorAuth>
 			<p>{{ translate("MIGRATE.ACCOUNT.TEXT1") }}</p>
-                        <p v-if="false">Migration ID: <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyIdToClipboard($event)">&nbsp;{{ translate("MIGRATE.ID.COPY") }}</button> {{ migrationid }}</p>
-                        <p v-if="!isHome">Mirror status: {{ mirrorStatus }}</p>
-
-                        <p v-if="isHome">{{ translate("MIGRATE.HOME") }}</p>
+			<p v-if="false">Migration ID: <button class="fa fa-clipboard" style="padding: 6px 12px; background-color:var(--bg);" @click="copyIdToClipboard($event)">&nbsp;{{ translate("MIGRATE.ID.COPY") }}</button> {{ migrationid }}</p>
+			<p v-if="!isHome">Mirror status: {{ mirrorStatus }}</p>
+			<p v-if="isHome">{{ translate("MIGRATE.HOME") }}</p>
 			<FormPassword v-if="!isHome" v-model="password" />
-
-			<div class="modal__warning account" v-if="warning">
-				<p><AppIcon icon="warning"/>{{ translate("MIGRATE.ACCOUNT.CONFIRM") }}</p>
-				<AppButton @click="migrateAccount()" accent >{{ translate("MIGRATE.ACCOUNT.YES") }}</AppButton>
-				<AppButton @click="warning=false">{{ translate("MIGRATE.ACCOUNT.CANCEL") }}</AppButton>
+			<div class="pg-callout app-modal__confirm" v-if="warning">
+				<p>{{ translate("MIGRATE.ACCOUNT.CONFIRM") }}</p>
+				<div class="app-modal__confirm-actions">
+					<button type="button" class="pg-btn" @click="warning=false">{{ translate("MIGRATE.ACCOUNT.CANCEL") }}</button>
+					<button type="button" class="pg-btn pg-btn--primary" @click="migrateAccount()">{{ translate("MIGRATE.ACCOUNT.YES") }}</button>
+				</div>
 			</div>
-
 		</template>
-		<template #footer>
-                         <AppButton v-if="!isHome" @click="mirrorHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR") }}</AppButton>
-                         <br/>
-                         <AppButton v-if="!isHome" @click="mirrorLoginHere()" type="primary" block accent>{{ translate("MIGRATE.MIRROR.LOGIN") }}</AppButton>
-                         <br/>
-			 <AppButton v-if="!isHome" @click="showWarning()" type="primary" block accent>{{ translate("MIGRATE.ACCOUNT") }}</AppButton>
-
+		<template v-if="!isHome" #footer>
+			<button type="button" class="pg-btn" @click="mirrorHere()">{{ translate("MIGRATE.MIRROR") }}</button>
+			<button type="button" class="pg-btn" @click="mirrorLoginHere()">{{ translate("MIGRATE.MIRROR.LOGIN") }}</button>
+			<button type="button" class="pg-btn pg-btn--primary" @click="showWarning()">{{ translate("MIGRATE.ACCOUNT") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
-const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
@@ -48,9 +39,7 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
-	    AppButton,
 	    AppModal,
-	    AppIcon,
 		FormPassword,
 		MultiFactorAuth,
 	},
@@ -169,13 +158,3 @@ module.exports = {
 	},
 };
 </script>
-<style>
-.modal__warning {
-	background-color: var(--bg-2);
-	border-radius: 4px;
-	padding: 16px;
-}
-.modal__warning.account p {
-	margin-bottom: var(--app-margin);
-}
-</style>
