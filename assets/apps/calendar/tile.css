@@ -1,0 +1,121 @@
+/* The feed's view of one entry. Colours are calendar.css's resolved Breezy
+   tokens, restated here because the tile loads neither Breezy nor the app's
+   stylesheet. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/inter/Inter-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/inter/Inter-SemiBold.woff2") format("woff2");
+}
+
+:root {
+  --tile-background: #ffffff;
+  --tile-foreground: #2c3e50;
+  --tile-muted: #566571;
+  --tile-border: #e1e1e1;
+  --tile-hover: #fafafa;
+  --tile-danger: #b3261e;
+  --tile-color: #3788d8;
+}
+
+[data-color-scheme=dark] {
+  --tile-background: #2c3e50;
+  --tile-foreground: #ffffff;
+  --tile-muted: #a7b6c2;
+  --tile-border: #566571;
+  --tile-hover: #334455;
+  --tile-danger: #ffa1a1;
+  color-scheme: dark;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tile {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--tile-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tile-background);
+  color: var(--tile-foreground);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .tile:hover {
+    background: var(--tile-hover);
+  }
+}
+
+.tile:active {
+  background: var(--tile-hover);
+}
+
+.tile-bar {
+  flex: 0 0 6px;
+  background: var(--tile-color);
+}
+
+.tile-body {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+}
+
+.tile-title {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.tile-title.cancelled {
+  text-decoration: line-through;
+}
+
+.tile-title.done {
+  text-decoration: line-through;
+  color: var(--tile-muted);
+}
+
+.tile-row {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--tile-muted);
+  overflow-wrap: anywhere;
+}
+
+.tile-row.time {
+  color: var(--tile-foreground);
+}
+
+.tile-status {
+  color: var(--tile-danger);
+  font-weight: 600;
+}
+
+.tile-more {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--tile-muted);
+}
