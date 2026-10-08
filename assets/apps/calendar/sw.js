@@ -1,9 +1,13 @@
-const cacheName = 'BrowserCache_v5';
+const cacheName = 'BrowserCache_v6';
 
 const precachedAssets = [
     'index.html',
+    'ics.js',
     'calendar.js',
     'calendar.css',
+    'tile.html',
+    'tile.js',
+    'tile.css',
     'fonts/inter/Inter-Regular.woff2',
     'fonts/inter/Inter-SemiBold.woff2',
     'vendor/fullcalendar/dist/fullcalendar.global.js',

@@ -56,6 +56,9 @@
                     <p>
                         <span v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install-span">Multiple instances of App can be installed</span>
                     </p>
+                    <p>
+                        <span v-if="appProperties.tile != null" class="app-install-span">Can show previews in your newsfeed, including of files other people share with you</span>
+                    </p>
                     <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                         <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
                     </p>

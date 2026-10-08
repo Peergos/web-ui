@@ -174,6 +174,34 @@ module.exports = {
         }
         return matchingInbuiltApps;
     },
+    // The app that draws a feed tile for this file, or null to keep the icon. A
+    // custom app qualifies only if the user installed it, its manifest has a tile,
+    // and it names this file's type explicitly - a wildcard registration would run
+    // it on every file anyone shares.
+    tileFor(file, path) {
+        if (file == null || file.isDirectory())
+            return null;
+        let props = file.getFileProperties();
+        if (props.isHidden)
+            return null;
+        if (props.mimeType === "text/calendar")
+            return {kind: 'builtin', name: 'calendar'};
+        try {
+            let name = props.name;
+            let extension = name.substring(name.lastIndexOf(".") + 1).toLowerCase();
+            let apps = this.sandboxedApps;
+            let candidates = (apps.appFileExtensionRegistrationMap.get(extension) || [])
+                .concat(apps.appMimeTypeRegistrationMap.get(props.mimeType) || [])
+                .concat(apps.appFileTypeRegistrationMap.get(props.getType()) || [])
+                .filter(app => app.tile != null && ! app.folderAction)
+                .sort((a, b) => a.displayName.localeCompare(b.displayName));
+            if (candidates.length == 0)
+                return null;
+            return {kind: 'sandboxed', name: candidates[0].name, height: candidates[0].tile.height};
+        } catch (err) {
+            return null;
+        }
+    },
         getApp(file, path, writable) {
             let pathParts = path.split("/");
             if (pathParts.length >= 4) {
