@@ -1,39 +1,36 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
-  <div class="replace-modal-container" @click.stop>
-
-    <div class="modal-header">
-      <h3 id="replace-header-id">{{replace_message}}</h3>
+<div class="pg-dialog__mask" @click="close">
+  <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="replace_message" @click.stop>
+    <header class="pg-dialog__head">
+      <h3 class="pg-dialog__title" id="replace-header-id">{{replace_message}}</h3>
+      <DialogClose @close="close"/>
+    </header>
+    <div class="pg-dialog__body">
+      <p id='replace-body-id'>{{replace_body}}</p>
+      <label v-if="showApplyAll" class="pg-switch replace__all">
+        <input type="checkbox" name="applyToAll" id="applyToAll" v-model="applyToAll">
+        <span class="pg-switch__track" aria-hidden="true"></span>
+        <span>Do this for all conflicts</span>
+      </label>
     </div>
-
-    <div class="modal-body" style="margin: 0px 0;">
-      <div class="replace-container" style="margin: 0px;">
-        <p id='replace-body-id' >{{replace_body}}</p>
+    <footer class="pg-dialog__foot">
+      <div class="pg-dialog__actions">
+        <span class="pg-dialog__spacer"></span>
+        <button type="button" class="pg-btn" @click="no()">No</button>
+        <button type="button" class="pg-btn pg-btn--primary" @click="yes()">Yes</button>
       </div>
-      <div v-if="showApplyAll">
-        <label class="checkbox-container">Do this for all conflicts
-          <input type="checkbox" name="applyToAll" id="applyToAll" v-model="applyToAll" placeholder="Do this for all conflicts">
-          <span class="checkmark"></span>
-        </label>
-      </div>
-      <div>
-          <button class="btn btn-success btn-lg" @click="no()" style="margin:10%;">
-            No
-          </button>
-          <button class="btn btn-success btn-lg" @click="yes()" style="margin:10%">
-            Yes
-          </button>
-      </div>
-    </div>
+    </footer>
   </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
+
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
             applyToAll:false
@@ -58,23 +55,7 @@ module.exports = {
 }
 </script>
 <style>
-.replace-container {
-    margin-right: auto;
-    margin-left: auto;
-    margin-bottom: 20px;
-    overflow-wrap: break-word;
-    width: auto;
-    font-size: 18px;
-}
-.replace-modal-container {
-    width: 40%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    min-width: 400px;
+.replace__all {
+    margin-top: 12px;
 }
 </style>

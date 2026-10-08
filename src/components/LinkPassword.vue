@@ -1,44 +1,30 @@
 <template>
     <transition name="modal">
-        <div class="modal-mask" @click="$emit('hide-modal')">
-            <div style="height:30%"></div>
-            <div class="link-password-modal-container" @click.stop>
-                
-                <div class="modal-header">
-                    <h3 id="modal-header-id">{{ title }}</h3>
+        <div class="pg-dialog__mask" @click="$emit('hide-modal')">
+            <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+                <header class="pg-dialog__head">
+                    <h3 class="pg-dialog__title" id="modal-header-id">{{ title }}</h3>
+                    <DialogClose @close="$emit('hide-modal')"/>
+                </header>
+                <div class="pg-dialog__body">
+                    <input ref="password" class="pg-input" v-model="password" v-on:keyup.enter="submit()">
                 </div>
-                
-                <div class="modal-body">
-                    <div class="container"><p style="word-wrap;break-all;">
-                            <div style="font-size: 1.2em;">
-                                <div style="padding: 10px;">
-                                    <input v-model="password" v-on:keyup.enter="submit()">
-                                </div>
-                                <div style="padding: 10px;">
-                                    <button
-                                        id='modal-button-id'
-                                        class="btn btn-success"
-                                        @click="submit">
-                                        {{ translate("DRIVE.LINK.OK") }}
-                                    </button>
-                                </div>
-                        </p>
-                        </div>
+                <footer class="pg-dialog__foot">
+                    <div class="pg-dialog__actions">
+                        <span class="pg-dialog__spacer"></span>
+                        <button type="button" id='modal-button-id' class="pg-btn pg-btn--primary" @click="submit">{{ translate("DRIVE.LINK.OK") }}</button>
                     </div>
-                </div>
-                
-                <div class="modal-footer">
-                    <slot name="footer">
-                    </slot>
-                </div>
+                </footer>
             </div>
         </div>
     </transition>
 </template>
 
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
 const i18n = require("../i18n/index.js");
     module.exports = {
+        components: { DialogClose },
 	data() {
 	    return {
                 password:"",
@@ -49,7 +35,8 @@ const i18n = require("../i18n/index.js");
 	    "title",
 	    "future",
         ],
-        created: function() {
+        mounted: function() {
+            this.$refs.password.focus();
         },
         methods: {
             submit: function() {
@@ -59,16 +46,3 @@ const i18n = require("../i18n/index.js");
         }
     }
 </script>
-<style>
-.link-password-modal-container {
-    width: 25%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    min-width: 400px;
-}
-</style>

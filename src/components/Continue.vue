@@ -1,33 +1,30 @@
 <template>
     <transition name="modal">
-        <div class="modal-mask" @click="close">
-            <div style="height:30%"></div>
-            <div class="modal-container" @click.stop>
-                
-                <div class="modal-header">
-                    <div class="pg-center">
-                        <h3 id="confirm-header-id">{{message}}</h3>
-                    </div>
+        <div class="pg-dialog__mask" @click="close">
+            <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="message" @click.stop>
+                <header class="pg-dialog__head">
+                    <h3 class="pg-dialog__title" id="confirm-header-id">{{message}}</h3>
+                    <DialogClose @close="close"/>
+                </header>
+                <div v-if="body" class="pg-dialog__body">
+                    <p id='confirm-body-id'>{{body}}</p>
                 </div>
-                
-                <div class="modal-body">
-                    <div class="pg-center">
-                        <div class="container" style="word-wrap:break-word;width:auto">
-                            <p id='confirm-body-id' style="text-align:center;">{{body}}</p>
-                        </div>
-                        
-                        <a class="btn btn-success btn-lg" @click="yes()" v-bind:href="href" style="width:50%" target="_blank">
-                            Ok
-                        </a>
+                <footer class="pg-dialog__foot">
+                    <div class="pg-dialog__actions">
+                        <span class="pg-dialog__spacer"></span>
+                        <a class="pg-btn pg-btn--primary" @click="yes()" v-bind:href="href" target="_blank">Ok</a>
                     </div>
-                </div>
+                </footer>
             </div>
         </div>
     </transition>
 </template>
 
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
+
     module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
         }

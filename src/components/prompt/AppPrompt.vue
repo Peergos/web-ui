@@ -23,7 +23,7 @@
           <div class="pg-dialog__actions">
             <span class="pg-dialog__spacer"></span>
             <button type="button" class="pg-btn" @click="closePrompt()">{{ translate("PROMPT.CANCEL") }}</button>
-            <button type="button" id="prompt-button-id" class="pg-btn pg-btn--primary" :disabled="! canSubmit" @click="getPrompt()">{{ action }}</button>
+            <button type="button" id="prompt-button-id" class="pg-btn pg-btn--primary" :disabled="! canSubmit" @click="getPrompt()">{{ action || translate("PROMPT.OK") }}</button>
           </div>
         </footer>
       </div>
