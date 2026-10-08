@@ -174,6 +174,14 @@ module.exports = {
         }
         return matchingInbuiltApps;
     },
+    // The app that draws a feed tile for this file, or null to keep the icon.
+    tileFor(file, path) {
+        if (file == null || file.isDirectory())
+            return null;
+        if (file.getFileProperties().mimeType === "text/calendar")
+            return {kind: 'builtin', name: 'calendar'};
+        return null;
+    },
         getApp(file, path, writable) {
             let pathParts = path.split("/");
             if (pathParts.length >= 4) {

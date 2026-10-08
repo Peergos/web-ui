@@ -202,6 +202,8 @@ module.exports = {
 <style>
 .feed-tile {
     position: relative;
+    flex: 1 1 auto;
+    min-width: 0;
     width: 100%;
     max-width: 480px;
     transition: height .15s ease;
