@@ -221,6 +221,9 @@ module.exports = {
     width: 100%;
     height: 100%;
     border: 0;
+    /* Matches the tile's own corners: a frame whose colour scheme differs from the
+       page's is painted on an opaque backdrop, which would show past them. */
+    border-radius: 10px;
     background: transparent;
 }
 </style>
