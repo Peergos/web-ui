@@ -1,91 +1,72 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("MFA.TITLE") }}</h2>
-		</template>
+	<AppModal :title="translate('MFA.TITLE')">
 		<template #body>
-            <Spinner v-if="showSpinner"></Spinner>
-            <Confirm
-                    v-if="showConfirm"
-                    v-on:hide-confirm="showConfirm = false"
-                    :confirm_message='confirm_message'
-                    :confirm_body="confirm_body"
-                    :consumer_cancel_func="confirm_consumer_cancel_func"
-                    :consumer_func="confirm_consumer_func">
-            </Confirm>
-            <Totp
-                    v-if="showTOTPSetup"
-                    v-on:hide-totp="showTOTPSetup = false"
-                    :consumer_func="totp_confirmed_func">
-            </Totp>
-            <WebAuth
-                    v-if="showWebAuthSetup"
-                    v-on:hide-webauth="showWebAuthSetup = false"
-                    :consumer_func="webauth_confirmed_func">
-            </WebAuth>
-            <BackupCodes
-                    v-if="showBackupCodes"
-                    v-on:hide-backup-codes="showBackupCodes = false"
-                    :consumer_func="backup_codes_generated_func">
-            </BackupCodes>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                    <tr style="cursor:pointer;">
-                        <th> Type </th>
-                        <th></th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>{{ translate("MFA.APP") }}</td>
-                        <td></td>
-                        <td v-if="totpKey.length == 0"></td>
-                        <td v-if="totpKey.length == 1">
-                            <button class="btn btn-info" @click="editAuthenticatorApp()"> Edit </button>
-                        </td>
-                        <td v-if="totpKey.length == 0" >
-                            <button class="btn btn-success" @click="setupAuthenticatorApp()"> Add </button>
-                        </td>
-                        <td v-if="totpKey.length == 1">
-                            <button class="btn btn-danger" @click="removeAuthenticatorApp()"> Remove</button>
-                        </td>
-                    </tr>
-                    <tr v-for="(webAuthKey, index) in webAuthKeys">
-                        <td>{{ translate("MFA.KEY") }}:&nbsp;{{ webAuthKey.name }}</td>
-                        <td></td>
-                        <td> <button class="btn btn-danger" @click="removeWebAuthKey(webAuthKey)">{{ translate("MFA.REMOVE") }}</button>
-                        </td>
-                    </tr>
-                    <tr v-for="mountFactor in mountFactors">
-                        <td :title="translate('MFA.MOUNT.BLURB')">{{ translate("MFA.MOUNT") }}:&nbsp;{{ mountFactor.name }}</td>
-                        <td></td>
-                        <td> <button class="btn btn-danger" @click="removeMountFactor(mountFactor)">{{ translate("MFA.REMOVE") }}</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>{{ translate("MFA.BACKUP") }}</td>
-                        <td v-if="backupCodes.length == 0">{{ translate("MFA.BACKUP.NONE") }}</td>
-                        <td v-if="backupCodes.length == 1">{{ backupCodes[0].remaining }}&nbsp;{{ translate("MFA.BACKUP.REMAINING") }}</td>
-                        <td>
-                            <button class="btn btn-success" v-if="backupCodes.length == 0" :disabled="! hasOtherFactor()" @click="generateBackupCodes()">{{ translate("MFA.BACKUP.GENERATE") }}</button>
-                            <button class="btn btn-info" v-if="backupCodes.length == 1" @click="regenerateBackupCodes()">{{ translate("MFA.BACKUP.REGENERATE") }}</button>
-                        </td>
-                        <td>
-                            <button class="btn btn-danger" v-if="backupCodes.length == 1" @click="removeBackupCodes()">{{ translate("MFA.REMOVE") }}</button>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                <button class="btn btn-success" @click="addWebAuthKey()">{{ translate("MFA.ADD.KEY") }}</button>
-            </div>
+			<Spinner v-if="showSpinner"></Spinner>
+			<Confirm
+				v-if="showConfirm"
+				v-on:hide-confirm="showConfirm = false"
+				:confirm_message='confirm_message'
+				:confirm_body="confirm_body"
+				:consumer_cancel_func="confirm_consumer_cancel_func"
+				:consumer_func="confirm_consumer_func">
+			</Confirm>
+			<Totp
+				v-if="showTOTPSetup"
+				v-on:hide-totp="showTOTPSetup = false"
+				:consumer_func="totp_confirmed_func">
+			</Totp>
+			<WebAuth
+				v-if="showWebAuthSetup"
+				v-on:hide-webauth="showWebAuthSetup = false"
+				:consumer_func="webauth_confirmed_func">
+			</WebAuth>
+			<BackupCodes
+				v-if="showBackupCodes"
+				v-on:hide-backup-codes="showBackupCodes = false"
+				:consumer_func="backup_codes_generated_func">
+			</BackupCodes>
+			<ul class="auth-settings">
+				<li class="auth-settings__row">
+					<span class="auth-settings__name">{{ translate("MFA.APP") }}</span>
+					<span class="auth-settings__actions">
+						<button v-if="totpKey.length == 0" type="button" class="pg-btn" @click="setupAuthenticatorApp()">Add</button>
+						<button v-if="totpKey.length == 1" type="button" class="pg-btn" @click="editAuthenticatorApp()">Edit</button>
+						<button v-if="totpKey.length == 1" type="button" class="pg-btn pg-btn--danger" @click="removeAuthenticatorApp()">Remove</button>
+					</span>
+				</li>
+				<li v-for="(webAuthKey, index) in webAuthKeys" class="auth-settings__row">
+					<span class="auth-settings__name">{{ translate("MFA.KEY") }}:&nbsp;{{ webAuthKey.name }}</span>
+					<span class="auth-settings__actions">
+						<button type="button" class="pg-btn pg-btn--danger" @click="removeWebAuthKey(webAuthKey)">{{ translate("MFA.REMOVE") }}</button>
+					</span>
+				</li>
+				<li v-for="mountFactor in mountFactors" class="auth-settings__row">
+					<span class="auth-settings__name" :title="translate('MFA.MOUNT.BLURB')">{{ translate("MFA.MOUNT") }}:&nbsp;{{ mountFactor.name }}</span>
+					<span class="auth-settings__actions">
+						<button type="button" class="pg-btn pg-btn--danger" @click="removeMountFactor(mountFactor)">{{ translate("MFA.REMOVE") }}</button>
+					</span>
+				</li>
+				<li class="auth-settings__row">
+					<span class="auth-settings__name">
+						{{ translate("MFA.BACKUP") }}
+						<span v-if="backupCodes.length == 0" class="auth-settings__detail">{{ translate("MFA.BACKUP.NONE") }}</span>
+						<span v-if="backupCodes.length == 1" class="auth-settings__detail">{{ backupCodes[0].remaining }}&nbsp;{{ translate("MFA.BACKUP.REMAINING") }}</span>
+					</span>
+					<span class="auth-settings__actions">
+						<button v-if="backupCodes.length == 0" type="button" class="pg-btn" :disabled="! hasOtherFactor()" @click="generateBackupCodes()">{{ translate("MFA.BACKUP.GENERATE") }}</button>
+						<button v-if="backupCodes.length == 1" type="button" class="pg-btn" @click="regenerateBackupCodes()">{{ translate("MFA.BACKUP.REGENERATE") }}</button>
+						<button v-if="backupCodes.length == 1" type="button" class="pg-btn pg-btn--danger" @click="removeBackupCodes()">{{ translate("MFA.REMOVE") }}</button>
+					</span>
+				</li>
+			</ul>
+		</template>
+		<template #footer>
+			<button type="button" class="pg-btn" @click="addWebAuthKey()">{{ translate("MFA.ADD.KEY") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
@@ -96,7 +77,6 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
         AppModal,
         Confirm,
         Spinner,
@@ -349,4 +329,45 @@ module.exports = {
 };
 </script>
 <style>
+/* one line per factor: what it is on the left, what can be done with it on the right */
+.auth-settings {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.auth-settings__row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 16px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--pg-track);
+}
+
+.auth-settings__row:last-child {
+	border-bottom: 0;
+}
+
+.auth-settings__name {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.auth-settings__detail {
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+}
+
+.auth-settings__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
 </style>

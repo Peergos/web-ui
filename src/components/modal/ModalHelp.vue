@@ -1,176 +1,103 @@
 <template>
-<transition name="modal">
-<div class="modal-mask" @click="close">
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;">
-        <div class="modal-header" style="padding:0">
-            <div class="pg-center"><h2>{{ translate("HELP.TITLE") }}</h2></div>
-            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="position:absolute;top:-10px;right:40px;z-index:999;color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
-        </div>
-        <div class="modal-body">
-            <h2>{{ translate("HELP.HOW") }}</h2>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.UPGRADE") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.UPGRADE.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SPACE") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SPACE.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.FOLLOW") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.FOLLOW.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.FRIENDS") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.FRIENDS.TEXT1") }}</p>
-              <p>{{ translate("HELP.FRIENDS.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.PROFILE") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.PROFILE.TEXT1") }}</p>
-              <p>{{ translate("HELP.PROFILE.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SHARE") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SHARE.TEXT1") }}</p>
-              <p>{{ translate("HELP.SHARE.TEXT2") }}</p>
-              <p>{{ translate("HELP.SHARE.TEXT3") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SHARED.FILES") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SHARED.FILES.TEXT1") }}</p>
-              <p>{{ translate("HELP.SHARED.FILES.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.LINK") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.LINK.TEXT1") }}</p>
-              <p>{{ translate("HELP.LINK.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.CAL") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.CAL.TEXT1") }}</p>
-              <p>{{ translate("HELP.CAL.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SHARE.CAL") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SHARE.CAL.TEXT1") }}</p>
-              <p>{{ translate("HELP.SHARE.CAL.TEXT2") }}<p>
-              <p>{{ translate("HELP.SHARE.CAL.TEXT3") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SHARE.EVENT") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SHARE.EVENT.TEXT1") }}</p>
-              <p>{{ translate("HELP.SHARE.EVENT.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.IMPORT.EVENT") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.IMPORT.EVENT.TEXT1") }}</p>
-              <p>{{ translate("HELP.IMPORT.EVENT.TEXT2") }}</p>
-              <p>{{ translate("HELP.IMPORT.EVENT.TEXT3") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.WWW") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.WWW.TEXT1") }}</p>
-              <p>{{ translate("HELP.WWW.TEXT2") }}</p>
-              <p>{{ translate("HELP.WWW.TEXT3") }}</p>
-              <p>{{ translate("HELP.WWW.TEXT4") }}</p>
-              <p>{{ translate("HELP.WWW.TEXT5") }}: <a class="help-link" href="https://peergos.org/posts/p2p-web-hosting" target="_blank" rel="noopener noreferrer">https://peergos.org/posts/p2p-web-hosting</a></p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.CLEANUP") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.CLEANUP.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.THUMB") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.THUMB.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.FEEDBACK") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.FEEDBACK.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.PASSWORD") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.PASSWORD.TEXT") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.DELETE") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.DELETE.TEXT1") }}</p>
-              <p>{{ translate("HELP.DELETE.TEXT2") }}</p>
-            </div>
-
-            <h2>{{ translate("HELP.GRIPES") }}:</h2>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.SLOW") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.SLOW.TEXT1") }}</p>
-              <p>{{ translate("HELP.SLOW.TEXT2") }}</p>
-            </div>
-            <button type="button" class="collapsible-help-item">{{ translate("HELP.JAVA") }}</button>
-            <div class="help-item-content">
-              <p>{{ translate("HELP.JAVA.TEXT1") }}</p>
-              <p>{{ translate("HELP.JAVA.TEXT2") }}</p>
-            </div>
-
-        </div>
-    </div>
-</div>
-</transition>
+	<AppModal :title="translate('HELP.TITLE')" wide>
+		<template #body>
+			<section v-for="section in sections" :key="section.title" class="help__section">
+				<h4 class="help__heading">{{ translate(section.title) }}{{ section.suffix }}</h4>
+				<details v-for="item in section.items" :key="item.q" class="help__item">
+					<summary>{{ translate(item.q) }}</summary>
+					<div class="help__answer">
+						<p v-for="key in item.a" :key="key">{{ translate(key) }}<template v-if="links[key]">: <a class="help-link" :href="links[key]" target="_blank" rel="noopener noreferrer">{{ links[key] }}</a></template></p>
+					</div>
+				</details>
+			</section>
+		</template>
+	</AppModal>
 </template>
 
 <script>
+const AppModal = require("AppModal.vue");
 const i18n = require("../../i18n/index.js");
 module.exports = {
     components: {
+        AppModal,
     },
     mixins:[i18n],
     data() {
         return {
+            sections: [
+                {title: 'HELP.HOW', suffix: '', items: [
+                    {q: 'HELP.UPGRADE', a: ['HELP.UPGRADE.TEXT']},
+                    {q: 'HELP.SPACE', a: ['HELP.SPACE.TEXT']},
+                    {q: 'HELP.FOLLOW', a: ['HELP.FOLLOW.TEXT']},
+                    {q: 'HELP.FRIENDS', a: ['HELP.FRIENDS.TEXT1', 'HELP.FRIENDS.TEXT2']},
+                    {q: 'HELP.PROFILE', a: ['HELP.PROFILE.TEXT1', 'HELP.PROFILE.TEXT2']},
+                    {q: 'HELP.SHARE', a: ['HELP.SHARE.TEXT1', 'HELP.SHARE.TEXT2', 'HELP.SHARE.TEXT3']},
+                    {q: 'HELP.SHARED.FILES', a: ['HELP.SHARED.FILES.TEXT1', 'HELP.SHARED.FILES.TEXT2']},
+                    {q: 'HELP.LINK', a: ['HELP.LINK.TEXT1', 'HELP.LINK.TEXT2']},
+                    {q: 'HELP.CAL', a: ['HELP.CAL.TEXT1', 'HELP.CAL.TEXT2']},
+                    {q: 'HELP.SHARE.CAL', a: ['HELP.SHARE.CAL.TEXT1', 'HELP.SHARE.CAL.TEXT2', 'HELP.SHARE.CAL.TEXT3']},
+                    {q: 'HELP.SHARE.EVENT', a: ['HELP.SHARE.EVENT.TEXT1', 'HELP.SHARE.EVENT.TEXT2']},
+                    {q: 'HELP.IMPORT.EVENT', a: ['HELP.IMPORT.EVENT.TEXT1', 'HELP.IMPORT.EVENT.TEXT2', 'HELP.IMPORT.EVENT.TEXT3']},
+                    {q: 'HELP.WWW', a: ['HELP.WWW.TEXT1', 'HELP.WWW.TEXT2', 'HELP.WWW.TEXT3', 'HELP.WWW.TEXT4', 'HELP.WWW.TEXT5']},
+                    {q: 'HELP.CLEANUP', a: ['HELP.CLEANUP.TEXT']},
+                    {q: 'HELP.THUMB', a: ['HELP.THUMB.TEXT']},
+                    {q: 'HELP.FEEDBACK', a: ['HELP.FEEDBACK.TEXT']},
+                    {q: 'HELP.PASSWORD', a: ['HELP.PASSWORD.TEXT']},
+                    {q: 'HELP.DELETE', a: ['HELP.DELETE.TEXT1', 'HELP.DELETE.TEXT2']},
+                ]},
+                {title: 'HELP.GRIPES', suffix: ':', items: [
+                    {q: 'HELP.SLOW', a: ['HELP.SLOW.TEXT1', 'HELP.SLOW.TEXT2']},
+                    {q: 'HELP.JAVA', a: ['HELP.JAVA.TEXT1', 'HELP.JAVA.TEXT2']},
+                ]},
+            ],
+            // answers that end in a link, written out after the translated text
+            links: {
+                'HELP.WWW.TEXT5': 'https://peergos.org/posts/p2p-web-hosting',
+            },
         }
     },
-    mounted() {
-        var coll = document.getElementsByClassName("collapsible-help-item");
-        for (var i = 0; i < coll.length; i++) {
-          coll[i].addEventListener("click", function() {
-            this.classList.toggle("active-help-item");
-            var content = this.nextElementSibling;
-            if (content.style.display === "block") {
-              content.style.display = "none";
-            } else {
-              content.style.display = "block";
-            }
-          });
-        }
-    },
-    methods: {
-        close: function () {
-            this.$store.commit("SET_MODAL", false);
-        }
-    }
 }
 </script>
 <style>
 .help-link:link {
     text-decoration: underline;
 }
-.collapsible-help-item {
-  background-color: #26b99a;
-  color: white;
-  cursor: pointer;
-  padding: 20px;
-  margin: 10px;
-  width: 95%;
-  border: none;
-  text-align: left;
-  outline: none;
-  font-size: 15px;
+
+/* questions that open in place to show their answer, grouped under a heading */
+.help__section {
+	display: flex;
+	flex-direction: column;
 }
-.active-help-item, .collapsible-help-item:hover {
-  background-color: #5cb85c;
+
+.help__heading {
+	margin: 4px 0 6px;
+	font-size: 13px;
+	font-weight: var(--regular);
+	text-transform: uppercase;
+	letter-spacing: .07em;
+	color: var(--pg-muted);
 }
-.help-item-content {
-  padding: 0 20px;
-  display: none;
-  overflow: hidden;
-  background-color: var(--bg);
-  color: var(--color);
+
+.help__item {
+	border-bottom: 1px solid var(--pg-track);
+}
+
+.help__item summary {
+	padding: 12px 4px;
+	font-weight: var(--bold);
+	cursor: pointer;
+}
+
+.help__item summary:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+.help__answer {
+	padding: 0 4px 12px;
+}
+
+.help__answer p {
+	margin: 0 0 8px;
 }
 </style>

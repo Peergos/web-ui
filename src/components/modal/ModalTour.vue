@@ -1,12 +1,7 @@
 <template>
-	<AppModal position="center">
-		<template #header>
-			<h2>{{ translate("TOUR.TITLE") }}</h2>
-		</template>
+	<AppModal :title="translate('TOUR.TITLE')">
 		<template #body>
 			<Slider :slides="slides"/>
-		</template>
-		<template #footer>
 		</template>
 	</AppModal>
 </template>
@@ -86,6 +81,3 @@ data() {
 }
 </script>
 
-<style>
-
-</style>

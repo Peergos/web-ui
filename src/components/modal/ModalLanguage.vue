@@ -1,32 +1,20 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("LANGUAGE.CHOOSE") }}</h2>
-		</template>
+	<AppModal :title="translate('LANGUAGE.CHOOSE')">
 		<template #body>
-
-                <div v-for="lang in getLanguages()" >
-                    <AppButton @click="choose(lang)">
-                        {{ lang }}
-                    </AppButton>
-                </div>
-
-		</template>
-		<template #footer>
-
+			<div class="modal-language">
+				<button v-for="lang in getLanguages()" type="button" class="pg-btn" @click="choose(lang)">{{ lang }}</button>
+			</div>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
         AppModal,
     },
     
@@ -51,5 +39,9 @@ module.exports = {
 };
 </script>
 <style>
-
+.modal-language {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+	gap: 8px;
+}
 </style>

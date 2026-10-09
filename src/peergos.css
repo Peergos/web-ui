@@ -425,54 +425,11 @@ h3 {word-wrap:break-word; white-space:normal;}
     flex-grow: 1;
 }
 
-.flex-item-left {
-  padding: 10px;
-  flex: 50%;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.flex-item-right {
-  padding: 10px;
-  flex: 50%;
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.flex-item {
-  display: flex;
-}
-
-.flex-item > div {
-  padding: 10px;
-  text-align: left;
-  font-size: 20px;
-}
-
 .flex-line-item > div {
   width: 100%;
   padding: 10px;
   text-align: center;
   font-size: 20px;
-}
-
-.vertical-margin {
-    margin-top: 10px;
-    margin-bottom: 10px;
-}
-
-
-/* Responsive layout - makes a one column-layout instead of a two-column layout */
-@media (max-width: 700px) {
-  .flex-item-right, .flex-item-left {
-    flex: 100%;
-  }
-}
-
-@media (max-width: 900px) {
-  .form-control-profile {
-      max-width:70%;
-  }
 }
 
 .choice-row {

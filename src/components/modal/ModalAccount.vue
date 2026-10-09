@@ -1,50 +1,43 @@
 <template>
-	<AppModal>
-		<template #header>
-			<h2>{{ translate("DELETE.ACCOUNT") }}</h2>
-		</template>
+	<AppModal :title="translate('DELETE.ACCOUNT')">
 		<template #body>
-            <MultiFactorAuth
-                    v-if="showMultiFactorAuth"
-                    v-on:hide-confirm="showMultiFactorAuth = false"
-                    :mfaMethods="mfaMethods"
-                    :challenge="challenge"
-                    :consumer_cancel_func="consumer_cancel_func"
-                    :consumer_func="consumer_func">
-            </MultiFactorAuth>
+			<MultiFactorAuth
+				v-if="showMultiFactorAuth"
+				v-on:hide-confirm="showMultiFactorAuth = false"
+				:mfaMethods="mfaMethods"
+				:challenge="challenge"
+				:consumer_cancel_func="consumer_cancel_func"
+				:consumer_func="consumer_func">
+			</MultiFactorAuth>
 			<p>{{ translate("DELETE.ACCOUNT.TEXT1") }}</p>
-            <p>{{ translate("DELETE.ACCOUNT.TEXT2") }}</p>
-            <p>{{ translate("DELETE.ACCOUNT.TEXT3") }}</p>
-
-                    <label>{{ translate("DELETE.ACCOUNT.WHY") }}</label>
-                    <textarea v-model="feedback" style="height:200px;" :placeholder="translate('FEEDBACK.BETTER')"></textarea>
-
-                    <label style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-                        <input type="checkbox" v-model="allowEmailFollowup" style="width:auto;"/>
-                        {{ translate("PAID.CANCEL.FOLLOWUP") }}
-                    </label>
-
+			<p>{{ translate("DELETE.ACCOUNT.TEXT2") }}</p>
+			<p>{{ translate("DELETE.ACCOUNT.TEXT3") }}</p>
+			<label class="app-modal__field">
+				<span>{{ translate("DELETE.ACCOUNT.WHY") }}</span>
+				<textarea class="pg-input" v-model="feedback" :placeholder="translate('FEEDBACK.BETTER')"></textarea>
+			</label>
+			<label class="pg-switch app-modal__switch">
+				<input type="checkbox" v-model="allowEmailFollowup">
+				<span class="pg-switch__track" aria-hidden="true"></span>
+				<span>{{ translate("PAID.CANCEL.FOLLOWUP") }}</span>
+			</label>
 			<FormPassword v-model="password" />
-
-			<div class="modal__warning account" v-if="warning">
-				<p><AppIcon icon="warning"/>{{ translate("DELETE.ACCOUNT.CONFIRM") }}</p>
-				<AppButton @click="deleteAccount()" accent >{{ translate("DELETE.ACCOUNT.YES") }}</AppButton>
-				<AppButton @click="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</AppButton>
+			<div class="pg-callout app-modal__confirm" v-if="warning" ref="confirm">
+				<p>{{ translate("DELETE.ACCOUNT.CONFIRM") }}</p>
+				<div class="app-modal__confirm-actions">
+					<button type="button" class="pg-btn" @click="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</button>
+					<button type="button" class="pg-btn pg-btn--danger" @click="deleteAccount()">{{ translate("DELETE.ACCOUNT.YES") }}</button>
+				</div>
 			</div>
-
 		</template>
 		<template #footer>
-
-			 <AppButton @click="showWarning()" type="primary" block accent>{{ translate("DELETE.ACCOUNT") }}</AppButton>
-
+			<button type="button" class="pg-btn pg-btn--danger" @click="showWarning()">{{ translate("DELETE.ACCOUNT") }}</button>
 		</template>
 	</AppModal>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
-const AppIcon = require("../AppIcon.vue");
 const FormPassword = require("../form/FormPassword.vue");
 const MultiFactorAuth = require("../auth/MultiFactorAuth.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
@@ -53,9 +46,7 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
-	    AppButton,
 	    AppModal,
-	    AppIcon,
 		FormPassword,
 		MultiFactorAuth,
 	},
@@ -81,6 +72,8 @@ module.exports = {
 				this.$toast.error(that.translate("DELETE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
 			} else {
 				this.warning = true
+				// the question opens below the fields, which a small phone has scrolled out of view
+				this.$nextTick(() => this.$refs.confirm.scrollIntoView({block: "nearest"}));
 			}
 		},
 
@@ -133,13 +126,3 @@ module.exports = {
 
 };
 </script>
-<style>
-.modal__warning {
-	background-color: var(--bg-2);
-	border-radius: 4px;
-	padding: 16px;
-}
-.modal__warning.account p {
-	margin-bottom: var(--app-margin);
-}
-</style>
