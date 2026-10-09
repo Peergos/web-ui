@@ -139,6 +139,13 @@ module.exports = {
 	margin-bottom: 0;
 }
 
+/* hanging under the field, the suggestions were cut off by the dialog's scrolling body; in the
+   flow they push the rest down and the body scrolls to all of them */
+.add-to-chat__pick .form-autocomplete .options {
+	position: static;
+	margin-top: 4px;
+}
+
 .add-to-chat__pick > .pg-btn {
 	flex: none;
 	min-height: 44px;
