@@ -1,50 +1,37 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-prompt app-modal__overlay" @click="close()">
-			<div class="app-prompt__container" @click.stop>
-				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click="close()"/>
-					<h3>Add new Security Key</h3>
+		<div class="pg-dialog__mask" @click="close()">
+			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" aria-label="Add new Security Key" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">Add new Security Key</h3>
+					<DialogClose @close="close()"/>
 				</header>
-                <Spinner v-if="showSpinner"></Spinner>
-                <div class="prompt__body">
-                    <div class="pg-center">
-                        Name:&nbsp;<input
-                            type="text"
-                            autofocus
-                            name="webAuthName"
-                            v-model="webAuthName"
-                            placeholder=""
-                            v-on:keyup.enter="confirm"
-                            style="width:200px"
-                        />
-                    </div>
-                </div>
-				<footer class="prompt__footer">
-					<AppButton outline @click="close()">
-						Cancel
-					</AppButton>
-
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click="confirm()"
-					>
-					Confirm
-					</AppButton>
+				<Spinner v-if="showSpinner"></Spinner>
+				<div class="pg-dialog__body">
+					<label class="webauth__field">
+						<span>Name:</span>
+						<input ref="name" class="pg-input" type="text" name="webAuthName" v-model="webAuthName"
+							v-on:keyup.enter="confirm">
+					</label>
+				</div>
+				<footer class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" class="pg-btn" @click="close()">Cancel</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" :disabled="webAuthName.trim().length == 0" @click="confirm()">Confirm</button>
+					</div>
 				</footer>
 			</div>
 		</div>
 	</transition>
 </template>
 <script>
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
         Spinner,
     },
     data: function() {
@@ -60,7 +47,8 @@ module.exports = {
             'context'
         ]),
     },
-    created: function() {
+    mounted: function() {
+        this.$refs.name.focus();
     },
     methods: {
         close: function(success) {
@@ -69,9 +57,10 @@ module.exports = {
         },
         confirm: function() {
             let name = this.webAuthName.trim();
-            if (name.length == 0) {
-                this.$toast.error('Please enter a name', {timeout:false});
-            }else if (name.length > 20) {
+            // the Enter that opened this dialog lifts in its field before anything is typed
+            if (name.length == 0)
+                return;
+            if (name.length > 20) {
                 this.$toast.error('Name max-length is 20 characters', {timeout:false});
             } else {
                 this.register();
@@ -136,4 +125,12 @@ module.exports = {
 }
 </script>
 <style>
+.webauth__field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+}
 </style>

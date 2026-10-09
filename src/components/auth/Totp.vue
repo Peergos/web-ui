@@ -1,65 +1,48 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-prompt app-modal__overlay" @click="close()">
-
-			<div class="app-prompt__container" @click.stop>
-				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click="close()"/>
-					<h3>Setup Authenticator App</h3>
+		<div class="pg-dialog__mask" @click="close()">
+			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" aria-label="Setup Authenticator App" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">Setup Authenticator App</h3>
+					<DialogClose @close="close()"/>
 				</header>
-                <Spinner v-if="showSpinner"></Spinner>
-                        <Message v-if="showMessage"
-                                v-on:remove-message="showMessage = false;"
-                                :title="messageTitle"
-                                :message="manualCode">
-                        </Message>
-                <div class="prompt__body">
-                    <div class="pg-center" v-if="QRCodeURL.length > 0">
-                      <div class="auth-qrcode-container">
-                            <img v-bind:src="QRCodeURL" alt="QR code" class="auth-qrcode"></img>
-                      </div>
-                    </div>
-                    <div class="pg-center" v-if="isReady"><a href="#" @click="enterCodeManually()"><u>Enter code manually</u></a></div>
-                    <div class="pg-center">
-                        Verification code from app:&nbsp;<input
-                            type="text"
-                            autofocus
-                            name="totp"
-                            v-model="totp"
-                            placeholder=""
-                            ref="totp"
-                            :disabled="!isReady"
-                            v-on:keyup.enter="confirm"
-                            style="width:200px"
-                        />
-                    </div>
-                </div>
-				<footer class="prompt__footer">
-					<AppButton outline @click="close()">
-						Cancel
-					</AppButton>
-
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click="confirm()"
-					>
-					Confirm
-					</AppButton>
+				<Spinner v-if="showSpinner"></Spinner>
+				<Message v-if="showMessage"
+					v-on:remove-message="showMessage = false;"
+					:title="messageTitle"
+					:message="manualCode">
+				</Message>
+				<div class="pg-dialog__body totp__body">
+					<!-- a code on a white ground whatever the theme: a camera reads dark on light -->
+					<div v-if="QRCodeURL.length > 0" class="totp__qrcode">
+						<img v-bind:src="QRCodeURL" alt="QR code">
+					</div>
+					<button v-if="isReady" type="button" class="pg-btn pg-btn--quiet" @click="enterCodeManually()">Enter code manually</button>
+					<label class="totp__field">
+						<span>Verification code from app:</span>
+						<input ref="totp" class="pg-input" type="text" name="totp" v-model="totp"
+							autocomplete="one-time-code" :disabled="!isReady" v-on:keyup.enter="confirm">
+					</label>
+				</div>
+				<footer class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" class="pg-btn" @click="close()">Cancel</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" :disabled="!isReady" @click="confirm()">Confirm</button>
+					</div>
 				</footer>
 			</div>
 		</div>
 	</transition>
 </template>
 <script>
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const Message = require("../message/Message.vue");
 
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
         Message,
         Spinner,
     },
@@ -132,15 +115,38 @@ module.exports = {
 }
 </script>
 <style>
-.auth-qrcode-container {
-    position: relative;
-    width: 300px;
-    height: 300px;
+.totp__body {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
 }
-.auth-qrcode {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 100%;
+
+.totp__body > * {
+	flex: none;
+}
+
+.totp__qrcode {
+	width: 100%;
+	max-width: 280px;
+	padding: 12px;
+	background-color: #ffffff;
+	border-radius: var(--radius-control);
+}
+
+.totp__qrcode img {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.totp__field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 100%;
+	margin: 0;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
 }
 </style>

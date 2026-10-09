@@ -1,52 +1,35 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-template-prompt app-modal__overlay" @click="closePrompt()">
-
-			<div class="app-template-prompt__container" @click.stop>
-				<header class="template-prompt__header">
-					<AppButton class="close" icon="close" @click="closePrompt()"/>
-					<h3>{{message}}</h3>
+		<div class="pg-dialog__mask" @click="closePrompt()">
+			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="message" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">{{message}}</h3>
+					<DialogClose @close="closePrompt()"/>
 				</header>
-				<div class="modal-body" style="padding: 15px;">
-                        <div class="flex-thumbnail-container">
-                            <div style="padding:20px;">
-		                        <img id="profile-image" alt="Profile image" v-if="hasAppIcon()" style="width:128px; height:128px" v-bind:src="getAppIcon()"/>
-	                        </div>
-                            <div class="flex-image-button-container">
-                                <div class="flex-container">
-		                            <button class="btn btn-success flex-grow" @click="triggerUpload">Set Icon</button>
-		                            <input type="file" id="uploadImageInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
-		                        </div>
-                            </div>
-                        </div>
-                </div>
-				<div v-if="maxLength > 0" class="template-prompt__body" style="margin: 20px;">
+				<div class="pg-dialog__body app-template__body">
+					<div class="app-template__icon">
+						<img v-if="hasAppIcon()" alt="App icon" v-bind:src="getAppIcon()"/>
+						<button type="button" class="pg-btn" @click="triggerUpload">Set Icon</button>
+						<input type="file" ref="iconInput" @change="uploadImageFile" style="display:none;" accept="image/*" />
+					</div>
 					<input
-						v-if="placeholder"
+						v-if="placeholder && maxLength > 0"
 						id="prompt-input"
 						ref="prompt"
+						class="pg-input"
 						v-model="prompt_result"
 						type="text"
 						:placeholder="placeholder"
 						:maxlength="maxLength"
-						@keyup.enter="getPrompt(this.prompt_result)"
-						autofocus
+						@keyup.enter="getPrompt()"
 					>
-					</input>
 				</div>
-				<footer class="template-prompt__footer">
-					<AppButton outline @click="closePrompt()">
-						{{ translate("PROMPT.CANCEL") }}
-					</AppButton>
-
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click="getPrompt(this.prompt_result)"
-					>
-					{{action}}
-					</AppButton>
+				<footer class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" class="pg-btn" @click="closePrompt()">{{ translate("PROMPT.CANCEL") }}</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" @click="getPrompt()">{{action}}</button>
+					</div>
 				</footer>
 			</div>
 		</div>
@@ -54,12 +37,12 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
     },
     mixins:[i18n],
 	data() {
@@ -129,7 +112,7 @@ module.exports = {
             return this.base64Image.length > 0;
         },
         triggerUpload: function() {
-            document.getElementById('uploadImageInput').click()
+            this.$refs.iconInput.click()
         },
         uploadImageFile: function(evt) {
             let files = evt.target.files || evt.dataTransfer.files;
@@ -166,41 +149,21 @@ module.exports = {
 </script>
 
 <style>
-.app-template-prompt.app-modal__overlay{
-	display:flex;
-	align-items: center;
-	justify-content: center;
-}
-.app-template-prompt__container{
-	width: 400px;
-	padding: 16px;
-	border-radius: 4px;
-	color: var(--color);
-	background-color:var(--bg);
-	box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-.template-prompt__header h3{
-	border-top:0;
-	font-weight: var(--regular);
-}
-.template-prompt__body{
-	margin: var(--app-margin) 0;
-}
-.template-prompt__footer{
+.app-template__body {
 	display: flex;
-	justify-content: flex-end;
-}
-.template-prompt__footer button{
-	margin-left: 16px;
-}
-.flex-thumbnail-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+	flex-direction: column;
+	gap: 14px;
 }
 
-.flex-image-button-container {
-  display: flex;
-  flex-direction: column;
+.app-template__icon {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+}
+
+.app-template__icon img {
+	width: 64px;
+	height: 64px;
+	border-radius: var(--radius-control);
 }
 </style>

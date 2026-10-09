@@ -1,49 +1,38 @@
 <template>
 	<transition name="modal" appear>
-		<div class="app-prompt app-modal__overlay" @click="close()">
-
-			<div class="app-prompt__container" @click.stop>
-				<header class="prompt__header">
-					<AppButton class="close" icon="close" @click="close()"/>
-					<h3>{{ translate("MFA.BACKUP.TITLE") }}</h3>
+		<div class="pg-dialog__mask" @click="close()">
+			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="translate('MFA.BACKUP.TITLE')" @click.stop>
+				<header class="pg-dialog__head">
+					<h3 class="pg-dialog__title">{{ translate("MFA.BACKUP.TITLE") }}</h3>
+					<DialogClose @close="close()"/>
 				</header>
-                <Spinner v-if="showSpinner"></Spinner>
-                <div class="prompt__body">
-                    <div class="pg-center">{{ translate("MFA.BACKUP.BLURB") }}</div>
-                    <div class="backup-codes" v-if="codes.length > 0">
-                        <div class="backup-code" v-for="code in codes">{{ code }}</div>
-                    </div>
-                </div>
-				<footer class="prompt__footer">
-					<AppButton outline @click="copy()" :disabled="codes.length == 0">
-						{{ translate("MFA.BACKUP.COPY") }}
-					</AppButton>
-
-					<AppButton outline @click="download()" :disabled="codes.length == 0">
-						{{ translate("MFA.BACKUP.DOWNLOAD") }}
-					</AppButton>
-
-					<AppButton
-						id='prompt-button-id'
-						type="primary"
-						accent
-						@click="close()"
-					>
-					{{ translate("MFA.BACKUP.DONE") }}
-					</AppButton>
+				<Spinner v-if="showSpinner"></Spinner>
+				<div class="pg-dialog__body">
+					<p>{{ translate("MFA.BACKUP.BLURB") }}</p>
+					<div class="backup-codes" v-if="codes.length > 0">
+						<div class="backup-code" v-for="code in codes">{{ code }}</div>
+					</div>
+				</div>
+				<footer class="pg-dialog__foot">
+					<div class="pg-dialog__actions">
+						<button type="button" class="pg-btn" @click="copy()" :disabled="codes.length == 0">{{ translate("MFA.BACKUP.COPY") }}</button>
+						<button type="button" class="pg-btn" @click="download()" :disabled="codes.length == 0">{{ translate("MFA.BACKUP.DOWNLOAD") }}</button>
+						<span class="pg-dialog__spacer"></span>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" @click="close()">{{ translate("MFA.BACKUP.DONE") }}</button>
+					</div>
 				</footer>
 			</div>
 		</div>
 	</transition>
 </template>
 <script>
-const AppButton = require("../AppButton.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
+        DialogClose,
         Spinner,
     },
     data: function() {
@@ -108,17 +97,20 @@ module.exports = {
 }
 </script>
 <style>
+/* two columns of codes to copy down, on the field surface so they read as data */
 .backup-codes {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 20px 0;
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 6px 16px;
+	margin: 12px 0 4px;
+	padding: 12px 16px;
+	background-color: var(--pg-surface-2);
+	border-radius: var(--radius-field);
 }
+
 .backup-code {
-    font-family: monospace;
-    font-size: 1.1em;
-    padding: 5px 15px;
-    width: 50%;
-    text-align: center;
+	font-family: monospace;
+	font-size: 15px;
+	text-align: center;
 }
 </style>
