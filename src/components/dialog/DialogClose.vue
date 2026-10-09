@@ -21,11 +21,20 @@ function focusableIn(dialog) {
         el => el.getClientRects().length > 0);
 }
 
+// an open list of suggestions under a field takes Escape for itself, as a select would
+function suggestionsOpen(target) {
+    const field = target instanceof Element ? target.closest(".form-autocomplete") : null;
+    const list = field == null ? null : field.querySelector(".options");
+    return list != null && list.getClientRects().length > 0;
+}
+
 function onKeyDown(e) {
     if (open.length === 0)
         return;
     const top = open[open.length - 1];
     if (e.key === "Escape") {
+        if (suggestionsOpen(e.target))
+            return;
         e.stopPropagation();
         top.$emit("close");
         return;

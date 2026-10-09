@@ -1,32 +1,42 @@
 <template>
-    <div class="modal-mask" @click="close">
-        <div class="modal-container" @click.stop style="height:95%;width:95%;overflow-y:auto;max-width:800px;">
-            <Spinner v-if="showSpinner"></Spinner>
-<div>
-    <h2>Identity Link</h2>
-    <div v-if="proof != null">
-        User <i>{{ proof.claim.usernameA }}</i> on {{ proof.claim.serviceA.name() }} is also <i>{{ proof.claim.usernameB }}</i> on {{ proof.claim.serviceB.name() }}.
-        <br/>
-        Signature: {{ proof.encodedSignature() }}
-        <br/>
-        <label>Proof: </label>
-        <br/>
-        <a v-if="proof.hasUrl()" v-bind:href="proof.postUrl.get()" target="_blank">{{ proof.postUrl.get() }}</a>
+<transition name="modal">
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" aria-label="Identity Link" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">Identity Link</h3>
+            <DialogClose @close="close"/>
+        </header>
+        <Spinner v-if="showSpinner"></Spinner>
+        <div v-if="proof != null" class="pg-dialog__body identity-proof">
+            <p>User <i>{{ proof.claim.usernameA }}</i> on {{ proof.claim.serviceA.name() }} is also <i>{{ proof.claim.usernameB }}</i> on {{ proof.claim.serviceB.name() }}.</p>
+            <dl class="pg-facts">
+                <div class="pg-facts__item">
+                    <dt>Signature</dt>
+                    <dd><code>{{ proof.encodedSignature() }}</code></dd>
+                </div>
+                <div class="pg-facts__item" v-if="proof.hasUrl()">
+                    <dt>Proof</dt>
+                    <dd><a v-bind:href="proof.postUrl.get()" target="_blank" rel="noopener noreferrer">{{ proof.postUrl.get() }}</a></dd>
+                </div>
+            </dl>
+        </div>
     </div>
 </div>
-</div>
-</div>
+</transition>
 </template>
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
 const Spinner = require("./spinner/Spinner.vue");
 
 module.exports = {
 	components: {
+	    DialogClose,
 	    Spinner
 	},
     data: function() {
         return {
-            proof: null
+            proof: null,
+            showSpinner: false
         };
     },
     props: ["file", "context"],
@@ -63,3 +73,15 @@ module.exports = {
     }
 };
 </script>
+<style>
+.identity-proof {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.identity-proof code {
+	font-size: var(--text-small);
+	word-break: break-all;
+}
+</style>

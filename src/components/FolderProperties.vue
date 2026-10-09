@@ -1,24 +1,26 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div @click.stop class="folder-properties-container">
-        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-        <div class="modal-header">
-            <div class="pg-center"><h2>Folder: {{folderName}}</h2></div>
-        </div>
-        <div class="modal-body">
-            <div class="folder-properties-view">
-                <p>
-                    <span class="folder-properties-span">File(s):</span><span>{{fileCount}}</span>
-                </p>
-                <p>
-                    <span class="folder-properties-span">Folder(s):</span><span>{{folderCount}}</span>
-                </p>
-                <p>
-                    <span class="folder-properties-span">Total Size:</span><span>{{actualSize}}</span>
-                </p>
-            </div>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="'Folder: ' + folderName" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">{{ 'Folder: ' + folderName }}</h3>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-dialog__body">
+            <dl class="pg-facts">
+                <div class="pg-facts__item">
+                    <dt>File(s)</dt>
+                    <dd>{{fileCount}}</dd>
+                </div>
+                <div class="pg-facts__item">
+                    <dt>Folder(s)</dt>
+                    <dd>{{folderCount}}</dd>
+                </div>
+                <div class="pg-facts__item">
+                    <dt>Total Size</dt>
+                    <dd>{{actualSize}}</dd>
+                </div>
+            </dl>
         </div>
     </div>
 </div>
@@ -26,8 +28,12 @@
 </template>
 
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
 const helpers = require("../mixins/storage/index.js");
 module.exports = {
+    components: {
+        DialogClose,
+    },
     data: function() {
         return {
             fileCount: 0,
@@ -53,22 +59,3 @@ module.exports = {
 }
 </script>
 
-<style>
-.folder-properties-container {
-    width: 40%;
-    position: fixed;
-    left: 50%;
-    transform: translate(-50%, 0);
-    padding: 20px 20px;
-    background-color: var(--bg);
-}
-
-.folder-properties-span {
-    font-weight: bold;
-    padding-right: 10px;
-}
-
-.folder-properties-view {
-}
-
-</style>

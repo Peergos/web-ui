@@ -1,13 +1,13 @@
 <template>
+<ReplyToServerMessage
+    v-if="showFeedbackForm"
+    :closeFeedbackForm="closeFeedbackForm"
+    :loadMessageThread="loadMessageThread"
+    :sendFeedback="sendFeedback"
+    :sendMessage="sendMessage"
+    :messageId="messageId">
+</ReplyToServerMessage>
 <div v-if="conversationMonitors.length > 0" class="messageholder">
-    <ReplyToServerMessage
-        v-if="showFeedbackForm"
-        :closeFeedbackForm="closeFeedbackForm"
-        :loadMessageThread="loadMessageThread"
-        :sendFeedback="sendFeedback"
-        :sendMessage="sendMessage"
-        :messageId="messageId">
-    </ReplyToServerMessage>
     <MessageBar
 	:replyToMessage="replyToMessage"
 	:dismissMessage="dismissMessage"
@@ -261,15 +261,12 @@
     bottom:var(--app-margin);
     min-width:200px;
     z-index: 200;
-    display: inline-block;
     float: right;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: calc(100% - 2 * var(--app-margin));
     color: var(--color);
-    background-color: var(--bg);
-}
-
-.messageholder div {
-    color: var(--color);
-    background-color: var(--bg);
 }
 </style>

@@ -1,83 +1,43 @@
 <template>
-    <transition name="modal">
-<div class="modal-mask" @click="close">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div style="height:30%"></div>
-    <div class="modal-container server-message-reply" @click.stop style="height:70%;overflow-y:auto">
-        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-        <div class="modal-header">
-                <h2>{{title}}</h2>
+<transition name="modal">
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog server-reply" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">{{title}}</h3>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-dialog__body server-reply__body">
+            <p v-if="isFeedback">You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a></p>
+            <ul v-if="!isFeedback" class="server-reply__thread">
+                <li v-for="message in messageThread" class="server-reply__message">
+                    <button type="button" class="server-reply__head" :aria-expanded="message.visible ? 'true' : 'false'" @click="message.visible = !message.visible">
+                        <svg class="server-reply__chevron" :class="{'server-reply__chevron--open': message.visible}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                        <span>{{fromUTCtoLocal(message.sendTime)}}&nbsp;{{ message.from == 'FromServer' ? 'From Server' : (message.from == 'FromUser' ? 'You replied' : '') }}</span>
+                    </button>
+                    <div v-if="message.visible" class="server-reply__text" :class="{'server-reply__text--mine': message.from == 'FromUser'}">
+                        <p v-for="paragraph in message.paragraphs">{{paragraph}}</p>
+                    </div>
+                </li>
+            </ul>
+            <textarea id="feedback-text" class="pg-input" spellcheck="true" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
         </div>
-        <div class="modal-body">
-            <div id="feedback-main">
-                <div v-if="isFeedback" >
-        	      <h3>You can tell us here how we can improve, or you can chat with us on <a href="https://reddit.com/r/peergos" target="_blank" rel="noopener noreferrer">reddit</a> or send us an email: <a href="mailto:feedback@peergos.org">feedback@peergos.org</a></h3>
-                </div>
-                <div v-if="!isFeedback">
-                <table style="width: 100%; font-size: 1.0em;">
-                    <thead>
-                    <tr>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <template v-for="message in messageThread" >
-                        <tr @click="message.visible = !message.visible">
-                                <div v-if="message.from == 'FromServer'">
-                                    <td>
-                                    <span v-if="!message.visible" class="fas fa-angle-up" />
-                                    <span v-if="message.visible" class="fas fa-angle-down" />
-                                        {{fromUTCtoLocal(message.sendTime)}}&nbsp;From Server
-                                    </td>
-                                </div>
-                                <div v-if="message.from == 'FromUser'">
-                                    <td>
-                                        <span v-if="!message.visible" class="fas fa-angle-up" />
-                                        <span v-if="message.visible" class="fas fa-angle-down" />
-                                        {{fromUTCtoLocal(message.sendTime)}}&nbsp;You replied
-                                    </td>
-                                </div>
-                        </tr>
-                        <tr v-if="message.visible">
-                            <td>
-                                <div v-if="message.from == 'FromUser'" style="background-color: #ffffff;">
-                                  <div v-for="paragraph in message.paragraphs" >
-                                    {{paragraph}}
-				    <br/>
-				  </div>
-                                </div>
-                                <div v-if="message.from != 'FromUser'">
-				  <div v-for="paragraph in message.paragraphs" >
-                                    {{paragraph}}
-				    <br/>
-				  </div>
-                                </div>
-                            </td>
-                        </tr>
-                    </template>
-                    </tbody>
-                </table>
-                </div>
-                <p>
-                    <textarea id="feedback-text" spellcheck="true" style="width:100%" rows=5 :placeholder="textAreaPlaceholder" maxlength="1000"></textarea>
-                </p>
-                <button class="btn btn-success" 
-                        style = "width:100%"
-                    @click="submitFeedback()">
-                    Submit
-                </button>
-                </p>
+        <footer class="pg-dialog__foot">
+            <div class="pg-dialog__actions">
+                <span class="pg-dialog__spacer"></span>
+                <button type="button" class="pg-btn pg-btn--primary" @click="submitFeedback()">Submit</button>
             </div>
-        </div>
+        </footer>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
 
 module.exports = {
 	components: {
+        DialogClose,
 	},
     data: function() {
         return {
@@ -131,8 +91,74 @@ module.exports = {
 </script>
 
 <style>
-.server-message-reply textarea {
-    color: var(--color);
-    background-color: var(--bg);
+.server-reply {
+	width: 560px;
+}
+
+.server-reply__body {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* the conversation so far, each message opening in place */
+.server-reply__thread {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.server-reply__message {
+	border-bottom: 1px solid var(--pg-track);
+}
+
+.server-reply__head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 10px 2px;
+	font: inherit;
+	font-size: var(--text-small);
+	text-align: left;
+	color: var(--color);
+	background: none;
+	border: 0;
+	cursor: pointer;
+}
+
+.server-reply__chevron {
+	width: 14px;
+	height: 14px;
+	flex: none;
+	transition: transform .15s;
+}
+
+.server-reply__chevron--open {
+	transform: rotate(90deg);
+}
+
+.server-reply__text {
+	padding: 0 4px 12px 24px;
+}
+
+.server-reply__text--mine {
+	color: var(--pg-muted);
+}
+
+.server-reply__text p {
+	margin: 0 0 6px;
+}
+
+.server-reply__body textarea.pg-input {
+	min-height: 120px;
+	padding: 10px 12px;
+	resize: vertical;
+	font-size: 15px;
+	background-color: var(--pg-surface-2);
+	border: 1px solid var(--border-color);
+	box-shadow: none;
 }
 </style>

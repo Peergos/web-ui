@@ -207,10 +207,6 @@ table {
 
 
 
-.messagecontainer {
-  padding: 2px;
-}
-
 .modal-mask {
   position: fixed;
   z-index: 2500;

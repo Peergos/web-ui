@@ -1,14 +1,12 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div @click.stop class="app-install-container">
-        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-        <div class="modal-header">
-            <h2>App Installation</h2>
-        </div>
-        <div class="modal-body">
-            <Spinner v-if="showSpinner" :message="spinnerMessage" :absolutePosition="spinnerAbsolutePosition"></Spinner>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" aria-label="App Installation" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">App Installation</h3>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-dialog__body">
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -28,62 +26,68 @@
               :action="prompt_action"
               :appIconBase64Image="appIconBase64Image"
             />
-            <div v-if="appProperties != null">
-                <div class="app-install-view">
-                    <p>
-                        <span class="app-install-span">Name:</span><span>{{appProperties.displayName}}&nbsp;
-                        {{appProperties.version}}
-                        </span>
-                    </p>
-                    <p>
-                        <span class="app-install-span">Description:</span><span class="app-install-text">{{appProperties.description}}</span>
-                    </p>
-                    <p v-if="appProperties.author.length > 0">
-                        <span class="app-install-span">Author:</span><span class="app-install-text">{{appProperties.author}}</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.fileExtensions.length > 0" class="app-install-span">Associated File extensions:</span><span class="app-install-text">{{appProperties.fileExtensions.join(", ")}}</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.mimeTypes.length > 0" class="app-install-span">Associated Mime types:</span><span class="app-install-text">{{appProperties.mimeTypes.join(", ")}}</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.fileTypes.length > 0" class="app-install-span">Associated File types:</span><span class="app-install-text">{{appProperties.fileTypes.join(", ")}}</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.folderAction==true" class="app-install-span">Is a Folder Action</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install-span">Multiple instances of App can be installed</span>
-                    </p>
-                    <p>
-                        <span v-if="appProperties.tile != null" class="app-install-span">Can show previews in your newsfeed, including of files other people share with you</span>
-                    </p>
-                    <p v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
-                        <span class="app-install-span">Permissions:</span><span class="app-install-text">None Required</span>
-                    </p>
-                    <p v-if="appProperties.permissions.length > 0">
-                        <span class="app-install-span">Permissions:</span><span class="app-install-text"></span>
-                    </p>
-                    <p v-if="appProperties.permissions.length > 0">
-                        <li v-for="permission in appProperties.permissions">
-                          {{ convertPermissionToHumanReadable(permission) }}
-                        </li>
-                    </p>
+            <div v-if="appProperties != null" class="app-install">
+                <dl class="pg-facts">
+                <div class="pg-facts__item">
+                    <dt>Name</dt>
+                    <dd>{{appProperties.displayName}} <span class="app-install__version">{{appProperties.version}}</span></dd>
                 </div>
-                <div class="flex-line-item">
-                    <div>
-                        <button class="btn btn-success" style = "width:100%" @click="installNewApp()">Install</button>
+                <div class="pg-facts__item">
+                    <dt>Description</dt>
+                    <dd>{{appProperties.description}}</dd>
+                </div>
+                <div class="pg-facts__item" v-if="appProperties.author.length > 0">
+                    <dt>Author</dt>
+                    <dd>{{appProperties.author}}</dd>
+                </div>
+                <div class="pg-facts__item" v-if="appProperties.fileExtensions.length > 0">
+                    <dt>Associated File extensions</dt>
+                    <dd>{{appProperties.fileExtensions.join(", ")}}</dd>
+                </div>
+                <div class="pg-facts__item" v-if="appProperties.mimeTypes.length > 0">
+                    <dt>Associated Mime types</dt>
+                    <dd>{{appProperties.mimeTypes.join(", ")}}</dd>
+                </div>
+                <div class="pg-facts__item" v-if="appProperties.fileTypes.length > 0">
+                    <dt>Associated File types</dt>
+                    <dd>{{appProperties.fileTypes.join(", ")}}</dd>
+                </div>
+                </dl>
+                <!-- notes with no label of their own, between the facts and the permissions -->
+                <p v-if="appProperties.folderAction==true" class="app-install__note">Is a Folder Action</p>
+                <p v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install__note">Multiple instances of App can be installed</p>
+                <p v-if="appProperties.tile != null" class="app-install__note">Can show previews in your newsfeed, including of files other people share with you</p>
+                <dl v-if="appProperties.permissions.length > 0 || !appHasFileAssociation" class="pg-facts">
+                <div class="pg-facts__item" v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
+                    <dt>Permissions</dt>
+                    <dd>None Required</dd>
+                </div>
+                    <div class="pg-facts__item" v-if="appProperties.permissions.length > 0">
+                        <dt>Permissions</dt>
+                        <dd>
+                            <ul class="app-install__permissions">
+                                <li v-for="permission in appProperties.permissions">{{ convertPermissionToHumanReadable(permission) }}</li>
+                            </ul>
+                        </dd>
                     </div>
-                </div>
+                </dl>
             </div>
         </div>
+        <footer v-if="appProperties != null" class="pg-dialog__foot">
+            <div class="pg-dialog__actions">
+                <span class="pg-dialog__spacer"></span>
+                <button type="button" class="pg-btn" @click="close">Cancel</button>
+                <button type="button" class="pg-btn pg-btn--primary" @click="installNewApp()">Install</button>
+            </div>
+        </footer>
+        <div v-if="showSpinner" class="pg-dialog__loading"><Spinner :message="spinnerMessage"></Spinner></div>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const callbacks = require("../../mixins/callbacks/index.js");
 const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
@@ -96,6 +100,7 @@ const transfers = require("../../mixins/transfers/index.js");
 
 module.exports = {
     components: {
+        DialogClose,
         AppTemplatePrompt,
         Confirm,
         Spinner
@@ -123,7 +128,6 @@ module.exports = {
             messenger: null,
             templateAppSeparator: "!",
             appIconBase64Image: "",
-            spinnerAbsolutePosition: true,
             installedApps: [],
         }
     },
@@ -645,27 +649,24 @@ module.exports = {
 }
 </script>
 <style>
-.app-install-container {
-    height: 100%;
-    overflow-y: auto;
-    position: fixed;
-    left: 50%;
-    transform: translate(-50%, 0);
-    padding: 20px 30px;
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.33);
-    transition: all .3s ease;
+.app-install {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
 }
 
-.app-install-view {
-    font-size: 1.3em;
+.app-install__version {
+	color: var(--pg-muted);
+	font-size: var(--text-small);
 }
-.app-install-text {
-    font-size: 1.0em;
+
+.app-install__permissions {
+	margin: 0;
+	padding-left: 18px;
 }
-.app-install-span {
-    font-weight: bold;
-    padding-right: 10px;
+
+.app-install__note {
+	margin: 0;
+	font-size: 15px;
 }
 </style>
