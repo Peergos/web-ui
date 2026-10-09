@@ -22,7 +22,7 @@
 				<span>{{ translate("PAID.CANCEL.FOLLOWUP") }}</span>
 			</label>
 			<FormPassword v-model="password" />
-			<div class="pg-callout app-modal__confirm" v-if="warning">
+			<div class="pg-callout app-modal__confirm" v-if="warning" ref="confirm">
 				<p>{{ translate("DELETE.ACCOUNT.CONFIRM") }}</p>
 				<div class="app-modal__confirm-actions">
 					<button type="button" class="pg-btn" @click="warning=false">{{ translate("DELETE.ACCOUNT.CANCEL") }}</button>
@@ -72,6 +72,8 @@ module.exports = {
 				this.$toast.error(that.translate("DELETE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
 			} else {
 				this.warning = true
+				// the question opens below the fields, which a small phone has scrolled out of view
+				this.$nextTick(() => this.$refs.confirm.scrollIntoView({block: "nearest"}));
 			}
 		},
 
