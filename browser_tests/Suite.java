@@ -47,6 +47,7 @@ public class Suite {
             run(failures, "a long path trail opens out", () -> PathExpandTest.run(args1));
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
+            run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "an admin inviting new users", () -> AdminInviteTest.run(args1));
             run(failures, "inviting new users on a paid instance", () -> AdminInvitePaidTest.run(args1));
 
