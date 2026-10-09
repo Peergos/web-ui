@@ -67,7 +67,6 @@
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const Spinner = require("../spinner/Spinner.vue");
@@ -78,7 +77,6 @@ const i18n = require("../../i18n/index.js");
 
 module.exports = {
     components: {
-        AppButton,
         AppModal,
         Confirm,
         Spinner,
