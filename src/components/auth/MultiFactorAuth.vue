@@ -17,12 +17,16 @@
 						<input ref="code" class="pg-input" type="text" name="mfaCode" v-model="mfaCode"
 							autocomplete="one-time-code" v-on:keyup.enter="confirmCode">
 					</label>
-					<p v-if="!showChooser && !showCodeEntry" class="pg-note">Waiting for your security key</p>
+					<p v-if="!showChooser && !showCodeEntry && !webauthnFailed" class="pg-note">Waiting for your security key</p>
+					<div v-if="!showChooser && !showCodeEntry && webauthnFailed" class="mfa__choices">
+						<p class="pg-note">Your security key could not be read.</p>
+						<button type="button" class="pg-btn" @click="confirmWebauthn()">Try again</button>
+					</div>
 				</div>
 				<footer v-if="showCodeEntry" class="pg-dialog__foot">
 					<div class="pg-dialog__actions">
 						<span class="pg-dialog__spacer"></span>
-						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" @click="confirmCode()">Confirm</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" :disabled="! hasCode" @click="confirmCode()">Confirm</button>
 					</div>
 				</footer>
 			</div>
@@ -49,6 +53,7 @@ module.exports = {
             codeCredentialId: null,
             totpCredentialId: null,
             backupCredentialId: null,
+            webauthnFailed: false,
             isReady: false,
         }
     },
@@ -57,6 +62,9 @@ module.exports = {
         ...Vuex.mapState([
             'context'
         ]),
+        hasCode() {
+            return this.mfaCode.trim().length > 0;
+        },
     },
     created: function() {
         let that = this;
@@ -118,12 +126,16 @@ module.exports = {
             });
         },
         confirmCode: function() {
+            // the Enter that picked a choice lifts in the field it opened, before anything is typed
+            if (! this.hasCode)
+                return;
             let credentialId = this.codeCredentialId;
             let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, this.mfaCode);
             this.consumer_func(credentialId, resp);
         },
         confirmWebauthn: function() {
            let that = this;
+           this.webauthnFailed = false;
            let allow = [];
            this.webauthnMethods.forEach(value => allow.push({type:value.type, id:value.id}))
            let data = {
@@ -142,6 +154,7 @@ module.exports = {
                 let resp = peergos.client.JsUtil.generateWebAuthnResponse(credentialId, authenticatorData, clientDataJson, signature);
                 that.consumer_func(credentialId, resp);
            }).catch(getCredentialsException => {
+                that.webauthnFailed = true;
                 that.$toast.error('Unable to get credentials', {timeout:false});
                 console.log('Unable to get credentials: ' + getCredentialsException);
            });

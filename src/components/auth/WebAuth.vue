@@ -18,7 +18,7 @@
 					<div class="pg-dialog__actions">
 						<span class="pg-dialog__spacer"></span>
 						<button type="button" class="pg-btn" @click="close()">Cancel</button>
-						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" @click="confirm()">Confirm</button>
+						<button type="button" id='prompt-button-id' class="pg-btn pg-btn--primary" :disabled="webAuthName.trim().length == 0" @click="confirm()">Confirm</button>
 					</div>
 				</footer>
 			</div>
@@ -57,9 +57,10 @@ module.exports = {
         },
         confirm: function() {
             let name = this.webAuthName.trim();
-            if (name.length == 0) {
-                this.$toast.error('Please enter a name', {timeout:false});
-            }else if (name.length > 20) {
+            // the Enter that opened this dialog lifts in its field before anything is typed
+            if (name.length == 0)
+                return;
+            if (name.length > 20) {
                 this.$toast.error('Name max-length is 20 characters', {timeout:false});
             } else {
                 this.register();
