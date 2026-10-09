@@ -7,7 +7,6 @@
             <DialogClose @close="close"/>
         </header>
         <div class="pg-dialog__body">
-            <Spinner v-if="showSpinner" :message="spinnerMessage" :absolutePosition="spinnerAbsolutePosition"></Spinner>
             <Confirm
                     v-if="showConfirm"
                     v-on:hide-confirm="showConfirm = false"
@@ -81,6 +80,7 @@
                 <button type="button" class="pg-btn pg-btn--primary" @click="installNewApp()">Install</button>
             </div>
         </footer>
+        <div v-if="showSpinner" class="pg-dialog__loading"><Spinner :message="spinnerMessage"></Spinner></div>
     </div>
 </div>
 </transition>
@@ -128,7 +128,6 @@ module.exports = {
             messenger: null,
             templateAppSeparator: "!",
             appIconBase64Image: "",
-            spinnerAbsolutePosition: true,
             installedApps: [],
         }
     },
