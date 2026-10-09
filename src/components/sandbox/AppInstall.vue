@@ -57,6 +57,7 @@
                 <!-- notes with no label of their own, between the facts and the permissions -->
                 <p v-if="appProperties.folderAction==true" class="app-install__note">Is a Folder Action</p>
                 <p v-if="appProperties.template.length > 0 && !appProperties.template.includes('instance')" class="app-install__note">Multiple instances of App can be installed</p>
+                <p v-if="appProperties.tile != null" class="app-install__note">Can show previews in your newsfeed, including of files other people share with you</p>
                 <dl v-if="appProperties.permissions.length > 0 || !appHasFileAssociation" class="pg-facts">
                 <div class="pg-facts__item" v-if="!appHasFileAssociation && appProperties.permissions.length == 0">
                     <dt>Permissions</dt>

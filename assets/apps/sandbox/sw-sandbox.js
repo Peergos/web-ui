@@ -1,13 +1,21 @@
 let APP_FILE_MODE = 0;
 let STREAMING_MODE = 1;
 var streamingMap
-var appName;
-var appData = null;
-var appPort = null;
 
-var streamingFilePath = "";
-var streamingAppEntry = new StreamingEntry(-1);
-var downloadUrl = null;
+// One entry per running sandbox (a full app or a feed tile), keyed by the id sandbox.js
+// generates and puts in the app document's url as ?pgi=. Every sandbox of an app shares this
+// origin and so this worker, and each request has to reach the host of the document that made it.
+let instances = new Map();
+// Which instance each app document belongs to, learned from its navigation.
+let clientInstances = new Map();
+let latestInstanceId = null;
+let downloadUrls = new Set();
+let INSTANCE_PARAM = 'pgi';
+
+function newInstance(id, port, appName, tile, sourceId) {
+    return {id: id, port: port, appName: appName, tile: tile, sourceId: sourceId,
+        appData: new AppData(), streamingFilePath: "", streamingAppEntry: new StreamingEntry(-1)};
+}
 let apiRequest = "/peergos-api/v0";
 let dataRequest = apiRequest + "/data/";
 let formRequest = apiRequest + "/form/";
@@ -30,7 +38,8 @@ self.onmessage = event => {
     return
   }
 
-  downloadUrl = self.registration.scope + 'intercept-me-nr' + Math.random()
+  let downloadUrl = self.registration.scope + 'intercept-me-nr' + Math.random()
+  downloadUrls.add(downloadUrl)
   const data = event.data
   const port = event.ports[0]
 
@@ -43,9 +52,14 @@ self.onmessage = event => {
   let size = Number(headers.get('Content-Length'));
   let disposition = headers.get('Content-Disposition');
   let startIndex = disposition.indexOf("''");
-  appName = decodeURIComponent(disposition.substring(startIndex+2, disposition.length))
+  let appName = decodeURIComponent(disposition.substring(startIndex+2, disposition.length))
                         .replaceAll(':','/');
-  setupNewApp(port);
+  // A sandbox.js from before instances registers without one; it gets a fresh id and is only
+  // ever reached through the fallback, as every sandbox was before.
+  let instance = data.instance || {};
+  let id = typeof instance.id === 'string' && instance.id.length > 0 ? instance.id : 'legacy-' + Math.random();
+  let sourceId = event.source ? event.source.id : null;
+  setupNewApp(newInstance(id, port, appName, instance.tile === true, sourceId));
   port.postMessage({ download: downloadUrl})
 
 }
@@ -88,15 +102,11 @@ function StreamingEntry(fileSize) {
     }
     this.enqueue = function(data) {
 
-        streamingAppEntry.reset();
+        this.reset();
         var offset = 1;
         let filePathSize = data[offset];
         offset = offset + 1;
         let filePathBytes = data.subarray(offset, filePathSize + offset);
-        let filePath = new TextDecoder().decode(filePathBytes);
-        if (filePath != streamingFilePath) {
-            streamingFilePath = filePath;
-        }
         offset =  offset + filePathSize;
         let mimeTypeSize = data[offset];
         offset = offset + 1;
@@ -115,9 +125,9 @@ function StreamingEntry(fileSize) {
         var low = sizeLow;
         if (low < 0) low = low + Math.pow(2, 32);
         let fileSize = low + (sizeHigh * Math.pow(2, 32));
-        streamingAppEntry.setFileSize(fileSize);
-        streamingAppEntry.setMimeType(mimeType);
-        if (seEtag) streamingAppEntry.etag = seEtag;
+        this.setFileSize(fileSize);
+        this.setMimeType(mimeType);
+        if (seEtag) this.etag = seEtag;
 
         let moreData = data.subarray(offset)
         const currentBytes = this.bytes;
@@ -242,21 +252,94 @@ function AppData() {
         }
     }
 }
-function setupNewApp(port) {
-    appData = new AppData();
-    appPort = port;
-    port.onmessage = ({ data }) => {
+function setupNewApp(inst) {
+    instances.set(inst.id, inst);
+    latestInstanceId = inst.id;
+    inst.port.onmessage = ({ data }) => {
         if (data != 'end' && data != 'abort') {
             if (data[0] == STREAMING_MODE) {
-                streamingAppEntry.enqueue(data);
+                inst.streamingAppEntry.enqueue(data);
             } else {
-                appData.enqueue(data);
+                inst.appData.enqueue(data);
             }
         }
     }
+    pruneInstances();
 }
 
-const cacheName = 'BrowserCache_v1';
+// A sandbox registers from its worker-sandbox.html frame, which lives exactly as long as the
+// sandbox does: an instance whose frame has gone is a closed tile or app.
+function pruneInstances() {
+    return self.clients.matchAll({includeUncontrolled: true}).then(all => {
+        let alive = new Set(all.map(c => c.id));
+        instances.forEach((inst, id) => {
+            if (inst.sourceId != null && ! alive.has(inst.sourceId))
+                instances.delete(id);
+        });
+        clientInstances.forEach((id, clientId) => {
+            if (! alive.has(clientId))
+                clientInstances.delete(clientId);
+        });
+    });
+}
+
+function instanceIdFromUrl(url) {
+    try {
+        return new URL(url).searchParams.get(INSTANCE_PARAM);
+    } catch (e) {
+        return null;
+    }
+}
+
+// The id of the sandbox that made this request. Only a navigation is taken at its word, and
+// only for the document it creates: a sub-resource naming an id in its own url would otherwise
+// pick which host answers it.
+async function instanceIdFor(event) {
+    if (event.clientId && clientInstances.has(event.clientId))
+        return clientInstances.get(event.clientId);
+    if (event.request.mode === 'navigate') {
+        let id = instanceIdFromUrl(event.request.url);
+        if (id != null && event.resultingClientId)
+            clientInstances.set(event.resultingClientId, id);
+        return id;
+    }
+    if (event.clientId) {
+        let client = await self.clients.get(event.clientId);
+        let id = client ? instanceIdFromUrl(client.url) : null;
+        if (id != null)
+            clientInstances.set(event.clientId, id);
+        return id;
+    }
+    return null;
+}
+
+// Resolves to {inst} or to {response} when there is no host to ask. A request no instance
+// claims - an app navigating within itself, which drops the id from its url - goes to the
+// most recent full app, and is refused outright while any tile of this app is running: a tile
+// shares this origin, and must never be able to reach a full app's host that way.
+async function resolveInstance(event) {
+    let id = await instanceIdFor(event);
+    if (id != null) {
+        let inst = instances.get(id);
+        if (inst != null)
+            return {inst: inst};
+        // The worker restarted and lost its instances: every sandbox registers again.
+        self.clients.matchAll().then(clients => clients.forEach(c => c.postMessage({type: 'need-port'})));
+        return {response: new Response('', {status: 503})};
+    }
+    await pruneInstances();
+    if (instances.size == 0) {
+        self.clients.matchAll().then(clients => clients.forEach(c => c.postMessage({type: 'need-port'})));
+        return {response: new Response('', {status: 503})};
+    }
+    let all = Array.from(instances.values());
+    if (all.some(inst => inst.tile))
+        return {response: new Response('', {status: 403})};
+    let latest = instances.get(latestInstanceId) || all[all.length - 1];
+    return {inst: latest};
+}
+
+const cacheName = 'BrowserCache_v2';
 
 const precachedAssets = [
     'sandbox.html',
@@ -318,11 +401,28 @@ function appFetch(event) {
         headers: { 'Access-Control-Allow-Origin': '*' }
       }));
     }
-    if (appPort == null) {
-        self.clients.matchAll().then(clients => clients.forEach(c => c.postMessage({type: 'need-port'})));
-        event.respondWith(new Response('', {status: 503}));
-        return;
+    if (downloadUrls.has(url)) {
+        downloadUrls.delete(url);
+        return event.respondWith(new Response('', {
+            headers: [['Content-type', 'text/html']].concat(SANDBOX_HEADERS)
+        }));
     }
+    event.respondWith(resolveInstance(event).then(found =>
+        found.response != null ? found.response : appResponse(event, found.inst)));
+}
+let SANDBOX_HEADERS = [
+    ['Cross-Origin-Embedder-Policy', 'credentialless'],
+    ['Cross-Origin-Opener-Policy', 'same-origin'],
+    ['Cross-Origin-Resource-Policy', 'same-origin'],
+    ['Origin-Agent-Cluster', '?1'],
+    ['x-xss-protection', '1; mode=block'],
+    ['x-dns-prefetch-control', 'off'],
+    ['x-content-type-options', 'nosniff'],
+    ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
+];
+function appResponse(event, inst) {
+    const url = event.request.url;
+    let appName = inst.appName;
     let csp = appName.includes('@CSP_UNSAFE_EVAL') ? cspWithUnsafeEval : defaultCSP;
     let respHeaders = [
         //['Content-type', 'text/html'],
@@ -337,20 +437,14 @@ function appFetch(event) {
         ['permissions-policy', 'interest-cohort=(), geolocation=(), gyroscope=(), magnetometer=(), accelerometer=(), microphone=(), camera=(self), fullscreen=(self)']
     ];
 
-    if (url == downloadUrl) {
-        respHeaders.push(['Content-type', 'text/html']);
-      return event.respondWith(new Response('', {
-        headers: respHeaders //{ 'Access-Control-Allow-Origin': '*' }
-      }))
-    }
     const requestedResource = new URL(url);
     if (host == null) {
         host = requestedResource.host;
     }
     if (requestedResource.host != host) {
-        return event.respondWith(new Response('', {
+        return new Response('', {
             status: 404
-        }));
+        });
     }
     let filePath = decodeURI(requestedResource.pathname);
     if (event.request.mode === 'navigate' && event.request.method == 'GET' && filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
@@ -364,17 +458,17 @@ function appFetch(event) {
         + 'console.log("addr=" + addr);'
         + 'window.location.replace(addr);'
         + '</script></body></html>';
-        return event.respondWith(new Response(redirectHTML,
-            { headers: respHeaders }));
+        return new Response(redirectHTML,
+            { headers: respHeaders });
     }
     var method = event.request.method;
     if (event.request.headers.get('range')) {
-        if (filePath != streamingFilePath) {
-            streamingFilePath = filePath;
-            streamingAppEntry = new StreamingEntry(-1);
+        if (filePath != inst.streamingFilePath) {
+            inst.streamingFilePath = filePath;
+            inst.streamingAppEntry = new StreamingEntry(-1);
         }
-        let streamingEntry = streamingAppEntry;
-        let port = appPort;
+        let streamingEntry = inst.streamingAppEntry;
+        let port = inst.port;
 
         const bytes = /^bytes\=(\d+)\-(\d+)?$/g.exec(
             event.request.headers.get('range')
@@ -393,7 +487,7 @@ function appFetch(event) {
         const seekLength = end-start + 1;
         streamingEntry.setSkip();
         port.postMessage({ seekHi: seekHi, seekLo: start, seekLength: seekLength, streamFilePath: filePath })
-        return event.respondWith(returnRangeRequest(start, end, streamingEntry))
+        return returnRangeRequest(start, end, streamingEntry, appName)
     } else {
         let params = new Map();
         requestedResource.searchParams.forEach( (value, key) => {
@@ -402,9 +496,9 @@ function appFetch(event) {
 
         var ignoreBody = false;
         if (method == 'OPTIONS') { //FIXME do not currently support http://www.webdav.org/specs/rfc2518.html
-              return event.respondWith(new Response('', {
+              return new Response('', {
                 headers: { 'DAV': '0' }
-              }))
+              })
         } else {
             if (method == 'HEAD') { //https://datatracker.ietf.org/doc/html/rfc2068#page-50 The HEAD method is identical to GET except that the server MUST NOT return a message-body in the response.
                 method = 'GET';
@@ -504,7 +598,7 @@ function appFetch(event) {
                 return new Response('X-Update-Range:append header expected', {status: 400})
             }
             if (method == 'GET' && appName.includes('@APP_DEV_MODE')) {
-                return event.respondWith(
+                return (
                     (async function() {
                         const responseFromNetwork = await fetch(filePath, { method: 'GET' });
                         let clonedResponse = responseFromNetwork.clone();
@@ -524,7 +618,7 @@ function appFetch(event) {
                     })()
                 )
             } else {
-                return event.respondWith(
+                return (
                     (async function() {
                         var formData = null;
                         var buffer = null;
@@ -541,9 +635,9 @@ function appFetch(event) {
                                 return new Response('Unexpected error!', {status: 400})
                             }
                         }
-                        appPort.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
+                        inst.port.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
                             hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate'});
-                        return returnAppData(method, restFilePath, uniqueId, ignoreBody);
+                        return returnAppData(inst, method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )
             }
@@ -556,7 +650,9 @@ function uuid() {
     (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
   );
 }
-function returnAppData(method, filePath, uniqueId, ignoreBody) {
+function returnAppData(inst, method, filePath, uniqueId, ignoreBody) {
+    let appData = inst.appData;
+    let appName = inst.appName;
     return new Promise(function(resolve, reject) {
         let key = filePath + uniqueId;
         let pump = () => {
@@ -643,7 +739,7 @@ function formToJSON( formData ) {
   );
   return JSON.stringify( output );
 }
-function returnRangeRequest(start, end, streamingEntry) {
+function returnRangeRequest(start, end, streamingEntry, appName) {
     return new Promise(function(resolve, reject) {
         let pump = (currentCount) => {
             const store = streamingEntry.bytes;

@@ -4,7 +4,19 @@ var streamWriter;
 var lastLoadParams = null;
 var reinitializingPort = false;
 var portReinitPending = false;
+// Set when the host is the feed rather than the full app: the page loaded is the app's tile,
+// and the only messages that cross between it and the host are the tile's own.
+var tileMode = false;
+// Which sandbox this is, to the service worker every sandbox of this app shares. Kept across a
+// re-registration so the document already loaded still names it.
+var instanceId = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
 let msgHandler = function (e) {
+      let appFrame = document.getElementById("appSandboxId");
+      if (tileMode && appFrame != null && e.source === appFrame.contentWindow) {
+          if (e.origin === window.location.origin && mainWindow != null)
+              relayFromTile(e.data);
+          return;
+      }
       // You must verify that the origin of the message's sender matches your
       // expectations. In this case, we're only planning on accepting messages
       // from our own origin, so we can simply compare the message event's
@@ -22,8 +34,33 @@ let msgHandler = function (e) {
             e.data.username, e.data.props, e.data.lang);
       } else if(e.data.type == "respondToLoadedChunk") {
         respondToLoadedChunk(e.data.bytes);
+      } else if (e.data.type == "setTheme" && tileMode) {
+        let frame = document.getElementById("appSandboxId");
+        if (frame != null && frame.contentWindow != null)
+            frame.contentWindow.postMessage({type: 'setTheme', theme: String(e.data.theme)}, window.location.origin);
       }
 };
+function relayFromTile(data) {
+    if (data == null || typeof data !== 'object')
+        return;
+    if (data.type == 'resize') {
+        let height = Number(data.height);
+        if (isFinite(height))
+            mainWindow.postMessage({action: 'tileResize', height: height}, origin);
+    } else if (data.type == 'ready') {
+        mainWindow.postMessage({action: 'tileReady'}, origin);
+    } else if (data.type == 'open') {
+        mainWindow.postMessage({action: 'tileOpen'}, origin);
+    }
+}
+function tileSrc(props, theme, username, lang) {
+    let page = String(props.tilePage || '');
+    if (!/^[A-Za-z0-9_-][A-Za-z0-9_.\/-]*$/.test(page) || page.split('/').some(part => part == '..'))
+        return null;
+    return page + '?pgi=' + instanceId + '&theme=' + encodeURIComponent(theme) + '&username=' + encodeURIComponent(username)
+        + '&name=' + encodeURIComponent(props.tileName || '')
+        + (lang ? '&lang=' + encodeURIComponent(lang) : '');
+}
 function resizeHandler() {
     let iframe = document.getElementById("appSandboxId");
     if (iframe == null) {
@@ -60,6 +97,11 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
     let iframe = document.getElementById("appSandboxId");
     iframe.style.width = '100%';
     iframe.style.height = window.innerHeight + 'px';
+    tileMode = props.tile === true;
+    if (tileMode) {
+        document.body.style.margin = '0';
+        document.body.style.overflow = 'hidden';
+    }
     var appNameInSW = props.appDevMode != null && props.appDevMode == true ? appName + '@APP_DEV_MODE' : appName;
     appNameInSW = props.allowUnsafeEvalInCSP != null && props.allowUnsafeEvalInCSP == true ? appNameInSW + '@CSP_UNSAFE_EVAL' : appNameInSW;
 
@@ -70,16 +112,23 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
                 path = path.length > 0 ? path + '&theme=' + theme : '?theme=' + theme;
                 path = chatId.length > 0 ? path + '&chatId=' + chatId : path;
                 path = path + '&username=' + username;
+                path = path + '&pgi=' + instanceId;
                 if (lang) {
                     path = path + '&lang=' + encodeURIComponent(lang);
                 }
                 if (props.isPathWritable == true) {
                     path = path + '&isPathWritable=' + props.isPathWritable;
                 }
-                let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
-                let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
-                iframe.src= src;
-                iframe.contentWindow.focus();
+                if (tileMode) {
+                    let src = tileSrc(props, theme, username, lang);
+                    if (src != null)
+                        iframe.src = src;
+                } else {
+                    let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
+                    let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
+                    iframe.src= src;
+                    iframe.contentWindow.focus();
+                }
             }
             that.startPing(url + "/ping");
         }, function(seekHi, seekLo, seekLength, streamFilePath){
@@ -87,7 +136,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
         }, 0
         ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate){
             that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate);
-        }
+        }, {id: instanceId, tile: tileMode}
     );
     that.streamWriter = fileStream.getWriter();
 }

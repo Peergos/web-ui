@@ -36,6 +36,8 @@ public class Suite {
             // desktop session opens. Cheap, and no engine here is too wide to be a phone.
             run(failures, "the drive on a phone", () -> MobileNavTest.run(args1));
             run(failures, "the news feed and what it does", () -> NewsFeedViewTest.run(args1));
+            run(failures, "a shared calendar entry as a feed tile", () -> FeedTileTest.run(args1));
+            run(failures, "a shared file as a tile drawn by an installed app", () -> FeedAppTileTest.run(args1));
             // Picking files out of the grid, which a pointer and a touch screen reach in
             // different ways and which the file menu must not be mistaken for.
             run(failures, "picking files in the grid", () -> GridSelectionTest.run(args1));

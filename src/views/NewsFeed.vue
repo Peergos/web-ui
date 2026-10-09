@@ -130,10 +130,15 @@
                                     </a>
                                 </div>
                                 <div v-if="!entry[0].isPost && !entry[0].isMedia" class="feed-preview">
-                                    <a v-if="!entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__icon">
+                                    <FeedTile v-if="entry[0].tile != null" :key="entry[0].link" :entry="entry[0]" :tileApp="entry[0].tile" :budget="tileBudget" @open="openTile">
+                                        <a class="feed-preview__icon">
+                                            <AppIcon @click.stop="openTile(entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
+                                        </a>
+                                    </FeedTile>
+                                    <a v-if="entry[0].tile == null && !entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__icon">
                                         <AppIcon @click.stop="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
                                     </a>
-                                    <img v-if="entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
+                                    <img v-if="entry[0].tile == null && entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
                                     <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>
                                     <button v-if="entry[0].isChat && !entry[0].isNewChat" type="button" class="pg-btn" @click="openConversation(entry[0])">{{ translate("DRIVE.VIEW") }}</button>
                                 </div>
@@ -222,6 +227,8 @@ const AppIcon = require("../components/AppIcon.vue");
 const AppInstall = require("../components/sandbox/AppInstall.vue");
 const Confirm = require("../components/confirm/Confirm.vue");
 const SocialPost = require("../components/social/SocialPost.vue");
+const FeedTile = require("../components/social/FeedTile.vue");
+const TileBudget = require("../components/social/tile-budget.js");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
 const Gallery = require("../components/drive/DriveGallery.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
@@ -237,6 +244,7 @@ const errors = require("../mixins/errors/index.js");
 module.exports = {
     components: {
 		SocialPost,
+		FeedTile,
 		FolderPicker,
 		Gallery,
 		ViewProfile,
@@ -313,6 +321,8 @@ module.exports = {
             multipleFolderSelection: false,
             initiallySelectedPaths: [],
             folderPickerTitle: "Select App install folder",
+            // Frozen so Vue leaves it unproxied: tiles hand it plain objects to compare.
+            tileBudget: Object.freeze(TileBudget(6)),
         }
     },
     props: [],
@@ -1109,6 +1119,10 @@ module.exports = {
             }
             this.htmlAnchor = "";
         },
+        openTile: function (entry) {
+            let app = entry.tile.kind == 'builtin' ? "Calendar" : entry.tile.name;
+            this.openFileOrDir(app, entry.path, {filename: entry.file.getName()});
+        },
         viewFolder: function (entry) {
             this.openFileOrDir("Drive", entry.path, {filename:""})
         },
@@ -1374,7 +1388,8 @@ module.exports = {
                 isNewChat: isNewChat,
                 appName: appName,
                 author: author,
-                hiddenBlocked: hiddenBlocked
+                hiddenBlocked: hiddenBlocked,
+                tile: hiddenBlocked || isPost || isMedia || isChat ? null : this.tileFor(file, filePath)
             };
             return item;
         },
@@ -1731,6 +1746,16 @@ module.exports = {
             });
         },
     },
+    watch: {
+        // The app's service worker refuses a navigation it cannot place while a tile of
+        // that app runs, which an app moving between its own pages would hit.
+        openSandboxTileKey(key, previous) {
+            if (previous != null)
+                this.tileBudget.unblock(previous);
+            if (key != null)
+                this.tileBudget.block(key);
+        },
+    },
     computed: {
 		...Vuex.mapState([
 		    'quotaBytes',
@@ -1746,6 +1771,9 @@ module.exports = {
 		]),
         friendnames: function() {
             return this.socialData.friends;
+        },
+        openSandboxTileKey: function() {
+            return this.showAppSandbox ? 'app:' + this.sandboxAppName : null;
         },
     	followingnames: function() {
             return this.socialData.following;

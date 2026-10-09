@@ -175,6 +175,7 @@ module.exports = {
                               }
                           });
                       }
+                      that.validateTile(props, errors);
                       if (props.template.length > 0) {
                           let templateIndex = validTemplateValues.findIndex(v => v === props.template);
                           if (templateIndex == -1) {
@@ -200,6 +201,33 @@ module.exports = {
               }
           });
           return future;
+      },
+      // A tile runs on other people's files as the feed scrolls, so its page must
+      // be a plain path inside the app and it only covers types named explicitly.
+      validateTile: function(props, errors) {
+          let tile = props.tile;
+          if (tile == null)
+              return;
+          if (typeof tile !== 'object' || Array.isArray(tile)) {
+              errors.push("Invalid tile property. Must be an object with a page property");
+              return;
+          }
+          let page = tile.page;
+          if (!this.isString(page) || page.length > 128 || !page.endsWith('.html')
+                  || !/^[A-Za-z0-9_-][A-Za-z0-9_.\/-]*$/.test(page)
+                  || page.split('/').some(part => part == '' || part == '.' || part == '..')) {
+              errors.push("Invalid tile.page property. Must be a relative path to an html file inside the app");
+          }
+          if (tile.height != null && !(Number.isInteger(tile.height) && tile.height >= 64 && tile.height <= 480)) {
+              errors.push("Invalid tile.height property. Must be a whole number from 64 to 480");
+          }
+          if (props.folderAction) {
+              errors.push("Invalid tile property. A folder action cannot have a tile");
+          }
+          let named = list => list.filter(v => v != '*' && v.trim().length > 0).length > 0;
+          if (!named(props.fileExtensions) && !named(props.mimeTypes) && !named(props.fileTypes)) {
+              errors.push("Invalid tile property. A tile needs fileExtensions, mimeTypes or fileTypes other than *");
+          }
       },
       validateAppIconImage: function(iconFilename, appPath, errors) {
             let that = this;
@@ -296,6 +324,9 @@ module.exports = {
                           }
                           if (props.permissions == null) {
                               props.permissions = [];
+                          }
+                          if (props.tile === undefined) {
+                              props.tile = null;
                           }
                           props.name = props.name != null ? props.name : props.displayName.replaceAll(' ', '').toLowerCase().trim();
                           future.complete(props);
@@ -499,7 +530,8 @@ module.exports = {
                 createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
                 folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
                 source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension,
-                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template, newFileExtensions: props.newFileExtensions};
+                templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template, newFileExtensions: props.newFileExtensions,
+                tile: props.tile};
 
             appsInstalled.push(item);
             props.fileExtensions.forEach(extension => {
