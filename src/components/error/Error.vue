@@ -1,33 +1,30 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <div style="height:30%"></div>
-    <div class="error-modal-container" @click.stop>
-
-        <div class="modal-header">
-            <h3 id="error-header-id">{{ title }}</h3>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title" id="error-header-id">{{ title }}</h3>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-dialog__body">
+            <p id='error-body-id'>{{ decodeError(body) }}</p>
         </div>
-
-        <div class="modal-body">
-            <div class="container" style="word-wrap:break-word;width:auto">
-                <p id='error-body-id' >{{  decodeError(body)  }}</p>
+        <footer class="pg-dialog__foot">
+            <div class="pg-dialog__actions">
+                <span class="pg-dialog__spacer"></span>
+                <button type="button" id='modal-button-id' class="pg-btn pg-btn--primary" @click="close">OK</button>
             </div>
-        </div>
-
-        <div class="modal-footer">
-            <slot name="footer">
-            <button id='modal-button-id' class="modal-default-button" @click="close">
-                OK
-            </button>
-            </slot>
-        </div>
+        </footer>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
+
 module.exports = {
+    components: { DialogClose },
     props: ['title', 'body'],
     created: function() {
     },
@@ -51,17 +48,3 @@ module.exports = {
     }
 }
 </script>
-<style>
-.error-modal-container {
-    width: 25%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    min-width: 400px;
-}
-
-</style>

@@ -1,31 +1,31 @@
 <template>
     <transition name="modal">
-        <div class="modal-mask" @click="close">
-            <div style="height:30%"></div>
-            <div class="modal-container" @click.stop>
-                
-                <div class="modal-header">
-                    <h3 id="warning-header-id">{{warning_message}}</h3>
+        <div class="pg-dialog__mask" @click="close">
+            <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="warning_message" @click.stop>
+                <header class="pg-dialog__head">
+                    <h3 class="pg-dialog__title" id="warning-header-id">{{warning_message}}</h3>
+                    <DialogClose @close="close"/>
+                </header>
+                <div class="pg-dialog__body">
+                    <p id='warning-body-id'>{{warning_body}}</p>
                 </div>
-                
-                <div class="modal-body">
-                    <div class="container warning-container">
-                        <p id='warning-body-id' >{{warning_body}}</p>
+                <footer class="pg-dialog__foot">
+                    <div class="pg-dialog__actions">
+                        <span class="pg-dialog__spacer"></span>
+                        <button type="button" class="pg-btn" @click="cancel()">Cancel</button>
+                        <button type="button" class="pg-btn pg-btn--primary" @click="complete()">OK</button>
                     </div>
-                    <button class="btn btn-success btn-lg" @click="cancel()" style="margin:10%;">
-                        Cancel
-                    </button>
-                    <button class="btn btn-success btn-lg" @click="complete()" style="margin:10%">
-                        OK
-                    </button>
-                </div>
+                </footer>
             </div>
         </div>
     </transition>
 </template>
 
 <script>
+const DialogClose = require("./dialog/DialogClose.vue");
+
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {}
     },
@@ -46,9 +46,3 @@ module.exports = {
     }
 }
 </script>
-
-<style>
-    .warning-container {
-    word-wrap:break-word;width:auto
-    }
-</style>

@@ -1,30 +1,30 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="closeNote">
-    <div class="note-modal-container" @click.stop>
-
-        <div class="modal-header">
-            <h3>{{ title }}</h3>
+<div class="pg-dialog__mask" @click="closeNote">
+    <div class="pg-dialog note-dialog" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">{{ title }}</h3>
+            <DialogClose @close="closeNote"/>
+        </header>
+        <div class="pg-dialog__body">
+            <textarea id="note-text" class="pg-input note-dialog__text" rows="8" readonly :value="note"></textarea>
         </div>
-
-        <div class="modal-body">
-            <div class="container">
-                <div>
-                    <textarea id="note-text" style="resize: none;width:90%" rows="12" readonly :value="note"></textarea>
-                </div>
-                <p/>
-                <button class="btn btn-success" @click="closeNote">
-                    OK
-                </button>
+        <footer class="pg-dialog__foot">
+            <div class="pg-dialog__actions">
+                <span class="pg-dialog__spacer"></span>
+                <button type="button" class="pg-btn pg-btn--primary" @click="closeNote">OK</button>
             </div>
-        </div>
+        </footer>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
+
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
         }
@@ -40,15 +40,23 @@ module.exports = {
 }
 </script>
 <style>
-.note-modal-container {
-    width: 90%;
-    margin: 0px auto;
-    padding: 20px 30px;
+/* text handed over to be copied somewhere else, such as a link with no spaces to break at */
+.note-dialog {
+    width: 560px;
+}
+
+.note-dialog .note-dialog__text {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    resize: none;
+    font-family: monospace;
+    font-size: var(--text-small);
+    word-break: break-all;
     color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    /* font-family: Helvetica, Arial, sans-serif; */
+    background-color: var(--pg-surface-2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-field);
+    box-shadow: none;
 }
 </style>

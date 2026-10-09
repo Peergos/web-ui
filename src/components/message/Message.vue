@@ -1,28 +1,30 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="closeMessage">
-    <div class="modal-container" @click.stop>
-
-        <div class="modal-header">
-            <h3>{{ title }}</h3>
+<div class="pg-dialog__mask" @click="closeMessage">
+    <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="title" @click.stop>
+        <header class="pg-dialog__head">
+            <h3 class="pg-dialog__title">{{ title }}</h3>
+            <DialogClose @close="closeMessage"/>
+        </header>
+        <div class="pg-dialog__body">
+            <p>{{ message }}</p>
         </div>
-
-        <div class="modal-body">
-            <div class="container">
-                <div>{{ message }}</div>
-                <p/>
-                <button class="btn btn-success" @click="closeMessage">
-                    OK
-                </button>
+        <footer class="pg-dialog__foot">
+            <div class="pg-dialog__actions">
+                <span class="pg-dialog__spacer"></span>
+                <button type="button" class="pg-btn pg-btn--primary" @click="closeMessage">OK</button>
             </div>
-        </div>
+        </footer>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
+
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
         }
@@ -37,5 +39,3 @@ module.exports = {
     }
 }
 </script>
-<style>
-</style>

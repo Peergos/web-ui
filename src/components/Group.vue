@@ -3,15 +3,14 @@
     <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
         <span @click="close" class="close">&times;</span>
         <Spinner v-if="showSpinner"></Spinner>
-        <Prompt
+        <AppPrompt
                 v-if="showPrompt"
                 v-on:hide-prompt="showPrompt = false"
-                :prompt_message='prompt_message'
+                :message="prompt_message"
                 :placeholder="prompt_placeholder"
                 :max_input_size="prompt_max_input_size"
                 :value="prompt_value"
-                :consumer_func="prompt_consumer_func">
-        </Prompt>
+                :consumer_func="prompt_consumer_func"/>
         <div class="modal-header">
             <span>
                 <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin && allowTitleChange" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
@@ -105,17 +104,17 @@
 </template>
 
 <script>
+const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
-const Prompt = require("../components/prompt/Prompt.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 
 
 module.exports = {
 	components: {
+	    AppPrompt,
 	    Error,
 	    FormAutocomplete,
-	    Prompt,
 	    Spinner
 	},
     data() {

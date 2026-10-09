@@ -10,7 +10,8 @@ import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
-/** Opening a secret link the server will not serve - used up, expired or deleted.
+/** Opening a secret link the server will not serve - used up, expired or deleted - or one with a
+ *  password that is closed without one or given the wrong one.
  *
  *  The page used to say "Loading file..." for over a minute while the client retried, then show a
  *  toast that could not say which. Now it says why, straight away, in place of the loading page.
@@ -53,6 +54,24 @@ public class SecretLinkUnavailableTest {
             System.out.println("  ok   an expired link says it has expired");
             expect(d, url + "/" + deleted.toLinkString(owner.signer.publicKeyHash), "It no longer exists");
             System.out.println("  ok   a deleted link says it no longer exists");
+
+            // closing the password question gives no password, which is the wrong one
+            LinkProperties guarded = owner.createSecretLink(path, false, Optional.empty(), Optional.empty(), "hunter2", false).join();
+            String guardedLink = url + "/" + guarded.toLinkString(owner.signer.publicKeyHash);
+            askedForPassword(d, guardedLink);
+            d.script("document.querySelector('.pg-dialog__close').click(); return 1;");
+            cannotOpen(d, "closed without a password");
+            System.out.println("  ok   a password link closed without one says it can't be opened");
+
+            askedForPassword(d, guardedLink);
+            enterPassword(d, "not-the-password");
+            cannotOpen(d, "given the wrong password");
+            System.out.println("  ok   the wrong password says it can't be opened");
+
+            askedForPassword(d, guardedLink);
+            enterPassword(d, "hunter2");
+            d.waitForScript("the folder behind the password", "document.body.innerText.includes('" + folder + "')", 60_000);
+            System.out.println("  ok   the right password opens it");
             System.out.println("PASS");
         } finally {
             if (own != null)
@@ -63,6 +82,26 @@ public class SecretLinkUnavailableTest {
     private static void open(WebDriver d, String link) {
         d.navigate("about:blank");
         d.navigate(link);
+    }
+
+    private static void askedForPassword(WebDriver d, String link) {
+        open(d, link);
+        d.waitForScript("the password question", "!!document.querySelector('.pg-dialog #modal-header-id')", 60_000);
+    }
+
+    /** Set through the native value setter and an input event, so the vue model sees it. */
+    private static void enterPassword(WebDriver d, String password) {
+        d.script("const i = document.querySelector('.pg-dialog input');"
+                + "Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(i, arguments[0]);"
+                + "i.dispatchEvent(new Event('input', {bubbles: true}));"
+                + "document.querySelector('.pg-dialog #modal-button-id').click(); return 1;", password);
+    }
+
+    private static void cannotOpen(WebDriver d, String how) {
+        d.waitForScript("the page to say the link can't be opened once " + how,
+                "!!document.querySelector('.secret-link-unavailable')", 30_000);
+        if (! "false".equals(String.valueOf(d.script("return document.body.innerText.includes('Loading file...')"))))
+            throw new AssertionError("Once " + how + ", the loading page should give way to the reason");
     }
 
     /** The reason, in place of the loading page, well inside the minute the retries used to take. */

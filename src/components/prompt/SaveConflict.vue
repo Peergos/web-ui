@@ -1,35 +1,32 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-  <div style="height:30%"></div>
-  <div class="prompt-modal-container" @click.stop>
-
-    <div class="modal-header">
-      <h3>{{ translate("SAVE.CONFLICT.TITLE") }}</h3>
+<div class="pg-dialog__mask" @click="close">
+  <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="translate('SAVE.CONFLICT.TITLE')" @click.stop>
+    <header class="pg-dialog__head">
+      <h3 class="pg-dialog__title">{{ translate("SAVE.CONFLICT.TITLE") }}</h3>
+      <DialogClose @close="close"/>
+    </header>
+    <div class="pg-dialog__body">
+      <p id='message-body-id'>{{ translate("SAVE.CONFLICT.DETAIL") }}</p>
     </div>
-
-    <div class="modal-body">
-          <div class="message-container" style="margin: 0px;">
-            <p id='message-body-id' >{{ translate("SAVE.CONFLICT.DETAIL") }}</p>
-          </div>
-      <div class="container">
-        <table>
-          <tr>
-            <td style="text-align:right; padding:20px"><button class="btn btn-success" @click="save(this.prompt_result)">{{ translate("PROMPT.OK") }}</button></td>
-            <td style="text-align:right"><button class="btn btn-danger" @click="cancel()">{{ translate("PROMPT.CANCEL") }}</button></td>
-          </tr>
-        </table>
+    <footer class="pg-dialog__foot">
+      <div class="pg-dialog__actions">
+        <span class="pg-dialog__spacer"></span>
+        <button type="button" class="pg-btn" @click="cancel()">{{ translate("PROMPT.CANCEL") }}</button>
+        <button type="button" class="pg-btn pg-btn--primary" @click="save()">{{ translate("PROMPT.OK") }}</button>
       </div>
-    </div>
+    </footer>
   </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
+    components: { DialogClose },
     data: function() {
         return {
         }
@@ -51,24 +48,3 @@ module.exports = {
     }
 }
 </script>
-<style>
-.message-container {
-    margin-right: auto;
-    margin-left: auto;
-    margin-bottom: 20px;
-    overflow-wrap: break-word;
-    width: auto;
-    font-size: 18px;
-}
-.prompt-modal-container {
-    width: 25%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    min-width: 400px;
-}
-</style>
