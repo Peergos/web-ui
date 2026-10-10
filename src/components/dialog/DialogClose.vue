@@ -77,7 +77,7 @@ module.exports = {
   name: "DialogClose",
   mixins: [i18n],
   props: {
-    // false where Escape would throw away work with nothing to say so: the text editor
+    // false where Escape would throw away work with nothing to say so: the editor and apps
     escape: {type: Boolean, default: true}
   },
 

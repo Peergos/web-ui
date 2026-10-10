@@ -117,7 +117,6 @@ module.exports = {
             let slash = path.lastIndexOf('/');
             return slash > 0 ? path.substring(0, slash) : '';
         },
-        // a bookmark is a path, and a page inside an archive has one only while it is open
         canBookmark: function() {
             return ! this.isSecretLink && ! this.isArchiveEntry && this.fullPathForDisplay.length > 0;
         }
