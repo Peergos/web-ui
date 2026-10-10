@@ -1575,6 +1575,16 @@ input.pg-input:focus {
 	}
 }
 
+/* the narrowest phones: the file's name before anything else in the bar */
+@media (max-width: 420px) {
+	.pg-viewer__tag,
+	.pg-viewer__label {
+		display: none;
+	}
+	.pg-viewer__bar .pg-btn {
+		padding: 0 12px;
+	}
+}
 @media (max-width: 600px) {
 	.pg-viewer__mask {
 		padding: 0;

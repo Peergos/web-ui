@@ -16,9 +16,9 @@
                     @click="toggleBookmark(!displayToBookmark)">
                 <svg viewBox="0 0 24 24" :fill="displayToBookmark ? 'none' : 'currentColor'" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
             </button>
-            <button v-if="isWritable() && isMarkdown()" type="button" class="pg-btn" @click="launchEditor">
+            <button v-if="isWritable() && isMarkdown()" type="button" class="pg-btn" aria-label="Edit" @click="launchEditor">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
-                Edit
+                <span class="pg-viewer__label">Edit</span>
             </button>
             <span v-if="canBookmark || (isWritable() && isMarkdown())" class="pg-viewer__divider" aria-hidden="true"></span>
             <DialogClose @close="close"/>

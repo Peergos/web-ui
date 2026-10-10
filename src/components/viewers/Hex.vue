@@ -10,9 +10,9 @@
                 <h2 v-if="file != null" class="pg-viewer__title">{{ file.getFileProperties().name }}</h2>
                 <span class="pg-viewer__tag">Hex view</span>
             </div>
-            <button v-if="file != null" type="button" class="pg-btn" @click="downloadCurrentFile()">
+            <button v-if="file != null" type="button" class="pg-btn" aria-label="Download" @click="downloadCurrentFile()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-                Download
+                <span class="pg-viewer__label">Download</span>
             </button>
             <span v-if="file != null" class="pg-viewer__divider" aria-hidden="true"></span>
             <DialogClose @close="close"/>
