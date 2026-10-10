@@ -384,11 +384,10 @@ module.exports = {
             // read the default app back once written, so it has the defaults every other app gets
             // from readJSONFile: installing a template app looks at every installed app's template
             that.installDefaultApp().thenApply(written =>
-                that.context.getByPath(that.context.username + "/.apps/" + written.name + "/peergos-app.json").thenApply(propsFileOpt =>
-                    that.readJSONFile(propsFileOpt.ref).thenApply(props => {
-                        accumulator.push(props);
-                        future.complete(accumulator);
-                    })));
+                that.readAppProperties(written.name).thenApply(props => {
+                    accumulator.push(props);
+                    future.complete(accumulator);
+                }));
           } else {
               appDirectories.forEach(currentApp => {
                   currentApp.getChild("peergos-app.json", this.context.crypto.hasher, this.context.network).thenApply(function(propFileOpt) {
