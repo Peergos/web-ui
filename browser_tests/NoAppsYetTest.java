@@ -54,6 +54,7 @@ public class NoAppsYetTest {
             signUp(url, first, crypto);
             byte[] index = "<!doctype html><html><body><p>sticky notes</p></body></html>\n".getBytes(StandardCharsets.UTF_8);
             putApp(jar, url, first, "stickynotes", manifest("Sticky Notes", "stickynotes", "STORE_APP_DATA", ""), Map.of("index.html", index));
+            // opened once the command line has written, so it starts from what is there
             UserContext api = NewsFeedViewTest.signInApi(url, first, crypto);
             if (api.getByPath(first + "/.apps").join().isPresent())
                 throw new IllegalStateException("The account already has .apps, so this tests nothing");
@@ -112,8 +113,7 @@ public class NoAppsYetTest {
         }
     }
 
-    /** An account made over the api, which makes no .apps. The session to read it back with is
-     *  opened once the command line has written to it, so it starts from what is there. */
+    /** An account made over the api, which makes no .apps. */
     static void signUp(String url, String user, Crypto crypto) throws Exception {
         NetworkAccess network = Builder.buildJavaNetworkAccess(URI.create(url).toURL(), false, Optional.empty(), Optional.empty()).join();
         UserContext.signUp(user, PASSWORD, "", network.clear(), crypto).join();
