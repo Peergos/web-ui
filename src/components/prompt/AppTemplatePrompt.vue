@@ -137,7 +137,7 @@ module.exports = {
                     that.base64Image = canvas.toDataURL();
                 };
                 image.onerror = function() {
-                    that.showMessage(true, that.translate("PROFILE.ERROR.IMAGE"));
+                    that.$toast.error(that.translate("PROFILE.ERROR.IMAGE"), {timeout:false});
                 };
                 image.src = this.result;
             };

@@ -59,11 +59,11 @@ module.exports = {
 
             var bytes = parseInt(this.getRequestedBytes())
             if (bytes != this.getRequestedBytes()) {
-				this.$toast.error(this.translate("SPACE.POSITIVE"), { position: 'bottom-left' })
+				this.$toast.error(this.translate("SPACE.POSITIVE"))
                 return false;
             }
             if (bytes < this.usage) {
-                this.$toast.error(this.translate("SPACE.SMALL"), { position: 'bottom-left' })
+                this.$toast.error(this.translate("SPACE.SMALL"))
                 return false;
             }
             return true;

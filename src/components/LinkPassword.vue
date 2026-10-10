@@ -7,7 +7,7 @@
                     <DialogClose @close="dismiss()"/>
                 </header>
                 <div class="pg-dialog__body">
-                    <input ref="password" class="pg-input" v-model="password" v-on:keyup.enter="submit()">
+                    <input ref="password" class="pg-input" type="password" v-model="password" v-on:keyup.enter="submit()">
                 </div>
                 <footer class="pg-dialog__foot">
                     <div class="pg-dialog__actions">
