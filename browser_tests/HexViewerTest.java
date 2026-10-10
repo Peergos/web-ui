@@ -6,11 +6,11 @@ import java.util.*;
  *
  *  The viewer holds one piece of a file at a time, so the places worth checking are the ones
  *  where the page and the piece it was read from disagree: the end of a file that is a whole
- *  number of pages, which End once went past (and on a file that is a whole number of chunks,
- *  read from a chunk that does not exist and never came back), the short last page of one
- *  that is not, and a page straddling the boundary between two chunks. Each file's byte at
- *  offset i follows a formula, so every row on screen is checked against the bytes it names
- *  rather than for something merely being there.
+ *  number of pages and of chunks, where End must stop at the last page and not ask for the
+ *  chunk after it, which does not exist; the short last page of a file that is not; and a page
+ *  straddling the boundary between two chunks. Each file's byte at offset i follows a formula,
+ *  so every row on screen is checked against the bytes it names rather than for something
+ *  merely being there.
  *
  *  Usage: java -cp ../server/Peergos.jar HexViewerTest.java [engine] [url]
  */
