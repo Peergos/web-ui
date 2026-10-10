@@ -32,7 +32,6 @@
                 <p class="view-profile__bio-text">{{biography}}</p>
             </section>
         </div>
-        <div v-if="showSpinner" class="pg-dialog__loading"><Spinner></Spinner></div>
     </div>
 </div>
 </transition>
@@ -40,12 +39,10 @@
 
 <script>
 const DialogClose = require("../dialog/DialogClose.vue");
-const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
 	components: {
-	    DialogClose,
-	    Spinner
+	    DialogClose
 	},
     data: function() {
         return {
@@ -56,7 +53,6 @@ module.exports = {
         primaryEmail: "",
         profileImage: "",
         status: "",
-        showSpinner: false,
         }
     },
     props: ['profile'],
@@ -85,7 +81,6 @@ module.exports = {
 
 <style>
 .view-profile {
-    position: relative;
     width: 480px;
 }
 .view-profile__body {
