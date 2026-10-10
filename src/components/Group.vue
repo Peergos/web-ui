@@ -1,25 +1,17 @@
 <template>
-<div class="modal-mask" @click="close">
-    <div class="modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
-        <span @click="close" class="close">&times;</span>
-        <Spinner v-if="showSpinner"></Spinner>
-        <AppPrompt
-                v-if="showPrompt"
-                v-on:hide-prompt="showPrompt = false"
-                :message="prompt_message"
-                :placeholder="prompt_placeholder"
-                :max_input_size="prompt_max_input_size"
-                :value="prompt_value"
-                :consumer_func="prompt_consumer_func"/>
-        <div class="modal-header">
-            <span>
-                <h4 style="text-align: center;" @click="changeGroupTitle()">{{ displayedTitle }}&nbsp;&nbsp;<i v-if="isAdmin && allowTitleChange" @click="changeGroupTitle()" class="fa fa-edit" aria-hidden="true"></i></h4>
-            </span>
-        </div>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog group-editor" role="dialog" aria-modal="true" :aria-label="displayedTitle" @click.stop>
+        <header class="pg-dialog__head">
+            <h2 class="pg-dialog__title">{{ displayedTitle }}</h2>
+            <button v-if="isAdmin && allowTitleChange" type="button" class="group-editor__rename" aria-label="Rename" title="Rename" @click="changeGroupTitle()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <DialogClose @close="close"/>
+        </header>
 
-        <div class="modal-body">
-            <div class="container">
-              <div class="flex-container">
+        <div class="pg-dialog__body group-editor__body">
+            <section class="group-editor__section">
+                <div class="group-editor__add">
                     <FormAutocomplete
                             is-multiple
                             v-model="targetUsernames"
@@ -27,64 +19,67 @@
                             :maxitems="5"
                             placeholder="please select user"
                     />
-                  <div class="hspace-5" v-if="isAdmin && !isTemplateApp" style="margin-top: 20px;">
-                        <label class="checkbox__group">
-                            <input type="radio" id="member-access" value="Member" v-model="memberAccess">
-                            <span class="checkmark"></span>
-                            Member
-                        </label>
-                  </div>
-                  <div class="hspace-5" v-if="isAdmin && !isTemplateApp"  style="margin-top: 20px;">
-                        <label for="admin-access" data-toggle="tooltip" data-placement="bottom" title="Admins can change title and membership" class="checkbox__group">
-                            <input type="radio" id="admin-access" value="Admin" v-model="memberAccess">
-                            <span class="checkmark"></span>
-                            Admin
-                        </label>
-                  </div>
-                <div style="padding:5px; margin-top: 10px;">
-                  <button :disabled="this.targetUsernames.slice().length == 0" class="btn btn-success" @click="addUsersToGroup()"> {{ addLabel }}</button>
+                    <button type="button" class="pg-btn pg-btn--primary" :disabled="targetUsernames.slice().length == 0" @click="addUsersToGroup()">{{ addLabel }}</button>
                 </div>
-              </div>
-            </div>
-            <div v-if="isTemplateApp" class="modal-prominent">
-                <div class="container" ><p style="word-wrap;break-all;">
-                    Admins:</p>
-                    <div v-for="user in existingAdmins">
-                        <label class="checkbox__group">
-                            <input :disabled="true" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove">
-                            <span class="checkmark"></span>
-                            <span style="margin-left:10px">{{ user }}</span>
-                        </label>
-                    </div>
+                <div v-if="isAdmin && !isTemplateApp" class="group-editor__choice" role="radiogroup" aria-label="Add as">
+                    <label class="pg-switch">
+                        <input type="radio" value="Member" v-model="memberAccess">
+                        <span class="pg-switch__track" aria-hidden="true"></span>
+                        <span>Member</span>
+                    </label>
+                    <label class="pg-switch" title="Admins can change title and membership">
+                        <input type="radio" value="Admin" v-model="memberAccess">
+                        <span class="pg-switch__track" aria-hidden="true"></span>
+                        <span>Admin</span>
+                    </label>
                 </div>
-            </div>
-            <div v-if="isAdmin  && !isTemplateApp" class="modal-prominent">
-                <div class="container" ><p style="word-wrap;break-all;">
-                    Admins:</p>
-                    <div v-for="user in existingAdmins">
-                        <label class="checkbox__group">
-                            <input :disabled="existingAdmins.length <= 1" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="adminsToRemove">
-                            <span class="checkmark"></span>
-                            <span style="margin-left:10px">{{ user }}</span>
+            </section>
+
+            <section v-if="isTemplateApp" class="group-editor__section">
+                <h3 class="group-editor__heading">Admins</h3>
+                <ul class="group-editor__people">
+                    <li v-for="user in existingAdmins" :key="user" class="group-editor__person">
+                        <span class="group-editor__name">{{ user }}</span>
+                    </li>
+                </ul>
+            </section>
+            <section v-if="isAdmin && !isTemplateApp" class="group-editor__section">
+                <h3 class="group-editor__heading">Admins</h3>
+                <ul class="group-editor__people">
+                    <li v-for="user in existingAdmins" :key="user" class="group-editor__person">
+                        <label class="group-editor__pick">
+                            <input :disabled="existingAdmins.length <= 1" type="checkbox" :value="user" v-model="adminsToRemove">
+                            <span class="group-editor__name">{{ user }}</span>
                         </label>
-                    </div>
-                    <button :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" class="btn btn-success" v-on:click="removeAdminFromGroup()">Remove</button>
+                    </li>
+                </ul>
+                <div class="group-editor__actions">
+                    <button type="button" class="pg-btn" :disabled="existingAdmins.length <= 1 || adminsToRemove.length == 0" @click="removeAdminFromGroup()">Remove</button>
                 </div>
-            </div>
-            <div class="modal-prominent">
-                <div class="container"><p style="word-wrap;break-all;">
-                    Members:</p>
-                    <div v-for="user in existingGroupMembers">
-                        <label class="checkbox__group">
-                            <input :disabled="!( (isAdmin && user != context.username) || (!isAdmin && user == context.username))" type="checkbox" v-bind:id="user" v-bind:value="user" v-model="membersSelected">
-                            <span class="checkmark"></span>
-                            <span style="margin-left:10px">{{ user }}</span>
+            </section>
+            <section class="group-editor__section">
+                <h3 class="group-editor__heading">Members</h3>
+                <ul class="group-editor__people">
+                    <li v-for="user in existingGroupMembers" :key="user" class="group-editor__person">
+                        <label class="group-editor__pick">
+                            <input :disabled="!( (isAdmin && user != context.username) || (!isAdmin && user == context.username))" type="checkbox" :value="user" v-model="membersSelected">
+                            <span class="group-editor__name">{{ user }}</span>
                         </label>
-                    </div>
-                    <button :disabled="this.membersSelected.length == 0" class="btn btn-success" v-on:click="removeUserFromGroup()">Remove</button>
-                    <button v-if="isAdmin && !isTemplateApp" :disabled="this.membersSelected.length == 0" class="btn btn-info" v-on:click="promoteToGroupAdmin()">Promote to Admin</button>
+                    </li>
+                </ul>
+                <div class="group-editor__actions">
+                    <button type="button" class="pg-btn" :disabled="membersSelected.length == 0" @click="removeUserFromGroup()">Remove</button>
+                    <button v-if="isAdmin && !isTemplateApp" type="button" class="pg-btn" :disabled="membersSelected.length == 0" @click="promoteToGroupAdmin()">Promote to Admin</button>
                 </div>
-            </div>
+            </section>
+            <AppPrompt
+                    v-if="showPrompt"
+                    v-on:hide-prompt="showPrompt = false"
+                    :message="prompt_message"
+                    :placeholder="prompt_placeholder"
+                    :max_input_size="prompt_max_input_size"
+                    :value="prompt_value"
+                    :consumer_func="prompt_consumer_func"/>
             <Error
                     v-if="showError"
                     v-on:hide-error="showError = false"
@@ -92,19 +87,22 @@
                     :body="errorBody">
             </Error>
         </div>
-        <div class="modal-footer">
+        <footer class="pg-dialog__foot">
             <slot name="footer">
-                <button class="btn btn-success" @click="updateGroupMembership">
-                    {{ updateLabel }}
-                </button>
+                <div class="pg-dialog__actions">
+                    <span class="pg-dialog__spacer"></span>
+                    <button type="button" class="pg-btn pg-btn--primary" @click="updateGroupMembership">{{ updateLabel }}</button>
+                </div>
             </slot>
-        </div>
+        </footer>
+        <div v-if="showSpinner" class="pg-dialog__loading"><Spinner></Spinner></div>
     </div>
 </div>
 </template>
 
 <script>
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
+const DialogClose = require("../components/dialog/DialogClose.vue");
 const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
@@ -113,6 +111,7 @@ const Spinner = require("../components/spinner/Spinner.vue");
 module.exports = {
 	components: {
 	    AppPrompt,
+	    DialogClose,
 	    Error,
 	    FormAutocomplete,
 	    Spinner
@@ -357,6 +356,116 @@ module.exports = {
 </script>
 
 <style>
-
-
+.group-editor {
+    position: relative;
+    width: 520px;
+}
+.group-editor__body {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    padding-bottom: 16px;
+}
+.group-editor__section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+}
+/* the same small caps the share and secret link dialogs label their sections with */
+.group-editor__heading {
+    margin: 0;
+    font-size: 11px;
+    font-weight: var(--bold);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+}
+.group-editor__choice,
+.group-editor__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+/* the picker and its button on one line, as in Add to chat */
+.group-editor__add {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.group-editor__add .form-autocomplete {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+}
+.group-editor__add > .pg-btn {
+    flex: none;
+}
+.group-editor__people {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+}
+.group-editor__person {
+    padding: 10px 14px;
+}
+.group-editor__person + .group-editor__person {
+    border-top: 1px solid var(--pg-track);
+}
+.group-editor__pick {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    margin: 0;
+    font-weight: var(--regular);
+    cursor: pointer;
+}
+.group-editor__pick input {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: var(--green-500);
+}
+.group-editor__name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+}
+/* drawn like the close button beside it */
+.group-editor__rename {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    margin-top: -6px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: var(--pg-muted);
+    cursor: pointer;
+}
+.group-editor__rename:hover {
+    background-color: var(--pg-surface-2);
+    color: var(--color);
+}
+.group-editor__rename:focus-visible {
+    outline: 2px solid var(--green-500);
+    outline-offset: 2px;
+}
+.group-editor__rename svg {
+    width: 18px;
+    height: 18px;
+}
 </style>
