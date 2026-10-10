@@ -1,238 +1,201 @@
 <template>
 	<transition name="modal">
-		<div class="modal-mask" @click="close">
-			<div class="drive-share modal-container full-height" @click.stop style="overflow-y:auto; max-width:1000px;">
-				<span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-				<Spinner v-if="showSpinner"></Spinner>
-				<div class="modal-header">
-					<h4>{{ translate("DRIVE.SHARE") }} {{ displayName }}</h4>
-				</div>
+		<div class="pg-dialog__mask" @click="close">
+			<div class="pg-dialog drive-share" role="dialog" aria-modal="true"
+				:aria-label="translate('DRIVE.SHARE') + ' ' + displayName" @click.stop>
+				<header class="pg-dialog__head">
+					<h2 class="pg-dialog__title pg-dialog__title--inline"><span>{{ translate("DRIVE.SHARE") }}&nbsp;</span><span class="pg-dialog__title-name">{{ displayName }}</span></h2>
+					<DialogClose @close="close"/>
+				</header>
 
-				<div class="modal-body">
+				<div class="pg-dialog__body drive-share__body">
 
-					<fieldset class=share-fields>
-
+					<section class="share-fields drive-share__section">
 						<FormAutocomplete
-						    is-multiple
-						    v-model="targetUsernames"
-                                                    :minchars="0"
-						    :options="allNames"
-						    :placeholder="translate('DRIVE.SHARE.USER')"
+							is-multiple
+							v-model="targetUsernames"
+							:minchars="0"
+							:options="allNames"
+							:placeholder="translate('DRIVE.SHARE.USER')"
 						/>
 
-						<label class="checkbox__group" v-if="this.allowReadWriteSharing">
-							{{ translate("DRIVE.SHARE.R") }}
-							<input
-								type="radio"
-								value="Read"
-								name=""
-								v-model="sharedWithAccess"
-							/>
-							<span class="checkmark"></span>
-						</label>
-						<label class="checkbox__group" v-if="this.allowReadWriteSharing && this.files[0].getOwnerName() == this.context.username">
-							{{ translate("DRIVE.SHARE.RW") }}
-							<input
-								type="radio"
-								value="Edit"
-								name=""
-								v-model="sharedWithAccess"
-							/>
-							<span class="checkmark"></span>
-						</label>
+						<div v-if="allowReadWriteSharing" class="drive-share__choice" role="radiogroup" :aria-label="translate('DRIVE.SHARE')">
+							<label class="pg-switch">
+								<input type="radio" value="Read" v-model="sharedWithAccess"/>
+								<span class="pg-switch__track" aria-hidden="true"></span>
+								<span>{{ translate("DRIVE.SHARE.R") }}</span>
+							</label>
+							<label v-if="isOwner()" class="pg-switch">
+								<input type="radio" value="Edit" v-model="sharedWithAccess"/>
+								<span class="pg-switch__track" aria-hidden="true"></span>
+								<span>{{ translate("DRIVE.SHARE.RW") }}</span>
+							</label>
+						</div>
 
-						<div v-if="sharedWithAccess == 'Edit' && writeQuota == null" class="share-limit">
-							<label>{{ translate("DRIVE.SHARE.LIMIT") }}:</label>
-							<input type="number" min="0" v-model="limitAmount" :placeholder="translate('DRIVE.SHARE.LIMIT.NONE')" />
-							<select v-model="limitUnit">
+						<div v-if="sharedWithAccess == 'Edit' && writeQuota == null" class="drive-share__limit">
+							<label for="drive-share-new-limit">{{ translate("DRIVE.SHARE.LIMIT") }}</label>
+							<input id="drive-share-new-limit" class="pg-input" type="number" min="0" v-model="limitAmount" :placeholder="translate('DRIVE.SHARE.LIMIT.NONE')"/>
+							<select class="pg-input" v-model="limitUnit" :aria-label="translate('DRIVE.SHARE.LIMIT')">
 								<option value="MB">MB</option>
 								<option value="GB">GB</option>
 							</select>
 						</div>
 
-						<label>{{ translate("DRIVE.SHARE.GROUP") }}:</label>
-
-						<div class="share-groups">
-							<label class="checkbox__group" v-for="uid in groupUids" :key="uid">
-								{{ groupLabel(uid) }}
-								<span class="share-groups__count">{{ groupCountLabel(uid) }}</span>
-								<input
-									type="checkbox"
-									:value="uid"
-									v-model="selectedGroupUids"
-									@change="onGroupChange(uid)"
-								/>
-								<span class="checkmark"></span>
-							</label>
+						<div class="drive-share__groups">
+							<h3 class="drive-share__heading">{{ translate("DRIVE.SHARE.GROUP") }}</h3>
+							<div class="share-groups">
+								<label class="pg-switch" v-for="uid in groupUids" :key="uid">
+									<input type="checkbox" :value="uid" v-model="selectedGroupUids" @change="onGroupChange(uid)"/>
+									<span class="pg-switch__track" aria-hidden="true"></span>
+									<span>{{ groupLabel(uid) }} <span class="share-groups__count">{{ groupCountLabel(uid) }}</span></span>
+								</label>
+							</div>
 						</div>
 
-						<AppButton
-							:disabled="this.targetUsernames.slice().length == 0 && this.selectedGroupUids.length == 0"
-							class=""
-							accent
-							aria-label="Share"
-							@click="shareWith()"
-						>
-							{{ translate("DRIVE.SHARE") }}
-						</AppButton>
-					</fieldset>
+						<div class="drive-share__send">
+							<button type="button" class="pg-btn pg-btn--primary"
+								:disabled="targetUsernames.slice().length == 0 && selectedGroupUids.length == 0"
+								@click="shareWith()">
+								{{ translate("DRIVE.SHARE") }}
+							</button>
+						</div>
+					</section>
 
-					<div v-if="this.allowReadWriteSharing" class="modal-section">
-						<div v-if="data.edit_shared_with_users.length > 0">
-							<p>{{ translate("DRIVE.SHARE.RWACCESS") }}:</p>
-							<div v-if="this.files[0].getOwnerName() == this.context.username">
-								<div v-for="user in filterEditSharedWithUsers()">
-									<label class="checkbox__group">
-										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
-										{{ getUserOrGroupName(user) }}
-										<input
-											type="checkbox"
-											:id="user"
-											:value="user"
-											v-model="unsharedEditAccessNames"
-										/>
-										<span class="checkmark"></span>
+					<section v-if="allowReadWriteSharing" class="drive-share__section drive-share__access">
+						<h3 class="drive-share__heading">{{ translate("DRIVE.SHARE.RWACCESS") }}</h3>
+						<template v-if="data.edit_shared_with_users.length > 0">
+							<ul class="drive-share__people">
+								<li v-for="user in filterEditSharedWithUsers()" :key="user" class="drive-share__person">
+									<label v-if="isOwner()" class="drive-share__pick">
+										<input type="checkbox" :value="user" v-model="unsharedEditAccessNames"/>
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16"/>
+										<span class="drive-share__name">{{ getUserOrGroupName(user) }}</span>
 									</label>
+									<span v-else class="drive-share__pick">
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16"/>
+										<span class="drive-share__name">{{ getUserOrGroupName(user) }}</span>
+									</span>
+								</li>
+							</ul>
+							<template v-if="isOwner()">
+								<div class="drive-share__row-actions">
+									<button type="button" class="pg-btn" :disabled="unsharedEditAccessNames.length == 0" @click="unshare('Edit')">{{ translate("DRIVE.SHARE.REVOKE") }}</button>
 								</div>
-								<button :disabled="this.unsharedEditAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Edit')">{{ translate("DRIVE.SHARE.REVOKE") }}</button>
-								<div v-if="writeQuota != null" class="share-limit">
-									<p>
+								<div v-if="writeQuota != null" class="drive-share__quota">
+									<p class="drive-share__usage">
 										{{ translate("DRIVE.SHARE.LIMIT") }}:
 										<span v-if="writeQuota.hasQuota()">{{ convertBytesToHumanReadable(writeQuota.getUsedBytes()) }} / {{ convertBytesToHumanReadable(writeQuota.getQuotaBytes()) }}</span>
 										<span v-else>{{ translate("DRIVE.SHARE.LIMIT.NONE") }}</span>
 									</p>
-									<input type="number" min="0" v-model="limitAmount" />
-									<select v-model="limitUnit">
-										<option value="MB">MB</option>
-										<option value="GB">GB</option>
-									</select>
-									<button class="btn btn-success" @click="setWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.SET") }}</button>
-									<button v-if="writeQuota.hasQuota()" class="btn btn-success" @click="removeWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.REMOVE") }}</button>
+									<div class="drive-share__limit">
+										<input class="pg-input" type="number" min="0" v-model="limitAmount" :aria-label="translate('DRIVE.SHARE.LIMIT')"/>
+										<select class="pg-input" v-model="limitUnit" :aria-label="translate('DRIVE.SHARE.LIMIT')">
+											<option value="MB">MB</option>
+											<option value="GB">GB</option>
+										</select>
+										<button type="button" class="pg-btn" @click="setWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.SET") }}</button>
+										<button v-if="writeQuota.hasQuota()" type="button" class="pg-btn pg-btn--quiet" @click="removeWriteQuota()">{{ translate("DRIVE.SHARE.LIMIT.REMOVE") }}</button>
+									</div>
 								</div>
-							</div>
-							<div v-if="this.files[0].getOwnerName() != this.context.username">
-								<div v-for="user in filterEditSharedWithUsers()">
-									<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
-									{{ getUserOrGroupName(user) }}
-								</div>
-							</div>
-						</div>
-						<p v-else>{{ translate("DRIVE.SHARE.RWACCESS") }}: {{ translate("DRIVE.SHARE.NONE") }}</p>
-					</div>
+							</template>
+						</template>
+						<p v-else class="pg-note">{{ translate("DRIVE.SHARE.NONE") }}</p>
+					</section>
 
-					<div class="modal-section">
-						<div v-if="data.read_shared_with_users.length > 0">
-							<p>{{ translate("DRIVE.SHARE.RACCESS") }}:</p>
-							<div v-if="this.files[0].getOwnerName() == this.context.username">
-								<div v-for="user in filterReadSharedWithUsers()">
-									<!-- <input type="checkbox" v-bind:id="user" v-bind:value="user" v-model="unsharedReadAccessNames">&nbsp;<span>{{ getUserOrGroupName(user) }}</span> -->
-									<label class="checkbox__group">
-										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
-										{{ getUserOrGroupName(user) }}
-										<input
-											type="checkbox"
-											:id="user"
-											:value="user"
-											v-model="unsharedReadAccessNames"
-										/>
-										<span class="checkmark"></span>
+					<section class="drive-share__section drive-share__access">
+						<h3 class="drive-share__heading">{{ translate("DRIVE.SHARE.RACCESS") }}</h3>
+						<template v-if="data.read_shared_with_users.length > 0">
+							<ul class="drive-share__people">
+								<li v-for="user in filterReadSharedWithUsers()" :key="user" class="drive-share__person">
+									<label v-if="isOwner()" class="drive-share__pick">
+										<input type="checkbox" :value="user" v-model="unsharedReadAccessNames"/>
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16"/>
+										<span class="drive-share__name">{{ getUserOrGroupName(user) }}</span>
 									</label>
-								</div>
-                                <button :disabled="this.unsharedReadAccessNames.length == 0" class="btn btn-success" v-on:click="unshare('Read')">Revoke</button>
+									<span v-else class="drive-share__pick">
+										<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16"/>
+										<span class="drive-share__name">{{ getUserOrGroupName(user) }}</span>
+									</span>
+								</li>
+							</ul>
+							<div v-if="isOwner()" class="drive-share__row-actions">
+								<button type="button" class="pg-btn" :disabled="unsharedReadAccessNames.length == 0" @click="unshare('Read')">{{ translate("DRIVE.SHARE.REVOKE") }}</button>
 							</div>
-							<div v-if="this.files[0].getOwnerName() != this.context.username">
-								<div v-for="user in filterReadSharedWithUsers()">
-									<AppIcon v-if="isGroup(user)" icon="social" class="share-group-icon" :width="16" :height="16" />
-									{{ getUserOrGroupName(user) }}
-								</div>
-							</div>
-						</div>
-						<p v-else>{{ translate("DRIVE.SHARE.RACCESS") }}: {{ translate("DRIVE.SHARE.NONE") }}</p>
-					</div>
+						</template>
+						<p v-else class="pg-note">{{ translate("DRIVE.SHARE.NONE") }}</p>
+					</section>
 
-					<div v-if="this.allowCreateSecretLink" class="modal-section">
-						<AppButton
-							accent
-							aria-label="Create Secret Link"
-							@click="createSecretLink()"
-						>
-							{{ translate("DRIVE.SHARE.LINK") }}
-						</AppButton>
-						<AppButton
-							v-if="otherLinks.length > 0"
-							aria-label="Add to an existing link"
-							@click="showAddToExisting = !showAddToExisting"
-						>
-							{{ translate("DRIVE.SHARE.LINK.ADD.TO.EXISTING") }}
-						</AppButton>
-						<div v-if="showAddToExisting" class="add-to-existing">
-							<p class="add-to-existing__note">{{ translate("DRIVE.SHARE.LINK.ADD.WARNING") }}</p>
-							<div v-for="l in otherLinks" :key="l.getLabel()" class="add-to-existing__row">
-								<span class="add-to-existing__what">
-									{{ l.itemCount() }} {{ l.itemCount() == 1 ? translate("DRIVE.SHARE.LINK.ITEM") : translate("DRIVE.SHARE.LINK.ITEMS") }}
-									&mdash; {{ l.paths().join(", ") }}
+					<section v-if="allowCreateSecretLink" class="drive-share__section">
+						<h3 class="drive-share__heading">{{ translate("DRIVE.SHARED.LINK") }}</h3>
+						<ul v-if="secretLinksList.length > 0" class="drive-share__people">
+							<li v-for="(item, i) in secretLinksList" :key="i" class="drive-share__link">
+								<span class="drive-share__link-text">
+									<span class="drive-share__name">{{ item.isLinkWritable ? "Writable" : "Read-only" }}</span>
+									<span class="drive-share__meta">
+										<span>Password: {{ item.userPassword || "-" }}</span>
+										<span>Max Count: {{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</span>
+										<span>Expiry: {{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</span>
+									</span>
 								</span>
-								<button class="btn btn-success" @click="addToLink(l, false)">
-									{{ translate("DRIVE.SHARE.LINK.ADD.READONLY") }}
-								</button>
-								<button class="btn btn-success" @click="addToLink(l, true)">
-									{{ translate("DRIVE.SHARE.LINK.ADD.WRITABLE") }}
-								</button>
-							</div>
+								<span class="drive-share__link-actions">
+									<button type="button" class="pg-btn" @click="editLink(item)">{{ translate("DRIVE.LINK.VIEWEDIT") }}</button>
+									<button type="button" class="pg-btn pg-btn--quiet" @click="deleteLink(item)">Delete</button>
+								</span>
+							</li>
+						</ul>
+						<div class="drive-share__row-actions">
+							<button type="button" class="pg-btn pg-btn--primary" aria-label="Create Secret Link" @click="createSecretLink()">{{ translate("DRIVE.SHARE.LINK") }}</button>
+							<button v-if="otherLinks.length > 0" type="button" class="pg-btn"
+								aria-label="Add to an existing link" :aria-expanded="showAddToExisting ? 'true' : 'false'"
+								@click="showAddToExisting = !showAddToExisting">
+								{{ translate("DRIVE.SHARE.LINK.ADD.TO.EXISTING") }}
+							</button>
 						</div>
-					</div>
-                    <Choice
-                        v-if="showChoice"
-                        v-on:hide-choice="showChoice = false"
-                        :choice_message='choice_message'
-                        :choice_body="choice_body"
-                        :choice_consumer_func="choice_consumer_func"
-                        :choice_options="choice_options">
-                    </Choice>
-					<SecretLink
-					    v-if="showModal"
-					    v-on:hide-modal="closeSecretLinkModal"
-					    :title="modalTitle"
-					    :link="modalLink"
-                                            :host="this.linkHost"
-                        :existingProps="existingProps"
-                        :username="this.context.username"
-					/>
-                    <div v-if="secretLinksList!=0" class="table-responsive">
-                        <table class="table">
-                            <thead>
-                            <tr  v-if="secretLinksList!=0">
-                                <th>Access</th>
-                                <th>Password</th>
-                                <th>Max Count</th>
-                                <th>Expiry</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <tr v-for="item in secretLinksList">
-                                <td>{{ item.isLinkWritable ? "Writable" : "Read-only" }}</td>
-                                <td>{{ item.userPassword }}</td>
-                                <td>{{ item.maxRetrievals.ref != null ? item.maxRetrievals.ref.toString() : "-" }}</td>
-                                <td>{{ item.expiry.ref != null ? formatDateTime(item.expiry.ref) : "-" }}</td>
-                                <td> <button class="btn btn-success" @click="editLink(item)">{{ translate("DRIVE.LINK.VIEWEDIT") }}</button>
-                                </td>
-                                <td> <button class="btn btn-success" @click="deleteLink(item)">Delete</button>
-                                </td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
+						<div v-if="showAddToExisting" class="add-to-existing">
+							<p class="pg-note">{{ translate("DRIVE.SHARE.LINK.ADD.WARNING") }}</p>
+							<ul class="drive-share__people">
+								<li v-for="l in otherLinks" :key="l.getLabel()" class="drive-share__link">
+									<span class="drive-share__link-text">
+										<span class="drive-share__name">{{ l.itemCount() }} {{ l.itemCount() == 1 ? translate("DRIVE.SHARE.LINK.ITEM") : translate("DRIVE.SHARE.LINK.ITEMS") }}</span>
+										<span class="drive-share__meta">{{ l.paths().join(", ") }}</span>
+									</span>
+									<span class="drive-share__link-actions">
+										<button type="button" class="pg-btn" @click="addToLink(l, false)">{{ translate("DRIVE.SHARE.LINK.ADD.READONLY") }}</button>
+										<button type="button" class="pg-btn" @click="addToLink(l, true)">{{ translate("DRIVE.SHARE.LINK.ADD.WRITABLE") }}</button>
+									</span>
+								</li>
+							</ul>
+						</div>
+					</section>
 
+					<Choice
+						v-if="showChoice"
+						v-on:hide-choice="showChoice = false"
+						:choice_message='choice_message'
+						:choice_body="choice_body"
+						:choice_consumer_func="choice_consumer_func"
+						:choice_options="choice_options">
+					</Choice>
+					<SecretLink
+						v-if="showModal"
+						v-on:hide-modal="closeSecretLinkModal"
+						:title="modalTitle"
+						:link="modalLink"
+						:host="linkHost"
+						:existingProps="existingProps"
+						:username="context.username"
+					/>
 				</div>
+				<div v-if="showSpinner" class="pg-dialog__loading"><Spinner></Spinner></div>
 			</div>
 		</div>
 	</transition>
 </template>
 
 <script>
-const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const Choice = require('../choice/Choice.vue');
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const FormAutocomplete = require("../form/FormAutocomplete.vue");
 const SecretLink = require("SecretLink.vue");
@@ -241,9 +204,9 @@ const mixins = require("../../mixins/mixins.js");
 
 module.exports = {
 	components: {
-	    AppButton,
 	    AppIcon,
 	    Choice,
+	    DialogClose,
 	    FormAutocomplete,
             SecretLink,
             Spinner,
@@ -806,43 +769,168 @@ module.exports = {
 </script>
 
 <style>
-/* temporary reset */
 .drive-share {
-	color: var(--color);
-	background-color: var(--bg);
+	position: relative;
+	width: 600px;
 }
-.share-fields{
+.drive-share__body {
 	display: flex;
 	flex-direction: column;
-	align-items: flex-start;
+	gap: 22px;
+	padding-bottom: 16px;
 }
-
-.share-groups{
+.drive-share__section {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0;
+}
+/* the same small caps the secret link dialog labels its sections with */
+.drive-share__heading {
+	margin: 0;
+	font-size: 11px;
+	font-weight: var(--bold);
+	letter-spacing: .07em;
+	text-transform: uppercase;
+	color: var(--pg-muted);
+}
+.drive-share__choice,
+.share-groups,
+.drive-share__send,
+.drive-share__row-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.drive-share__groups {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+/* many groups scroll on their own rather than push Share out of reach; the padding gives the
+   switches' enlarged touch areas room, so they don't make the box scroll by a few pixels */
+.share-groups {
 	max-height: 12rem;
 	overflow-y: auto;
-	align-self: stretch;
+	padding: 8px;
+	margin: -8px;
 }
-
-.share-groups__count{
-	opacity: 0.7;
-	margin-left: 0.25em;
+/* the field's own gap below suits a form on its own, not one inside this dialog */
+.drive-share .form-autocomplete {
+	margin-bottom: 0;
 }
-
-.share-group-icon{
-	vertical-align: middle;
-	margin-right: 0.25em;
+.share-groups__count {
+	color: var(--pg-muted);
 }
-
-.modal-section{
-	margin: 32px 0;
+.drive-share__send {
+	justify-content: flex-end;
 }
-
-.share-limit{
-	margin: 16px 0;
+.drive-share__limit {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
 }
-
-.share-limit input{
-	width: 8em;
-	margin-right: 8px;
+.drive-share__limit label {
+	margin: 0;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+}
+.drive-share__limit input {
+	flex: none;
+	width: 110px;
+}
+/* the app's global select rule sets a 300px minimum, a margin and a tall line height */
+.drive-share__limit select {
+	flex: none;
+	width: 5.5em;
+	min-width: 0;
+	margin: 0;
+	line-height: normal;
+}
+.drive-share__people {
+	display: flex;
+	flex-direction: column;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	border: 1px solid var(--border-color);
+	border-radius: 12px;
+}
+.drive-share__person,
+.drive-share__link {
+	padding: 10px 14px;
+}
+.drive-share__person + .drive-share__person,
+.drive-share__link + .drive-share__link {
+	border-top: 1px solid var(--pg-track);
+}
+.drive-share__pick {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	margin: 0;
+	font-weight: var(--regular);
+}
+label.drive-share__pick {
+	cursor: pointer;
+}
+.drive-share__pick input {
+	flex: none;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	accent-color: var(--green-500);
+}
+.share-group-icon {
+	flex: none;
+}
+.drive-share__name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 15px;
+}
+.drive-share__quota {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.drive-share__usage {
+	margin: 0;
+	font-size: var(--text-small);
+}
+.drive-share__link {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 12px;
+}
+.drive-share__link-text {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 0;
+	min-width: 0;
+	gap: 2px;
+}
+.drive-share__meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px 12px;
+	font-size: 13px;
+	color: var(--pg-muted);
+	overflow-wrap: anywhere;
+}
+.drive-share__link-actions {
+	display: flex;
+	flex: none;
+	gap: 8px;
+}
+.add-to-existing {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 </style>
