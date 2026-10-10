@@ -88,10 +88,10 @@ public class CustomGroupsTest {
 
             openShareDialog(d, "holidays");
             d.waitForScript("the group in the read access list",
-                    "[...document.querySelectorAll('.drive-share .modal-section')].some(s => s.innerText.includes('family')"
+                    "[...document.querySelectorAll('.drive-share .drive-share__access')].some(s => s.innerText.includes('family')"
                             + " && s.querySelector('.share-group-icon'))", 60_000);
             shot(d, "3-shared-with-group");
-            d.script("document.querySelector('.drive-share .close').click(); return 1;");
+            d.script("document.querySelector('.drive-share .pg-dialog__close').click(); return 1;");
             d.waitForScript("the share dialog to close", "!document.querySelector('.drive-share')", 30_000);
             System.out.println("  ok   the read access list names the group and marks it as one");
 
