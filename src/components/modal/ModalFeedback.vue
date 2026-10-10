@@ -25,7 +25,8 @@ module.exports = {
 	data() {
 		return {
 			textAreaPlaceholder: this.translate("FEEDBACK.PLACEHOLDER"),
-			warning: false
+			warning: false,
+			sending: false
 		};
 	},
 	computed: {
@@ -44,8 +45,10 @@ module.exports = {
 	methods: {
 		sendFeedback: function() {
                     var contents = this.currentFeedback;
-                    if (contents.length == 0)
+                    // the dialog stays open until the server answers, so a double click would send it twice
+                    if (contents.length == 0 || this.sending)
                         return;
+                    this.sending = true;
                     let that = this;
                     var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
                     var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
@@ -56,9 +59,11 @@ module.exports = {
                                 that.$store.commit("SET_MODAL", false);
                                 that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
+                                that.sending = false;
                                 that.$toast.error(that.translate("FEEDBACK.ERROR"),{timeout:false, position: 'bottom-left' })
                             }
                         }).exceptionally(function(throwable) {
+                            that.sending = false;
                             that.$toast.error(that.translate("FEEDBACK.ERROR")+': ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
                         });
                 },
