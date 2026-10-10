@@ -20,14 +20,20 @@ module.exports = {
       initSandboxedApps() {
           let that = this;
           let future = peergos.shared.util.Futures.incomplete();
+          let register = appDirectories => that.loadAllAppProperties(appDirectories).thenApply(sandboxedAppsPropsList => {
+              that.registerApps(sandboxedAppsPropsList);
+              future.complete(true);
+          });
           this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
               if (appsDirOpt.ref != null) {
                   appsDirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(children => {
-                      that.loadAllAppProperties(children.toArray()).thenApply(sandboxedAppsPropsList => {
-                          that.registerApps(sandboxedAppsPropsList);
-                          future.complete(true);
-                      });
+                      register(children.toArray());
                   });
+              } else {
+                  // an account made outside the web ui has no .apps until it first signs in here, and
+                  // with nothing loaded the launcher and the app installer wait for good. Load it as an
+                  // empty one, which installs the default app
+                  register([]);
               }
           });
           return future;
@@ -375,10 +381,13 @@ module.exports = {
           let future = peergos.shared.util.Futures.incomplete();
           let appCount = appDirectories.length;
           if (appCount == 0) {
-            that.installDefaultApp().thenApply( res => {
-                accumulator.push(res);
-                future.complete(accumulator);
-            });
+            // read the default app back once written, so it has the defaults every other app gets
+            // from readJSONFile: installing a template app looks at every installed app's template
+            that.installDefaultApp().thenApply(written =>
+                that.readAppProperties(written.name).thenApply(props => {
+                    accumulator.push(props);
+                    future.complete(accumulator);
+                }));
           } else {
               appDirectories.forEach(currentApp => {
                   currentApp.getChild("peergos-app.json", this.context.crypto.hasher, this.context.network).thenApply(function(propFileOpt) {

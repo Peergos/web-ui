@@ -38,7 +38,7 @@ Covered: sign in and reach the drive, change the password of an account with an 
 folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
 and into a subdirectory, render html with links and images from both its own directory and a
 subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
-as .ics, a calendar entry a friend shared drawn as a tile in the news feed, a shared file drawn as a tile by an installed app that is refused everything but that file and its own assets, and the calendar itself: an event, a repeating event with a reminder, a task through
+as .ics, a calendar entry a friend shared drawn as a tile in the news feed, a shared file drawn as a tile by an installed app that is refused everything but that file and its own assets, the apps loading on a sign-in with none installed yet - no .apps folder at all, or an empty one - and an app and a single-instance template app installed from the drive after it, and the calendar itself: an event, a repeating event with a reminder, a task through
 completion, one occurrence taken out of a series and the rest of it ended, an .ics imported twice
 and exported again, a calendar left behind by the previous app opening unchanged and
 still workable by it afterwards, what this app writes read back by the server's own iCalendar
