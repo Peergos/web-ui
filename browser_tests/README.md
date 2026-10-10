@@ -34,7 +34,7 @@ Single file source programs, so there is no build step - `java` compiles them on
 
 ## Coverage
 
-Covered: sign in and reach the drive, upload a file, upload a group of files in one go, upload a
+Covered: sign in and reach the drive, change the password of an account with an authenticator app, upload a file, upload a group of files in one go, upload a
 folder with a nested subfolder, render a pdf in the pdf app, follow markdown links to a sibling
 and into a subdirectory, render html with links and images from both its own directory and a
 subdirectory, two concurrent downloads, download a folder as a zip, download a calendar event
@@ -89,7 +89,6 @@ Everything below is still to do, on each of firefox, chromium and webkitgtk.
 * sign up password warning for "123456"
 * sign up password warning for < 12 chars
 * sign in
-* change password
 * sign out
 #### single user stuff
 * upload file and read back (< 5mb, > 5mb)
