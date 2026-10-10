@@ -318,10 +318,6 @@ table {
   }
 }
 
-.modal-prominent {
-  font-size: 1.2em;
-}
-
 .btn-shared-with {
   padding: 0px 0px 0px 0px;
 }
@@ -399,11 +395,6 @@ h3 {word-wrap:break-word; white-space:normal;}
 
 .sidenav a:hover {
   color: #f1f1f1;
-}
-
-.hspace-5 {
-    margin-left: 5px;
-    margin-right: 5px;
 }
 
 .hspace-15 {
