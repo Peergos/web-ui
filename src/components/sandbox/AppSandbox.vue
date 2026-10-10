@@ -1,6 +1,7 @@
 <template>
 <transition name="modal">
-    <div class="pg-viewer__mask" :class="{'pg-viewer__mask--full': fullscreenMode}" @click="closeAppFromToolbar">
+    <div class="pg-viewer__mask" :class="{'pg-viewer__mask--full': fullscreenMode}" @click="browserMode && closeAppFromToolbar()">
+        <!-- a click beside an app closes it only when it is a page: an app can hold unsaved work -->
         <section class="pg-viewer" role="dialog" aria-modal="true" :aria-label="frameTitle()" @click.stop>
         <Group
                 v-if="showGroupMembership"
