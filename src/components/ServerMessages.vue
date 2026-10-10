@@ -7,6 +7,12 @@
     :sendMessage="sendMessage"
     :messageId="messageId">
 </ReplyToServerMessage>
+<Error
+    v-if="showError"
+    v-on:hide-error="showError = false"
+    :title="errorTitle"
+    :body="errorBody">
+</Error>
 <div v-if="conversationMonitors.length > 0" class="messageholder">
     <MessageBar
 	:replyToMessage="replyToMessage"
@@ -24,17 +30,22 @@
 </template>
 
 <script>
+    const Error = require("./error/Error.vue");
     const MessageBar = require("./MessageBar.vue");
     const ReplyToServerMessage = require("./ReplyToServerMessage.vue");
 
     module.exports = {
 	components: {
+		Error,
 		MessageBar,
                 ReplyToServerMessage,
 	},
 
 	data() {
 		return {
+			showError: false,
+			errorTitle: "",
+			errorBody: "",
 			showFeedbackForm: false,
 		        messageMonitors: [],
 			conversationMonitors: [],

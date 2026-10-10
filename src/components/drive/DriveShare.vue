@@ -307,6 +307,12 @@ module.exports = {
 			return this.socialData.groupUids;
 		}
 	},
+    watch: {
+        // the social data can still be loading when the dialog opens, so groups arrive later too
+        groupUids() {
+            this.loadCustomGroupMembers();
+        }
+    },
     created: function() {
         this.loadSecretLinks();
         this.loadOtherLinks();
@@ -316,7 +322,7 @@ module.exports = {
 	methods: {
         loadCustomGroupMembers() {
             let that = this;
-            this.groupUids.filter(uid => ! this.isBuiltInGroup(uid)).forEach(uid => {
+            this.groupUids.filter(uid => ! this.isBuiltInGroup(uid) && this.customGroupMembers[uid] == null).forEach(uid => {
                 that.context.getGroupMembers(uid).thenApply(members => {
                     that.customGroupMembers[uid] = members.toArray([]);
                 });
@@ -477,7 +483,7 @@ module.exports = {
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;
-                //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+                that.$toast.error(that.translate("DRIVE.SHARE.ERROR.UNSHARING") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
             });
         },
             editLink(props) {

@@ -638,8 +638,12 @@ module.exports = {
 .link-member__limit input {
     width: 110px;
 }
+/* the app's global select rule sets a 300px minimum, a margin and a tall line height */
 .link-member__limit select {
     width: auto;
+    min-width: 0;
+    margin: 0;
+    line-height: normal;
 }
 .link-member__remove {
     display: flex;
