@@ -483,7 +483,7 @@ module.exports = {
             }).exceptionally(function (throwable) {
                 console.log(throwable);
                 that.showSpinner = false;
-                //todo that.$toast.error(that.translate("DRIVE.SHARE.ERROR") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
+                that.$toast.error(that.translate("DRIVE.SHARE.ERROR.UNSHARING") + ` ${that.files[0].getFileProperties().name}: ${throwable.getMessage()}`, {timeout:false, id: 'share'})
             });
         },
             editLink(props) {
