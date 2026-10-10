@@ -190,7 +190,7 @@ module.exports = {
             this.prompt_consumer_func = function(prompt_result) {
                 if (prompt_result === null)
                     return;
-                if (prompt_result === this.displayedTitle)
+                if (prompt_result === that.displayedTitle)
                     return;
                 let newName = prompt_result.trim();
                 if (newName === '')
