@@ -55,16 +55,16 @@ module.exports = {
                     this.context.sendFeedback(trimmedContents)
                         .thenApply(function(res) {
                             if (res) {
-                                that.$toast.info(that.translate("FEEDBACK.SENT"),{timeout:false, position: 'bottom-left' })
+                                that.$toast.info(that.translate("FEEDBACK.SENT"),{timeout:false})
                                 that.$store.commit("SET_MODAL", false);
                                 that.$store.commit("SET_CURRENT_FEEDBACK", "");
                             } else {
                                 that.sending = false;
-                                that.$toast.error(that.translate("FEEDBACK.ERROR"),{timeout:false, position: 'bottom-left' })
+                                that.$toast.error(that.translate("FEEDBACK.ERROR"),{timeout:false})
                             }
                         }).exceptionally(function(throwable) {
                             that.sending = false;
-                            that.$toast.error(that.translate("FEEDBACK.ERROR")+': ' + throwable.getMessage(),{timeout:false, position: 'bottom-left' })
+                            that.$toast.error(that.translate("FEEDBACK.ERROR")+': ' + throwable.getMessage(),{timeout:false})
                         });
                 },
 	},

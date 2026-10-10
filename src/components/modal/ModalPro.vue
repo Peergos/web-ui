@@ -222,7 +222,7 @@ module.exports = {
                             that.updatePayment(() => {
                                 that.updateError()
                                 if (! that.paymentProperties.hasError())
-			            that.$toast.error(that.translate("PAID.CARD.NEEDED"),{timeout:false, id: 'pro', position: 'bottom-left'})
+			            that.$toast.error(that.translate("PAID.CARD.NEEDED"),{timeout:false, id: 'pro'})
                             });
 			} else
                             that.updatePayment(() => that.updateError());
@@ -233,7 +233,7 @@ module.exports = {
             
 	    updateError() {
 		if (this.paymentProperties.hasError()) {
-		    this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment', position: 'bottom-left'})
+		    this.$toast.error(this.paymentProperties.getError(),{timeout:false, id: 'payment'})
 		}
 	    },
 

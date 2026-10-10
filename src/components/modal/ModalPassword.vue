@@ -68,7 +68,7 @@ module.exports = {
         
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-            this.$toast.error(this.translate("PASSWORD.FIELDS"),{timeout:false, position: 'bottom-left' })
+            this.$toast.error(this.translate("PASSWORD.FIELDS"),{timeout:false})
         } else {
             if (this.password == this.password2) {
                 let that = this;
