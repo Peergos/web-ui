@@ -1,7 +1,14 @@
 <template>
-	<div class="gallery-mask" @click="close">
-		<div class="gallery-container gallery" @click.stop @keyup.right="next" @keyup.left="previous">
-			<div tabindex="0" @click="close" v-on:keyup.enter="close" aria-label="close" class="slideshow-close"><span style="font-family:'Cambria Math'">&times;</span></div>
+	<div class="pg-gallery__mask" @click="close">
+		<section class="pg-gallery" role="dialog" aria-modal="true" :aria-label="currentName.length > 0 ? currentName : 'Gallery'" @click.stop>
+			<header class="pg-gallery__bar">
+				<template v-if="! hideGalleryTitle && currentName.length > 0">
+					<span v-if="showableFiles.length > 1" class="pg-gallery__count">{{ fileIndex + 1 }} / {{ showableFiles.length }}</span>
+					<h2 class="pg-gallery__title">{{ currentName }}</h2>
+				</template>
+				<span v-else class="pg-gallery__spacer"></span>
+				<DialogClose @close="close"/>
+			</header>
 			<Spinner v-if="showSpinner"></Spinner>
             <Warning
                 v-if="showWarning"
@@ -10,24 +17,34 @@
                 :warning_body="warning_body"
                 :consumer_func="warning_consumer_func">
             </Warning>
-            <div id="slideshow-container">
-            	<div id="slideshow-info-id" :class="{ 'hidden-info': isInfoHidden, 'slideshow-info': true }"></div>
-            	<button id="slideshow-next" @click="next" style="cursor:pointer"><span >&gt;</span></button>
-            	<button id="slideshow-prev" @click="previous" style="cursor:pointer"><span >&lt;</span></button>
+            <div id="slideshow-container" class="pg-gallery__stage">
             	<div id="slideshow-wrapper-id" class="slideshow-wrapper">
             	</div>
+            	<template v-if="showableFiles != null && showableFiles.length > 1">
+            		<!-- the gallery does not wrap round: at either end the way on is shown, and closed -->
+            		<button id="slideshow-prev" type="button" class="pg-gallery__arrow pg-gallery__arrow--prev" aria-label="Previous"
+            		        :disabled="fileIndex === 0" @click="previous">
+            			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            		</button>
+            		<button id="slideshow-next" type="button" class="pg-gallery__arrow pg-gallery__arrow--next" aria-label="Next"
+            		        :disabled="fileIndex === showableFiles.length - 1" @click="next">
+            			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            		</button>
+            	</template>
             </div>
-		</div>
+		</section>
 	</div>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const Warning = require('../Warning.vue');
 const downloaderMixins = require("../../mixins/downloader/index.js");
 
 module.exports = {
 	components: {
+	    DialogClose,
     	Spinner,
 	    Warning,
 	},
@@ -59,8 +76,10 @@ module.exports = {
 				return is_image || is_video || is_audio;
 			});
 		},
-        isInfoHidden() {
-            return this.hideGalleryTitle;
+        currentName() {
+            let showable = this.showableFiles;
+            let file = showable == null ? null : showable[this.fileIndex];
+            return file == null ? '' : file.getFileProperties().name;
         },
 	},
 	created() {
@@ -86,14 +105,6 @@ module.exports = {
         })
 	},
 	methods: {
-		showGalleryTitle() {
-			if (!this.hideGalleryTitle) {
-			    let index = this.showableFiles.length > 1 ? (this.fileIndex + 1) + "/" + this.showableFiles.length + ' ' : '';
-				let text =  index + this.showableFiles[this.fileIndex].getFileProperties().name;
-				let infoElement = document.getElementById("slideshow-info-id");
-				infoElement.innerText = text;
-			}
-		},
 		close() {
             window.removeEventListener("keyup", this.keyup);
 		    this.pinging = false;
@@ -203,21 +214,8 @@ module.exports = {
         },
         updateMediaElement(index, url) {
             let that = this;
-            this.showGalleryTitle();
             let file = this.showableFiles[index];
             this.$nextTick(function () {
-                let next = document.getElementById("slideshow-next");
-                let prev = document.getElementById("slideshow-prev");
-                if (index === 0) {
-                    prev.classList.add('hidden');
-                } else {
-                    prev.classList.remove('hidden');
-                }
-                if (index === this.showableFiles.length - 1) {
-                    next.classList.add('hidden');
-                } else {
-                    next.classList.remove('hidden');
-                }
                 let wrapper = document.getElementById("slideshow-wrapper-id");
                 wrapper.innerText = '';
                 wrapper.style.overflow = '';
@@ -473,60 +471,145 @@ module.exports = {
 };
 </script>
 
-<style> /* inspired from https://github.com/codepo8/slide-show */
-.hidden-info {
-  display: none;
-}
-.gallery-mask {
+<style>
+/* A dark stage the picture fills, with its controls round the edges. Solid: a photo is judged
+   against what surrounds it, and the drive showing through would be part of that. */
+.pg-gallery__mask {
   position: fixed;
+  inset: 0;
   z-index: 2500;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, .5);
-  transition: opacity .3s ease;
+  display: flex;
+  background-color: #0b1116;
+  overscroll-behavior: contain;
 }
-.gallery-container {
-    height:100%;
-    margin: 0px auto;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    /* font-family: Helvetica, Arial, sans-serif; */
+.pg-gallery {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #ffffff;
 }
-.gallery {
-    color: var(--color);
-    background-color: var(--bg);
+.pg-gallery:focus {
+  outline: none;
 }
-
-.slideshow-info {
+.pg-gallery__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  min-height: 64px;
+  padding: 0 12px 0 20px;
+}
+.pg-gallery__count {
+  flex: 0 0 auto;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 255, 255, .14);
+  font-size: 13px;
+  font-weight: var(--bold);
+}
+.pg-gallery__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  font-size: 15px;
+  font-weight: var(--bold);
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pg-gallery__spacer {
+  flex: 1 1 auto;
+}
+.pg-gallery .pg-dialog__close {
+  width: 44px;
+  height: 44px;
+  margin-top: 0;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, .1);
+}
+.pg-gallery__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.pg-gallery__arrow {
   position: absolute;
-  padding: 5px 10px;
-  background: rgba(0,0,0,.8);
-  color: #fff;
-}
-
-.slideshow-close {
-  position: absolute;
-  right: 10px;
-  text-align: right;
-  font-size: xx-large;
+  top: 50%;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin-top: -24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .14);
+  color: #ffffff;
   cursor: pointer;
-  z-index: 20;
 }
-.slideshow-close span {
-  display: block;
+.pg-gallery__arrow svg {
+  width: 22px;
+  height: 22px;
+}
+.pg-gallery__arrow--prev {
+  left: 24px;
+}
+.pg-gallery__arrow--next {
+  right: 24px;
+}
+.pg-gallery__arrow:disabled {
+  opacity: .35;
+  cursor: default;
+}
+.pg-gallery__arrow:focus-visible {
+  outline: 2px solid var(--green-200);
+  outline-offset: 2px;
+}
+@media (hover: hover) {
+  .pg-gallery .pg-dialog__close:hover,
+  .pg-gallery__arrow:not(:disabled):hover {
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, .24);
+  }
 }
 
+/* the picture keeps clear of the arrows either side of it */
 .slideshow-wrapper {
-  height:100vh;
+  position: absolute;
+  inset: 0 96px 24px;
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
 }
+
+@media (max-width: 600px) {
+  .pg-gallery__bar {
+    gap: 8px;
+    min-height: 60px;
+    padding: 0 6px 0 16px;
+  }
+  /* on a phone the arrows go under the picture, where a thumb reaches them */
+  .slideshow-wrapper {
+    inset: 0 0 76px;
+  }
+  .pg-gallery__arrow {
+    top: auto;
+    bottom: 14px;
+    margin-top: 0;
+  }
+  .pg-gallery__arrow--prev {
+    left: 16px;
+  }
+  .pg-gallery__arrow--next {
+    right: 16px;
+  }
+}
+
 .slideshow-wrapper video, audio {
   object-fit: contain;
   width:100%;
@@ -546,35 +629,5 @@ module.exports = {
   max-width: none;
   max-height: none;
   z-index: 20;
-}
-#slideshow-next {
-  position: absolute;
-  background: rgba(0, 0, 0, 0);
-  border: none;
-  z-index: 10;
-  border-radius: 50%;
-  border-style: solid;
-  top: calc(50vh);
-  height: 40px;
-  width: 40px;
-  margin-right: 5px;
-}
-#slideshow-prev {
-  position: absolute;
-  background: rgba(0, 0, 0, 0);
-  border: none;
-  z-index: 10;
-  border-radius: 50%;
-  border-style: solid;
-  top: calc(50vh);
-  height: 40px;
-  width: 40px;
-  margin-left: 5px;
-}
-#slideshow-next.hidden, #slideshow-prev.hidden {
-  display: none;
-}
-#slideshow-next {
-  right: 0;
 }
 </style>
