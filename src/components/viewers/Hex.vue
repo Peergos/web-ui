@@ -47,6 +47,11 @@
     const Spinner = require("../spinner/Spinner.vue");
     const downloaderMixins = require("../../mixins/downloader/index.js");
 
+    // Only one piece of the file is held, however big the file is: the chunk Peergos stores
+    // the page in, plus a page past its end so that a page starting near the end of a chunk
+    // still fits. Moving outside it reads the piece around the new page in its place.
+    const CHUNK = 5 * 1024 * 1024;
+
     module.exports = {
     	components: {
     	    Spinner
@@ -55,23 +60,28 @@
         return {
 	    lookup: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
             showSpinner: false,
-            fileData: { // immutable
-                data: null, // a 5 MiB chunk or less
-                offsetHigh: 0,
-                offsetLow: 0 // must be multiple of 16
-            },
-            offsetLow: 0, // must be multiple of 16
-            offsetHigh:0,
-            maxOffsetLow: 0,
+            size: 0, // of the whole file: exact as a number, unlike its two 32 bit halves
+            offset: 0, // the first byte asked for, a multiple of 16
+            shown: 0, // the first byte on screen, which is offset once its bytes are held
+            held: {start: 0, data: null},
+            reading: 0, // the latest read: one that lands after another was asked for is dropped
             bytesPerPage: 16 * 32,
         };
     },
     props: ['file', 'context'],
     mixins:[downloaderMixins],
     created: function() {
-        console.debug('Hex viewer created!');
         window.addEventListener('keyup', this.keyup);
-        this.updateCurrentFileData();
+        if (this.file == null || this.file.isDirectory())
+            return;
+        var props = this.file.getFileProperties();
+        this.size = props.sizeHigh() * 4294967296 + (props.sizeLow() >>> 0);
+        this.read(0);
+    },
+    beforeUnmount: function() {
+        // else the closed viewer, and the piece it holds, stay alive answering the keys
+        window.removeEventListener('keyup', this.keyup);
+        this.reading++;
     },
 
     methods: {
@@ -87,102 +97,107 @@
 
         keyup: function(e) {
             if (e.keyCode == 38) // up arrow
-                this.addToOffset(-16);
+                this.moveTo(this.offset - 16);
             else if (e.keyCode == 40)  // down arrow
-                this.addToOffset(16);
+                this.moveTo(this.offset + 16);
 	    else if (e.keyCode == 33)  // page-up
-                this.addToOffset(-16 * 32);
+                this.moveTo(this.offset - this.bytesPerPage);
 	    else if (e.keyCode == 34) // page-down
-                this.addToOffset(16 * 32);
+                this.moveTo(this.offset + this.bytesPerPage);
 	    else if (e.keyCode == 36) // home
-                this.addToOffset(-this.offsetLow);
+                this.moveTo(0);
 	    else if (e.keyCode == 35) // end
-                this.addToOffset(this.maxOffsetLow-this.offsetLow);
+                this.moveTo(this.lastPage());
         },
 
-        updateCurrentFileData: function() {
-            if (this.file == null)
-                return;
-            if (this.file.isDirectory())
-                return;
-            var props = this.file.getFileProperties();
-            var that = this;
-            this.showSpinner = true;
-            var section = this.fileData;
-            var seekOffset = this.offsetLow - (this.offsetLow % (5*1024*1024));
-            var requestedOffset = this.offsetLow;
-            this.maxOffsetLow = props.sizeLow() - (props.sizeLow() % this.bytesPerPage);
-            this.file.getInputStream(this.context.network, this.context.crypto, 
-                props.sizeHigh(), props.sizeLow(), 
-                function(read) {})
-                .thenCompose(function(startReader) {
-                    return startReader
-                        .seekJS(section.offsetHigh, seekOffset).thenCompose(function(reader) {
-
-                            var sizeToRead = Math.min(5*1024*1024, props.sizeLow() - seekOffset);
-                            var data = convertToByteArray(new Int8Array(sizeToRead));
-                            data.length = sizeToRead;
-                            return reader.readIntoArray(data, 0, data.length)
-                                .thenApply(function(read){
-                                    that.fileData = {data:data, offsetHigh: section.offsetHigh, offsetLow: requestedOffset};
-                                    that.showSpinner = false;
-                                    console.log("Finished retrieving file section of size " + data.length + " from offset " + requestedOffset);
-                                });
-                        });
-                });
+        // the start of the last page with any bytes on it: a file whose size is a whole number
+        // of pages ends a page before its size, not at it
+        lastPage: function() {
+            if (this.size == 0)
+                return 0;
+            return Math.floor((this.size - 1) / this.bytesPerPage) * this.bytesPerPage;
         },
 
-        addToOffset: function(diff) {
-            if (this.offsetLow + diff < 0) {
-                this.offSetLow = 0;
-                return;
-            }
-            var CHUNK = 5*1024*1024;
-            var oldLow = this.offsetLow;
-            var newLow = this.offsetLow + diff;
-            var oldChunk = (oldLow / CHUNK)|0;
-            var newChunk = (newLow / CHUNK)|0;
-            if (oldChunk != newChunk) {
-                // need to retrieve the next chunk
-                this.offsetLow = newLow;
-                this.updateCurrentFileData();
+        moveTo: function(target) {
+            target = Math.max(0, Math.min(target, this.lastPage()));
+            this.offset = target;
+            var held = this.held;
+            var pageEnd = Math.min(target + this.bytesPerPage, this.size);
+            if (held.data != null && target >= held.start && pageEnd <= held.start + held.data.length) {
+                // a read still on its way is for somewhere else now
+                this.reading++;
+                this.showSpinner = false;
+                this.shown = target;
             } else {
-                // can just update pointer
-                var existing = this.fileData;
-                this.fileData = {data: existing.data, offsetLow: newLow, offsetHigh: existing.offsetHigh};
-                this.offsetLow = newLow;
+                this.read(target);
             }
+        },
+
+        read: function(target) {
+            var that = this;
+            var start = target - (target % CHUNK);
+            var length = Math.min(CHUNK + this.bytesPerPage, this.size - start);
+            var token = ++this.reading;
+            if (length <= 0) {
+                this.held = {start: 0, data: []};
+                this.shown = 0;
+                return;
+            }
+            var props = this.file.getFileProperties();
+            this.showSpinner = true;
+            this.file.getInputStream(this.context.network, this.context.crypto,
+                props.sizeHigh(), props.sizeLow(),
+                function(read) {})
+                .thenCompose(function(reader) {
+                    return reader.seekJS(Math.floor(start / 4294967296), (start % 4294967296) | 0);
+                }).thenCompose(function(reader) {
+                    var data = convertToByteArray(new Int8Array(length));
+                    data.length = length;
+                    return reader.readIntoArray(data, 0, length).thenApply(function(read) {
+                        return data;
+                    });
+                }).thenApply(function(data) {
+                    if (token != that.reading)
+                        return;
+                    that.held = {start: start, data: data};
+                    that.shown = target;
+                    that.showSpinner = false;
+                }).exceptionally(function(throwable) {
+                    if (token != that.reading)
+                        return;
+                    // the keys move on from the page still on screen
+                    that.offset = that.shown;
+                    that.showSpinner = false;
+                    that.$toast.error("Unable to read " + props.name + ": " + (throwable.detailMessage || throwable));
+                });
         },
 
         byteToHex: function(b) {
             return this.lookup[(b >> 4) & 0xf] + this.lookup[b & 0xf];
         },
 
-        intToHex: function(i) {
-            return this.byteToHex(i >> 24) + this.byteToHex(i >> 16) + this.byteToHex(i >> 8) + this.byteToHex(i);
+        // as many digits as the file's last offset needs, and never fewer than eight
+        offsetToHex: function(offset) {
+            var digits = Math.max(8, Math.max(0, this.size - 1).toString(16).length);
+            return offset.toString(16).toUpperCase().padStart(digits, '0');
         }
     },
     computed: {
         lines: function() {
-            var section = this.fileData;
-            var data = section.data;
-            if (data == null)
+            var held = this.held;
+            if (held.data == null)
                 return [];
-
+            var at = this.shown - held.start;
+            var end = Math.min(at + this.bytesPerPage, held.data.length);
             var res = [];
-            var size = data.length;
-            var dataOffset = section.offsetLow % (5 * 1024 * 1024);
-            var maxlines = ((size - dataOffset + 15)/16)|0;
-            var nlines = Math.min(maxlines, this.bytesPerPage / 16);
-
-            for (var i=0; i < nlines; i++) {
+            for (var row = at; row < end; row += 16) {
                 var hex = [];
                 var ascii = [];
-                for (var x = 0; x < 16 && dataOffset + 16*i + x < size; x++) {
-                    hex[x] = this.byteToHex(data[dataOffset + 16*i + x]);
-                    ascii[x] = String.fromCharCode(data[dataOffset + 16*i + x]);
+                for (var x = 0; x < 16 && row + x < end; x++) {
+                    hex[x] = this.byteToHex(held.data[row + x]);
+                    ascii[x] = String.fromCharCode(held.data[row + x]);
                 }
-                res[i] = {hex:hex, ascii:ascii, start:this.intToHex(i*16 + section.offsetLow)};
+                res.push({hex: hex, ascii: ascii, start: this.offsetToHex(held.start + row)});
             }
             return res;
         }

@@ -31,6 +31,7 @@ public class Suite {
             run(failures, "render a pdf in the pdf app", () -> PdfRenderTest.run(args1));
             run(failures, "follow markdown links", () -> MarkdownLinksTest.run(args1));
             run(failures, "html viewer links and images", () -> HtmlViewerTest.run(args1));
+            run(failures, "paging through a big file in the hex viewer", () -> HexViewerTest.run(args1));
             run(failures, "cancel an upload", () -> CancelUploadTest.run(args1));
             // The one thing a phone does differently: its panel must not decide how the next
             // desktop session opens. Cheap, and no engine here is too wide to be a phone.
