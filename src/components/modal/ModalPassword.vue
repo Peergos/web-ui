@@ -80,13 +80,16 @@ module.exports = {
                         that.mfaMethods = mfaMethods;
                         that.consumer_func = (credentialId, resp) => {
                             that.showMultiFactorAuth = false;
+                            that.showSpinner = true;
                             future.complete(resp);
                         };
                         that.consumer_cancel_func = (credentialId) => {
                             that.showMultiFactorAuth = false;
+                            that.showSpinner = true;
                             let resp = peergos.client.JsUtil.generateAuthResponse(credentialId, '');
                             future.complete(resp);
                         }
+                        that.showSpinner = false;
                         that.showMultiFactorAuth = true;
                         return future;
                 };
