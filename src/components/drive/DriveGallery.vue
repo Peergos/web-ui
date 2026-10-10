@@ -104,10 +104,14 @@ module.exports = {
             that.update();
         })
 	},
+	// however it goes - its x, Escape, or the browser's back button, which closes it without a
+	// word to it - the keys and the streaming ping go with it
+	beforeUnmount() {
+	    window.removeEventListener("keyup", this.keyup);
+	    this.pinging = false;
+	},
 	methods: {
 		close() {
-            window.removeEventListener("keyup", this.keyup);
-		    this.pinging = false;
             this.showWarning = false;
 		    this.$emit("hide-gallery");
 		},
