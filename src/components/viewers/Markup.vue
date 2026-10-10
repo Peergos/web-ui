@@ -1,24 +1,30 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close"> 
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-        <div class="modal-header" style="padding:0">
-            <div class="pg-center">
-                <h2>
-                    <span v-if="!isSecretLink && !isArchiveEntry && fullPathForDisplay.length > 0" style="z-index:9999">
-                          <img v-if="displayToBookmark" src="/images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
-                          <img v-if="!displayToBookmark" src="/images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
-                    </span>
-                    {{ getFullPathForDisplay() }}
-                </h2>
+<div class="pg-viewer__mask" @click="close">
+    <section class="pg-viewer" role="dialog" aria-modal="true" :aria-label="displayName" @click.stop>
+        <header class="pg-viewer__bar">
+            <span class="pg-viewer__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+            </span>
+            <div class="pg-viewer__heading">
+                <h2 class="pg-viewer__title">{{ displayName }}</h2>
+                <span v-if="displayFolder.length > 0" class="pg-viewer__path">{{ displayFolder }}</span>
             </div>
-          <span style="position:absolute;top:0;right:0.2em;">
-            <span v-if="isWritable() && isMarkdown()" @click="launchEditor" tabindex="0" v-on:keyup.enter="launchEditor"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" class='fas fa-edit' title="Edit file"></span>
-            <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
-          </span>
-        </div>
+            <button v-if="canBookmark" type="button" class="pg-icon-btn" aria-label="Bookmark"
+                    :aria-pressed="displayToBookmark ? 'false' : 'true'"
+                    :title="displayToBookmark ? 'Bookmark' : 'Remove bookmark'"
+                    @click="toggleBookmark(!displayToBookmark)">
+                <svg viewBox="0 0 24 24" :fill="displayToBookmark ? 'none' : 'currentColor'" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button v-if="isWritable() && isMarkdown()" type="button" class="pg-btn" @click="launchEditor">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                Edit
+            </button>
+            <span v-if="canBookmark || (isWritable() && isMarkdown())" class="pg-viewer__divider" aria-hidden="true"></span>
+            <DialogClose @close="close"/>
+        </header>
 
-        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+        <div class="pg-viewer__body">
             <Spinner v-if="showSpinner"></Spinner>
             <Confirm
                     v-if="showConfirm"
@@ -35,15 +41,17 @@
                     :hideGalleryTitle="false"
                     :context="context">
             </Gallery>
-            <div id='md-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+            <!-- the page's frame is added here once the file is known -->
+            <div id="md-container" style="display:flex;flex:1 1 auto;min-width:0;"></div>
         </div>
-    </div>
+    </section>
 </div>
 </transition>
 </template>
 
 <script>
     const Confirm = require("../confirm/Confirm.vue");
+    const DialogClose = require("../dialog/DialogClose.vue");
     const Gallery = require("../drive/DriveGallery.vue");
     const Spinner = require("../spinner/Spinner.vue");
 
@@ -54,6 +62,7 @@
 module.exports = {
     components: {
         Confirm,
+        DialogClose,
         Gallery,
         Spinner
     },
@@ -97,7 +106,21 @@ module.exports = {
         ]),
         ...Vuex.mapGetters([
             'isSecretLink'
-        ])
+        ]),
+        // the bar names the file and, under it, its folder: the two halves of the path it had
+        displayName: function() {
+            let path = this.fullPathForDisplay;
+            return path.substring(path.lastIndexOf('/') + 1);
+        },
+        displayFolder: function() {
+            let path = this.fullPathForDisplay;
+            let slash = path.lastIndexOf('/');
+            return slash > 0 ? path.substring(0, slash) : '';
+        },
+        // a bookmark is a path, and a page inside an archive has one only while it is open
+        canBookmark: function() {
+            return ! this.isSecretLink && ! this.isArchiveEntry && this.fullPathForDisplay.length > 0;
+        }
     },
     watch: {
         propAppArgs(newQuestion, oldQuestion) {
@@ -305,9 +328,6 @@ module.exports = {
             window.setTimeout(function() {that.setupIFrameMessaging(iframe, func);}, 20);
         }
 	},
-    getFullPathForDisplay: function() {
-        return this.fullPathForDisplay;
-    },
     setFullPathForDisplay: function() {
         this.fullPathForDisplay = this.currPath + '/' + this.currFilename;
         if (this.shortcuts.shortcutsMap.get(this.fullPathForDisplay) == null) {

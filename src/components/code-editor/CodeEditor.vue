@@ -1,14 +1,22 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-        <div class="modal-header" style="padding:0">
-            <div class="pg-center"><h2>{{ getFilename }}</h2></div>
-	  <span style="position:absolute;top:0;right:0.2em;">
-	    <span v-if="isWritable()" @click="getAndSave" tabindex="0" v-on:keyup.enter="getAndSave"  style="color:black;font-size:2.5em;font-weight:bold;cursor:pointer;margin:.3em;" v-bind:class="['fas', saving ? 'fa-hourglass' : 'fa-save']" title="Save file"></span>
-	    <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
-	  </span>
-        </div>
+<div class="pg-viewer__mask" @click="close">
+    <section class="pg-viewer" role="dialog" aria-modal="true" :aria-label="getFilename" @click.stop>
+        <header class="pg-viewer__bar">
+            <span class="pg-viewer__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18l6-6-6-6"/><path d="M8 6l-6 6 6 6"/></svg>
+            </span>
+            <h2 class="pg-viewer__title">{{ getFilename }}</h2>
+            <template v-if="isWritable()">
+                <button type="button" class="pg-btn pg-btn--primary" :disabled="saving" @click="getAndSave">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8"/><path d="M7 3v5h8"/></svg>
+                    {{ saving ? "Saving…" : "Save" }}
+                </button>
+                <span class="pg-viewer__divider" aria-hidden="true"></span>
+            </template>
+            <!-- Escape would close it with the changes unsaved and nothing to say so -->
+            <DialogClose :escape="false" @close="close"/>
+        </header>
         <SaveConflict
             v-if="showSaveConflictPrompt"
             :currentContentsBytes="currentSaveConflictBytes"
@@ -24,21 +32,23 @@
             :consumer_func="file_picker_consumer_func"
         />
         <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-	  <iframe id="editor" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
+        <div class="pg-viewer__body">
+            <iframe id="editor" :src="frameUrl()" frameBorder="0"></iframe>
         </div>
-    </div>
+    </section>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const NewFilePicker = require("../picker/NewFilePicker.vue");
 const SaveConflict = require("../prompt/SaveConflict.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 module.exports = {
     components: {
+        DialogClose,
         NewFilePicker,
         SaveConflict,
         Spinner,

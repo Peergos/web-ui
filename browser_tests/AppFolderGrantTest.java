@@ -321,7 +321,7 @@ public class AppFolderGrantTest {
     }
 
     static boolean headerShows(WebDriver d, String path) {
-        return Boolean.TRUE.equals(d.script("return [...document.querySelectorAll('.modal-header h2')]"
+        return Boolean.TRUE.equals(d.script("return [...document.querySelectorAll('.pg-viewer__bar')]"
                 + ".some(h => h.textContent.includes(arguments[0]));", path));
     }
 
