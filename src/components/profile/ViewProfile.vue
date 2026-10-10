@@ -1,49 +1,50 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <div @click.stop class="profile-page-container">
-        <span @click="close" tabindex="0" v-on:keyup.enter="close" aria-label="close" class="close">&times;</span>
-        <div class="modal-header">
-            <h2>Profile</h2>
-        </div>
-        <div class="modal-body">
-            <Spinner v-if="showSpinner"></Spinner>
-            <div id="profile-container" class="profile-image" v-if="hasProfileImage()">
-                <img id="profile-image" alt="profile image" style="width:150px; height:150px" v-bind:src="getProfileImage()"/>
+<div class="pg-dialog__mask" @click="close">
+    <div class="pg-dialog view-profile" role="dialog" aria-modal="true" aria-label="Profile" @click.stop>
+        <header class="pg-dialog__head">
+            <h2 class="pg-dialog__title">Profile</h2>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-dialog__body view-profile__body">
+            <div v-if="hasProfileImage() || firstName.length > 0 || status.length > 0" class="view-profile__who">
+                <img v-if="hasProfileImage()" class="view-profile__photo" alt="profile image" v-bind:src="getProfileImage()"/>
+                <div class="view-profile__names">
+                    <p v-if="firstName.length > 0" class="view-profile__name">{{firstName}} {{lastName}}</p>
+                    <p v-if="status.length > 0" class="view-profile__status">{{status}}</p>
+                </div>
             </div>
-            <div v-if="status.length == 0 && firstName.length == 0 && primaryPhone.length == 0 && primaryEmail.length == 0 && biography.length == 0 " class="profile-view">
+            <p v-if="status.length == 0 && firstName.length == 0 && primaryPhone.length == 0 && primaryEmail.length == 0 && biography.length == 0" class="pg-note">
                 This user hasn't shared any of their profile with you yet.
-            </div>
-            <div v-if="status.length > 0 || firstName.length > 0 || primaryPhone.length > 0 || primaryEmail.length > 0 || biography.length > 0 " class="profile-view">
-                <p v-if="status.length > 0">
-                    <span class="profile-span">Status:</span><span>{{status}}</span>
-                </p>
-                <p v-if="firstName.length > 0">
-                    <span class="profile-span">Name:</span><span>{{firstName}}</span>&nbsp;<span >{{lastName}}</span>
-                </p>
-                <p v-if="primaryPhone.length > 0">
-                    <span class="profile-span">Phone:</span><span>{{primaryPhone}}</span>
-                </p>
-                <p v-if="primaryEmail.length > 0">
-                    <span class="profile-span">Email:</span><span>{{primaryEmail}}</span>
-                </p>
-                <p v-if="biography.length > 0">
-                    <span class="profile-span">Biography:</span>
-                </p>
-                <p style="white-space: pre-wrap; margin-top: 10px; margin-bottom: 0;">{{biography}}</p>
-            </div>
+            </p>
+            <dl v-if="primaryPhone.length > 0 || primaryEmail.length > 0" class="pg-facts">
+                <div v-if="primaryPhone.length > 0" class="pg-facts__item">
+                    <dt>Phone</dt>
+                    <dd>{{primaryPhone}}</dd>
+                </div>
+                <div v-if="primaryEmail.length > 0" class="pg-facts__item">
+                    <dt>Email</dt>
+                    <dd>{{primaryEmail}}</dd>
+                </div>
+            </dl>
+            <section v-if="biography.length > 0" class="view-profile__bio">
+                <h3 class="view-profile__heading">Biography</h3>
+                <p class="view-profile__bio-text">{{biography}}</p>
+            </section>
         </div>
+        <div v-if="showSpinner" class="pg-dialog__loading"><Spinner></Spinner></div>
     </div>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 
 module.exports = {
 	components: {
+	    DialogClose,
 	    Spinner
 	},
     data: function() {
@@ -83,55 +84,64 @@ module.exports = {
 </script>
 
 <style>
-.profile-page-container {
-    height: 100%;
-    width: 40%;
-    overflow-y: auto;
-    position: fixed;
-    z-index: 2500;
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, 0);
-    margin: 0 auto;
-    padding: 20px 30px;
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.33);
-    transition: all .3s ease;
-    /* font-family: Helvetica,Arial,sans-serif; */
+.view-profile {
+    position: relative;
+    width: 480px;
 }
-
-/* 40% of a phone is a column a few words wide: there the panel takes the screen */
-@media (max-width: 700px) {
-    .profile-page-container {
-        width: 100%;
-        padding: 16px;
-    }
+.view-profile__body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding-bottom: 18px;
 }
-
-.profile-span {
-    font-weight: bold;
-    padding-right: 10px;
+.view-profile__who {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
 }
-
-.profile-view {
-    font-size: 1.3em;
+.view-profile__photo {
+    flex: none;
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    object-fit: cover;
 }
-
-.profile-image {
-    margin: 20px;
+.view-profile__names {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
 }
-    
-#profile-container div {
-  display: inline-block;
-  margin: 6px 8px;
+.view-profile__name {
+    margin: 0;
+    font-size: 20px;
+    font-weight: var(--bold);
+    overflow-wrap: anywhere;
 }
-
-#profile-image img {
-  display: block;
-  width: 200px;
-  height: 200px;
+.view-profile__status {
+    margin: 0;
+    color: var(--pg-muted);
+    overflow-wrap: anywhere;
 }
-
-
+.view-profile__bio {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+/* the same small caps the other dialogs label their sections with */
+.view-profile__heading {
+    margin: 0;
+    font-size: 11px;
+    font-weight: var(--bold);
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--pg-muted);
+}
+.view-profile__bio-text {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
 </style>
