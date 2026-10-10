@@ -1445,6 +1445,24 @@ var accountCache = {
     }
 };
 
+// kept apart from the logindata- keys, which are cleared on logout: the device is still known after one
+var deviceTokens = {
+    NativeJSDeviceTokens: function() {
+        this.get = function(username) {
+            try {
+                return window.localStorage.getItem('devicetoken-' + username);
+            } catch (e) {
+                return null;
+            }
+        };
+        this.set = function(username, token) {
+            try {
+                window.localStorage.setItem('devicetoken-' + username, token);
+            } catch (e) {}
+        };
+    }
+};
+
 function bindAccountCacheStore(storeCache) {
     accountStoreCache = storeCache;
 }
