@@ -1,13 +1,15 @@
 <template>
 	<div class="app-tabs">
-		<ul class="tabs__header">
+		<ul class="tabs__header" role="tablist">
 			<li
 				v-for="(tab, index) in tabs"
 				:key="tab.title"
-				@click="selectTab(index)"
+				role="presentation"
 				:class="{ active: index == selectedIndex }"
 			>
-				{{ tab.title }}
+				<button type="button" role="tab" :aria-selected="index == selectedIndex ? 'true' : 'false'" @click="selectTab(index)">
+					{{ tab.title }}
+				</button>
 			</li>
 		</ul>
 
@@ -49,51 +51,73 @@ module.exports = {
 </script>
 
 <style>
-
-.app-tabs{
-	max-width:500px;
+/* The way in: one card holding sign in, mirror and sign up, chosen with a segmented control
+   at its top. */
+.app-tabs {
+	max-width: 440px;
 	margin: 0 auto;
+	padding: 20px 24px 24px;
+	box-sizing: border-box;
 	color: var(--color);
 	background-color: var(--bg);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow);
 }
-
-
 
 .app-tabs .tabs__header {
 	display: flex;
-	list-style: none;
+	gap: 4px;
 	margin: 0;
-	padding: 0;
+	padding: 4px;
+	list-style: none;
+	background-color: var(--pg-surface-2);
+	border-radius: var(--radius-field);
 }
 
+/* each as wide as its label needs, and no narrower: a longer word in one language (the
+   Greek for Mirror) takes room from the shorter two instead of running out of its own */
 .app-tabs .tabs__header > li {
-	padding: 15px 30px;
-	cursor: pointer;
-	flex-grow: 1;
-	font-weight: var(--bold);
-	font-size: var(--text);
-	text-align: center;
-	background-color: var(--bg-2);
+	flex: 1 1 auto;
+	min-width: 0;
 }
 
-/* on a phone three labels in a longer language (Greek, German) outgrow 30px a side, and the
-   last tab ran off the screen */
+.app-tabs .tabs__header button {
+	width: 100%;
+	min-height: 38px;
+	padding: 0 10px;
+	border: 0;
+	border-radius: var(--radius-control);
+	background-color: transparent;
+	color: var(--pg-muted);
+	font-family: inherit;
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.app-tabs .tabs__header > li.active button {
+	background-color: var(--bg);
+	color: var(--color);
+	box-shadow: var(--pg-shadow);
+}
+
+.app-tabs .tabs__header button:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
 @media (max-width: 480px) {
-	.app-tabs .tabs__header > li {
-		padding: 15px 10px;
+	.app-tabs {
+		padding: 16px;
 	}
 }
 
 @media (max-width: 360px) {
-	.app-tabs .tabs__header > li {
-		padding: 15px 6px;
-		font-size: var(--text-small);
+	.app-tabs .tabs__header button {
+		padding: 0 6px;
+		font-size: 13px;
 	}
 }
-
-.app-tabs .tabs__header > li.active {
-	border-radius: 4px 4px 0 0;
-	background-color: var(--bg);
-}
-
 </style>
