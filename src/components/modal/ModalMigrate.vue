@@ -76,7 +76,7 @@ module.exports = {
 	methods: {
 		showWarning() {
 		    if(this.password.length == 0) {
-			this.$toast.error(this.translate("MIGRATE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
+			this.$toast.error(this.translate("MIGRATE.ACCOUNT.PASS"),{timeout:false})
 		    } else {
 			this.warning = true
 			// the question opens below the fields, which a small phone has scrolled out of view
@@ -92,7 +92,7 @@ module.exports = {
                 mirrorHere() {
                     var that = this;
                     this.context.mirrorOnThisServer(java.util.Optional.empty(), progress => {}).thenApply(function(result){
-		        that.$toast(that.translate("MIGRATE.MIRROR.DONE"),{position: 'bottom-left' })
+		        that.$toast(that.translate("MIGRATE.MIRROR.DONE"))
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                         console.log(throwable.getMessage())
@@ -119,7 +119,7 @@ module.exports = {
                         return future;
                     };
                     this.context.mirrorLoginData(this.password, mfaReq => handleMfa(mfaReq), progress => {}).thenApply(function(result){
-		        that.$toast(that.translate("MIGRATE.MIRROR.LOGIN.DONE"),{position: 'bottom-left' })
+		        that.$toast(that.translate("MIGRATE.MIRROR.LOGIN.DONE"))
                     }).exceptionally(function(throwable) {
                         that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                         console.log(throwable.getMessage())
@@ -146,7 +146,7 @@ module.exports = {
                         return future;
                     };
                     this.context.migrateToThisServer(this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(result){
-		        that.$toast(that.translate("MIGRATE.ACCOUNT.DONE"),{position: 'bottom-left' })
+		        that.$toast(that.translate("MIGRATE.ACCOUNT.DONE"))
 		        that.$store.commit("SET_MODAL", false);
                     }).exceptionally(function(throwable) {
                         if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {

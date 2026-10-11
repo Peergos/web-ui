@@ -38,6 +38,7 @@
 			showFeedbackForm: false,
 		        messageMonitors: [],
 			conversationMonitors: [],
+			sending: false,
 		};
 	},
 
@@ -218,14 +219,20 @@
             },
 
             sendMessage: function(msgId, contents) {
+                // the form stays open until the server answers, so a double click on Submit would
+                // send the reply twice
+                if (this.sending)
+                    return;
                 let that = this;
                 let message = this.getMessage(msgId);
                 if (message != null) {
+                    this.sending = true;
                     this.showSpinner = true;
                     var maxContextSize = peergos.shared.user.ServerMessage.MAX_CONTENT_SIZE;
                     var trimmedContents = contents.length > maxContextSize ? contents.substring(0, maxContextSize) : contents;
                     this.context.sendReply(message.msg, trimmedContents)
                         .thenApply(function(res) {
+                            that.sending = false;
                             that.showSpinner = false;
                             if (res) {
                                 console.log("message sent!");
@@ -239,6 +246,7 @@
                             that.errorTitle = 'Error sending message';
                             that.errorBody = throwable.getMessage();
                             that.showError = true;
+                            that.sending = false;
                             that.showSpinner = false;
                         });
                 }

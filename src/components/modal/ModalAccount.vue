@@ -69,7 +69,7 @@ module.exports = {
 	methods: {
 		showWarning() {
 			if(this.password.length == 0) {
-				this.$toast.error(that.translate("DELETE.ACCOUNT.PASS"),{timeout:false, position: 'bottom-left' })
+				this.$toast.error(this.translate("DELETE.ACCOUNT.PASS"),{timeout:false})
 			} else {
 				this.warning = true
 				// the question opens below the fields, which a small phone has scrolled out of view
@@ -100,11 +100,11 @@ module.exports = {
             };
             this.context.deleteAccount(this.password, mfaReq => handleMfa(mfaReq)).thenApply(function(result){
                 if (result) {
-					that.$toast(that.translate("DELETE.ACCOUNT.DONE"),{position: 'bottom-left' })
+					that.$toast(that.translate("DELETE.ACCOUNT.DONE"))
 					that.$store.commit("SET_MODAL", false);
                 	that.exit()
                 } else {
-					that.$toast(that.translate("DELETE.ACCOUNT.ERROR")+`: ${throwable.getMessage()}`,{position: 'bottom-left' })
+					that.$toast.error(that.translate("DELETE.ACCOUNT.ERROR"),{timeout:false})
                 }
             }).exceptionally(function(throwable) {
                 if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {

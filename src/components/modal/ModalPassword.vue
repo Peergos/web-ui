@@ -68,7 +68,7 @@ module.exports = {
         
 	updatePassword() {
         if(this.existing.length == 0 || this.password.length == 0 || this.password2.length == 0) {
-            this.$toast.error(this.translate("PASSWORD.FIELDS"),{timeout:false, position: 'bottom-left' })
+            this.$toast.error(this.translate("PASSWORD.FIELDS"),{timeout:false})
         } else {
             if (this.password == this.password2) {
                 let that = this;
@@ -100,7 +100,7 @@ module.exports = {
                     that.showSpinner = false;
                 }).exceptionally(function(throwable) {
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
-                        that.$toast.error(that.translate("PASSWORDS.MFA"), {timeout:false})
+                        that.$toast.error(that.translate("PASSWORD.MFA"), {timeout:false})
                     } else {
                         that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false})
                     }
@@ -108,7 +108,7 @@ module.exports = {
                     console.log(throwable.getMessage())
                 });
             } else {
-                this.$toast.error(this.translate("PASSWORDS.MATCH"),{timeout:false})
+                this.$toast.error(this.translate("PASSWORD.MATCH"),{timeout:false})
             }
         }
     },
