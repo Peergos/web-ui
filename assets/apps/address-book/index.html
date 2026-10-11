@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Address Book</title>
+<style>
+:root {
+	--bg: #f8fafc; --panel: #ffffff; --line: #e2e8f0; --text: #0f172a; --muted: #64748b;
+	--accent: #2563eb; --accent-text: #ffffff; --hover: #f1f5f9; --selected: #dbeafe; --danger: #dc2626;
+	--input: #ffffff;
+}
+:root[data-theme="dark"] {
+	--bg: #0b1120; --panel: #111827; --line: #1f2937; --text: #e5e7eb; --muted: #94a3b8;
+	--accent: #3b82f6; --accent-text: #ffffff; --hover: #1f2937; --selected: #1e3a8a; --danger: #f87171;
+	--input: #0f172a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+button { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 6px; padding: 6px 12px; }
+button:hover { background: var(--hover); }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+button.danger { color: var(--danger); }
+button.link { border: none; background: none; padding: 4px 6px; color: var(--muted); }
+button:disabled { opacity: .5; cursor: default; }
+input, select, textarea { font: inherit; color: var(--text); background: var(--input); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+textarea { resize: vertical; }
+
+#app { display: grid; grid-template-columns: 220px 300px 1fr; height: 100vh; }
+aside, #list { border-right: 1px solid var(--line); display: flex; flex-direction: column; min-height: 0; background: var(--panel); }
+.pane-head { padding: 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; align-items: center; }
+.pane-head h2 { font-size: 15px; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scroll { overflow-y: auto; flex: 1; }
+
+#books ul, #contacts { list-style: none; margin: 0; padding: 0; }
+#books li { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+#books li:hover, #contacts li:hover { background: var(--hover); }
+#books li.selected, #contacts li.selected { background: var(--selected); }
+#books .count { color: var(--muted); }
+#books .foot { padding: 12px; border-top: 1px solid var(--line); }
+
+#bookSelect { display: none; flex: 1; }
+.search { padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.search input { width: 100%; }
+#contacts .letter { padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
+#contacts li.card { padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+#contacts .sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#contacts .names { min-width: 0; }
+.empty { padding: 24px; color: var(--muted); text-align: center; }
+
+.avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 600; font-size: 14px; object-fit: cover; }
+.avatar.big { width: 88px; height: 88px; font-size: 32px; }
+
+#detail { overflow-y: auto; min-height: 0; }
+.detail { max-width: 640px; margin: 0 auto; padding: 24px; }
+.detail-head { display: flex; gap: 16px; align-items: center; margin-bottom: 24px; }
+.detail-head h1 { font-size: 22px; margin: 0 0 4px; }
+.detail-head .sub { color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.field .label { color: var(--muted); }
+.field .value { white-space: pre-wrap; word-break: break-word; }
+
+form .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+form .row > input, form .row > textarea { flex: 1; }
+form h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 20px 0 8px; }
+form .adr { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+form .adr .wide { grid-column: span 2; }
+form select { width: 100px; }
+
+#status { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 6px; display: none; max-width: calc(100% - 32px); }
+.back { display: none; }
+
+@media (max-width: 760px) {
+	#app { grid-template-columns: 1fr; }
+	aside { display: none; }
+	#bookSelect { display: block; }
+	#app.show-detail #list { display: none; }
+	#app:not(.show-detail) #detail { display: none; }
+	.back { display: inline-block; }
+	.detail { padding: 16px; }
+	.field { grid-template-columns: 90px 1fr; }
+	form .adr { grid-template-columns: 1fr; }
+	form .adr .wide { grid-column: auto; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+	<aside id="books">
+		<div class="pane-head"><h2>Address books</h2></div>
+		<ul class="scroll" id="bookList"></ul>
+		<div class="foot"><button onclick="newBook()">+ New address book</button></div>
+	</aside>
+	<section id="list">
+		<div class="pane-head">
+			<h2 id="bookTitle"></h2>
+			<select id="bookSelect" onchange="onBookSelect(this.value)"></select>
+			<button class="link" title="Rename address book" onclick="renameBook()">Rename</button>
+			<button class="link" id="deleteBookButton" title="Delete address book" onclick="deleteBook()">Delete</button>
+		</div>
+		<div class="pane-head">
+			<button class="primary" onclick="newContact()">+ New contact</button>
+			<button onclick="document.getElementById('importFile').click()">Import .vcf</button>
+			<input type="file" id="importFile" accept=".vcf,text/vcard" multiple style="display:none" onchange="importFiles(this)">
+		</div>
+		<div class="search"><input id="search" type="search" placeholder="Search" oninput="renderContacts()"></div>
+		<ul class="scroll" id="contacts"></ul>
+	</section>
+	<main id="detail"></main>
+</div>
+<div id="status"></div>
+<script>
+const api = '/peergos-api/v0/contacts/';
+const DEFAULT_BOOK = 'default';
+
+let books = [];
+let currentBook = null;
+let cards = [];
+let selectedFile = null;
+
+// ------------------------------------------------------------------ vCard
+
+function unfold(text) {
+	let lines = [];
+	for (let line of text.split(/\r\n|\r|\n/)) {
+		if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length > 0)
+			lines[lines.length - 1] += line.substring(1);
+		else if (line.length > 0)
+			lines.push(line);
+	}
+	return lines;
+}
+
+// splits on a separator, ignoring any inside double quotes
+function splitOutsideQuotes(s, sep) {
+	let parts = [], current = '', quoted = false;
+	for (let c of s) {
+		if (c == '"') quoted = !quoted;
+		if (c == sep && !quoted) { parts.push(current); current = ''; }
+		else current += c;
+	}
+	parts.push(current);
+	return parts;
+}
+
+function parseLine(raw) {
+	let quoted = false, colon = -1;
+	for (let i = 0; i < raw.length; i++) {
+		if (raw[i] == '"') quoted = !quoted;
+		if (raw[i] == ':' && !quoted) { colon = i; break; }
+	}
+	if (colon < 0)
+		return null;
+	let head = splitOutsideQuotes(raw.substring(0, colon), ';');
+	let fullName = head[0];
+	let dot = fullName.indexOf('.');
+	let params = head.slice(1).map(p => {
+		let eq = p.indexOf('=');
+		// a bare parameter is a vCard 2.1/3.0 shorthand for TYPE
+		if (eq < 0)
+			return {key: 'TYPE', values: [p]};
+		let key = p.substring(0, eq).toUpperCase();
+		let values = splitOutsideQuotes(p.substring(eq + 1), ',').map(v => v.replace(/^"|"$/g, ''));
+		// TYPE="voice,cell" is the same list as TYPE=voice,cell
+		return {key: key, values: key == 'TYPE' ? values.flatMap(v => v.split(',')) : values};
+	});
+	return {group: dot < 0 ? '' : fullName.substring(0, dot),
+		name: (dot < 0 ? fullName : fullName.substring(dot + 1)).toUpperCase(),
+		params: params, value: raw.substring(colon + 1), raw: raw};
+}
+
+function parseCards(text) {
+	let result = [], current = null;
+	for (let line of unfold(text)) {
+		let upper = line.toUpperCase();
+		if (upper == 'BEGIN:VCARD') {
+			current = [];
+		} else if (upper == 'END:VCARD') {
+			if (current != null)
+				result.push({props: current});
+			current = null;
+		} else if (current != null) {
+			let prop = parseLine(line);
+			if (prop != null)
+				current.push(prop);
+		}
+	}
+	return result;
+}
+
+function unescapeText(s) {
+	return s.replace(/\\([\\;,nN])/g, (m, c) => c == 'n' || c == 'N' ? '\n' : c);
+}
+
+function escapeText(s) {
+	return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+}
+
+function splitStructured(value) {
+	let parts = [], current = '';
+	for (let i = 0; i < value.length; i++) {
+		if (value[i] == '\\' && i + 1 < value.length) { current += value[i] + value[i + 1]; i++; }
+		else if (value[i] == ';') { parts.push(unescapeText(current)); current = ''; }
+		else current += value[i];
+	}
+	parts.push(unescapeText(current));
+	return parts;
+}
+
+function prop(card, name) {
+	return card.props.find(p => p.name == name);
+}
+
+function props(card, name) {
+	return card.props.filter(p => p.name == name);
+}
+
+function text(card, name) {
+	let p = prop(card, name);
+	return p == null ? '' : unescapeText(p.value);
+}
+
+function version(card) {
+	return text(card, 'VERSION') == '4.0' ? '4.0' : '3.0';
+}
+
+function typesOf(p) {
+	return p.params.filter(x => x.key == 'TYPE').flatMap(x => x.values).map(v => v.toLowerCase());
+}
+
+const TEL_TYPES = [['fax', 'Fax'], ['cell', 'Mobile'], ['work', 'Work'], ['home', 'Home'], ['other', 'Other']];
+const TEL_ALIASES = {iphone: 'cell', mobile: 'cell'};
+const PLACE_TYPES = [['home', 'Home'], ['work', 'Work'], ['other', 'Other']];
+
+function kindOf(p, choices, aliases) {
+	let types = typesOf(p).map(t => (aliases || {})[t] || t);
+	for (let [key] of choices) {
+		if (types.includes(key))
+			return key;
+	}
+	return 'other';
+}
+
+function labelOf(kind, choices) {
+	return (choices.find(c => c[0] == kind) || [kind, kind])[1];
+}
+
+function displayName(card) {
+	let fn = text(card, 'FN').trim();
+	if (fn) return fn;
+	let n = prop(card, 'N');
+	if (n) {
+		let c = splitStructured(n.value);
+		let composed = [c[3], c[1], c[2], c[0], c[4]].filter(x => x && x.trim()).join(' ');
+		if (composed) return composed;
+	}
+	let org = prop(card, 'ORG');
+	if (org && splitStructured(org.value)[0]) return splitStructured(org.value)[0];
+	let email = prop(card, 'EMAIL');
+	if (email) return email.value;
+	let tel = prop(card, 'TEL');
+	if (tel) return tel.value;
+	return '(No name)';
+}
+
+function sortKey(card) {
+	let n = prop(card, 'N');
+	if (n) {
+		let c = splitStructured(n.value);
+		if (c[0] && c[0].trim()) return (c[0] + ' ' + (c[1] || '')).trim().toLowerCase();
+	}
+	return displayName(card).toLowerCase();
+}
+
+function photoUrl(card) {
+	let p = prop(card, 'PHOTO');
+	if (p == null) return null;
+	if (p.value.startsWith('data:')) return p.value;
+	let encoding = p.params.filter(x => x.key == 'ENCODING').flatMap(x => x.values).map(v => v.toLowerCase());
+	if (encoding.includes('b') || encoding.includes('base64')) {
+		let type = typesOf(p).find(t => t != 'pref') || 'jpeg';
+		return 'data:image/' + (type.includes('/') ? type.split('/')[1] : type) + ';base64,' + p.value.replace(/\s/g, '');
+	}
+	return null;
+}
+
+function formatParams(params) {
+	return params.map(x => ';' + x.key + '=' + x.values.map(v => /[:;,]/.test(v) ? '"' + v + '"' : v).join(',')).join('');
+}
+
+function line(group, name, params, value) {
+	return (group ? group + '.' : '') + name + formatParams(params) + ':' + value;
+}
+
+// fold at 75 octets without splitting a UTF-8 sequence
+function fold(l) {
+	let out = [], current = '', bytes = 0;
+	for (let c of l) {
+		let size = new TextEncoder().encode(c).length;
+		if (bytes + size > (out.length == 0 ? 75 : 74)) {
+			out.push(current);
+			current = '';
+			bytes = 0;
+		}
+		current += c;
+		bytes += size;
+	}
+	out.push(current);
+	return out.join('\r\n ');
+}
+
+function serialise(lines) {
+	return ['BEGIN:VCARD'].concat(lines, ['END:VCARD']).map(fold).join('\r\n') + '\r\n';
+}
+
+function newUid() {
+	return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+		(c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+}
+
+function revision() {
+	return new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '');
+}
+
+function toDateInput(value) {
+	let m = value.match(/^(\d{4})-?(\d{2})-?(\d{2})/);
+	return m ? m[1] + '-' + m[2] + '-' + m[3] : '';
+}
+
+// ------------------------------------------------------------------ form <-> card
+
+function cardToForm(card) {
+	let n = prop(card, 'N');
+	let nc = n ? splitStructured(n.value) : [];
+	let org = prop(card, 'ORG');
+	let bday = prop(card, 'BDAY');
+	return {
+		family: nc[0] || '', given: nc[1] || '',
+		org: org ? splitStructured(org.value)[0] : '',
+		title: text(card, 'TITLE'),
+		bday: bday ? toDateInput(bday.value) : '',
+		bdayRaw: bday ? bday.value : '',
+		note: text(card, 'NOTE'),
+		tels: props(card, 'TEL').map(p => ({kind: kindOf(p, TEL_TYPES, TEL_ALIASES), value: p.value.replace(/^tel:/i, ''), orig: p})),
+		emails: props(card, 'EMAIL').map(p => ({kind: kindOf(p, PLACE_TYPES), value: p.value, orig: p})),
+		adrs: props(card, 'ADR').map(p => {
+			let c = splitStructured(p.value);
+			return {kind: kindOf(p, PLACE_TYPES), street: c[2] || '', city: c[3] || '', region: c[4] || '',
+				code: c[5] || '', country: c[6] || '', orig: p};
+		}),
+		urls: props(card, 'URL').map(p => ({value: p.value, orig: p}))
+	};
+}
+
+const MANAGED = ['VERSION', 'FN', 'N', 'ORG', 'TITLE', 'TEL', 'EMAIL', 'ADR', 'BDAY', 'URL', 'NOTE', 'REV'];
+
+// rebuilds a multi-valued property, keeping its group and any parameters we do not manage
+function typedLine(entry, name, kind, value, choices, ver) {
+	let known = choices.map(c => c[0]).concat(Object.keys(TEL_ALIASES));
+	let params = entry.orig ? entry.orig.params.map(x => x.key != 'TYPE' ? x :
+			{key: 'TYPE', values: x.values.filter(v => !known.includes(v.toLowerCase()))})
+			.filter(x => x.values.length > 0) : [];
+	if (kind != 'other')
+		params.push({key: 'TYPE', values: [ver == '4.0' ? kind : kind.toUpperCase()]});
+	return line(entry.orig ? entry.orig.group : '', name, params, value);
+}
+
+function formToCard(form, card) {
+	let ver = card ? version(card) : '3.0';
+	let before = card ? cardToForm(card) : null;
+	let lines = ['VERSION:' + ver];
+	if (card == null) {
+		lines.push('PRODID:-//Peergos//Address Book//EN');
+		lines.push('UID:' + newUid());
+	}
+	if (card != null)
+		card.props.filter(p => !MANAGED.includes(p.name)).forEach(p => lines.push(p.raw));
+
+	let namesSame = before && before.given == form.given && before.family == form.family;
+	let n = card && prop(card, 'N');
+	if (namesSame && n) {
+		lines.push(n.raw);
+	} else if (n || ver == '3.0' || form.given.trim() || form.family.trim()) {
+		let c = n ? splitStructured(n.value) : [];
+		while (c.length < 5) c.push('');
+		c[0] = form.family; c[1] = form.given;
+		lines.push('N:' + c.map(escapeText).join(';'));
+	}
+	let fn = card && prop(card, 'FN');
+	if (namesSame && fn && fn.value.trim()) {
+		lines.push(fn.raw);
+	} else {
+		let name = [form.given, form.family].filter(x => x.trim()).join(' ') || form.org
+			|| (form.emails[0] || {}).value || (form.tels[0] || {}).value || '';
+		lines.push('FN:' + escapeText(name));
+	}
+	let single = (name, value, previous, build) => {
+		let p = card && prop(card, name);
+		if (p && before && value == previous) lines.push(p.raw);
+		else if (value.trim()) lines.push(build(value));
+	};
+	single('ORG', form.org, before && before.org, v => 'ORG:' + escapeText(v));
+	single('TITLE', form.title, before && before.title, v => 'TITLE:' + escapeText(v));
+	single('BDAY', form.bday, before && before.bday,
+		v => 'BDAY:' + (ver == '4.0' ? v.replace(/-/g, '') : v));
+	single('NOTE', form.note, before && before.note, v => 'NOTE:' + escapeText(v));
+
+	let clean = s => s.replace(/[\r\n]+/g, ' ').trim();
+	form.tels.filter(t => clean(t.value)).forEach(t => {
+		if (t.orig && t.orig.value.replace(/^tel:/i, '') == t.value && kindOf(t.orig, TEL_TYPES, TEL_ALIASES) == t.kind)
+			lines.push(t.orig.raw);
+		else
+			lines.push(typedLine(t, 'TEL', t.kind, clean(t.value), TEL_TYPES, ver));
+	});
+	form.emails.filter(e => clean(e.value)).forEach(e => {
+		if (e.orig && e.orig.value == e.value && kindOf(e.orig, PLACE_TYPES) == e.kind)
+			lines.push(e.orig.raw);
+		else
+			lines.push(typedLine(e, 'EMAIL', e.kind, clean(e.value), PLACE_TYPES, ver));
+	});
+	form.adrs.filter(a => [a.street, a.city, a.region, a.code, a.country].some(x => x.trim())).forEach(a => {
+		let c = a.orig ? splitStructured(a.orig.value) : [];
+		while (c.length < 7) c.push('');
+		let next = c.slice(0, 2).concat([a.street, a.city, a.region, a.code, a.country]);
+		if (a.orig && next.join('\u0000') == c.slice(0, 7).join('\u0000') && kindOf(a.orig, PLACE_TYPES) == a.kind)
+			lines.push(a.orig.raw);
+		else
+			lines.push(typedLine(a, 'ADR', a.kind, next.map(escapeText).join(';'), PLACE_TYPES, ver));
+	});
+	form.urls.filter(u => clean(u.value)).forEach(u => {
+		lines.push(u.orig && u.orig.value == u.value ? u.orig.raw : line(u.orig ? u.orig.group : '', 'URL', [], clean(u.value)));
+	});
+	lines.push('REV:' + revision());
+	return serialise(lines);
+}
+
+// ------------------------------------------------------------------ server
+
+async function call(path, options) {
+	let response = await fetch(api + path, options);
+	if (!response.ok)
+		throw new Error((options && options.method || 'GET') + ' failed: ' + response.status);
+	return response;
+}
+
+// the sandbox decodes paths with decodeURI, which leaves these escaped, so they must be sent as-is
+function segment(s) {
+	return encodeURIComponent(s).replace(/%(40|3A|3B|2C|3D|2B|24|26)/gi, m => decodeURIComponent(m));
+}
+
+function bookPath(book) {
+	return segment(book);
+}
+
+function cardPath(book, file) {
+	return segment(book) + '/' + segment(file);
+}
+
+async function loadBooks() {
+	books = await (await call('')).json();
+	books.sort((a, b) => (a.id == DEFAULT_BOOK ? -1 : b.id == DEFAULT_BOOK ? 1 : a.name.localeCompare(b.name)));
+}
+
+async function loadCards(book) {
+	let list = await (await call(bookPath(book))).json();
+	return list.map(c => {
+		let parsed = parseCards(c.vcard);
+		return parsed.length == 0 ? null : {file: c.file, card: parsed[0]};
+	}).filter(c => c != null);
+}
+
+async function putCard(book, file, vcard) {
+	await call(cardPath(book, file), {method: 'PUT', body: new TextEncoder().encode(vcard)});
+}
+
+function fileFor(card) {
+	let uid = text(card, 'UID').replace(/^urn:uuid:/i, '');
+	return (/^[A-Za-z0-9_\-@.]{1,200}$/.test(uid) && !uid.startsWith('.') ? uid : newUid()) + '.vcf';
+}
+
+// ------------------------------------------------------------------ actions
+
+async function openBook(id) {
+	currentBook = id;
+	selectedFile = null;
+	try { localStorage.setItem('addressbook.book', id); } catch (e) {}
+	renderBooks();
+	document.getElementById('contacts').innerHTML = '<li class="empty">Loading…</li>';
+	renderDetail();
+	try {
+		cards = await loadCards(id);
+	} catch (e) {
+		cards = [];
+		status('Could not load contacts');
+	}
+	if (currentBook == id) {
+		renderBooks();
+		renderContacts();
+	}
+}
+
+function onBookSelect(value) {
+	if (value == '__new__') {
+		document.getElementById('bookSelect').value = currentBook;
+		newBook();
+	} else {
+		openBook(value);
+	}
+}
+
+async function newBook() {
+	let name = prompt('Name of the new address book');
+	if (name == null || !name.trim()) return;
+	try {
+		let response = await call('', {method: 'POST', body: JSON.stringify({name: name.trim()})});
+		let location = response.headers.get('location') || '';
+		await loadBooks();
+		openBook(decodeURIComponent(location.substring(location.lastIndexOf('/') + 1)) || currentBook);
+	} catch (e) {
+		status('Could not create the address book');
+	}
+}
+
+async function renameBook() {
+	let book = books.find(b => b.id == currentBook);
+	let name = prompt('Rename address book', book ? book.name : '');
+	if (name == null || !name.trim()) return;
+	try {
+		await call(bookPath(currentBook), {method: 'PUT', body: JSON.stringify({name: name.trim()})});
+		await loadBooks();
+		renderBooks();
+	} catch (e) {
+		status('Could not rename the address book');
+	}
+}
+
+async function deleteBook() {
+	if (currentBook == DEFAULT_BOOK) return;
+	let book = books.find(b => b.id == currentBook);
+	if (!confirm('Delete "' + (book ? book.name : currentBook) + '" and all ' + cards.length + ' contacts in it?')) return;
+	try {
+		await call(bookPath(currentBook), {method: 'DELETE'});
+		await loadBooks();
+		openBook(DEFAULT_BOOK);
+	} catch (e) {
+		status('Could not delete the address book');
+	}
+}
+
+function newContact() {
+	selectedFile = null;
+	renderContacts();
+	renderForm(null);
+}
+
+function selectContact(file) {
+	selectedFile = file;
+	renderContacts();
+	renderDetail();
+}
+
+async function saveContact(form, entry) {
+	let vcard = formToCard(form, entry ? entry.card : null);
+	let file = entry ? entry.file : fileFor(parseCards(vcard)[0]);
+	try {
+		await putCard(currentBook, file, vcard);
+	} catch (e) {
+		status('Could not save the contact');
+		return;
+	}
+	let updated = {file: file, card: parseCards(vcard)[0]};
+	cards = cards.filter(c => c.file != file).concat([updated]);
+	selectedFile = file;
+	renderBooks();
+	renderContacts();
+	renderDetail();
+	status('Saved');
+}
+
+async function deleteContact(entry) {
+	if (!confirm('Delete ' + displayName(entry.card) + '?')) return;
+	try {
+		await call(cardPath(currentBook, entry.file), {method: 'DELETE'});
+	} catch (e) {
+		status('Could not delete the contact');
+		return;
+	}
+	cards = cards.filter(c => c.file != entry.file);
+	selectedFile = null;
+	renderBooks();
+	renderContacts();
+	renderDetail();
+}
+
+async function moveContact(entry, target) {
+	let vcard = serialise(entry.card.props.map(p => p.raw));
+	try {
+		// written before it is removed, so a failure part way leaves a copy rather than nothing
+		await putCard(target, entry.file, vcard);
+		await call(cardPath(currentBook, entry.file), {method: 'DELETE'});
+	} catch (e) {
+		status('Could not move the contact');
+		return;
+	}
+	let book = books.find(b => b.id == target);
+	status('Moved to ' + (book ? book.name : target));
+	cards = cards.filter(c => c.file != entry.file);
+	selectedFile = null;
+	renderContacts();
+	renderDetail();
+}
+
+async function importText(textContent) {
+	let parsed = parseCards(textContent);
+	if (parsed.length == 0) {
+		status('No contacts found in that file');
+		return;
+	}
+	let done = 0, failed = 0;
+	for (let card of parsed) {
+		if (!prop(card, 'UID'))
+			card.props.push(parseLine('UID:' + newUid()));
+		if (!prop(card, 'VERSION'))
+			card.props.unshift(parseLine('VERSION:3.0'));
+		let file = fileFor(card);
+		status('Importing ' + (done + failed + 1) + ' of ' + parsed.length, true);
+		try {
+			let vcard = serialise(card.props.map(p => p.raw));
+			await putCard(currentBook, file, vcard);
+			cards = cards.filter(c => c.file != file).concat([{file: file, card: card}]);
+			done++;
+		} catch (e) {
+			failed++;
+		}
+	}
+	renderBooks();
+	renderContacts();
+	status('Imported ' + done + (failed > 0 ? ', ' + failed + ' failed' : ''));
+}
+
+async function importFiles(input) {
+	for (let f of input.files)
+		await importText(await f.text());
+	input.value = '';
+}
+
+// ------------------------------------------------------------------ rendering
+
+function el(tag, attrs, children) {
+	let e = document.createElement(tag);
+	for (let [k, v] of Object.entries(attrs || {})) {
+		if (k == 'text') e.textContent = v;
+		else if (k.startsWith('on')) e[k] = v;
+		else e.setAttribute(k, v);
+	}
+	(children || []).forEach(c => c && e.appendChild(c));
+	return e;
+}
+
+function avatar(card, big) {
+	let url = photoUrl(card);
+	if (url)
+		return el('img', {class: 'avatar' + (big ? ' big' : ''), src: url, alt: ''});
+	let name = displayName(card);
+	let initials = name.split(/\s+/).filter(x => x).slice(0, 2).map(x => x[0].toUpperCase()).join('');
+	let hash = 0;
+	for (let c of name) hash = (hash * 31 + c.charCodeAt(0)) | 0;
+	return el('div', {class: 'avatar' + (big ? ' big' : ''), text: initials || '?',
+		style: 'background: hsl(' + (Math.abs(hash) % 360) + ', 45%, 50%)'});
+}
+
+function renderBooks() {
+	let list = document.getElementById('bookList');
+	list.innerHTML = '';
+	let select = document.getElementById('bookSelect');
+	select.innerHTML = '';
+	books.forEach(b => {
+		list.appendChild(el('li', {class: b.id == currentBook ? 'selected' : '', onclick: () => openBook(b.id)}, [
+			el('span', {text: b.name}),
+			b.id == currentBook ? el('span', {class: 'count', text: String(cards.length)}) : null
+		]));
+		select.appendChild(el('option', {value: b.id, text: b.name}));
+	});
+	select.appendChild(el('option', {value: '__new__', text: '+ New address book'}));
+	select.value = currentBook;
+	let book = books.find(b => b.id == currentBook);
+	document.getElementById('bookTitle').textContent = book ? book.name : '';
+	document.getElementById('deleteBookButton').disabled = currentBook == DEFAULT_BOOK;
+}
+
+function matches(card, query) {
+	if (!query) return true;
+	let haystack = [displayName(card), text(card, 'ORG')]
+		.concat(props(card, 'EMAIL').map(p => p.value), props(card, 'TEL').map(p => p.value))
+		.join(' ').toLowerCase();
+	return query.toLowerCase().split(/\s+/).every(q => haystack.includes(q));
+}
+
+function renderContacts() {
+	let list = document.getElementById('contacts');
+	list.innerHTML = '';
+	let query = document.getElementById('search').value.trim();
+	let shown = cards.filter(c => matches(c.card, query))
+		.sort((a, b) => sortKey(a.card).localeCompare(sortKey(b.card)));
+	if (shown.length == 0) {
+		list.appendChild(el('li', {class: 'empty', text: cards.length == 0 ? 'No contacts yet' : 'No matches'}));
+		return;
+	}
+	let letter = null;
+	shown.forEach(c => {
+		let first = (sortKey(c.card)[0] || '#').toUpperCase();
+		if (!/\p{L}/u.test(first)) first = '#';
+		if (first != letter) {
+			letter = first;
+			list.appendChild(el('li', {class: 'letter', text: letter}));
+		}
+		let sub = text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
+			: (prop(c.card, 'EMAIL') || prop(c.card, 'TEL') || {value: ''}).value;
+		list.appendChild(el('li', {class: 'card' + (c.file == selectedFile ? ' selected' : ''),
+			onclick: () => selectContact(c.file)}, [
+			avatar(c.card, false),
+			el('div', {class: 'names'}, [el('div', {text: displayName(c.card)}), el('div', {class: 'sub', text: sub})])
+		]));
+	});
+}
+
+function showDetailPane(show) {
+	document.getElementById('app').classList.toggle('show-detail', show);
+}
+
+function backButton() {
+	return el('button', {class: 'back', text: '‹ Back', onclick: () => { selectedFile = null; renderContacts(); renderDetail(); }});
+}
+
+function renderDetail() {
+	let pane = document.getElementById('detail');
+	pane.innerHTML = '';
+	let entry = cards.find(c => c.file == selectedFile);
+	if (entry == null) {
+		showDetailPane(false);
+		pane.appendChild(el('div', {class: 'empty', text: cards.length > 0 ? 'Select a contact' : ''}));
+		return;
+	}
+	showDetailPane(true);
+	let card = entry.card;
+	let form = cardToForm(card);
+	let fields = [];
+	let add = (label, value) => { if (value && value.trim()) fields.push(el('div', {class: 'field'}, [
+		el('div', {class: 'label', text: label}), el('div', {class: 'value', text: value})])); };
+	form.tels.forEach(t => add(labelOf(t.kind, TEL_TYPES) + ' phone', t.value));
+	form.emails.forEach(e => add(labelOf(e.kind, PLACE_TYPES) + ' email', e.value));
+	form.adrs.forEach(a => add(labelOf(a.kind, PLACE_TYPES) + ' address',
+		[a.street, [a.city, a.region, a.code].filter(x => x.trim()).join(' '), a.country].filter(x => x.trim()).join('\n')));
+	form.urls.forEach(u => add('Website', u.value));
+	add('Birthday', form.bday ? new Date(form.bday + 'T00:00:00').toLocaleDateString() : form.bdayRaw);
+	add('Note', form.note);
+
+	let others = books.filter(b => b.id != currentBook);
+	let move = others.length == 0 ? null : el('select', {onchange: e => { if (e.target.value) moveContact(entry, e.target.value); }},
+		[el('option', {value: '', text: 'Move to…'})].concat(others.map(b => el('option', {value: b.id, text: b.name}))));
+
+	pane.appendChild(el('div', {class: 'detail'}, [
+		backButton(),
+		el('div', {class: 'detail-head'}, [
+			avatar(card, true),
+			el('div', {}, [
+				el('h1', {text: displayName(card)}),
+				el('div', {class: 'sub', text: [form.title, form.org].filter(x => x).join(', ')})
+			])
+		]),
+		el('div', {class: 'actions'}, [
+			el('button', {class: 'primary', text: 'Edit', onclick: () => renderForm(entry)}),
+			move,
+			el('button', {class: 'danger', text: 'Delete', onclick: () => deleteContact(entry)})
+		]),
+		el('div', {}, fields)
+	]));
+}
+
+function kindSelect(choices, value, onchange) {
+	let s = el('select', {onchange: e => onchange(e.target.value)},
+		choices.map(c => el('option', {value: c[0], text: c[1]})));
+	s.value = value;
+	return s;
+}
+
+function renderForm(entry) {
+	showDetailPane(true);
+	let pane = document.getElementById('detail');
+	pane.innerHTML = '';
+	let form = entry ? cardToForm(entry.card) : {family: '', given: '', org: '', title: '', bday: '', bdayRaw: '', note: '',
+		tels: [{kind: 'cell', value: ''}], emails: [{kind: 'home', value: ''}], adrs: [], urls: []};
+
+	let input = (obj, key, placeholder, type) => el('input', {type: type || 'text', placeholder: placeholder, value: obj[key],
+		oninput: e => obj[key] = e.target.value});
+	let remove = (list, item) => el('button', {class: 'link', type: 'button', text: '✕', title: 'Remove',
+		onclick: () => { list.splice(list.indexOf(item), 1); draw(); }});
+
+	let body = el('div');
+	let draw = () => {
+		body.innerHTML = '';
+		body.appendChild(el('h3', {text: 'Name'}));
+		body.appendChild(el('div', {class: 'row'}, [input(form, 'given', 'First name'), input(form, 'family', 'Last name')]));
+		body.appendChild(el('div', {class: 'row'}, [input(form, 'org', 'Company'), input(form, 'title', 'Job title')]));
+
+		body.appendChild(el('h3', {text: 'Phone'}));
+		form.tels.forEach(t => body.appendChild(el('div', {class: 'row'}, [
+			kindSelect(TEL_TYPES, t.kind, v => t.kind = v), input(t, 'value', 'Phone', 'tel'), remove(form.tels, t)])));
+		body.appendChild(el('button', {type: 'button', class: 'link', text: '+ Add phone',
+			onclick: () => { form.tels.push({kind: 'cell', value: ''}); draw(); }}));
+
+		body.appendChild(el('h3', {text: 'Email'}));
+		form.emails.forEach(m => body.appendChild(el('div', {class: 'row'}, [
+			kindSelect(PLACE_TYPES, m.kind, v => m.kind = v), input(m, 'value', 'Email', 'email'), remove(form.emails, m)])));
+		body.appendChild(el('button', {type: 'button', class: 'link', text: '+ Add email',
+			onclick: () => { form.emails.push({kind: 'home', value: ''}); draw(); }}));
+
+		body.appendChild(el('h3', {text: 'Address'}));
+		form.adrs.forEach(a => body.appendChild(el('div', {class: 'row'}, [
+			kindSelect(PLACE_TYPES, a.kind, v => a.kind = v),
+			el('div', {class: 'adr'}, [
+				Object.assign(input(a, 'street', 'Street'), {className: 'wide'}),
+				input(a, 'city', 'City'), input(a, 'region', 'State / region'),
+				input(a, 'code', 'Postcode'), input(a, 'country', 'Country')]),
+			remove(form.adrs, a)])));
+		body.appendChild(el('button', {type: 'button', class: 'link', text: '+ Add address',
+			onclick: () => { form.adrs.push({kind: 'home', street: '', city: '', region: '', code: '', country: ''}); draw(); }}));
+
+		body.appendChild(el('h3', {text: 'Website'}));
+		form.urls.forEach(u => body.appendChild(el('div', {class: 'row'}, [input(u, 'value', 'https://', 'url'), remove(form.urls, u)])));
+		body.appendChild(el('button', {type: 'button', class: 'link', text: '+ Add website',
+			onclick: () => { form.urls.push({value: ''}); draw(); }}));
+
+		body.appendChild(el('h3', {text: 'Other'}));
+		body.appendChild(el('div', {class: 'row'}, [el('label', {text: 'Birthday'}), input(form, 'bday', '', 'date')]));
+		let note = el('textarea', {rows: '4', placeholder: 'Note', oninput: e => form.note = e.target.value});
+		note.value = form.note;
+		body.appendChild(el('div', {class: 'row'}, [note]));
+	};
+	draw();
+
+	let cancel = () => entry ? renderDetail() : (selectedFile = null, renderDetail());
+	let element = el('form', {class: 'detail', onsubmit: e => {
+		e.preventDefault();
+		let empty = !form.given.trim() && !form.family.trim() && !form.org.trim()
+			&& !form.tels.some(t => t.value.trim()) && !form.emails.some(m => m.value.trim());
+		if (empty) {
+			status('Add a name, company, phone or email');
+			return;
+		}
+		saveContact(form, entry);
+	}}, [
+		el('h1', {text: entry ? 'Edit contact' : 'New contact'}),
+		body,
+		el('div', {class: 'actions', style: 'margin-top: 24px'}, [
+			el('button', {class: 'primary', type: 'submit', text: 'Save'}),
+			el('button', {type: 'button', text: 'Cancel', onclick: cancel})
+		])
+	]);
+	pane.appendChild(element);
+	let first = element.querySelector('input');
+	if (first) first.focus();
+}
+
+let statusTimer = null;
+function status(message, sticky) {
+	let s = document.getElementById('status');
+	s.textContent = message;
+	s.style.display = 'block';
+	clearTimeout(statusTimer);
+	if (!sticky)
+		statusTimer = setTimeout(() => s.style.display = 'none', 3000);
+}
+
+// ------------------------------------------------------------------ start
+
+async function start() {
+	let url = new URL(window.location.href);
+	let dark = url.searchParams.get('theme') == 'dark-mode'
+		|| (url.searchParams.get('theme') == null && window.matchMedia('(prefers-color-scheme: dark)').matches);
+	document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+	try {
+		await loadBooks();
+	} catch (e) {
+		document.getElementById('contacts').innerHTML = '';
+		document.getElementById('contacts').appendChild(el('li', {class: 'empty', text: 'Could not reach your contacts'}));
+		return;
+	}
+	let remembered = null;
+	try { remembered = localStorage.getItem('addressbook.book'); } catch (e) {}
+	await openBook(books.some(b => b.id == remembered) ? remembered : DEFAULT_BOOK);
+}
+start();
+</script>
+</body>
+</html>
