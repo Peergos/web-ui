@@ -913,7 +913,7 @@ function renderForm(entry) {
 			onclick: () => { form.emails.push({kind: 'home', value: ''}); draw(); }}));
 
 		body.appendChild(el('h3', {text: 'Address'}));
-		form.adrs.forEach(a => body.appendChild(el('div', {class: 'row'}, [
+		form.adrs.forEach(a => body.appendChild(el('div', {class: 'row address'}, [
 			kindSelect(PLACE_TYPES, a.kind, v => a.kind = v),
 			el('div', {class: 'adr'}, [
 				Object.assign(input(a, 'street', 'Street'), {className: 'wide'}),
