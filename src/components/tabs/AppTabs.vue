@@ -1,13 +1,14 @@
 <template>
 	<div class="app-tabs">
-		<ul class="tabs__header" role="tablist">
+		<ul class="tabs__header" role="tablist" @keydown="moveFocus">
 			<li
 				v-for="(tab, index) in tabs"
 				:key="tab.title"
 				role="presentation"
 				:class="{ active: index == selectedIndex }"
 			>
-				<button type="button" role="tab" :aria-selected="index == selectedIndex ? 'true' : 'false'" @click="selectTab(index)">
+				<button type="button" role="tab" :aria-selected="index == selectedIndex ? 'true' : 'false'"
+				        :tabindex="index == selectedIndex ? 0 : -1" @click="selectTab(index)">
 					{{ tab.title }}
 				</button>
 			</li>
@@ -39,6 +40,20 @@ module.exports = {
 		this.selectTab(0);
 	},
 	methods: {
+		// as tabs are expected to: the arrows, Home and End move between them, and only the
+		// chosen one is in the tab order, so Tab goes on to its form. Moving doesn't open a tab
+		// (Enter or Space does): an opened form takes the focus for its first field, which
+		// would leave the next arrow press in that field.
+		moveFocus(e) {
+			let buttons = [...this.$el.querySelectorAll('.tabs__header button')];
+			let at = buttons.indexOf(document.activeElement);
+			let last = buttons.length - 1;
+			let next = {ArrowLeft: at - 1, ArrowRight: at + 1, Home: 0, End: last}[e.key];
+			if (at < 0 || next == null)
+				return;
+			e.preventDefault();
+			buttons[next < 0 ? last : next > last ? 0 : next].focus();
+		},
 		selectTab(i) {
 			this.selectedIndex = i;
 
