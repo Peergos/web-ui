@@ -5,7 +5,8 @@
                  nothing else answers it, so closing here would leave it waiting for good. No x,
                  and nothing for Escape or a click outside to do; the close button stays, out of
                  sight and with nothing to close, for the keyboard and the page lock it brings. -->
-            <div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="message" @click.stop>
+            <div class="pg-dialog pg-dialog--prompt" role="alertdialog" aria-modal="true" :aria-label="message"
+                 :aria-describedby="body ? 'confirm-body-id' : null" @click.stop>
                 <header class="pg-dialog__head">
                     <h3 class="pg-dialog__title" id="confirm-header-id">{{message}}</h3>
                     <DialogClose v-show="false"/>
