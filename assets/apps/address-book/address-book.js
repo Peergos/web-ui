@@ -223,8 +223,13 @@ function cardToForm(card) {
 	let nc = n ? splitStructured(n.value) : [];
 	let org = prop(card, 'ORG');
 	let bday = prop(card, 'BDAY');
+	// A card with only a formatted name - some exporters write no structured one - shows it in
+	// the first name, rather than empty name fields that would have it typed in again before
+	// it can be saved. Left as it is, it is saved as it was.
+	let fn = text(card, 'FN').trim();
+	let named = (nc[0] || '').trim() || (nc[1] || '').trim();
 	return {
-		family: nc[0] || '', given: nc[1] || '',
+		family: nc[0] || '', given: nc[1] || (named || fn == (org ? splitStructured(org.value)[0] : '') ? '' : fn),
 		org: org ? splitStructured(org.value)[0] : '',
 		title: text(card, 'TITLE'),
 		bday: bday ? toDateInput(bday.value) : '',

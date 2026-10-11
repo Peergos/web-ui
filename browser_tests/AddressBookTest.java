@@ -48,6 +48,9 @@ public class AddressBookTest {
             // a contact as the Custom Apps version, a phone or a CardDAV client stored it
             store(api, ".apps/contacts/data/default", "carol-1.vcf",
                     "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:carol-1\r\nFN:Carol Current\r\nN:Current;Carol;;;\r\nTEL;TYPE=CELL:+44 20 7946 0001\r\nEND:VCARD\r\n");
+            // one with only a formatted name, as some exporters write
+            store(api, ".apps/contacts/data/default", "acme-1.vcf",
+                    "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:acme-1\r\nFN:Acme Support\r\nTEL:+1 555 0100\r\nEND:VCARD\r\n");
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-addressbook-"), headless)) {
                 d.setWindowRect(1280, 900);
@@ -63,13 +66,14 @@ public class AddressBookTest {
 
                 // every contact and address book is a button: Enter on a contact opens it, and the
                 // focus stays on its row, now marked as the open one
+                Object firstName = inFrame(d, "return document.querySelector('#contacts li.card .list-row .names div').textContent");
                 d.switchToFrame(FRAME);
                 try {
                     d.sendKeys(d.find("#contacts li.card .list-row"), "\uE007");
                 } finally {
                     d.switchToTop();
                 }
-                waitInFrame(d, "the contact opened from the keyboard", "const h = document.querySelector('#detail h1'); return h && h.textContent.includes('Carol Current') ? true : null");
+                waitInFrame(d, "the contact opened from the keyboard", "const h = document.querySelector('#detail h1'); return h && h.textContent === arguments[0] ? true : null", firstName);
                 Object focused = inFrame(d, "const a = document.activeElement; return a && a.classList.contains('list-row') ? a.getAttribute('aria-current') + ' ' + a.textContent.trim() : null");
                 if (! String.valueOf(focused).startsWith("true"))
                     throw new AssertionError("The opened contact's row should keep the focus: " + focused);
@@ -77,6 +81,18 @@ public class AddressBookTest {
                 if (! (rows instanceof Number) || ((Number) rows).intValue() < 2)
                     throw new AssertionError("Every book and contact row should be a button: " + rows);
                 System.out.println("  ok   rows are buttons; Enter opens a contact and the focus stays on its row (" + focused + ")");
+
+                // a contact with only a formatted name shows it in the form, and saves with a change
+                inFrame(d, "selectContact('acme-1.vcf'); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;");
+                Object first = waitInFrame(d, "the edit form", "const i = document.querySelector('#detail input[placeholder=\"First name\"]'); return i ? i.value : null");
+                if (! "Acme Support".equals(String.valueOf(first)))
+                    throw new AssertionError("A contact with only a formatted name should show it in the form, not " + first);
+                inFrame(d, "const t = document.querySelector('#detail input[placeholder=\"Job title\"]'); t.value = 'Helpdesk'; t.dispatchEvent(new Event('input'));"
+                        + " document.querySelector('#detail button[type=submit]').click(); return 1;");
+                String acme = waitForStored(api, data + "default", "TITLE:Helpdesk");
+                if (! acme.contains("FN:Acme Support"))
+                    throw new AssertionError("Its name should be kept: " + acme);
+                System.out.println("  ok   a contact with only a formatted name shows it in the form, and saves a change (" + firstLine(acme, "FN:") + ")");
 
                 // a new contact, typed in and saved, is stored where everything else reads it
                 inFrame(d, "document.getElementById('newContactButton').click(); return 1;");
