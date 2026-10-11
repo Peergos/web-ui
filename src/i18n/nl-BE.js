@@ -83,6 +83,8 @@ module.exports = {
     "DRIVE.ZIP":"Zip",
     "DRIVE.DESELECT":"Duid niet meer aan",
     "DRIVE.VIEW":"Bekijk",
+    "DRIVE.OPEN_WITH":"Openen met",
+    "DRIVE.ALWAYS_USE_APP":"Deze app altijd gebruiken voor dit soort bestand",
     "DRIVE.EDIT":"Pas aan",
     "DRIVE.RENAME":"Hernoemen",
     "DRIVE.SHARE":"Deel",
