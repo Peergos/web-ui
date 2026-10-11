@@ -3268,17 +3268,24 @@ module.exports = {
 			var file = this.selectedFiles[0];
 			var filename = file.getFileProperties().name;
 			let latestFile = this.files.filter(f => f.getName() == filename)[0];
-			this.filesToShare = [latestFile];
-			this.pathToFile = this.path;
-			let fileSharedWithState = this.sharedWithState.get(filename);
-			let read_usernames = fileSharedWithState.readAccess.toArray([]);
-			let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
-			this.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
-			this.fromApp = false;
-			this.displayName = latestFile.getFileProperties().name;
-			this.allowReadWriteSharing = true;
-			this.allowCreateSecretLink = true;
-			this.showShare = true;
+			// a listing entry can still be the quick stand-in buildCapWrapper makes, which only has
+			// the file's own methods (getOwnerName among them) once its getFile() has landed
+			let that = this;
+			let path = this.path;
+			let ready = latestFile.isWrapper ? latestFile.getFile() : peergos.shared.util.Futures.of(latestFile);
+			ready.thenApply(latest => {
+				that.filesToShare = [latest];
+				that.pathToFile = path;
+				let fileSharedWithState = that.sharedWithState.get(filename);
+				let read_usernames = fileSharedWithState.readAccess.toArray([]);
+				let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
+				that.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
+				that.fromApp = false;
+				that.displayName = latest.getFileProperties().name;
+				that.allowReadWriteSharing = true;
+				that.allowCreateSecretLink = true;
+				that.showShare = true;
+			});
 		},
 		closeShare() {
 			this.showShare = false;

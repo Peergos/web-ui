@@ -708,6 +708,7 @@ module.exports = {
     "SYNC.STOPPAIR.CONFIRM":"Stop syncing this folder?",
     "SYNC.STOPPAIR.BODY":"Peergos will stop syncing {n}. Nothing is deleted — the files stay both on this device and in your Drive.",
     "SYNC.ADDING":"Creating sync pair…",
+    "SYNC.LINK.REVOKED":"Syncing was revoked: the link this folder syncs through was deleted. To resume, stop syncing and add the folder again.",
     "SYNC.STARTED":"Syncing now",
     "SYNC.ERROR.HOMEDIR":"You cannot sync to your home dir, please make a sub folder",
     "SYNC.ERROR.SETTING":"Could not update this sync setting:",

@@ -119,7 +119,7 @@
 							<p v-if="pair.error && ! wasStopped(pair.error)" class="pg-errorbox">
 								<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.01"/></svg>
 								<span class="pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':err'] }"
-									@click="toggleExpand(pair.label + ':err')">{{ cleanError(pair.error) }}</span>
+									@click="toggleExpand(pair.label + ':err')">{{ pairError(pair.error) }}</span>
 							</p>
 							<div v-else-if="activityOf(pair)" class="pg-activityrow">
 								<p class="pg-activity pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':act'] }"
@@ -488,6 +488,13 @@ module.exports = {
 		// title tooltips never fire on touch, so the full value needs a tap as well
 		toggleExpand(key) {
 			this.expanded[key] = ! this.expanded[key];
+		},
+		/** Deleting the secret link a folder syncs through is how its sync is revoked from
+		 *  elsewhere, and the server then answers each pass with this: say what it means. */
+		pairError(error) {
+			if (/No secret link (present|published)!/.test("" + error))
+				return this.translate("SYNC.LINK.REVOKED");
+			return this.cleanError(error);
 		},
 		stateOf(pair) {
 			if (this.paused)
