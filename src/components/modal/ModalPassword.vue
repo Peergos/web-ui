@@ -11,7 +11,7 @@
 				:consumer_func="consumer_func">
 			</MultiFactorAuth>
 			<FormPassword v-model="existing" :placeholder="translate('PASSWORD.EXISTING')"/>
-			<button type="button" class="pg-btn generate-password" @click="generatePassword()">{{ translate("PASSWORD.GENERATE") }}</button>
+			<button type="button" class="pg-btn pg-btn--primary generate-password" @click="generatePassword()">{{ translate("PASSWORD.GENERATE") }}</button>
 			<FormPassword v-model="password" :placeholder="translate('PASSWORD.NEW')" :passwordIsVisible="showPasswords" firstOfTwo />
 			<FormPassword v-model="password2" :placeholder="translate('PASSWORD.REENTER')" :passwordIsVisible="showPasswords"/>
 		</template>

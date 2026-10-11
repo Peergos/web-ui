@@ -754,7 +754,13 @@ section.login-register {
 }
 
 section.login-register .demo-warning {
-	margin: 20px 0 0;
+	margin: 20px 24px 0;
+}
+
+@media (max-width: 480px) {
+	section.login-register .demo-warning {
+		margin: 16px 16px 0;
+	}
 }
 
 section.login-register .demo-warning a {

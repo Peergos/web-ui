@@ -66,12 +66,11 @@ module.exports = {
 </script>
 
 <style>
-/* The way in: one card holding sign in, mirror and sign up, chosen with a segmented control
-   at its top. */
+/* The way in: one card holding sign in, mirror and sign up, chosen with tabs across its top.
+   The chosen tab is the card's own colour and runs into it. */
 .app-tabs {
 	max-width: 440px;
 	margin: 0 auto;
-	padding: 20px 24px 24px;
 	box-sizing: border-box;
 	color: var(--color);
 	background-color: var(--bg);
@@ -80,14 +79,14 @@ module.exports = {
 	box-shadow: var(--pg-shadow);
 }
 
+/* the card's corner less its border, so the strip and the tabs fill the corner exactly */
 .app-tabs .tabs__header {
 	display: flex;
-	gap: 4px;
 	margin: 0;
-	padding: 4px;
+	padding: 0;
 	list-style: none;
 	background-color: var(--pg-surface-2);
-	border-radius: var(--radius-field);
+	border-radius: calc(var(--radius-container) - 1px) calc(var(--radius-container) - 1px) 0 0;
 }
 
 /* each as wide as its label needs, and no narrower: a longer word in one language (the
@@ -99,14 +98,14 @@ module.exports = {
 
 .app-tabs .tabs__header button {
 	width: 100%;
-	min-height: 38px;
-	padding: 0 10px;
+	min-height: 52px;
+	padding: 0 16px;
 	border: 0;
-	border-radius: var(--radius-control);
+	border-radius: calc(var(--radius-container) - 1px) calc(var(--radius-container) - 1px) 0 0;
 	background-color: transparent;
-	color: var(--pg-muted);
+	color: var(--color);
 	font-family: inherit;
-	font-size: var(--text-small);
+	font-size: var(--text);
 	font-weight: var(--bold);
 	white-space: nowrap;
 	cursor: pointer;
@@ -114,25 +113,32 @@ module.exports = {
 
 .app-tabs .tabs__header > li.active button {
 	background-color: var(--bg);
-	color: var(--color);
-	box-shadow: var(--pg-shadow);
 }
 
 .app-tabs .tabs__header button:focus-visible {
 	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
+	outline-offset: -4px;
+}
+
+.app-tabs .tab {
+	padding: 0 24px 24px;
 }
 
 @media (max-width: 480px) {
-	.app-tabs {
-		padding: 16px;
+	.app-tabs .tabs__header button {
+		min-height: 48px;
+		padding: 0 10px;
+	}
+
+	.app-tabs .tab {
+		padding: 0 16px 16px;
 	}
 }
 
 @media (max-width: 360px) {
 	.app-tabs .tabs__header button {
 		padding: 0 6px;
-		font-size: 13px;
+		font-size: var(--text-small);
 	}
 }
 </style>
