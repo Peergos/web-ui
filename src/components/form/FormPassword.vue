@@ -12,6 +12,8 @@
 		/>
 
 		<AppButton class="eye"
+			:aria-label="translate('PASSWORD.SHOW')"
+			:aria-pressed="visible ? 'true' : 'false'"
 			@click="togglePassword()"
 			:icon="visible ? 'eye-open' : 'eye-closed'"
 		/>

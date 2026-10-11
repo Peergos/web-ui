@@ -37,6 +37,7 @@ module.exports = {
     "PASSWORD.COMMON":"your password is the $PLACE most common password!",
     "PASSWORD.SHORT":"passwords less than $SIZE characters are considered unsafe",
     "PASSWORD.GOOD":"That's a better password",
+    "PASSWORD.SHOW":"Show password",
     "TOUR.TITLE":"Welcome to Peergos!",
     "TOUR.SYNC":"Sync your local files",
     "TOUR.SYNC.DESC":"Synchronise your local files to Peergos automatically on desktop and mobile apps",
