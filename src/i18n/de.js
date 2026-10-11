@@ -140,6 +140,7 @@ module.exports = {
     "APPNAV.NEWSFEED": "Newsfeed",
     "APPNAV.SOCIAL": "Soziale Netzwerke",
     "APPNAV.CAL": "Kalender",
+    "APPNAV.ADDRESSBOOK": "Adressbuch",
     "APPNAV.EMAIL": "E-Mail",
     "APPNAV.UPGRADE": "Upgrade",
     "SEARCH.SEARCH": "Suche",

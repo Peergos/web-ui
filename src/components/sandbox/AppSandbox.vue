@@ -173,10 +173,11 @@ const router = require("../../mixins/router/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const sandboxResponses = require("../../mixins/sandbox/responses.js");
 const launcherMixin = require("../../mixins/launcher/index.js");
+const contactsMixin = require("../../mixins/contacts/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 
 module.exports = {
-	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, UriDecoder],
+	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder],
     components: {
         AddToChat,
         AppInstall,
@@ -212,7 +213,6 @@ module.exports = {
             PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS: 'EXCHANGE_MESSAGES_WITH_FRIENDS',
             PERMISSION_USE_MAILBOX: 'USE_MAILBOX',
             PERMISSION_MANAGE_CONTACTS: 'MANAGE_CONTACTS',
-            DEFAULT_ADDRESS_BOOK: 'default',
             PERMISSION_ACCESS_PROFILE_PHOTO: 'ACCESS_PROFILE_PHOTO',
             PERMISSION_CSP_UNSAFE_EVAL: 'CSP_UNSAFE_EVAL',
             browserMode: false,
@@ -296,7 +296,6 @@ module.exports = {
             mailboxClientProperties: null,
             clientMailboxAddress: "",
             mailboxClient: null,
-            contactsApp: null,
             MAILBOX_CONFIG_FILENAME: 'App.config',
             EMAIL_FILE_EXTENSION: '.cbor',
             messageToTimestamp: new Map(),
@@ -2572,61 +2571,6 @@ module.exports = {
             return val;
         },
         // need to add error handling, null params, invalid chars etc... look at chat api handling for checks
-        // The same layout the CardDAV bridge (ContactStore) serves, so edits here reach synced phones:
-        //   <user>/.apps/contacts/data/<book>/addressbook.inf  {"name"}
-        //   <user>/.apps/contacts/data/<book>/<uid>.vcf
-        // App.config is left alone; the bridge only reads it, and nothing writes it yet.
-        contactsCall: function(future) {
-            return new Promise((resolve, reject) => {
-                future.thenApply(res => resolve(res)).exceptionally(t => {
-                    reject(t);
-                    return null;
-                });
-            });
-        },
-        getContactsApp: async function() {
-            if (this.contactsApp == null) {
-                this.contactsApp = await this.contactsCall(peergos.shared.user.App.init(this.context, "contacts"));
-            }
-            return this.contactsApp;
-        },
-        contactsPath: function(parts) {
-            return peergos.client.PathUtils.directoryToPath(parts);
-        },
-        isValidContactsSegment: function(name) {
-            return name.length > 0 && name.length <= 255 && !name.includes('/') && !name.includes('\\') && !name.startsWith('.');
-        },
-        listAddressBooks: async function() {
-            let dataPath = this.context.username + '/.apps/contacts/data';
-            let dirOpt = await this.contactsCall(this.context.getByPath(dataPath));
-            let books = [];
-            if (dirOpt.ref != null) {
-                let children = (await this.contactsCall(dirOpt.get().getChildren(this.context.crypto.hasher, this.context.network))).toArray();
-                for (const child of children.filter(c => c.isDirectory())) {
-                    books.push({id: child.getName(), name: await this.readAddressBookName(child.getName())});
-                }
-            }
-            if (books.filter(b => b.id == this.DEFAULT_ADDRESS_BOOK).length == 0) {
-                // the bridge serves this one even before it exists on disk
-                books.push({id: this.DEFAULT_ADDRESS_BOOK, name: "Contacts"});
-            }
-            return books;
-        },
-        readAddressBookName: async function(book) {
-            let app = await this.getContactsApp();
-            try {
-                let data = await this.contactsCall(app.readInternal(this.contactsPath([book, 'addressbook.inf']), null));
-                let json = JSON.parse(new TextDecoder().decode(new Uint8Array(data)));
-                return typeof json.name == 'string' ? json.name : book;
-            } catch (e) {
-                return book == this.DEFAULT_ADDRESS_BOOK ? "Contacts" : book;
-            }
-        },
-        writeAddressBookName: async function(book, name) {
-            let app = await this.getContactsApp();
-            let bytes = convertToByteArray(new TextEncoder().encode(JSON.stringify({name: name})));
-            await this.contactsCall(app.writeInternal(this.contactsPath([book, 'addressbook.inf']), bytes, null));
-        },
         handleContactsRequest: function(headerFunc, path, apiMethod, data) {
             let that = this;
             let parts = path.length == 0 ? [] : path.split('/');
@@ -2648,7 +2592,7 @@ module.exports = {
                         if (name.length == 0) {
                             return fail(that.ACTION_FAILED);
                         }
-                        let book = that.generateUUID();
+                        let book = that.newAddressBookId();
                         await that.writeAddressBookName(book, name);
                         that.buildResponse(headerFunc(), location(book), that.CREATE_SUCCESS);
                     } else {
@@ -2663,11 +2607,7 @@ module.exports = {
                         if (!bookExists && book != that.DEFAULT_ADDRESS_BOOK) {
                             return fail(that.FILE_NOT_FOUND);
                         }
-                        let names = bookExists ? (await that.contactsCall(app.dirInternal(that.contactsPath([book]), null))).toArray() : [];
-                        let cards = await Promise.all(names.filter(n => n.endsWith('.vcf')).map(async n => {
-                            let bytes = await that.contactsCall(app.readInternal(that.contactsPath([book, n]), null));
-                            return {file: n, vcard: new TextDecoder().decode(new Uint8Array(bytes))};
-                        }));
+                        let cards = bookExists ? await that.listContactCards(book) : [];
                         that.buildResponse(headerFunc("application/json"), json(cards), that.GET_SUCCESS);
                     } else if (apiMethod == 'PUT') {
                         let name = (JSON.parse(body()).name || '').trim();

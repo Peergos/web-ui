@@ -128,6 +128,7 @@ module.exports = {
     "APPNAV.NEWSFEED":"新闻源",
     "APPNAV.SOCIAL":"社交",
     "APPNAV.CAL":"日历",
+    "APPNAV.ADDRESSBOOK":"通讯录",
     "APPNAV.EMAIL":"邮箱",
     "APPNAV.UPGRADE":"升级",
     "SEARCH.SEARCH":"搜索",

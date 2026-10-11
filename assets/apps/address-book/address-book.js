@@ -1,4 +1,3 @@
-const api = '/peergos-api/v0/contacts/';
 const DEFAULT_BOOK = 'default';
 
 let books = [];
@@ -322,35 +321,53 @@ function formToCard(form, card) {
 	return serialise(lines);
 }
 
-// ------------------------------------------------------------------ server
+// ------------------------------------------------------------------ host
 
-async function call(path, options) {
-	let response = await fetch(api + path, options);
-	if (!response.ok)
-		throw new Error((options && options.method || 'GET') + ' failed: ' + response.status);
-	return response;
+// Peergos hosts this page on a subdomain of its own and keeps the address books, and asks the
+// questions, for it: each request is posted to it and answered under the same id. Only the
+// parent, at the address this page's own is a subdomain of, is listened to.
+const hostOrigin = location.protocol + '//' + location.host.substring(location.host.indexOf('.') + 1);
+const pendingRequests = new Map();
+let nextRequestId = 1;
+let started = false;
+
+function host(type, payload) {
+	return new Promise((resolve, reject) => {
+		let requestId = nextRequestId++;
+		pendingRequests.set(requestId, {resolve: resolve, reject: reject});
+		window.parent.postMessage(Object.assign({}, payload, {type: type, requestId: requestId}), hostOrigin);
+	});
 }
 
-// the sandbox decodes paths with decodeURI, which leaves these escaped, so they must be sent as-is
-function segment(s) {
-	return encodeURIComponent(s).replace(/%(40|3A|3B|2C|3D|2B|24|26)/gi, m => decodeURIComponent(m));
-}
-
-function bookPath(book) {
-	return segment(book);
-}
-
-function cardPath(book, file) {
-	return segment(book) + '/' + segment(file);
-}
+window.addEventListener('message', e => {
+	if (e.origin !== hostOrigin || e.source !== window.parent || e.data == null || typeof e.data !== 'object')
+		return;
+	let data = e.data;
+	if (data.type == 'ping' || data.type == 'setTheme') {
+		applyTheme(data.currentTheme);
+		if (data.type == 'ping' && ! started) {
+			started = true;
+			start();
+		}
+	} else if (data.type == 'answer') {
+		let request = pendingRequests.get(data.requestId);
+		if (request == null)
+			return;
+		pendingRequests.delete(data.requestId);
+		if (data.error)
+			request.reject(new Error('The request failed'));
+		else
+			request.resolve(data);
+	}
+});
 
 async function loadBooks() {
-	books = await (await call('')).json();
+	books = (await host('listBooks')).books;
 	books.sort((a, b) => (a.id == DEFAULT_BOOK ? -1 : b.id == DEFAULT_BOOK ? 1 : a.name.localeCompare(b.name)));
 }
 
 async function loadCards(book) {
-	let list = await (await call(bookPath(book))).json();
+	let list = (await host('loadBook', {book: book})).cards;
 	return list.map(c => {
 		let parsed = parseCards(c.vcard);
 		return parsed.length == 0 ? null : {file: c.file, card: parsed[0]};
@@ -358,7 +375,7 @@ async function loadCards(book) {
 }
 
 async function putCard(book, file, vcard) {
-	await call(cardPath(book, file), {method: 'PUT', body: new TextEncoder().encode(vcard)});
+	await host('saveCard', {book: book, file: file, vcard: vcard});
 }
 
 function fileFor(card) {
@@ -397,13 +414,11 @@ function onBookSelect(value) {
 }
 
 async function newBook() {
-	let name = prompt('Name of the new address book');
-	if (name == null || !name.trim()) return;
 	try {
-		let response = await call('', {method: 'POST', body: JSON.stringify({name: name.trim()})});
-		let location = response.headers.get('location') || '';
+		let answer = await host('newBook');
+		if (answer.cancelled) return;
 		await loadBooks();
-		openBook(decodeURIComponent(location.substring(location.lastIndexOf('/') + 1)) || currentBook);
+		openBook(answer.book);
 	} catch (e) {
 		status('Could not create the address book');
 	}
@@ -411,10 +426,9 @@ async function newBook() {
 
 async function renameBook() {
 	let book = books.find(b => b.id == currentBook);
-	let name = prompt('Rename address book', book ? book.name : '');
-	if (name == null || !name.trim()) return;
 	try {
-		await call(bookPath(currentBook), {method: 'PUT', body: JSON.stringify({name: name.trim()})});
+		let answer = await host('renameBook', {book: currentBook, name: book ? book.name : ''});
+		if (answer.cancelled) return;
 		await loadBooks();
 		renderBooks();
 	} catch (e) {
@@ -425,9 +439,9 @@ async function renameBook() {
 async function deleteBook() {
 	if (currentBook == DEFAULT_BOOK) return;
 	let book = books.find(b => b.id == currentBook);
-	if (!confirm('Delete "' + (book ? book.name : currentBook) + '" and all ' + cards.length + ' contacts in it?')) return;
 	try {
-		await call(bookPath(currentBook), {method: 'DELETE'});
+		let answer = await host('deleteBook', {book: currentBook, name: book ? book.name : currentBook});
+		if (answer.cancelled) return;
 		await loadBooks();
 		openBook(DEFAULT_BOOK);
 	} catch (e) {
@@ -466,9 +480,9 @@ async function saveContact(form, entry) {
 }
 
 async function deleteContact(entry) {
-	if (!confirm('Delete ' + displayName(entry.card) + '?')) return;
 	try {
-		await call(cardPath(currentBook, entry.file), {method: 'DELETE'});
+		let answer = await host('deleteCard', {book: currentBook, file: entry.file, name: displayName(entry.card)});
+		if (answer.cancelled) return;
 	} catch (e) {
 		status('Could not delete the contact');
 		return;
@@ -485,7 +499,7 @@ async function moveContact(entry, target) {
 	try {
 		// written before it is removed, so a failure part way leaves a copy rather than nothing
 		await putCard(target, entry.file, vcard);
-		await call(cardPath(currentBook, entry.file), {method: 'DELETE'});
+		await host('deleteCard', {book: currentBook, file: entry.file});
 	} catch (e) {
 		status('Could not move the contact');
 		return;
@@ -762,11 +776,11 @@ function status(message, sticky) {
 
 // ------------------------------------------------------------------ start
 
+function applyTheme(theme) {
+	document.documentElement.setAttribute('data-theme', theme == 'dark-mode' ? 'dark' : 'light');
+}
+
 async function start() {
-	let url = new URL(window.location.href);
-	let dark = url.searchParams.get('theme') == 'dark-mode'
-		|| (url.searchParams.get('theme') == null && window.matchMedia('(prefers-color-scheme: dark)').matches);
-	document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
 	try {
 		await loadBooks();
 	} catch (e) {
@@ -778,4 +792,16 @@ async function start() {
 	try { remembered = localStorage.getItem('addressbook.book'); } catch (e) {}
 	await openBook(books.some(b => b.id == remembered) ? remembered : DEFAULT_BOOK);
 }
-start();
+
+document.getElementById('newBookButton').addEventListener('click', () => newBook());
+document.getElementById('bookSelect').addEventListener('change', e => onBookSelect(e.target.value));
+document.getElementById('renameBookButton').addEventListener('click', () => renameBook());
+document.getElementById('deleteBookButton').addEventListener('click', () => deleteBook());
+document.getElementById('newContactButton').addEventListener('click', () => newContact());
+document.getElementById('importButton').addEventListener('click', () => document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', e => importFiles(e.target));
+document.getElementById('search').addEventListener('input', () => renderContacts());
+
+// the theme the page was opened in, until the host's first ping, which starts it
+applyTheme(new URL(window.location.href).searchParams.get('theme'));
+window.parent.postMessage({type: 'hello'}, hostOrigin);

@@ -50,6 +50,8 @@ public class Suite {
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
             run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "choosing between two apps for a file, and always using one", () -> AppChoiceTest.run(args1));
+            run(failures, "Address Book, in the navigation on its own subdomain", () -> AddressBookTest.run(args1));
+            run(failures, "the contacts api an app with MANAGE_CONTACTS gets", () -> ContactsApiTest.run(args1));
             run(failures, "an admin inviting new users", () -> AdminInviteTest.run(args1));
             run(failures, "inviting new users on a paid instance", () -> AdminInvitePaidTest.run(args1));
 

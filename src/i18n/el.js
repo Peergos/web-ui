@@ -164,6 +164,7 @@ module.exports = {
     "APPNAV.NEWSFEED":"Ροή ειδήσεων",
     "APPNAV.SOCIAL":"Κοινωνικά",
     "APPNAV.CAL":"Ημερολόγιο",
+    "APPNAV.ADDRESSBOOK":"Επαφές",
     "APPNAV.EMAIL":"Email",
     "APPNAV.UPGRADE":"Αναβάθμιση",
     "SEARCH.SEARCH":"Αναζήτηση",

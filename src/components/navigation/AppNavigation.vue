@@ -22,6 +22,7 @@
 			<MenuItem :label="translate('APPNAV.NEWSFEED')" icon="news" view="NewsFeed" />
 			<MenuItem :label="translate('APPNAV.SOCIAL')" icon="social" view="Social" />
 			<MenuItem :label="translate('APPNAV.CAL')" icon="calendar" view="Calendar" />
+			<MenuItem :label="translate('APPNAV.ADDRESSBOOK')" icon="address-book" view="AddressBook" />
 		</ul>
 
 

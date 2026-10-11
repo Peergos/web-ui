@@ -11,21 +11,21 @@
 	<aside id="books">
 		<div class="pane-head"><h2>Address books</h2></div>
 		<ul class="scroll" id="bookList"></ul>
-		<div class="foot"><button onclick="newBook()">+ New address book</button></div>
+		<div class="foot"><button type="button" id="newBookButton">+ New address book</button></div>
 	</aside>
 	<section id="list">
 		<div class="pane-head">
 			<h2 id="bookTitle"></h2>
-			<select id="bookSelect" onchange="onBookSelect(this.value)"></select>
-			<button class="link" title="Rename address book" onclick="renameBook()">Rename</button>
-			<button class="link" id="deleteBookButton" title="Delete address book" onclick="deleteBook()">Delete</button>
+			<select id="bookSelect"></select>
+			<button type="button" class="link" id="renameBookButton" title="Rename address book">Rename</button>
+			<button type="button" class="link" id="deleteBookButton" title="Delete address book">Delete</button>
 		</div>
 		<div class="pane-head">
-			<button class="primary" onclick="newContact()">+ New contact</button>
-			<button onclick="document.getElementById('importFile').click()">Import .vcf</button>
-			<input type="file" id="importFile" accept=".vcf,text/vcard" multiple style="display:none" onchange="importFiles(this)">
+			<button type="button" class="primary" id="newContactButton">+ New contact</button>
+			<button type="button" id="importButton">Import .vcf</button>
+			<input type="file" id="importFile" accept=".vcf,text/vcard" multiple hidden>
 		</div>
-		<div class="search"><input id="search" type="search" placeholder="Search" oninput="renderContacts()"></div>
+		<div class="search"><input id="search" type="search" placeholder="Search"></div>
 		<ul class="scroll" id="contacts"></ul>
 	</section>
 	<main id="detail"></main>
