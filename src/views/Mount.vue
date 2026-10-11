@@ -133,6 +133,15 @@
 						</li>
 					</ul>
 				<p v-if="mountNote" class="pg-note">{{ translate(mountNote) }}</p>
+				<div v-if="deviceSync && (config.syncCalendar || config.syncContacts)" class="mount-device">
+					<p class="pg-note">{{ translate("MOUNT.DEVICE.SCOPE") }}</p>
+					<details class="mount-device__more">
+						<summary>{{ translate("MOUNT.DEVICE.MORE") }}</summary>
+						<ul>
+							<li v-for="point in devicePoints" :key="point">{{ translate(point) }}</li>
+						</ul>
+					</details>
+				</div>
 				</template>
 
 				<!-- Not mounted: say what it costs before they commit, not after -->
@@ -163,7 +172,7 @@
 					<label v-if="config.canSyncCalendar" class="pg-switch">
 						<input type="checkbox" v-model="form.syncCalendar" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
-						<span>{{ translate("MOUNT.USE.CALENDAR") }}</span>
+						<span>{{ translate(deviceSync ? "MOUNT.USE.CALENDAR.DEVICE" : "MOUNT.USE.CALENDAR") }}</span>
 					</label>
 
 					<label v-if="config.canSyncContacts" class="pg-switch">
@@ -171,6 +180,18 @@
 						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.USE.CONTACTS") }}</span>
 					</label>
+
+					<!-- On a phone these switches reach into its own Calendar and Contacts apps: say
+					     what they touch there, and what they leave alone, before anything syncs -->
+					<div v-if="deviceSync" class="mount-device">
+						<p class="pg-note">{{ translate("MOUNT.DEVICE.SCOPE") }}</p>
+						<details class="mount-device__more">
+							<summary>{{ translate("MOUNT.DEVICE.MORE") }}</summary>
+							<ul>
+								<li v-for="point in devicePoints" :key="point">{{ translate(point) }}</li>
+							</ul>
+						</details>
+					</div>
 
 					<label class="pg-switch">
 						<input type="checkbox" v-model="form.autoMount" />
@@ -357,10 +378,28 @@ module.exports = {
             if (this.config.mountDrive)
                 parts.push(this.translate("MOUNT.SUMMARY.DRIVE"));
             if (this.config.syncCalendar)
-                parts.push(this.translate("MOUNT.SUMMARY.CALENDAR"));
+                parts.push(this.translate(this.deviceSync ? "MOUNT.SUMMARY.CALENDAR.DEVICE" : "MOUNT.SUMMARY.CALENDAR"));
             if (this.config.syncContacts)
                 parts.push(this.translate("MOUNT.SUMMARY.CONTACTS"));
             return parts.length === 0 ? this.translate("MOUNT.SUMMARY.MOUNTED") : parts.join(", ");
+        },
+        /** Calendars and contacts go into this device's own apps, as on Android, rather than to a
+         *  client pointed at the bridge. Tasks don't: the phone's Calendar app can't hold them. */
+        deviceSync() {
+            return ! this.config.davClients && (this.config.canSyncCalendar || this.config.canSyncContacts);
+        },
+        /** Before enabling, what each switch on offer would do; after, only what is syncing, and
+         *  not tasks, which the note above already accounts for. What syncs and what doesn't is a
+         *  note of its own, in view before and after. */
+        devicePoints() {
+            const contacts = this.isMounted ? this.config.syncContacts : this.config.canSyncContacts;
+            let points = ["MOUNT.DEVICE.BOTH_WAYS", "MOUNT.DEVICE.CONFLICT"];
+            if (contacts)
+                points.push("MOUNT.DEVICE.NEW_CONTACTS");
+            if (! this.isMounted && this.config.canSyncCalendar)
+                points.push("MOUNT.DEVICE.TASKS");
+            points.push("MOUNT.DEVICE.UNMOUNT");
+            return points;
         },
         anythingChosen() {
             return this.form.mountDrive || this.form.syncCalendar || this.form.syncContacts;
@@ -593,6 +632,39 @@ module.exports = {
 .mount-setup .pg-switch {
 	/* hugs its label, rather than stretching to the width of the card */
 	align-self: flex-start;
+}
+
+/* what syncing a phone's calendars and contacts does: the answer to the worry first, the rest
+   on request */
+.mount-device {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.mount-device__more summary {
+	width: fit-content;
+	color: var(--pg-link);
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	cursor: pointer;
+}
+
+.mount-device__more summary:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+	border-radius: 4px;
+}
+
+.mount-device__more ul {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 8px 0 0;
+	padding-left: 20px;
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	line-height: 1.5;
 }
 
 .mount-field {
