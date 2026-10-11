@@ -199,7 +199,8 @@ public class Page {
                     "return !!((window.__drive.showAppSandbox"
                     + "     && document.querySelector('iframe#sandboxId'))"
                     + " || (window.__drive.showMarkupViewer && document.querySelector('#md-editor'))"
-                    + " || (window.__drive.showPdfViewer && document.querySelector('#pdf')))")))
+                    + " || (window.__drive.showPdfViewer && document.querySelector('#pdf'))"
+                    + " || (window.__drive.showHexViewer && document.querySelector('.hex-viewer')))")))
                 return true;
             WebDriver.sleep(250);
         }
