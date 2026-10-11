@@ -614,7 +614,8 @@ module.exports = {
   }
 }
 
-.slideshow-wrapper video, audio {
+.slideshow-wrapper video,
+.slideshow-wrapper audio {
   object-fit: contain;
   width:100%;
   height:100%;
