@@ -170,7 +170,6 @@ const precachedAssets = [
   'privacy.html',
   'pro.html',
   'terms.html',
-  'images/arrows-alt.svg',
   'js/sha256.min.js',
   'js/sha256stream.min.js',
   // blake3 has no WebCrypto fallback, so an uncached module means an upload cannot hash

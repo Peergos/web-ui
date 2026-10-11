@@ -1,131 +1,115 @@
 <template>
-	<div class="app-signup">
+	<div class="app-signup pg-auth">
 		<template v-if="showSignup()">
 			<input
+				class="pg-input"
 				type="text"
 				autofocus
 				name="username"
 				v-model="username"
 				ref="username"
 				:placeholder="translate('SIGNUP.USERNAME')"
+				:aria-label="translate('SIGNUP.USERNAME')"
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
-			<AppButton class="generate-password" type="primary" block accent @click="generatePassword()">
+			<button type="button" class="pg-btn generate-password" @click="generatePassword()">
 				{{ translate("SIGNUP.GENERATE") }}
-			</AppButton>
+			</button>
 
 			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.CLICKGEN')" firstOfTwo />
 
 			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" @keyup.enter="signup()"/>
 
-			<label class="checkbox__group">
-				{{ translate("SIGNUP.AGREE") }}
-				<input
-					type="checkbox"
-					name="safePassword"
-					v-model="safePassword"
-				/>
-				<span class="checkmark"></span>
+			<label class="pg-auth__check">
+				<input type="checkbox" name="safePassword" v-model="safePassword"/>
+				<span>{{ translate("SIGNUP.AGREE") }}</span>
 			</label>
 
-			<label class="checkbox__group">
-				{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a>
-				<input
-					type="checkbox"
-					name="tosAccepted"
-					v-model="tosAccepted"
-				/>
-				<span class="checkmark"></span>
+			<label class="pg-auth__check">
+				<input type="checkbox" name="tosAccepted" v-model="tosAccepted"/>
+				<span>{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a></span>
 			</label>
 
-			<AppButton class="signup" type="primary" block accent @click="signup()" icon="arrow-right">
+			<button type="button" class="pg-btn pg-btn--primary signup" @click="signup()">
 				{{ signupButtonText }}
-			</AppButton>
+			</button>
 		</template>
 
-                <template v-else-if="showPaidPlans()">
-                        <div class="options_container">
-                            <div class="button-group-container">
-                                <div class="priceslider" data-select="billing"> 
-                                     <label class="entry" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
-                                     <label class="entry" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
-                                </div>
-                            </div>
-			    <div class="card__meta options">
-				<h3>Pro Account</h3>
-				<ul>
-				    <li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
-				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;{{ price1() }}</li>
-				</ul>
-                                <AppButton @click="setPlan(200000000000)" type="primary" block accent>Select Pro</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Visionary Account</h3>
-				<ul>
-				    <li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
-				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;{{ price2() }}</li>
-				</ul>
-                                <AppButton @click="setPlan(1000000000000)" type="primary" block accent>Select Visionary</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>Pioneer Account</h3>
-				<ul>
-				    <li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
-				    <li>{{ translate("SIGNUP.BUNDLED") }}</li>
-				    <li>&#x00A3;{{ price3() }}</li>
-				</ul>
-                                <AppButton @click="setPlan(3000000000000)" type="primary" block accent>Select Pioneer</AppButton>
-			    </div>
-                            <div class="card__meta options">
-				<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
-				<label><u><a href="https://peergos-demo.net/?signup=true" target="_blank">{{ translate("SIGNUP.TRY") }}</a></u>.
-                                </label>
-			    </div>
-                        </div>
-                </template>
+		<template v-else-if="showPaidPlans()">
+			<div class="pg-auth__billing" role="radiogroup" aria-label="Billing">
+				<label :class="{ active: ! annual }"><input type="radio" name="billing" value="monthly" :checked="! annual" @change="setMonthly()">Monthly</label>
+				<label :class="{ active: annual }"><input type="radio" name="billing" value="yearly" :checked="annual" @change="setAnnual()">Yearly</label>
+			</div>
+			<ul class="pg-plans">
+				<li class="pg-plan">
+					<h3>Pro Account</h3>
+					<ul>
+						<li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price1() }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(200000000000)">Select Pro</button>
+				</li>
+				<li class="pg-plan">
+					<h3>Visionary Account</h3>
+					<ul>
+						<li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price2() }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(1000000000000)">Select Visionary</button>
+				</li>
+				<li class="pg-plan">
+					<h3>Pioneer Account</h3>
+					<ul>
+						<li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price3() }}</li>
+					</ul>
+					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(3000000000000)">Select Pioneer</button>
+				</li>
+				<li class="pg-plan">
+					<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
+					<p><a href="https://peergos-demo.net/?signup=true" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TRY") }}</a>.</p>
+				</li>
+			</ul>
+		</template>
 
-                <template v-else-if="showSignupWarning">
-                    <h2>This server is currently not accepting open signups</h2>
-                    <p>If this is your self-hosted server, ask the administrator for a signup token or enable signups on that instance.</p>
-                    <p>The desktop app can be pointed at a self-hosted server with <code>peergos -server-url https://YOUR_SERVER</code> or by setting <code>server-url = https://YOUR_SERVER</code> in <code>~/.peergos/config</code>.</p>
-                    <p>For security, prefer <code>https</code>; use plain <code>http</code> only for loopback addresses such as <code>http://localhost:8000</code>.</p>
-	        </template>
-                
+		<template v-else-if="showSignupWarning">
+			<h2>This server is currently not accepting open signups</h2>
+			<p>If this is your self-hosted server, ask the administrator for a signup token or enable signups on that instance.</p>
+			<p>The desktop app can be pointed at a self-hosted server with <code>peergos -server-url https://YOUR_SERVER</code> or by setting <code>server-url = https://YOUR_SERVER</code> in <code>~/.peergos/config</code>.</p>
+			<p>For security, prefer <code>https</code>; use plain <code>http</code> only for loopback addresses such as <code>http://localhost:8000</code>.</p>
+		</template>
+
 		<template v-else>
 			<h2>This server is currently not accepting signups</h2>
 			<p>Join the waiting list to be notified when there are more places.</p>
 			<input
-			    type="text"
-			    name="email"
-			    v-model="email"
-			    placeholder="Email"
+				class="pg-input"
+				type="text"
+				name="email"
+				v-model="email"
+				placeholder="Email"
+				aria-label="Email"
 			/>
-			<AppButton
-			    @click="addToWaitList()"
-			    class="waiting-list"
-			    type="primary"
-                            block
-                            accent
-			>
+			<button type="button" class="pg-btn pg-btn--primary waiting-list" @click="addToWaitList()">
 				Join waiting list
-			</AppButton>
+			</button>
 		</template>
-                <continue
-                    v-if="showContinue"
-                    v-on:hide-continue="showContinue = false"
-                    :message='continue_message'
-                    :body="continue_body"
-                    :ok_func="continue_func"
-                    :href="paymentUrl">
-                </continue>
+		<continue
+			v-if="showContinue"
+			v-on:hide-continue="showContinue = false"
+			:message='continue_message'
+			:body="continue_body"
+			:ok_func="continue_func"
+			:href="paymentUrl">
+		</continue>
 	</div>
 </template>
 
 <script>
-const AppButton = require("AppButton.vue");
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
@@ -136,7 +120,6 @@ const i18n = require("../i18n/index.js");
 const Continue = require("Continue.vue");
 module.exports = {
     components: {
-        AppButton,
 	    FormPassword,
         Continue,
     },
@@ -238,9 +221,6 @@ module.exports = {
 	setPlan(quotaBytes) {
             this.desiredQuota = quotaBytes;
         },
-	lowercaseUsername(){
-	    this.username.toLowerCase()
-	},
 	addToWaitList() {
 	    var that = this;
 	    if (this.network == null) {
@@ -362,65 +342,3 @@ module.exports = {
     }
 };
 </script>
-
-<style>
-.button-group-container {
-	margin-block: 24px;
-	display: flex;
-	justify-content: center;
-	gap: 8px;
-}
-
-.priceslider {
-	display: flex;
-	align-items: center;
-	height: 36px;
-
-	border-radius: 36px;
-	background-color: #efefef;
-}
-
-.priceslider .entry {
-	display: flex;
-	align-items: center;
-	padding: 0 16px;
-	border-radius: 36px;
-	height: 36px;
-	font-weight: var(--bold);
-	color: var(--gray-3);
-	cursor: pointer;
-}
-
-.entry:has(input:checked),
-.entry.active {
-	background-color: var(--green-500);
-	color: white;
-}
-
-input[type="radio"] {
-	height: 0;
-	width: 0;
-	visibility: hidden;
-	display: none;
-}
-
-
-.app-signup .generate-password,
-.app-signup .signup,
-.app-signup .waiting-list{
-	margin: 8px 0;
-}
-
-
-/* Waiting list */
-.app-signup h2{
-	margin-bottom: 28px;
-	font-size: var(--title);
-	line-height: var(--title-height);
-	font-weight: var(--bold);
-	text-align: left;
-}
-.app-signup p{
-	text-align: left;
-}
-</style>

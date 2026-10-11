@@ -26,7 +26,8 @@ public class LanguageTest {
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
 
             open(d, "el");
-            String button = String.valueOf(d.script("return [...document.querySelectorAll('button')].map(b => b.textContent.trim()).filter(t => t).join(' | ')"));
+            // the form's buttons, not the tabs: in Greek the Login tab says Σύνδεση as well
+            String button = String.valueOf(d.script("return [...document.querySelectorAll('button:not([role=tab])')].map(b => b.textContent.trim()).filter(t => t).join(' | ')"));
             if (! button.contains("Σύνδεση"))
                 throw new AssertionError("Chosen Greek, the sign in button should read Σύνδεση: " + button);
             if (! "el".equals(d.script("return document.documentElement.lang")))
@@ -53,7 +54,7 @@ public class LanguageTest {
                 function set(el, v) { el.value = v; el.dispatchEvent(new Event('input', {bubbles: true})); }
                 const ins = [...document.querySelectorAll('input')];
                 set(ins.find(i => i.name === 'username'), 'peergos'); set(ins.find(i => i.type === 'password'), 'testpassword');
-                const b = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Σύνδεση' && ! b.disabled);
+                const b = [...document.querySelectorAll('button:not([role=tab])')].find(b => b.textContent.trim() === 'Σύνδεση' && ! b.disabled);
                 if (b) b.click(); return 1;""");
             d.waitForScript("signed in", "(() => { const r = " + Page.VUE + ".root(); const s = r && r.$store.state;"
                     + " return !! (s && s.context && s.context.username); })()", 120_000);

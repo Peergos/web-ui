@@ -12,6 +12,8 @@
 		/>
 
 		<AppButton class="eye"
+			:aria-label="translate('PASSWORD.SHOW')"
+			:aria-pressed="visible ? 'true' : 'false'"
 			@click="togglePassword()"
 			:icon="visible ? 'eye-open' : 'eye-closed'"
 		/>
@@ -108,11 +110,14 @@ module.exports = {
 	background-color: var(--bg-2);
 }
 
-/* in a dialog the field matches the dialog's other fields, with the eye inside its right edge */
-.pg-dialog .password__wrapper {
+/* in a dialog, and on the way in, the field matches the other fields there, with the eye inside
+   its right edge */
+.pg-dialog .password__wrapper,
+.pg-auth .password__wrapper {
 	margin: 0;
 }
-.pg-dialog .password__wrapper input {
+.pg-dialog .password__wrapper input,
+.pg-auth .password__wrapper input {
 	width: 100%;
 	height: 44px;
 	margin: 0;
@@ -124,12 +129,14 @@ module.exports = {
 	font-family: inherit;
 	font-size: 15px;
 }
-.pg-dialog .password__wrapper input:focus {
+.pg-dialog .password__wrapper input:focus,
+.pg-auth .password__wrapper input:focus {
 	outline: none;
 	border-color: var(--green-500);
 	box-shadow: 0 0 0 3px var(--pg-tint-ok);
 }
-.pg-dialog .password__wrapper .eye {
+.pg-dialog .password__wrapper .eye,
+.pg-auth .password__wrapper .eye {
 	top: 50%;
 	right: 4px;
 	transform: translateY(-50%);

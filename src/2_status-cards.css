@@ -945,6 +945,144 @@ a.pg-btn {
 	background-color: var(--pg-surface-2);
 }
 
+/* ---------- the way in ---------- */
+
+/* Sign in, mirror and sign up: a column of the dialogs' fields and buttons in the card the
+   tabs make, every button as wide as the column. */
+.pg-auth {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding-top: 20px;
+}
+.pg-auth .pg-btn {
+	width: 100%;
+	min-height: 44px;
+}
+.pg-auth__check {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+	line-height: 1.45;
+	cursor: pointer;
+}
+.pg-auth__check input {
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	margin: 1px 0 0;
+	accent-color: var(--pg-primary);
+	cursor: pointer;
+}
+.pg-auth__check a {
+	color: var(--pg-link);
+}
+.pg-auth h2 {
+	margin: 0;
+	border: 0;
+	font-size: 18px;
+	font-weight: var(--bold);
+	line-height: 1.3;
+}
+.pg-auth p {
+	margin: 0;
+	font-size: var(--text-small);
+	line-height: 1.55;
+	color: var(--pg-muted);
+}
+.pg-auth code {
+	padding: 1px 5px;
+	border-radius: 4px;
+	background-color: var(--pg-surface-2);
+	color: var(--color);
+	font-size: 12px;
+	overflow-wrap: anywhere;
+}
+.pg-auth__hint {
+	color: var(--pg-on-error);
+	text-align: center;
+}
+
+/* monthly or yearly */
+.pg-auth__billing {
+	display: flex;
+	align-self: center;
+	gap: 4px;
+	padding: 4px;
+	background-color: var(--pg-surface-2);
+	border-radius: var(--radius-pill);
+}
+.pg-auth__billing label {
+	position: relative;
+	min-width: 96px;
+	padding: 8px 16px;
+	border-radius: var(--radius-pill);
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	text-align: center;
+	cursor: pointer;
+}
+/* out of sight but still in the tab order */
+.pg-auth__billing input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+/* the chosen one filled, as in the upgrade dialog: the same choice looks the same signed in or not */
+.pg-auth__billing label.active {
+	background-color: var(--pg-primary);
+	color: var(--pg-on-primary);
+}
+.pg-auth__billing label:focus-within {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+.pg-plans {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+/* the upgrade dialog's plans: a tinted card, a ticked list, the button under it */
+.pg-plan {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px;
+	border-radius: var(--radius-control);
+	background-color: var(--pg-surface-2);
+}
+.pg-plan h3 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: var(--bold);
+}
+.pg-plan ul {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.pg-plan li {
+	padding-left: 26px;
+	font-size: var(--text-small);
+	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left 2px no-repeat;
+	background-size: 18px auto;
+}
+.pg-plan .pg-btn {
+	margin-top: 6px;
+}
+
 /* Tables. A list with a header that stays while its rows scroll under it: the
    uppercase labels of .pg-endpoint__label, hairline rules and tabular figures.
    A table sets its own columns and row height; this is everything else. */

@@ -1,46 +1,42 @@
 <template>
-		<div class="app-login" v-if="!autoLoggingIn">
+	<div class="app-login pg-auth" v-if="!autoLoggingIn">
 		<input
+			class="pg-input"
 			type="text"
 			autofocus
 			name="username"
 			autocomplete="username"
 			v-model="username"
 			:placeholder="translate('LOGIN.USERNAME')"
+			:aria-label="translate('LOGIN.USERNAME')"
 			ref="username"
 			@input="(val) => (username = username.toLowerCase())"
 		/>
-        <MultiFactorAuth
-                v-if="showMultiFactorAuth"
-                v-on:hide-confirm="showMultiFactorAuth = false"
-                :mfaMethods="mfaMethods"
-                :challenge="challenge"
-                :consumer_cancel_func="consumer_cancel_func"
-                :consumer_func="consumer_func">
-        </MultiFactorAuth>
+		<MultiFactorAuth
+			v-if="showMultiFactorAuth"
+			v-on:hide-confirm="showMultiFactorAuth = false"
+			:mfaMethods="mfaMethods"
+			:challenge="challenge"
+			:consumer_cancel_func="consumer_cancel_func"
+			:consumer_func="consumer_func">
+		</MultiFactorAuth>
 		<FormPassword v-model="password" :placeholder="translate('LOGIN.PASSWORD')" @keyup.enter="login()"/>
 
-        <label class="checkbox__group">
-            {{ translate('LOGIN.STAY') }}
-            <input
-                type="checkbox"
-                name="stayLoggedIn"
-                v-model="stayLoggedIn"
-            />
-            <span class="checkmark"></span>
-        </label>
+		<label class="pg-auth__check">
+			<input type="checkbox" name="stayLoggedIn" v-model="stayLoggedIn"/>
+			<span>{{ translate('LOGIN.STAY') }}</span>
+		</label>
 
-		<p class="login__server-hint" v-if="network == null && !networkLoading && isLocalhost">
+		<p class="pg-auth__hint" v-if="network == null && !networkLoading && isLocalhost">
 			{{ translate('LOGIN.SERVER.CONFIGURE_FIRST') }}
 		</p>
-		<AppButton :disabled="isLoggingIn || network == null" class="login" @click="login()" type="primary" block accent  icon="arrow-right">
+		<button type="button" class="pg-btn pg-btn--primary" :disabled="isLoggingIn || network == null" @click="login()">
 			{{ translate('LOGIN.BUTTON') }}
-		</AppButton>
+		</button>
 	</div>
 </template>
 
 <script>
-const AppButton = require("AppButton.vue");
 const FormPassword = require("./form/FormPassword.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
@@ -50,7 +46,6 @@ const i18n = require("../i18n/index.js");
 
 module.exports = {
 	components: {
-    	AppButton,
 		FormPassword,
 		MultiFactorAuth,
 	},
@@ -252,27 +247,7 @@ module.exports = {
 };
 </script>
 <style>
-.login-register .tab{
-	padding: calc(var(--app-margin) / 2);
-}
-
-.login-register .login{
-	margin-top: 8px;
-}
-
-.login-register input[name="username"]{
-	text-transform:lowercase;
-}
-
-.app-login .demo--warning{
-	text-align: left;
-	margin-top: var(--app-margin);
-}
-
-.login__server-hint {
-	color: #c0392b;
-	font-size: var(--text-small);
-	margin: 8px 0 0;
-	text-align: center;
+.login-register input[name="username"] {
+	text-transform: lowercase;
 }
 </style>

@@ -103,10 +103,4 @@ module.exports = {
 	flex-wrap: wrap;
 	gap: 10px;
 }
-
-/* a page-wide rule hides every radio outright, which also takes it out of the tab order */
-.new-image__formats input[type="radio"] {
-	display: inline;
-	visibility: visible;
-}
 </style>
