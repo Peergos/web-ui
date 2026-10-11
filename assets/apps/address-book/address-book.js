@@ -301,7 +301,11 @@ function cardToForm(card) {
 const MANAGED = ['VERSION', 'FN', 'N', 'ORG', 'TITLE', 'TEL', 'EMAIL', 'ADR', 'BDAY', 'URL', 'NOTE', 'REV'];
 
 // rebuilds a multi-valued property, keeping its group and any parameters we do not manage
-function typedLine(entry, name, kind, value, choices, ver) {
+function typedLine(entry, name, kind, value, choices, ver, aliases) {
+	// a kind left as it was keeps its types as they were: a work mobile whose number is changed
+	// stays a work mobile, though the choices only know it as a mobile
+	if (entry.orig && kindOf(entry.orig, choices, aliases) == kind)
+		return line(entry.orig.group, name, entry.orig.params, value);
 	let known = choices.map(c => c[0]).concat(Object.keys(TEL_ALIASES));
 	let params = entry.orig ? entry.orig.params.map(x => x.key != 'TYPE' ? x :
 			{key: 'TYPE', values: x.values.filter(v => !known.includes(v.toLowerCase()))})
@@ -309,6 +313,13 @@ function typedLine(entry, name, kind, value, choices, ver) {
 	if (kind != 'other')
 		params.push({key: 'TYPE', values: [ver == '4.0' ? kind : kind.toUpperCase()]});
 	return line(entry.orig ? entry.orig.group : '', name, params, value);
+}
+
+// A phone stored as a tel: URI (vCard 4's VALUE=uri) is written back as one, which has no spaces.
+function telValue(orig, number) {
+	let uri = orig != null && (/^tel:/i.test(orig.value)
+		|| orig.params.some(x => x.key == 'VALUE' && x.values.some(v => v.toLowerCase() == 'uri')));
+	return uri ? 'tel:' + number.replace(/\s+/g, '-') : number;
 }
 
 function formToCard(form, card) {
@@ -345,7 +356,9 @@ function formToCard(form, card) {
 		if (p && before && value == previous) lines.push(p.raw);
 		else if (value.trim()) lines.push(build(value));
 	};
-	single('ORG', form.org, before && before.org, v => 'ORG:' + escapeText(v));
+	// the departments after the company name stay with it when only the name is changed
+	let units = card && prop(card, 'ORG') ? splitStructured(prop(card, 'ORG').value).slice(1) : [];
+	single('ORG', form.org, before && before.org, v => 'ORG:' + [v].concat(units).map(escapeText).join(';'));
 	single('TITLE', form.title, before && before.title, v => 'TITLE:' + escapeText(v));
 	single('BDAY', form.bday, before && before.bday,
 		v => 'BDAY:' + (ver == '4.0' ? v.replace(/-/g, '') : v));
@@ -356,7 +369,7 @@ function formToCard(form, card) {
 		if (t.orig && t.orig.value.replace(/^tel:/i, '') == t.value && kindOf(t.orig, TEL_TYPES, TEL_ALIASES) == t.kind)
 			lines.push(t.orig.raw);
 		else
-			lines.push(typedLine(t, 'TEL', t.kind, clean(t.value), TEL_TYPES, ver));
+			lines.push(typedLine(t, 'TEL', t.kind, telValue(t.orig, clean(t.value)), TEL_TYPES, ver, TEL_ALIASES));
 	});
 	form.emails.filter(e => clean(e.value)).forEach(e => {
 		if (e.orig && e.orig.value == e.value && kindOf(e.orig, PLACE_TYPES) == e.kind)

@@ -43,6 +43,7 @@ public class AddressBookFormatsTest {
                 AddressBookTest.waitInFrame(d, "the app", "return document.getElementById('bookTitle').textContent === 'Contacts' ? true : null");
                 List<String> failures = new ArrayList<>();
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -97,6 +98,41 @@ public class AddressBookFormatsTest {
         String found = AddressBookTest.waitForStored(api, book, "UID:" + uid);
         // unfolded first: a long line is stored folded, as vCard allows
         return found.replace("\r\n ", "").replace("\r\n", "|");
+    }
+
+    static String storedLine(UserContext api, String book, String uid, String prefix, String expected) {
+        try {
+            AddressBookTest.waitFor(uid + " to be stored with " + expected, () -> stored(api, book, uid).contains("|" + expected + "|"));
+        } catch (AssertionError e) {
+            // said below, with what is there
+        }
+        return Arrays.stream(stored(api, book, uid).split("\\|")).filter(l -> l.startsWith(prefix)).findFirst().orElse("(none)");
+    }
+
+    static void editAndSave(WebDriver d, String file, String change) {
+        AddressBookTest.inFrame(d, "selectContact(arguments[0]); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;", file);
+        AddressBookTest.waitInFrame(d, "the edit form", "return document.querySelector('#detail form') ? true : null");
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + change
+                + " document.querySelector('#detail button[type=submit]').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+    }
+
+    // an edit keeps what it didn't touch: a phone stored as a tel: URI stays one, the departments
+    // after a company name stay when the name changes, and a work mobile stays one
+    static void editsKeep(WebDriver d, UserContext api, String book) {
+        AddressBookSafetyTest.elsewhere(d, "window.__addressBook.writeContactCard('default', 'uri-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:4.0\\r\\nUID:uri-1\\r\\nFN:Uri Phone\\r\\nN:Phone;Uri;;;\\r\\nTEL;VALUE=uri;TYPE=home:tel:+44-20-7946-0000\\r\\nEND:VCARD\\r\\n')"
+                + ".then(() => window.__addressBook.writeContactCard('default', 'org-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:org-1\\r\\nFN:Ann Org\\r\\nN:Org;Ann;;;\\r\\nORG:Acme Ltd;Research;Optics\\r\\nEND:VCARD\\r\\n'))"
+                + ".then(() => window.__addressBook.writeContactCard('default', 'wm-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:wm-1\\r\\nFN:Bo Mobile\\r\\nN:Mobile;Bo;;;\\r\\nTEL;TYPE=WORK,CELL:+1 555 0100\\r\\nEND:VCARD\\r\\n'))");
+        AddressBookSafetyTest.openBook(d, "default", "Contacts", "Bo Mobile");
+        editAndSave(d, "uri-1.vcf", "const k = document.querySelector('#detail select'); k.value = 'cell'; k.dispatchEvent(new Event('change'));");
+        String uri = storedLine(api, book, "uri-1", "TEL", "TEL;VALUE=uri;TYPE=cell:tel:+44-20-7946-0000");
+        editAndSave(d, "org-1.vcf", "const o = document.querySelector('#detail input[placeholder=\"Company\"]'); o.value = 'Acme Group'; o.dispatchEvent(new Event('input'));");
+        String org = storedLine(api, book, "org-1", "ORG", "ORG:Acme Group;Research;Optics");
+        editAndSave(d, "wm-1.vcf", "const t = document.querySelector('#detail input[type=tel]'); t.value = '+1 555 0199'; t.dispatchEvent(new Event('input'));");
+        String wm = storedLine(api, book, "wm-1", "TEL", "TEL;TYPE=WORK,CELL:+1 555 0199");
+        if (! uri.equals("TEL;VALUE=uri;TYPE=cell:tel:+44-20-7946-0000") || ! org.equals("ORG:Acme Group;Research;Optics") || ! wm.equals("TEL;TYPE=WORK,CELL:+1 555 0199"))
+            throw new AssertionError("An edit should keep what it didn't touch: " + uri + " / " + org + " / " + wm);
+        System.out.println("  ok   an edit keeps what it didn't touch (" + uri + " / " + org + " / " + wm + ")");
     }
 
     // names and notes in any script come in whole, as plain text, the long ones too
