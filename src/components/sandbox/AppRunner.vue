@@ -41,7 +41,8 @@ module.exports = {
         return {
             showAppSandbox: false,
             sandboxAppName: '',
-            currentProps: null
+            currentProps: null,
+            closed: false
         }
     },
     props: ['appPropsFile'],
@@ -54,6 +55,9 @@ module.exports = {
     created: function() {
         this.loadAppProperties();
     },
+    beforeUnmount: function() {
+        this.closed = true;
+    },
     methods: {
         close: function () {
             this.$emit("hide-app-run");
@@ -61,6 +65,9 @@ module.exports = {
         loadAppProperties: function() {
             let that = this;
             that.verifyJSONFile(this.appPropsFile).thenApply((res) => {
+                // closed while the manifest was read: its answer is for a run no one is waiting on
+                if (that.closed)
+                    return;
                 if (res.errors.length > 0) {
                     that.showError("Unable to run App: " + res.errors.join(', '));
                     that.close();
