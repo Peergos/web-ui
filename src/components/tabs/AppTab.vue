@@ -1,6 +1,6 @@
 <template>
 	<transition mode="out-in">
-		<div class="tab" v-if="isActive">
+		<div class="tab" v-if="isActive" role="tabpanel" :aria-label="title">
 			<slot></slot>
 		</div>
 	</transition>
