@@ -16,7 +16,9 @@ import java.util.*;
  */
 public class HexViewerTest {
 
-    static final int CHUNK = 5 * 1024 * 1024;
+    // a whole number of chunks at either chunk size a file can have (5 MiB, 4 MiB), so the edges
+    // below are chunk edges whichever a file is written with
+    static final long WHOLE = 20L * 1024 * 1024;
     static final String ROOT = "document.querySelector('.hex-viewer')";
 
     static int byteAt(long i) {
@@ -43,9 +45,9 @@ public class HexViewerTest {
         String url = own != null ? own.url() : given;
 
         long stamp = System.currentTimeMillis();
-        // two whole chunks, and two chunks with a short page after them
-        Path whole = write("hex-" + stamp + "-whole.bin", 2L * CHUNK);
-        Path tail = write("hex-" + stamp + "-tail.bin", 2L * CHUNK + 300);
+        // whole chunks, and whole chunks with a short page after them
+        Path whole = write("hex-" + stamp + "-whole.bin", WHOLE);
+        Path tail = write("hex-" + stamp + "-tail.bin", WHOLE + 300);
         try {
             Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, whole);
             Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, tail);
@@ -58,7 +60,7 @@ public class HexViewerTest {
                 Page.login(d, Server.USERNAME, Server.PASSWORD);
                 Page.gotoDrive(d);
 
-                long last = 2L * CHUNK - 512;
+                long last = WHOLE - 512;
                 open(d, whole.getFileName().toString());
                 page(d, "the start", 0, 32);
                 key(d, 34);
@@ -74,10 +76,10 @@ public class HexViewerTest {
                 open(d, tail.getFileName().toString());
                 key(d, 35);
                 // 300 bytes: 18 full rows and a row of 12
-                page(d, "End on a file with a short last page", 2L * CHUNK, 19);
+                page(d, "End on a file with a short last page", WHOLE, 19);
                 key(d, 38);
-                // 16 bytes before the second chunk ends and the 300 after it
-                page(d, "a page across the end of a chunk", 2L * CHUNK - 16, 20);
+                // 16 bytes before a chunk ends, and the 300 after it
+                page(d, "a page across the end of a chunk", WHOLE - 16, 20);
                 close(d);
             }
         } finally {

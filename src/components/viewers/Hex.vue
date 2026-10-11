@@ -47,11 +47,6 @@
     const Spinner = require("../spinner/Spinner.vue");
     const downloaderMixins = require("../../mixins/downloader/index.js");
 
-    // Only one piece of the file is held, however big the file is: the chunk Peergos stores
-    // the page in, plus a page past its end so that a page starting near the end of a chunk
-    // still fits. Moving outside it reads the piece around the new page in its place.
-    const CHUNK = 5 * 1024 * 1024;
-
     module.exports = {
     	components: {
     	    Spinner
@@ -61,6 +56,11 @@
 	    lookup: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'],
             showSpinner: false,
             size: 0, // of the whole file: exact as a number, unlike its two 32 bit halves
+            // Only one piece of the file is held, however big the file is: the chunk Peergos
+            // stored the page in, at the file's own chunk size, plus a page past its end so a
+            // page starting near the end of a chunk still fits. Moving outside it reads the
+            // piece around the new page in its place.
+            chunkSize: 0,
             offset: 0, // the first byte asked for, a multiple of 16
             shown: 0, // the first byte on screen, which is offset once its bytes are held
             held: {start: 0, data: null},
@@ -76,6 +76,7 @@
             return;
         var props = this.file.getFileProperties();
         this.size = props.sizeHigh() * 4294967296 + (props.sizeLow() >>> 0);
+        this.chunkSize = props.chunkSize;
         this.read(0);
     },
     beforeUnmount: function() {
@@ -135,8 +136,8 @@
 
         read: function(target) {
             var that = this;
-            var start = target - (target % CHUNK);
-            var length = Math.min(CHUNK + this.bytesPerPage, this.size - start);
+            var start = target - (target % this.chunkSize);
+            var length = Math.min(this.chunkSize + this.bytesPerPage, this.size - start);
             var token = ++this.reading;
             if (length <= 0) {
                 this.held = {start: 0, data: []};
