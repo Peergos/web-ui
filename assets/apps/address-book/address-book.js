@@ -392,16 +392,20 @@ async function openBook(id) {
 	renderBooks();
 	document.getElementById('contacts').innerHTML = '<li class="empty">Loading…</li>';
 	renderDetail();
+	let loaded;
 	try {
-		cards = await loadCards(id);
+		loaded = await loadCards(id);
 	} catch (e) {
-		cards = [];
-		status('Could not load contacts');
+		loaded = [];
+		if (currentBook == id)
+			status('Could not load contacts');
 	}
-	if (currentBook == id) {
-		renderBooks();
-		renderContacts();
-	}
+	// a book opened since has taken this one's place, and these are not its contacts
+	if (currentBook != id)
+		return;
+	cards = loaded;
+	renderBooks();
+	renderContacts();
 }
 
 function onBookSelect(value) {
@@ -461,13 +465,20 @@ function selectContact(file) {
 	renderDetail();
 }
 
+// Work that waits on Peergos is done in the book it started in. Another book may be open by the
+// time it finishes, and that book's list is left alone.
 async function saveContact(form, entry) {
+	let book = currentBook;
 	let vcard = formToCard(form, entry ? entry.card : null);
 	let file = entry ? entry.file : fileFor(parseCards(vcard)[0]);
 	try {
-		await putCard(currentBook, file, vcard);
+		await putCard(book, file, vcard);
 	} catch (e) {
 		status('Could not save the contact');
+		return;
+	}
+	if (currentBook != book) {
+		status('Saved');
 		return;
 	}
 	let updated = {file: file, card: parseCards(vcard)[0]};
@@ -480,13 +491,16 @@ async function saveContact(form, entry) {
 }
 
 async function deleteContact(entry) {
+	let book = currentBook;
 	try {
-		let answer = await host('deleteCard', {book: currentBook, file: entry.file, name: displayName(entry.card)});
+		let answer = await host('deleteCard', {book: book, file: entry.file, name: displayName(entry.card)});
 		if (answer.cancelled) return;
 	} catch (e) {
 		status('Could not delete the contact');
 		return;
 	}
+	if (currentBook != book)
+		return;
 	cards = cards.filter(c => c.file != entry.file);
 	selectedFile = null;
 	renderBooks();
@@ -495,21 +509,27 @@ async function deleteContact(entry) {
 }
 
 async function moveContact(entry, target) {
+	let from = currentBook;
 	let vcard = serialise(entry.card.props.map(p => p.raw));
 	try {
 		// written before it is removed, so a failure part way leaves a copy rather than nothing
 		await putCard(target, entry.file, vcard);
-		await host('deleteCard', {book: currentBook, file: entry.file});
+		await host('deleteCard', {book: from, file: entry.file});
 	} catch (e) {
 		status('Could not move the contact');
 		return;
 	}
 	let book = books.find(b => b.id == target);
 	status('Moved to ' + (book ? book.name : target));
-	cards = cards.filter(c => c.file != entry.file);
-	selectedFile = null;
-	renderContacts();
-	renderDetail();
+	if (currentBook == from) {
+		cards = cards.filter(c => c.file != entry.file);
+		selectedFile = null;
+		renderContacts();
+		renderDetail();
+	} else if (currentBook == target) {
+		// opened while the contact was on its way, so it may have been read without it
+		openBook(target);
+	}
 }
 
 async function importText(textContent) {
@@ -518,6 +538,7 @@ async function importText(textContent) {
 		status('No contacts found in that file');
 		return;
 	}
+	let book = currentBook;
 	let done = 0, failed = 0;
 	for (let card of parsed) {
 		if (!prop(card, 'UID'))
@@ -528,15 +549,18 @@ async function importText(textContent) {
 		status('Importing ' + (done + failed + 1) + ' of ' + parsed.length, true);
 		try {
 			let vcard = serialise(card.props.map(p => p.raw));
-			await putCard(currentBook, file, vcard);
-			cards = cards.filter(c => c.file != file).concat([{file: file, card: card}]);
+			await putCard(book, file, vcard);
+			if (currentBook == book)
+				cards = cards.filter(c => c.file != file).concat([{file: file, card: card}]);
 			done++;
 		} catch (e) {
 			failed++;
 		}
 	}
-	renderBooks();
-	renderContacts();
+	if (currentBook == book) {
+		renderBooks();
+		renderContacts();
+	}
 	status('Imported ' + done + (failed > 0 ? ', ' + failed + ' failed' : ''));
 }
 
