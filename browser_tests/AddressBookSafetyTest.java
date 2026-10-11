@@ -62,6 +62,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "importWhileSwitching", d, () -> importWhileSwitching(d, api, data));
                 scenario(failures, "moveIntoOpenedBook", d, () -> moveIntoOpenedBook(d, api, data));
                 scenario(failures, "failedLoad", d, () -> failedLoad(d));
+                scenario(failures, "doubleSave", d, () -> doubleSave(d, api, data));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -160,6 +161,23 @@ public class AddressBookSafetyTest {
         AddressBookTest.inFrame(d, "[...document.querySelectorAll('#contacts button')].find(b => b.textContent.trim() === 'Try again').click(); return 1;");
         AddressBookTest.waitInFrame(d, "the book on trying again", "return [...document.querySelectorAll('#contacts .list-row')].some(r => r.textContent.includes('Imp One')) ? true : null");
         System.out.println("  ok   a book that can't be loaded says so (" + said + "), shows no count, and Try again loads it");
+    }
+
+    // Save pressed twice while the first save is on its way stores one contact, not two
+    static void doubleSave(WebDriver d, UserContext api, String data) {
+        AddressBookTest.inFrame(d, HOLD, "saveCard", null, 1500);
+        AddressBookTest.inFrame(d, "document.getElementById('newContactButton').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "the new contact form", "return document.querySelector('#detail input[placeholder=\"First name\"]') ? true : null");
+        AddressBookTest.inFrame(d, "const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Twice'; i.dispatchEvent(new Event('input'));"
+                + " const save = document.querySelector('#detail button[type=submit]'); save.click(); setTimeout(() => save.click(), 300); return 1;");
+        AddressBookTest.waitInFrame(d, "the save to finish", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+        WebDriver.sleep(3000);
+        AddressBookTest.inFrame(d, RELEASE);
+        AddressBookTest.waitForStored(api, data + "default", "FN:Twice");
+        long stored = AddressBookTest.stored(api, data + "default").stream().filter(c -> c.contains("FN:Twice")).count();
+        if (stored != 1)
+            throw new AssertionError("Saving a new contact twice in a row should store it once, not " + stored + " times");
+        System.out.println("  ok   Save pressed twice while the first is on its way stores the contact once");
     }
 
     /** Runs one case, and carries on to the next if it fails, so a run says which of them hold. */

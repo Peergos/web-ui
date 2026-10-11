@@ -798,20 +798,30 @@ function renderForm(entry) {
 	draw();
 
 	let cancel = () => entry ? renderDetail() : (selectedFile = null, renderDetail());
+	// One save at a time: a second click, or Enter, while the first is on its way would save a new
+	// contact twice, as two contacts.
+	let save = el('button', {class: 'primary', type: 'submit', text: 'Save'});
 	let element = el('form', {class: 'detail', onsubmit: e => {
 		e.preventDefault();
+		if (save.disabled)
+			return;
 		let empty = !form.given.trim() && !form.family.trim() && !form.org.trim()
 			&& !form.tels.some(t => t.value.trim()) && !form.emails.some(m => m.value.trim());
 		if (empty) {
 			status('Add a name, company, phone or email');
 			return;
 		}
-		saveContact(form, entry);
+		save.disabled = true;
+		save.textContent = 'Saving…';
+		saveContact(form, entry).finally(() => {
+			save.disabled = false;
+			save.textContent = 'Save';
+		});
 	}}, [
 		el('h1', {text: entry ? 'Edit contact' : 'New contact'}),
 		body,
 		el('div', {class: 'actions', style: 'margin-top: 24px'}, [
-			el('button', {class: 'primary', type: 'submit', text: 'Save'}),
+			save,
 			el('button', {type: 'button', text: 'Cancel', onclick: cancel})
 		])
 	]);
