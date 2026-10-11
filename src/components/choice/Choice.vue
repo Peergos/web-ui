@@ -15,6 +15,11 @@
           <span class="choice-block__text">{{ option }}</span>
         </label>
       </div>
+      <label v-if="choice_remember" class="pg-switch choice-remember">
+        <input type="checkbox" v-model="remember">
+        <span class="pg-switch__track" aria-hidden="true"></span>
+        <span>{{ choice_remember }}</span>
+      </label>
     </div>
     <footer class="pg-dialog__foot">
       <div class="pg-dialog__actions">
@@ -32,10 +37,11 @@ module.exports = {
     components: { DialogClose },
     data: function() {
         return {
-            picked: 0
+            picked: 0,
+            remember: false
         }
     },
-    props: ['choice_message', 'choice_body', 'choice_options', 'choice_consumer_func'],
+    props: ['choice_message', 'choice_body', 'choice_options', 'choice_consumer_func', 'choice_remember'],
     created: function() {
     },
     methods: {
@@ -44,7 +50,7 @@ module.exports = {
         },
         confirm: function() {
             this.close();
-            this.choice_consumer_func(this.picked);
+            this.choice_consumer_func(this.picked, this.remember);
         }
     }
 }
@@ -120,6 +126,10 @@ module.exports = {
 .choice-block input:focus-visible + .choice-block__mark {
 	outline: 2px solid var(--green-500);
 	outline-offset: 2px;
+}
+
+.choice-remember {
+	margin-top: 14px;
 }
 
 .choice-block__text {

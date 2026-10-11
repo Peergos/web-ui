@@ -68,6 +68,16 @@
       :consumer_func="prompt_consumer_func"
     />
 
+    <Choice
+      v-if="showAppChoice"
+      v-on:hide-choice="showAppChoice = false"
+      :choice_message="translate('DRIVE.OPEN_WITH')"
+      :choice_body="appChoiceFilename"
+      :choice_options="appChoiceOptions.map(a => a.contextMenuText)"
+      :choice_remember="translate('DRIVE.ALWAYS_USE_APP')"
+      :choice_consumer_func="appChoiceConsumer"
+    />
+
     <NewAppPrompt
       v-if="showNewAppPrompt"
       @hide-prompt="closeNewAppPrompt()"
@@ -470,6 +480,7 @@ const DriveSelected = require("../components/drive/DriveSelected.vue");
 const AppPrompt = require("../components/prompt/AppPrompt.vue");
 const NewImageFilePrompt = require("../components/NewImageFilePrompt.vue");
 const NewAppPrompt = require("../components/sandbox/new-app/NewAppPrompt.vue");
+const Choice = require("../components/choice/Choice.vue");
 const FolderProperties = require("../components/FolderProperties.vue");
 const FileDetails = require("../components/FileDetails.vue");
 const Pdf = require("../components/pdf/PDF.vue");
@@ -508,6 +519,7 @@ module.exports = {
 		AppPrompt,
 		NewImageFilePrompt,
 		NewAppPrompt,
+		Choice,
 		FolderProperties,
 		FileDetails,
 		ProgressBar,
@@ -597,6 +609,10 @@ module.exports = {
 			showPrompt: false,
 			showNewImageFilePrompt: false,
 			showNewAppPrompt: false,
+			showAppChoice: false,
+			appChoiceFilename: '',
+			appChoiceOptions: [],
+			appChoiceConsumer: (index, remember) => { },
             showFolderProperties: false,
             showFileDetails: false,
             showAppInstallation: false,
@@ -3495,7 +3511,13 @@ module.exports = {
                     let userApps = this.availableAppsForFile(file);
                     var args = {filename:filename}
                     this.appArgs = args;
-                    if (userApps.length == 1 && app != "editor") {
+                    let options = userApps.concat(this.getInbuiltApps(file));
+                    let defaultApp = this.getDefaultApp(file);
+                    if (userApps.length > 0 && options.some(a => a.name == defaultApp)) {
+                        this.openFileOrDir(defaultApp, this.getPath, args, writable);
+                    } else if (userApps.length > 1) {
+                        this.chooseApp(file, options, writable);
+                    } else if (userApps.length == 1 && app != "editor") {
                         this.openFileOrDir(userApps[0].name, this.getPath, args, writable);
                     } else {
                         if (recommendedApp != null) {
@@ -3507,6 +3529,42 @@ module.exports = {
                 }
             }
 		},
+        // keyed by extension, as that is mostly what apps register for
+        defaultAppKey(file) {
+            let name = file.getName();
+            let dot = name.lastIndexOf(".");
+            return dot > 0 ? "." + name.substring(dot + 1).toLowerCase() : file.getFileProperties().mimeType;
+        },
+        getDefaultApp(file) {
+            try {
+                let prefs = JSON.parse(localStorage.getItem("defaultApps") || "{}");
+                return prefs[this.defaultAppKey(file)] || null;
+            } catch (e) {
+                return null;
+            }
+        },
+        setDefaultApp(file, appName) {
+            try {
+                let prefs = JSON.parse(localStorage.getItem("defaultApps") || "{}");
+                prefs[this.defaultAppKey(file)] = appName;
+                localStorage.setItem("defaultApps", JSON.stringify(prefs));
+            } catch (e) {}
+        },
+        chooseApp(file, options, writable) {
+            let that = this;
+            let path = this.getPath;
+            this.appChoiceFilename = file.getName();
+            this.appChoiceOptions = options;
+            this.appChoiceConsumer = (index, remember) => {
+                let app = options[index].name;
+                if (remember)
+                    that.setDefaultApp(file, app);
+                let args = {filename: file.getName()};
+                that.appArgs = args;
+                that.openFileOrDir(app, path, args, writable);
+            };
+            this.showAppChoice = true;
+        },
         navigateToRecommendedApps: function(appName) {
             let that = this;
             let path = "/peergos/recommended-apps/";

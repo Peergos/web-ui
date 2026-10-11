@@ -68,6 +68,8 @@ module.exports = {
     "DRIVE.ZIP":"Zip",
     "DRIVE.DESELECT":"取消选择",
     "DRIVE.VIEW":"查看",
+    "DRIVE.OPEN_WITH":"打开方式",
+    "DRIVE.ALWAYS_USE_APP":"始终使用此应用打开此类文件",
     "DRIVE.EDIT":"编辑",
     "DRIVE.RENAME":"重命名",
     "DRIVE.SHARE":"分享",

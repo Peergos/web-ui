@@ -73,6 +73,8 @@ module.exports = {
     "DRIVE.ZIP":"압축",
     "DRIVE.DESELECT":"선택 해제",
     "DRIVE.VIEW":"보기",
+    "DRIVE.OPEN_WITH":"다음으로 열기",
+    "DRIVE.ALWAYS_USE_APP":"이 파일 형식에 항상 이 앱 사용",
     "DRIVE.EDIT":"편집",
     "DRIVE.RENAME":"이름 바꾸기",
     "DRIVE.SHARE":"공유",

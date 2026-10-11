@@ -86,6 +86,8 @@ module.exports = {
     "DRIVE.ZIP":"Zip",
     "DRIVE.DESELECT":"Αποεπιλογή",
     "DRIVE.VIEW":"Προβολή",
+    "DRIVE.OPEN_WITH":"Άνοιγμα με",
+    "DRIVE.ALWAYS_USE_APP":"Να χρησιμοποιείται πάντα αυτή η εφαρμογή για αυτό το είδος αρχείου",
     "DRIVE.EDIT":"Επεξεργασία",
     "DRIVE.RENAME":"Μετονομασία",
     "DRIVE.SHARE":"Κοινή χρήση",
