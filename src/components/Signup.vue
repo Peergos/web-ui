@@ -345,14 +345,3 @@ module.exports = {
     }
 };
 </script>
-
-<style>
-/* This hides every radio in the app, not only the ones on this page: the others are styled
-   on that assumption, so it stays until each of them is checked without it. */
-input[type="radio"] {
-	height: 0;
-	width: 0;
-	visibility: hidden;
-	display: none;
-}
-</style>

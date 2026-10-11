@@ -1025,10 +1025,8 @@ a.pg-btn {
 	text-align: center;
 	cursor: pointer;
 }
-/* out of sight but still in the tab order, which the app-wide rule hiding radios takes away */
-.pg-auth__billing input[type="radio"] {
-	display: block;
-	visibility: visible;
+/* out of sight but still in the tab order */
+.pg-auth__billing input {
 	position: absolute;
 	width: 1px;
 	height: 1px;
