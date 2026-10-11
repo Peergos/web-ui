@@ -55,6 +55,7 @@ aside, #list { border-right: 1px solid var(--line); display: flex; flex-directio
 .field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .field .label { color: var(--muted); }
 .field .value { white-space: pre-wrap; word-break: break-word; }
+.unreadable { white-space: pre-wrap; word-break: break-all; padding: 12px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
 
 form .row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
 form .row > input, form .row > textarea { flex: 1; }

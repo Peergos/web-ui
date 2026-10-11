@@ -126,6 +126,9 @@ function parseCards(text) {
 				current.push(prop);
 		}
 	}
+	// a card the file ends in the middle of, with no END:VCARD, is read as far as it goes
+	if (current != null && current.length > 0)
+		result.push({props: plainProps(current)});
 	return result;
 }
 
@@ -443,8 +446,12 @@ async function loadCards(book) {
 	return list.map(c => {
 		let parsed = parseCards(c.vcard);
 		// text: the card exactly as read, which a save or a delete says it expects to find
-		return parsed.length == 0 ? null : {file: c.file, card: parsed[0], text: c.vcard};
-	}).filter(c => c != null);
+		if (parsed.length > 0)
+			return {file: c.file, card: parsed[0], text: c.vcard};
+		// A file that isn't a vCard at all still shows, by its name, so it can be deleted
+		// rather than lie there unseen.
+		return {file: c.file, card: {props: [parseLine('FN:' + escapeText(c.file))]}, text: c.vcard, unreadable: true};
+	});
 }
 
 function fileFor(card) {
@@ -793,7 +800,7 @@ function drawContacts(list) {
 			letter = first;
 			list.appendChild(el('li', {class: 'letter', text: letter}));
 		}
-		let sub = text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
+		let sub = c.unreadable ? "Can't be read" : text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
 			: (prop(c.card, 'EMAIL') || prop(c.card, 'TEL') || {value: ''}).value;
 		list.appendChild(el('li', {class: 'card' + (c.file == selectedFile ? ' selected' : '')}, [
 			row(c.file == selectedFile, () => selectContact(c.file), [
@@ -822,6 +829,16 @@ function renderDetail() {
 		return;
 	}
 	showDetailPane(true);
+	if (entry.unreadable) {
+		pane.appendChild(el('div', {class: 'detail'}, [
+			backButton(),
+			el('h1', {text: entry.file}),
+			el('p', {text: "This file can't be read as a contact. Here is how it starts:"}),
+			el('pre', {class: 'unreadable', text: entry.text.substring(0, 400)}),
+			el('div', {class: 'actions'}, [el('button', {class: 'danger', text: 'Delete', onclick: () => deleteContact(entry)})])
+		]));
+		return;
+	}
 	let card = entry.card;
 	let form = cardToForm(card);
 	let fields = [];

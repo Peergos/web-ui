@@ -44,6 +44,7 @@ public class AddressBookFormatsTest {
                 List<String> failures = new ArrayList<>();
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "unreadable", d, () -> unreadable(d, api, book));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -133,6 +134,25 @@ public class AddressBookFormatsTest {
         if (! uri.equals("TEL;VALUE=uri;TYPE=cell:tel:+44-20-7946-0000") || ! org.equals("ORG:Acme Group;Research;Optics") || ! wm.equals("TEL;TYPE=WORK,CELL:+1 555 0199"))
             throw new AssertionError("An edit should keep what it didn't touch: " + uri + " / " + org + " / " + wm);
         System.out.println("  ok   an edit keeps what it didn't touch (" + uri + " / " + org + " / " + wm + ")");
+    }
+
+    // a card cut short, with no END:VCARD, still shows; a file that isn't a vCard shows by its
+    // name, says it can't be read, and can be deleted
+    static void unreadable(WebDriver d, UserContext api, String book) {
+        AddressBookSafetyTest.elsewhere(d, "window.__addressBook.writeContactCard('default', 'broken.vcf', 'this is not a vcard at all')"
+                + ".then(() => window.__addressBook.writeContactCard('default', 'cut-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:cut-1\\r\\nFN:Cut Short\\r\\nN:Short;Cut;;;\\r\\n'))");
+        AddressBookSafetyTest.openBook(d, "default", "Contacts", "Cut Short");
+        Object row = AddressBookTest.waitInFrame(d, "the unreadable file", "const r = [...document.querySelectorAll('#contacts .list-row')].find(x => x.textContent.includes('broken.vcf'));"
+                + " return r ? r.textContent : null");
+        if (! String.valueOf(row).contains("Can't be read"))
+            throw new AssertionError("A file that isn't a vCard should say it can't be read: " + row);
+        AddressBookTest.inFrame(d, "selectContact('broken.vcf'); return 1;");
+        AddressBookTest.waitInFrame(d, "its page", "const p = document.querySelector('#detail pre'); return p && p.textContent.includes('this is not a vcard') ? true : null");
+        AddressBookTest.inFrame(d, "[...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Delete').click(); return 1;");
+        AddressBookSafetyTest.answer(d, "Delete broken.vcf?", "Yes");
+        AddressBookTest.waitFor("the unreadable file to be deleted", () -> api.getByPath(book + "/broken.vcf").join().isEmpty());
+        AddressBookTest.waitInFrame(d, "it gone from the list", "return [...document.querySelectorAll('#contacts .list-row')].some(x => x.textContent.includes('broken.vcf')) ? null : true");
+        System.out.println("  ok   a card cut short shows; a file that isn't a vCard says it can't be read, and can be deleted (" + row + ")");
     }
 
     // names and notes in any script come in whole, as plain text, the long ones too
