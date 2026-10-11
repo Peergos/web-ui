@@ -117,7 +117,7 @@
             <!-- hidden rather than removed: its close button holds the keyboard and the page lock -->
             <header v-show="!fullscreenMode" class="pg-viewer__bar">
                 <span class="pg-viewer__icon" aria-hidden="true">
-                    <svg v-if="browserMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                    <svg v-if="browserMode && ! isAppGalleryMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                     <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
                 </span>
                 <div class="pg-viewer__heading">
@@ -1205,8 +1205,11 @@ module.exports = {
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
         },
-        // a page is named by its file, an app by its own name
+        // a page is named by its file, an app by its own name, and the gallery of apps by the
+        // launcher button that opens it, not by its index.html
         frameTitle: function() {
+            if (this.isAppGalleryMode)
+                return this.translate("LAUNCHER.CUSTOM");
             if (this.browserMode) {
                 let path = this.fullPathForDisplay;
                 let name = path.substring(path.lastIndexOf('/') + 1);
