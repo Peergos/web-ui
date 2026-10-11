@@ -1,20 +1,24 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <div class="modal-container hex-viewer" @click.stop style="width:95%;overflow-y:auto">
-        <Spinner v-if="showSpinner"></Spinner>
-        <div class="modal-header" style="padding:0">
-            <div class="pg-center">
-                <h2 v-if="file != null">
-                    <p>{{ file.getFileProperties().name }} (hex view)&nbsp;
-                        <button class="btn btn-large btn-primary" @click="downloadCurrentFile()">Download File</button>
-                    </p>
-                </h2>
-            </div>
-            <span style="position:absolute;top:0;right:4.25em;">
-                <span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
+<div class="pg-viewer__mask" @click="close">
+    <section class="pg-viewer hex-viewer" role="dialog" aria-modal="true" :aria-label="file == null ? 'Hex view' : file.getFileProperties().name + ', hex view'" @click.stop>
+        <header class="pg-viewer__bar">
+            <span class="pg-viewer__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h1v6M14 9h1v6"/></svg>
             </span>
-        </div>
+            <div class="pg-viewer__heading pg-viewer__heading--inline">
+                <h2 v-if="file != null" class="pg-viewer__title">{{ file.getFileProperties().name }}</h2>
+                <span class="pg-viewer__tag">Hex view</span>
+            </div>
+            <button v-if="file != null" type="button" class="pg-btn" aria-label="Download" @click="downloadCurrentFile()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+                <span class="pg-viewer__label">Download</span>
+            </button>
+            <span v-if="file != null" class="pg-viewer__divider" aria-hidden="true"></span>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-viewer__body hex-viewer__body">
+        <Spinner v-if="showSpinner"></Spinner>
         <div class="pg-center" style="height:75%;max-width:100%;font-family: monospace;">
             <table>
                 <tr v-for="line in lines">
@@ -39,16 +43,19 @@
                 <tr/>
             </table>
         </div>
-    </div>
+        </div>
+    </section>
 </div>
 </transition>
 </template>
 <script>
+    const DialogClose = require("../dialog/DialogClose.vue");
     const Spinner = require("../spinner/Spinner.vue");
     const downloaderMixins = require("../../mixins/downloader/index.js");
 
     module.exports = {
     	components: {
+    	    DialogClose,
     	    Spinner
     	},
     data: function() {
@@ -210,5 +217,15 @@
 .hex-viewer {
     color: var(--color);
     background-color: var(--bg);
+}
+.hex-viewer__body {
+    flex-direction: column;
+    overflow: auto;
+    padding: 16px;
+}
+/* a row on one line: on a phone the table scrolls sideways rather than each row wrapping
+   into a column of fragments */
+.hex-viewer__body table {
+    white-space: nowrap;
 }
 </style>

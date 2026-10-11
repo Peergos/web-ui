@@ -1,7 +1,8 @@
 <template>
 <transition name="modal">
-    <div class="modal-mask" @click="closeAppFromToolbar">
-        <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
+    <div class="pg-viewer__mask" :class="{'pg-viewer__mask--full': fullscreenMode}" @click="browserMode && closeAppFromToolbar()">
+        <!-- a click beside an app closes it only when it is a page: an app can hold unsaved work -->
+        <section class="pg-viewer" role="dialog" aria-modal="true" :aria-label="frameTitle()" @click.stop>
         <Group
                 v-if="showGroupMembership"
                 v-on:hide-group="closeGroupMembership"
@@ -113,29 +114,36 @@
                 :initialFilename="initialNewFilename"
                 :consumer_func="file_picker_consumer_func"
             />
-            <div v-if="!fullscreenMode" class="modal-header" style="padding:0;min-height: 52px;">
-                <div class="pg-center"><h2>
-                <span v-if="browserMode && !isSecretLink && fullPathForDisplay.length > 0" style="z-index:9999">
-                      <img v-if="displayToBookmark" src="./images/bookmark-o.svg" @click="toggleBookmark(false)" style="height:24px;width:24px;cursor:pointer;">
-                      <img v-if="!displayToBookmark" src="./images/bookmark.svg" @click="toggleBookmark(true)" style="height:24px;width:24px;cursor:pointer;">
+            <!-- hidden rather than removed: its close button holds the keyboard and the page lock -->
+            <header v-show="!fullscreenMode" class="pg-viewer__bar">
+                <span class="pg-viewer__icon" aria-hidden="true">
+                    <svg v-if="browserMode && ! isAppGalleryMode" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
                 </span>
-                {{ getFullPathForDisplay() }}
-                <span v-if="displayFullScreenIcon" @click="requestFullscreenFromToolbar" v-on:keyup.enter="requestFullscreenFromToolbar" style="cursor:pointer;">
-                    <img src="./images/arrows-alt.svg" style="height:24px;width:24px;cursor:pointer">
-                </span>
-                </h2>
+                <div class="pg-viewer__heading">
+                    <h2 class="pg-viewer__title">{{ frameTitle() }}</h2>
+                    <span v-if="fullPathForDisplay.length > 0" class="pg-viewer__path">{{ getFullPathForDisplay() }}</span>
                 </div>
-              <span style="position:absolute;top:0;right:0.2em;">
-                <span @click="closeAppFromToolbar" tabindex="0" v-on:keyup.enter="closeAppFromToolbar" style="color:black;font-size:3em;font-weight:bold;cursor:pointer;font-family:'Cambria Math'">&times;</span>
-              </span>
-            </div>
+                <button v-if="canBookmark()" type="button" class="pg-icon-btn" aria-label="Bookmark"
+                        :aria-pressed="displayToBookmark ? 'false' : 'true'"
+                        :title="displayToBookmark ? 'Bookmark' : 'Remove bookmark'"
+                        @click="toggleBookmark(!displayToBookmark)">
+                    <svg viewBox="0 0 24 24" :fill="displayToBookmark ? 'none' : 'currentColor'" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                </button>
+                <button v-if="displayFullScreenIcon" type="button" class="pg-icon-btn" aria-label="Full screen" title="Full screen" @click="requestFullscreenFromToolbar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+                </button>
+                <span v-if="canBookmark() || displayFullScreenIcon" class="pg-viewer__divider" aria-hidden="true"></span>
+                <!-- an app can hold work of its own that Escape would throw away; a page cannot -->
+                <DialogClose :escape="browserMode" @close="closeAppFromToolbar"/>
+            </header>
             <div>
                 <iframe id="print-data-container" style="display:none" aria-hidden="true" tabindex="-1"></iframe>
             </div>
-            <div id='sandbox-container' class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
+            <div id="sandbox-container" class="pg-viewer__body">
             </div>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
-        </div>
+        </section>
     </div>
 </transition>
 </template>
@@ -146,6 +154,7 @@ const AppInstall = require("AppInstall.vue");
 const AppPrompt = require("../prompt/AppPrompt.vue");
 const AppTemplatePrompt = require("../prompt/AppTemplatePrompt.vue");
 const Confirm = require("../confirm/Confirm.vue");
+const DialogClose = require("../dialog/DialogClose.vue");
 const FilePicker = require('../picker/FilePicker.vue');
 const FolderPicker = require('../picker/FolderPicker.vue');
 const Gallery = require("../drive/DriveGallery.vue");
@@ -173,6 +182,7 @@ module.exports = {
         AppInstall,
         AppPrompt,
         AppTemplatePrompt,
+        DialogClose,
         Confirm,
         FilePicker,
         FolderPicker,
@@ -1194,6 +1204,22 @@ module.exports = {
                 that.showError("App attempted unexpected action: " + apiMethod);
                 that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
             }
+        },
+        // a page is named by its file, an app by its own name, and the gallery of apps by the
+        // launcher button that opens it, not by its index.html
+        frameTitle: function() {
+            if (this.isAppGalleryMode)
+                return this.translate("LAUNCHER.CUSTOM");
+            if (this.browserMode) {
+                let path = this.fullPathForDisplay;
+                let name = path.substring(path.lastIndexOf('/') + 1);
+                if (name.length > 0)
+                    return name;
+            }
+            return this.appNameForDisplay();
+        },
+        canBookmark: function() {
+            return this.browserMode && ! this.isSecretLink && this.fullPathForDisplay.length > 0;
         },
         appNameForDisplay: function() {
             return this.appProperties != null && this.appProperties.displayName ? this.appProperties.displayName : this.currentAppName;

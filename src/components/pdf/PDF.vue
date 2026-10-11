@@ -1,23 +1,29 @@
 <template>
 <transition name="modal">
-<div class="modal-mask" @click="close">
-    <div class="modal-container full-height" @click.stop style="width:100%;overflow-y:auto;padding:0;display:flex;flex-flow:column;">
-
-
-        <div class="modal-header" style="padding:0">
-            <div class="pg-center"><h2>{{ file.getName() }}</h2></div><span @click="close" tabindex="0" v-on:keyup.enter="close" style="color:black;font-size:3em;font-weight:bold;position:absolute;top:0;right:0.2em;cursor:pointer;font-family:'Cambria Math'">&times;</span>
+<div class="pg-viewer__mask" @click="close">
+    <section class="pg-viewer" role="dialog" aria-modal="true" :aria-label="file.getName()" @click.stop>
+        <header class="pg-viewer__bar">
+            <span class="pg-viewer__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+            </span>
+            <h2 class="pg-viewer__title">{{ file.getName() }}</h2>
+            <DialogClose @close="close"/>
+        </header>
+        <div class="pg-viewer__body">
+            <iframe id="pdf" :src="frameUrl()" frameBorder="0"></iframe>
         </div>
-
-        <div class="modal-body" style="margin:0;padding:0;display:flex;flex-grow:1;">
-	  <iframe id="pdf" :src="frameUrl()" style="width:100%;height:100%;" frameBorder="0"></iframe>
-        </div>
-    </div>
+    </section>
 </div>
 </transition>
 </template>
 
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
+
 module.exports = {
+    components: {
+        DialogClose
+    },
     data: function() {
         return {
             showSpinner: false,

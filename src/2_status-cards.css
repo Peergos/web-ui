@@ -1396,3 +1396,210 @@ input.pg-input:focus {
 		flex: 1 1 0;
 	}
 }
+
+/* ---------- viewers ---------- */
+
+/* A file open in a viewer: a sheet over the drive, held in from the window's edges as a
+   dialog is, so it reads as something over the drive that closing returns to. On a phone
+   those edges are room the file needs, and it takes the screen. Below the dialogs (2600)
+   that a viewer opens over itself. */
+.pg-viewer__mask {
+	position: fixed;
+	inset: 0;
+	z-index: 2500;
+	display: flex;
+	padding: 16px;
+	background-color: var(--pg-scrim);
+	overscroll-behavior: contain;
+}
+.pg-viewer {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	min-width: 0;
+	min-height: 0;
+	overflow: hidden;
+	background-color: var(--bg);
+	color: var(--color);
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-container);
+	box-shadow: var(--pg-shadow-dialog);
+}
+.pg-viewer:focus {
+	outline: none;
+}
+/* an app gone full screen takes the whole of it */
+.pg-viewer__mask--full {
+	padding: 0;
+}
+.pg-viewer__mask--full .pg-viewer {
+	border: 0;
+	border-radius: 0;
+}
+.pg-viewer__bar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex: 0 0 auto;
+	min-height: 64px;
+	padding: 0 12px 0 16px;
+	border-bottom: 1px solid var(--border-color);
+}
+.pg-viewer__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 36px;
+	height: 36px;
+	border-radius: var(--radius-control);
+	background-color: var(--pg-tint-ok);
+	color: var(--pg-on-ok);
+}
+.pg-viewer__icon svg {
+	width: 18px;
+	height: 18px;
+}
+.pg-viewer__heading {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+/* one line, whatever the name: the bar cannot grow without taking room from the file */
+.pg-viewer__title {
+	margin: 0;
+	border: 0;
+	font-size: 16px;
+	font-weight: var(--bold);
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+/* a title with nothing under it takes the room a heading would */
+.pg-viewer__bar > .pg-viewer__title {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.pg-viewer__path {
+	font-size: 12px;
+	color: var(--pg-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+/* a name with a word beside it rather than a path under it */
+.pg-viewer__heading--inline {
+	flex-direction: row;
+	align-items: center;
+	gap: 10px;
+}
+.pg-viewer__tag {
+	flex: 0 0 auto;
+	padding: 2px 8px;
+	border-radius: var(--radius-pill);
+	background-color: var(--bg-2);
+	font-size: 12px;
+	font-weight: var(--bold);
+	color: var(--pg-muted);
+}
+.pg-viewer__divider {
+	flex: 0 0 auto;
+	width: 1px;
+	height: 24px;
+	background-color: var(--border-color);
+}
+.pg-viewer__bar .pg-btn {
+	flex: 0 0 auto;
+}
+.pg-viewer__bar .pg-dialog__close {
+	margin-top: 0;
+}
+.pg-viewer__body {
+	position: relative;
+	display: flex;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+.pg-viewer__body > iframe {
+	flex: 1 1 auto;
+	width: 100%;
+	height: 100%;
+	border: 0;
+}
+
+/* a control with only an icon: the same box as a button, square */
+.pg-icon-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 40px;
+	height: 40px;
+	padding: 0;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-control);
+	background-color: transparent;
+	color: var(--pg-muted);
+	cursor: pointer;
+}
+.pg-icon-btn svg {
+	width: 16px;
+	height: 16px;
+}
+.pg-icon-btn[aria-pressed="true"] {
+	background-color: var(--pg-tint-ok);
+	color: var(--pg-on-ok);
+}
+.pg-icon-btn:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+@media (hover: hover) {
+	.pg-icon-btn:hover {
+		color: var(--color);
+		background-color: var(--bg-2);
+	}
+	.pg-icon-btn[aria-pressed="true"]:hover {
+		background-color: var(--pg-tint-ok);
+		color: var(--pg-on-ok);
+	}
+}
+@media (pointer: coarse) {
+	.pg-icon-btn {
+		width: 44px;
+		height: 44px;
+	}
+}
+
+/* the narrowest phones: the file's name before anything else in the bar */
+@media (max-width: 420px) {
+	.pg-viewer__tag,
+	.pg-viewer__label {
+		display: none;
+	}
+	.pg-viewer__bar .pg-btn {
+		padding: 0 12px;
+	}
+}
+@media (max-width: 600px) {
+	.pg-viewer__mask {
+		padding: 0;
+	}
+	.pg-viewer {
+		border: 0;
+		border-radius: 0;
+	}
+	.pg-viewer__bar {
+		gap: 8px;
+		min-height: 60px;
+		padding: 0 6px 0 16px;
+	}
+	.pg-viewer__icon,
+	.pg-viewer__divider {
+		display: none;
+	}
+}

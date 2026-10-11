@@ -13,8 +13,12 @@ const i18n = require("../../i18n/index.js");
 const open = [];
 let listening = false;
 
+// what a close button closes: a dialog, or a file open in a viewer or the gallery
+const DIALOG = ".pg-dialog, .pg-viewer, .pg-gallery";
+
+// an iframe counts: a viewer's file is in one, and the keyboard has to be able to reach it
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]),'
-    + ' textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    + ' textarea:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])';
 
 function focusableIn(dialog) {
     return Array.prototype.filter.call(dialog.querySelectorAll(FOCUSABLE),
@@ -33,7 +37,7 @@ function onKeyDown(e) {
         return;
     const top = open[open.length - 1];
     if (e.key === "Escape") {
-        if (suggestionsOpen(e.target))
+        if (! top.escape || suggestionsOpen(e.target))
             return;
         e.stopPropagation();
         top.$emit("close");
@@ -42,7 +46,7 @@ function onKeyDown(e) {
     // the dialogs are aria-modal, so the tab order has to stay inside the top one
     if (e.key !== "Tab")
         return;
-    const dialog = top.$el.closest(".pg-dialog");
+    const dialog = top.$el.closest(DIALOG);
     if (dialog == null)
         return;
     const items = focusableIn(dialog);
@@ -72,6 +76,10 @@ function unlockPage() {
 module.exports = {
   name: "DialogClose",
   mixins: [i18n],
+  props: {
+    // false where Escape would throw away work with nothing to say so: the editor and apps
+    escape: {type: Boolean, default: true}
+  },
 
   mounted() {
     open.push(this);
@@ -83,7 +91,7 @@ module.exports = {
     }
     // move focus into the dialog so the keyboard lands somewhere useful, and so screen
     // readers announce it. The dialog is not focusable by default, hence the tabindex.
-    const dialog = this.$el.closest(".pg-dialog");
+    const dialog = this.$el.closest(DIALOG);
     if (dialog != null && document.activeElement !== dialog) {
       // what to hand focus back to, so closing returns the keyboard where it came from
       this.opener = document.activeElement;
