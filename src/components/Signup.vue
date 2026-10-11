@@ -13,7 +13,7 @@
 				@input="(val) => (username = username.toLowerCase())"
 			/>
 
-			<button type="button" class="pg-btn generate-password" @click="generatePassword()">
+			<button type="button" class="pg-btn pg-btn--primary generate-password" @click="generatePassword()">
 				{{ translate("SIGNUP.GENERATE") }}
 			</button>
 
