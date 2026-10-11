@@ -53,6 +53,7 @@ public class Suite {
             run(failures, "Address Book, in the navigation on its own subdomain", () -> AddressBookTest.run(args1));
             run(failures, "Address Book keeps contacts where they belong when Peergos is slow", () -> AddressBookSafetyTest.run(args1));
             run(failures, "Address Book reads and writes vCards as other apps write them", () -> AddressBookFormatsTest.run(args1));
+            run(failures, "Address Book installed from Custom Apps, after it came with Peergos", () -> AddressBookTransitionTest.run(args1));
             run(failures, "the contacts api an app with MANAGE_CONTACTS gets", () -> ContactsApiTest.run(args1));
             run(failures, "an admin inviting new users", () -> AdminInviteTest.run(args1));
             run(failures, "inviting new users on a paid instance", () -> AdminInvitePaidTest.run(args1));

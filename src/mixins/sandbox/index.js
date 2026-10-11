@@ -2,6 +2,9 @@ const ProgressBar = require("../../components/drive/ProgressBar.vue");
 const i18n = require("../../i18n/index.js");
 const transfers = require("../transfers/index.js");
 
+// Address Book as published in Custom Apps, before it came with Peergos, in the menu
+const isCustomAppsAddressBook = props => props.name == "addressbook" && props.author == "peergos";
+
 module.exports = {
     data() {
         return {
@@ -22,6 +25,11 @@ module.exports = {
           let future = peergos.shared.util.Futures.incomplete();
           let register = appDirectories => that.loadAllAppProperties(appDirectories).thenApply(sandboxedAppsPropsList => {
               that.registerApps(sandboxedAppsPropsList);
+              // Registering is what marks the apps loaded, so with none to register - when the only
+              // one was the Custom Apps Address Book, which the launcher now leaves out - nothing
+              // would, and the launcher and the app installer would wait for good
+              if (sandboxedAppsPropsList.length == 0)
+                  that.$store.commit("SET_SANDBOXED_APPS", []);
               future.complete(true);
           });
           this.context.getByPath(this.context.username + "/.apps").thenApply(appsDirOpt => {
@@ -104,7 +112,10 @@ module.exports = {
                                 }
                             });
                         }
-                        if (reservedAppNames.includes(props.name)) {
+                        // in the menu now, where a copy installed from Custom Apps wouldn't be shown
+                        if (isCustomAppsAddressBook(props)) {
+                            errors.push("Address Book is part of Peergos now: open it from the menu");
+                        } else if (reservedAppNames.includes(props.name)) {
                             errors.push("Invalid displayName property. The name '" + props.name + "' is reserved");
                         }
                         if (props.displayName.length > 25) {
@@ -439,7 +450,9 @@ module.exports = {
                                     n.getName() != "contacts" && n.getName() != "launcher");
           let future = peergos.shared.util.Futures.incomplete();
           this.readAllAppProperties(appDirectories).thenApply(props => {
-              future.complete(props);
+              // the same app on the same contacts as the menu's, so it isn't shown a second time.
+              // Its files stay, for an older Peergos elsewhere that still opens it from there.
+              future.complete(props.filter(p => ! isCustomAppsAddressBook(p)));
           });
           return future;
       },
