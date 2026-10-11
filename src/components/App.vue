@@ -33,7 +33,7 @@
 			<!-- the desktop app's server, and a way to change it -->
 			<div class="desktop-server-bar" v-if="isDesktopProxy">
 				<span class="desktop-server-bar__url">{{ desktopServerDisplayUrl }}</span>
-				<button type="button" class="pg-icon-btn desktop-server-bar__gear" @click="showServerModal = true"
+				<button type="button" class="desktop-server-bar__gear" @click="showServerModal = true"
 				        :title="translate('LOGIN.SERVER.TITLE')" :aria-label="translate('LOGIN.SERVER.TITLE')">
 					<AppIcon icon="gear" />
 				</button>
@@ -680,7 +680,38 @@ module.exports = {
 }
 
 .desktop-server-bar__gear {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	border: 0;
 	border-radius: 50%;
+	background-color: transparent;
+	color: var(--pg-muted);
+	cursor: pointer;
+}
+
+.desktop-server-bar__gear:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
+@media (hover: hover) {
+	.desktop-server-bar__gear:hover {
+		background-color: var(--bg-2);
+		color: var(--color);
+	}
+}
+
+/* a finger needs the 44px the other controls give it */
+@media (pointer: coarse) {
+	.desktop-server-bar__gear {
+		width: 44px;
+		height: 44px;
+	}
 }
 
 .desktop-server-bar__gear svg {
