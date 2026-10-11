@@ -11,11 +11,17 @@ let loadFailed = false;
 
 function unfold(text) {
 	let lines = [];
+	let softBreak = false;
 	for (let line of text.split(/\r\n|\r|\n/)) {
-		if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length > 0)
+		if (softBreak)
+			// a quoted-printable value goes on after a line ending in =, with nothing in front
+			lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1) + line;
+		else if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length > 0)
 			lines[lines.length - 1] += line.substring(1);
 		else if (line.length > 0)
 			lines.push(line);
+		let last = lines[lines.length - 1];
+		softBreak = last != null && last.endsWith('=') && /QUOTED-PRINTABLE/i.test(last.substring(0, last.indexOf(':') + 1));
 	}
 	return lines;
 }
@@ -58,6 +64,52 @@ function parseLine(raw) {
 		params: params, value: raw.substring(colon + 1), raw: raw};
 }
 
+// vCard 2.1 writes any value that isn't plain ASCII as quoted-printable, as Android's own
+// contacts export does, and this app reads and writes plain text. Such a value is decoded once,
+// as the card is read, and the card becomes a 3.0 one, the version without quoted-printable. The
+// parts of a structured value are decoded each on its own, so a ; in one stays part of it.
+const STRUCTURED = ['N', 'ADR', 'ORG'];
+
+function isQuotedPrintable(p) {
+	return p.params.some(x => (x.key == 'ENCODING' || x.key == 'TYPE') && x.values.some(v => v.toUpperCase() == 'QUOTED-PRINTABLE'));
+}
+
+function decodeQuotedPrintable(s, charset) {
+	let bytes = [];
+	for (let i = 0; i < s.length; i++) {
+		if (s[i] == '=' && /^[0-9A-Fa-f]{2}$/.test(s.substring(i + 1, i + 3))) {
+			bytes.push(parseInt(s.substring(i + 1, i + 3), 16));
+			i += 2;
+		} else {
+			bytes.push(...new TextEncoder().encode(s[i]));
+		}
+	}
+	let decoder;
+	try {
+		decoder = new TextDecoder(charset || 'utf-8');
+	} catch (e) {
+		decoder = new TextDecoder('utf-8');
+	}
+	return decoder.decode(new Uint8Array(bytes));
+}
+
+function plainProps(props) {
+	let decoded = false;
+	let out = props.map(p => {
+		if (! isQuotedPrintable(p))
+			return p;
+		decoded = true;
+		let charset = (p.params.find(x => x.key == 'CHARSET') || {values: []}).values[0];
+		let parts = STRUCTURED.includes(p.name) ? p.value.split(';') : [p.value];
+		let value = parts.map(part => escapeText(decodeQuotedPrintable(part, charset))).join(';');
+		let params = p.params.filter(x => x.key != 'ENCODING' && x.key != 'CHARSET')
+			.map(x => x.key != 'TYPE' ? x : {key: 'TYPE', values: x.values.filter(v => v.toUpperCase() != 'QUOTED-PRINTABLE')})
+			.filter(x => x.values.length > 0);
+		return parseLine(line(p.group, p.name, params, value));
+	});
+	return decoded ? out.map(p => p.name == 'VERSION' ? parseLine('VERSION:3.0') : p) : out;
+}
+
 function parseCards(text) {
 	let result = [], current = null;
 	for (let line of unfold(text)) {
@@ -66,7 +118,7 @@ function parseCards(text) {
 			current = [];
 		} else if (upper == 'END:VCARD') {
 			if (current != null)
-				result.push({props: current});
+				result.push({props: plainProps(current)});
 			current = null;
 		} else if (current != null) {
 			let prop = parseLine(line);
