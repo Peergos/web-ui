@@ -68,7 +68,7 @@ module.exports = {
           this.readJSONFile(file).thenApply(props => {
               let that = this;
               if (props == null) {
-                  future.complete({props: null, errors: ['Unable to parse peergos-app.json. See console for details']});
+                  future.complete({props: null, errors: ['Unable to read peergos-app.json. See console for details']});
               } else {
                   let errors = [];
                   let mandatoryFields = ["displayName", "description", "launchable"];
@@ -284,7 +284,8 @@ module.exports = {
               var low = fileProps.sizeLow();
               if (low < 0) low = low + Math.pow(2, 32);
               let size = low + (fileProps.sizeHigh() * Math.pow(2, 32));
-              file.getInputStream(this.context.network, this.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), (progress) => {}).thenApply(reader => {
+              // composed, so that a read failing anywhere reaches the handler at the end
+              file.getInputStream(this.context.network, this.context.crypto, fileProps.sizeHigh(), fileProps.sizeLow(), (progress) => {}).thenCompose(reader => {
                   let data = convertToByteArray(new Int8Array(size));
                   return reader.readIntoArray(data, 0, data.length).thenApply(read => {
                       try {
@@ -341,6 +342,12 @@ module.exports = {
                           future.complete(null);
                       }
                   });
+              }).exceptionally(throwable => {
+                  // the answer a manifest that doesn't parse gets, rather than none at all, which
+                  // leaves whoever asked waiting for good
+                  console.log(throwable);
+                  future.complete(null);
+                  return null;
               });
           }
           return future;
