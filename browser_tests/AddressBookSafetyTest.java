@@ -67,6 +67,8 @@ public class AddressBookSafetyTest {
                 scenario(failures, "overwriteWhenAsked", d, () -> overwriteWhenAsked(d, api, data));
                 scenario(failures, "deletedElsewhere", d, () -> deletedElsewhere(d, api, data));
                 scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
+                scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
+                scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -275,6 +277,48 @@ public class AddressBookSafetyTest {
                 + " && document.getElementById('detail').textContent.includes('keep me') ? true : null");
         waitForCard(api, data, "imp-1.vcf", "NOTE:keep me", "A contact changed elsewhere should not be deleted");
         System.out.println("  ok   deleting a contact changed elsewhere leaves it, and shows the change");
+    }
+
+    static String importAndWait(WebDriver d, String text) {
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; importText(arguments[0]); return 1;", text);
+        return String.valueOf(AddressBookTest.waitInFrame(d, "the import", "const t = document.getElementById('status').textContent; return t.startsWith('Imported') ? t : null"));
+    }
+
+    static long count(UserContext api, String bookPath, String text) {
+        return AddressBookTest.stored(api, bookPath).stream().filter(c -> c.contains(text)).count();
+    }
+
+    // importing a contact that is already there adds nothing, and importing it over one changed
+    // since keeps both
+    static void importAgain(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Imp One");
+        String original = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:kb-1\r\nFN:Kept Both\r\nN:Both;Kept;;;\r\nTEL:+1 555 0001\r\nEND:VCARD\r\n";
+        String first = importAndWait(d, original);
+        String again = importAndWait(d, original);
+        AddressBookTest.waitFor("the import to be stored", () -> count(api, data + "default", "FN:Kept Both") >= 1);
+        WebDriver.sleep(2000);
+        if (count(api, data + "default", "FN:Kept Both") != 1 || ! again.contains("1 already here"))
+            throw new AssertionError("Importing a contact again should add nothing: " + again + ", stored " + count(api, data + "default", "FN:Kept Both"));
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'kb-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:kb-1\\r\\nFN:Kept Both\\r\\nN:Both;Kept;;;\\r\\nTEL:+1 555 0002\\r\\nEND:VCARD\\r\\n')");
+        String over = importAndWait(d, original);
+        AddressBookTest.waitFor("both versions to be stored", () -> count(api, data + "default", "FN:Kept Both") == 2);
+        if (count(api, data + "default", "TEL:+1 555 0002") != 1 || count(api, data + "default", "TEL:+1 555 0001") != 1)
+            throw new AssertionError("Both versions should be kept: " + AddressBookTest.stored(api, data + "default"));
+        System.out.println("  ok   an import adds and never replaces (" + first + " / " + again + " / " + over + ")");
+    }
+
+    // moving a contact into a book where its file name holds another contact keeps both
+    static void moveBesideTwin(WebDriver d, UserContext api, String data) {
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'twin-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:twin-1\\r\\nFN:Twin Here\\r\\nN:Here;Twin;;;\\r\\nEND:VCARD\\r\\n')"
+                + ".then(() => window.__addressBook.writeContactCard('big', 'twin-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:twin-1\\r\\nFN:Twin There\\r\\nN:There;Twin;;;\\r\\nEND:VCARD\\r\\n'))");
+        openBook(d, "default", "Contacts", "Twin Here");
+        AddressBookTest.inFrame(d, "selectContact('twin-1.vcf'); return 1;");
+        AddressBookTest.waitInFrame(d, "the contact's move menu", "return document.querySelector('#detail select') ? true : null");
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; const m = document.querySelector('#detail select'); m.value = 'big'; m.dispatchEvent(new Event('change')); return 1;");
+        Object said = AddressBookTest.waitInFrame(d, "the move", "const t = document.getElementById('status').textContent; return t.startsWith('Moved') ? t : null");
+        AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
+        AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
+        System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
     }
 
     /** Runs one case, and carries on to the next if it fails, so a run says which of them hold. */

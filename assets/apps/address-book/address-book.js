@@ -382,10 +382,6 @@ async function loadCards(book) {
 	}).filter(c => c != null);
 }
 
-async function putCard(book, file, vcard) {
-	await host('saveCard', {book: book, file: file, vcard: vcard});
-}
-
 function fileFor(card) {
 	let uid = text(card, 'UID').replace(/^urn:uuid:/i, '');
 	return (/^[A-Za-z0-9_\-@.]{1,200}$/.test(uid) && !uid.startsWith('.') ? uid : newUid()) + '.vcf';
@@ -540,13 +536,32 @@ async function deleteContact(entry) {
 	renderDetail();
 }
 
+// Puts a card in a book without replacing one there under the same name: the same card is left
+// as it is, and a different one keeps its place while this one gets a UID, and a file, of its
+// own. Says where the card went, and whether it was 'added', already 'there', or put 'beside'.
+async function addCard(book, card) {
+	let vcard = serialise(card.props.map(p => p.raw));
+	let file = fileFor(card);
+	let answer = await host('saveCard', {book: book, file: file, vcard: vcard, expected: null});
+	if (! answer.conflict)
+		return {file: file, card: card, text: vcard, how: 'added'};
+	if (answer.current === vcard)
+		return {file: file, card: card, text: vcard, how: 'there'};
+	card.props = card.props.filter(p => p.name != 'UID').concat([parseLine('UID:' + newUid())]);
+	vcard = serialise(card.props.map(p => p.raw));
+	file = fileFor(card);
+	if ((await host('saveCard', {book: book, file: file, vcard: vcard, expected: null})).conflict)
+		throw new Error('No room for ' + file);
+	return {file: file, card: card, text: vcard, how: 'beside'};
+}
+
 async function moveContact(entry, target) {
 	let from = currentBook;
 	let vcard = serialise(entry.card.props.map(p => p.raw));
-	let moved;
+	let moved, placed;
 	try {
 		// written before it is removed, so a failure part way leaves a copy rather than nothing
-		await putCard(target, entry.file, vcard);
+		placed = await addCard(target, parseCards(vcard)[0]);
 		moved = await host('deleteCard', {book: from, file: entry.file, expected: entry.text});
 	} catch (e) {
 		status('Could not move the contact');
@@ -560,7 +575,7 @@ async function moveContact(entry, target) {
 			await reopen(from, null);
 		return;
 	}
-	status('Moved to ' + (book ? book.name : target));
+	status('Moved to ' + (book ? book.name : target) + (placed.how == 'beside' ? ', beside a different version of it there' : ''));
 	if (currentBook == from) {
 		cards = cards.filter(c => c.file != entry.file);
 		selectedFile = null;
@@ -579,29 +594,32 @@ async function importText(textContent) {
 		return;
 	}
 	let book = currentBook;
-	let done = 0, failed = 0;
+	// an import adds and never replaces: a contact imported again is already there, and one
+	// changed since is kept beside the imported version rather than lost to it
+	let count = {added: 0, there: 0, beside: 0, failed: 0};
 	for (let card of parsed) {
 		if (!prop(card, 'UID'))
 			card.props.push(parseLine('UID:' + newUid()));
 		if (!prop(card, 'VERSION'))
 			card.props.unshift(parseLine('VERSION:3.0'));
-		let file = fileFor(card);
-		status('Importing ' + (done + failed + 1) + ' of ' + parsed.length, true);
+		status('Importing ' + (count.added + count.there + count.beside + count.failed + 1) + ' of ' + parsed.length, true);
 		try {
-			let vcard = serialise(card.props.map(p => p.raw));
-			await putCard(book, file, vcard);
-			if (currentBook == book)
-				cards = cards.filter(c => c.file != file).concat([{file: file, card: card, text: vcard}]);
-			done++;
+			let placed = await addCard(book, card);
+			count[placed.how]++;
+			if (currentBook == book && placed.how != 'there')
+				cards = cards.filter(c => c.file != placed.file).concat([{file: placed.file, card: placed.card, text: placed.text}]);
 		} catch (e) {
-			failed++;
+			count.failed++;
 		}
 	}
 	if (currentBook == book) {
 		renderBooks();
 		renderContacts();
 	}
-	status('Imported ' + done + (failed > 0 ? ', ' + failed + ' failed' : ''));
+	status('Imported ' + (count.added + count.beside)
+		+ (count.there > 0 ? ', ' + count.there + ' already here' : '')
+		+ (count.beside > 0 ? ', ' + count.beside + ' kept beside a different version' : '')
+		+ (count.failed > 0 ? ', ' + count.failed + ' failed' : ''));
 }
 
 async function importFiles(input) {
