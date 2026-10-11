@@ -40,21 +40,30 @@
 			</div>
 			<ul class="pg-plans">
 				<li class="pg-plan">
-					<div class="pg-plan__head"><h3>Pro Account</h3><span class="pg-plan__price">&#x00A3;{{ price1() }}</span></div>
-					<p>200 GB {{ translate("SIGNUP.HYPER") }}</p>
-					<p>{{ translate("SIGNUP.BUNDLED") }}</p>
+					<h3>Pro Account</h3>
+					<ul>
+						<li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price1() }}</li>
+					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(200000000000)">Select Pro</button>
 				</li>
 				<li class="pg-plan">
-					<div class="pg-plan__head"><h3>Visionary Account</h3><span class="pg-plan__price">&#x00A3;{{ price2() }}</span></div>
-					<p>1000 GB {{ translate("SIGNUP.HYPER") }}</p>
-					<p>{{ translate("SIGNUP.BUNDLED") }}</p>
+					<h3>Visionary Account</h3>
+					<ul>
+						<li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price2() }}</li>
+					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(1000000000000)">Select Visionary</button>
 				</li>
 				<li class="pg-plan">
-					<div class="pg-plan__head"><h3>Pioneer Account</h3><span class="pg-plan__price">&#x00A3;{{ price3() }}</span></div>
-					<p>3000 GB {{ translate("SIGNUP.HYPER") }}</p>
-					<p>{{ translate("SIGNUP.BUNDLED") }}</p>
+					<h3>Pioneer Account</h3>
+					<ul>
+						<li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
+						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
+						<li>&#x00A3;{{ price3() }}</li>
+					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(3000000000000)">Select Pioneer</button>
 				</li>
 			</ul>

@@ -1005,7 +1005,7 @@ a.pg-btn {
 	text-align: center;
 }
 
-/* monthly or yearly: the same segmented control the tabs are */
+/* monthly or yearly */
 .pg-auth__billing {
 	display: flex;
 	align-self: center;
@@ -1035,10 +1035,10 @@ a.pg-btn {
 	opacity: 0;
 	pointer-events: none;
 }
+/* the chosen one filled, as in the upgrade dialog: the same choice looks the same signed in or not */
 .pg-auth__billing label.active {
-	background-color: var(--bg);
-	color: var(--color);
-	box-shadow: var(--pg-shadow);
+	background-color: var(--pg-primary);
+	color: var(--pg-on-primary);
 }
 .pg-auth__billing label:focus-within {
 	outline: 2px solid var(--green-500);
@@ -1053,30 +1053,33 @@ a.pg-btn {
 	padding: 0;
 	list-style: none;
 }
+/* the upgrade dialog's plans: a tinted card, a ticked list, the button under it */
 .pg-plan {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 10px;
 	padding: 16px;
-	border: 1px solid var(--border-color);
-	border-radius: var(--radius-container);
-}
-.pg-plan__head {
-	display: flex;
-	align-items: baseline;
-	justify-content: space-between;
-	gap: 12px;
+	border-radius: var(--radius-control);
+	background-color: var(--pg-surface-2);
 }
 .pg-plan h3 {
 	margin: 0;
 	font-size: 16px;
 	font-weight: var(--bold);
 }
-.pg-plan__price {
+.pg-plan ul {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.pg-plan li {
+	padding-left: 26px;
 	font-size: var(--text-small);
-	font-weight: var(--bold);
-	color: var(--pg-on-ok);
-	text-align: right;
+	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left 2px no-repeat;
+	background-size: 18px auto;
 }
 .pg-plan .pg-btn {
 	margin-top: 6px;
