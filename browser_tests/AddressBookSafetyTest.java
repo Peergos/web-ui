@@ -61,6 +61,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "lateSave", d, () -> lateSave(d, api, data));
                 scenario(failures, "importWhileSwitching", d, () -> importWhileSwitching(d, api, data));
                 scenario(failures, "moveIntoOpenedBook", d, () -> moveIntoOpenedBook(d, api, data));
+                scenario(failures, "failedLoad", d, () -> failedLoad(d));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -141,6 +142,24 @@ public class AddressBookSafetyTest {
         AddressBookTest.waitInFrame(d, "the moved contact in the open book", "return document.getElementById('bookTitle').textContent === 'Big'"
                 + " && [...document.querySelectorAll('#contacts .list-row')].some(r => r.textContent.includes('Carol Current')) ? true : null");
         System.out.println("  ok   a move finishes in its target even when that book is opened meanwhile, and shows there");
+    }
+
+    // a book that can't be loaded says so, and can be tried again, rather than looking empty
+    static void failedLoad(WebDriver d) {
+        AddressBookTest.inFrame(d, "window.__real = window.__real || host; window.__failed = false;"
+                + " window.host = (t, p) => t === 'loadBook' && ! window.__failed ? (window.__failed = true, Promise.reject(new Error('unreachable'))) : window.__real(t, p); return 1;");
+        AddressBookTest.inFrame(d, "openBook('default'); return 1;");
+        Object shown = AddressBookTest.waitInFrame(d, "the book's list", "const e = document.querySelector('#contacts .empty'); return e && ! e.textContent.includes('Loading') ? e.textContent.trim() : null");
+        AddressBookTest.inFrame(d, RELEASE);
+        String said = String.valueOf(shown);
+        if (! said.contains("Couldn't load") || said.contains("No contacts yet"))
+            throw new AssertionError("A book that couldn't be loaded should say so, not look empty: " + said);
+        Object count = AddressBookTest.inFrame(d, "const c = document.querySelector('#bookList li.selected .count'); return c ? c.textContent : 'none'");
+        if (! "none".equals(String.valueOf(count)))
+            throw new AssertionError("A book that couldn't be loaded should show no count: " + count);
+        AddressBookTest.inFrame(d, "[...document.querySelectorAll('#contacts button')].find(b => b.textContent.trim() === 'Try again').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "the book on trying again", "return [...document.querySelectorAll('#contacts .list-row')].some(r => r.textContent.includes('Imp One')) ? true : null");
+        System.out.println("  ok   a book that can't be loaded says so (" + said + "), shows no count, and Try again loads it");
     }
 
     /** Runs one case, and carries on to the next if it fails, so a run says which of them hold. */

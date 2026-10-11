@@ -4,6 +4,8 @@ let books = [];
 let currentBook = null;
 let cards = [];
 let selectedFile = null;
+// the open book couldn't be read: its list says so, rather than looking empty
+let loadFailed = false;
 
 // ------------------------------------------------------------------ vCard
 
@@ -392,18 +394,17 @@ async function openBook(id) {
 	renderBooks();
 	document.getElementById('contacts').innerHTML = '<li class="empty">Loading…</li>';
 	renderDetail();
-	let loaded;
+	let loaded = [], failed = false;
 	try {
 		loaded = await loadCards(id);
 	} catch (e) {
-		loaded = [];
-		if (currentBook == id)
-			status('Could not load contacts');
+		failed = true;
 	}
 	// a book opened since has taken this one's place, and these are not its contacts
 	if (currentBook != id)
 		return;
 	cards = loaded;
+	loadFailed = failed;
 	renderBooks();
 	renderContacts();
 }
@@ -620,7 +621,7 @@ function renderBooks() {
 			list.appendChild(el('li', {class: b.id == currentBook ? 'selected' : ''}, [
 				row(b.id == currentBook, () => openBook(b.id), [
 					el('span', {text: b.name}),
-					b.id == currentBook ? el('span', {class: 'count', text: String(cards.length)}) : null
+					b.id == currentBook && ! loadFailed ? el('span', {class: 'count', text: String(cards.length)}) : null
 				])
 			]));
 		});
@@ -648,6 +649,13 @@ function renderContacts() {
 
 function drawContacts(list) {
 	list.innerHTML = '';
+	if (loadFailed) {
+		list.appendChild(el('li', {class: 'empty'}, [
+			el('p', {text: "Couldn't load this address book."}),
+			el('button', {type: 'button', text: 'Try again', onclick: () => openBook(currentBook)})
+		]));
+		return;
+	}
 	let query = document.getElementById('search').value.trim();
 	let shown = cards.filter(c => matches(c.card, query))
 		.sort((a, b) => sortKey(a.card).localeCompare(sortKey(b.card)));
