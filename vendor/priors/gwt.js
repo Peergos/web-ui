@@ -835,7 +835,8 @@ function getBrowserStorageQuota() {
                 // This is called even on 404 etc
                 // so check the status
                 if (req.status == 200) {
-		    resolve(JSON.parse(req.response).size*1024*1024);
+		    let r = typeof req.response === "string" ? JSON.parse(req.response) : req.response;
+		    resolve(r.size*1024*1024);
                 }
                 else {
 		    try {
@@ -852,7 +853,7 @@ function getBrowserStorageQuota() {
 	    };
 	    
 	    req.onerror = function(e) {
-                future.completeExceptionally(new java.net.ConnectException("Unable to connect"));
+                reject(Error("Unable to connect"));
 	    };
             
             req.ontimeout = function() {

@@ -207,6 +207,7 @@ module.exports = {
     "SETTINGS.CACHE.INVALID":"Cache size value not valid",
     "SETTINGS.CACHE.LARGE":"Invalid Cache size. Maximum Cache Size: $SIZE MiB",
     "SETTINGS.CACHE.UPDATED":"Cache Size Updated",
+    "SETTINGS.CACHE.ERROR":"Unable to update cache size.",
     "SETTINGS.VERSION":"Version",
     "SETTINGS.MIGRATE":"Migration",
     "SETTINGS.LANGUAGE":"Language",

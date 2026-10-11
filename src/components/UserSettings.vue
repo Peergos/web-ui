@@ -281,11 +281,17 @@ module.exports = {
                             modifyCacheSize(validNewCacheSize).thenApply(() => {
                                 that.showSettingsSpinner = false;
                                 that.$toast(that.translate("SETTINGS.CACHE.UPDATED"));
+                            }).exceptionally(function(throwable) {
+                                that.showSettingsSpinner = false;
+                                that.$toast.error(that.translate("SETTINGS.CACHE.ERROR") + " " + throwable.getMessage(), {timeout:false});
                             });
                         }
                     }
                 };
                 this.showPrompt = true;
+            }).catch(function(err) {
+                let error = err.message != null ? err.message : err;
+                that.$toast.error(that.translate("SETTINGS.CACHE.ERROR") + " " + error, {timeout:false});
             });
         },
         validateCacheSize: function(num) {
