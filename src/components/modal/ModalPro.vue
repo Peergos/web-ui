@@ -284,6 +284,7 @@ module.exports = {
 }
 
 .pro__billing-entry {
+	position: relative;
 	display: flex;
 	align-items: center;
 	height: 34px;
@@ -302,8 +303,17 @@ module.exports = {
 	color: var(--pg-on-primary);
 }
 
-.pro__billing input[type="radio"] {
-	display: none;
+/* out of sight but still in the tab order, so the switch works from the keyboard too */
+.pro__billing input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+.pro__billing-entry:focus-within {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
 }
 
 .pro__plans {
