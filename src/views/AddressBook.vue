@@ -181,21 +181,40 @@ module.exports = {
 			let exists = await this.addressBookExists(data.book);
 			return {cards: exists ? await this.listContactCards(data.book) : []};
 		},
+		// expected is the card as the frame last read it, or null for one that should not exist
+		// yet. A card changed or deleted elsewhere since - by a synced phone, a CardDAV client,
+		// another browser - isn't saved over unless the user says so, when ask is set; without
+		// it the frame is told, and decides.
 		async saveCard(data) {
 			this.checkCard(data.book, data.file);
 			if (typeof data.vcard != 'string' || ! /^BEGIN:VCARD/i.test(data.vcard.trim()))
 				throw new Error("Not a vCard");
+			if (data.expected !== undefined) {
+				let current = await this.readContactCard(data.book, data.file);
+				if (current !== data.expected) {
+					let gone = current == null;
+					let overwrite = data.ask === true && await this.confirm(
+						this.named(gone ? "ADDRESSBOOK.CONFLICT.DELETED" : "ADDRESSBOOK.CONFLICT", data.name != null ? data.name : ''),
+						this.translate(gone ? "ADDRESSBOOK.CONFLICT.DELETED.BODY" : "ADDRESSBOOK.CONFLICT.BODY"));
+					if (! overwrite)
+						return {conflict: true, current: current};
+				}
+			}
 			await this.writeContactCard(data.book, data.file, data.vcard);
 			return {saved: true};
 		},
-		// a delete the user asked for is confirmed first; one that is the second half of a move
-		// is not
+		// A delete the user asked for is confirmed first; one that is the second half of a move
+		// is not. Either way a card changed elsewhere since the frame read it is left alone.
 		async deleteCard(data) {
 			this.checkCard(data.book, data.file);
 			if (data.name != null && ! await this.confirm(this.named("ADDRESSBOOK.DELETE.CONTACT", data.name), ''))
 				return {cancelled: true};
-			if (await this.readContactCard(data.book, data.file) != null)
-				await this.deleteContactCard(data.book, data.file);
+			let current = await this.readContactCard(data.book, data.file);
+			if (current == null)
+				return {deleted: true};
+			if (data.expected !== undefined && current !== data.expected)
+				return {conflict: true, current: current};
+			await this.deleteContactCard(data.book, data.file);
 			return {deleted: true};
 		},
 		async newBook() {

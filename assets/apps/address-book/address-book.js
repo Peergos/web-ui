@@ -372,7 +372,8 @@ async function loadCards(book) {
 	let list = (await host('loadBook', {book: book})).cards;
 	return list.map(c => {
 		let parsed = parseCards(c.vcard);
-		return parsed.length == 0 ? null : {file: c.file, card: parsed[0]};
+		// text: the card exactly as read, which a save or a delete says it expects to find
+		return parsed.length == 0 ? null : {file: c.file, card: parsed[0], text: c.vcard};
 	}).filter(c => c != null);
 }
 
@@ -407,6 +408,16 @@ async function openBook(id) {
 	loadFailed = failed;
 	renderBooks();
 	renderContacts();
+}
+
+// the book read again, with a contact open in it if it is still there
+async function reopen(book, file) {
+	await openBook(book);
+	if (currentBook == book && file != null && cards.some(c => c.file == file)) {
+		selectedFile = file;
+		renderContacts();
+		renderDetail();
+	}
 }
 
 function onBookSelect(value) {
@@ -472,17 +483,26 @@ async function saveContact(form, entry) {
 	let book = currentBook;
 	let vcard = formToCard(form, entry ? entry.card : null);
 	let file = entry ? entry.file : fileFor(parseCards(vcard)[0]);
+	let answer;
 	try {
-		await putCard(book, file, vcard);
+		// Peergos asks before saving over a change made elsewhere since this was read
+		answer = await host('saveCard', {book: book, file: file, vcard: vcard, expected: entry ? entry.text : null,
+			ask: true, name: displayName(parseCards(vcard)[0])});
 	} catch (e) {
 		status('Could not save the contact');
+		return;
+	}
+	if (answer.conflict) {
+		status('Not saved. It had changed elsewhere, so it now shows that change');
+		if (currentBook == book)
+			await reopen(book, answer.current != null ? file : null);
 		return;
 	}
 	if (currentBook != book) {
 		status('Saved');
 		return;
 	}
-	let updated = {file: file, card: parseCards(vcard)[0]};
+	let updated = {file: file, card: parseCards(vcard)[0], text: vcard};
 	cards = cards.filter(c => c.file != file).concat([updated]);
 	selectedFile = file;
 	renderBooks();
@@ -494,8 +514,14 @@ async function saveContact(form, entry) {
 async function deleteContact(entry) {
 	let book = currentBook;
 	try {
-		let answer = await host('deleteCard', {book: book, file: entry.file, name: displayName(entry.card)});
+		let answer = await host('deleteCard', {book: book, file: entry.file, name: displayName(entry.card), expected: entry.text});
 		if (answer.cancelled) return;
+		if (answer.conflict) {
+			status('Not deleted. It had changed elsewhere, so it now shows that change');
+			if (currentBook == book)
+				await reopen(book, entry.file);
+			return;
+		}
 	} catch (e) {
 		status('Could not delete the contact');
 		return;
@@ -512,15 +538,23 @@ async function deleteContact(entry) {
 async function moveContact(entry, target) {
 	let from = currentBook;
 	let vcard = serialise(entry.card.props.map(p => p.raw));
+	let moved;
 	try {
 		// written before it is removed, so a failure part way leaves a copy rather than nothing
 		await putCard(target, entry.file, vcard);
-		await host('deleteCard', {book: from, file: entry.file});
+		moved = await host('deleteCard', {book: from, file: entry.file, expected: entry.text});
 	} catch (e) {
 		status('Could not move the contact');
 		return;
 	}
 	let book = books.find(b => b.id == target);
+	if (moved.conflict) {
+		// both are kept: the copy as it was read, and the original with the change made to it
+		status('Copied to ' + (book ? book.name : target) + '. The original had changed elsewhere, so it was kept too');
+		if (currentBook == from)
+			await reopen(from, null);
+		return;
+	}
 	status('Moved to ' + (book ? book.name : target));
 	if (currentBook == from) {
 		cards = cards.filter(c => c.file != entry.file);
@@ -552,7 +586,7 @@ async function importText(textContent) {
 			let vcard = serialise(card.props.map(p => p.raw));
 			await putCard(book, file, vcard);
 			if (currentBook == book)
-				cards = cards.filter(c => c.file != file).concat([{file: file, card: card}]);
+				cards = cards.filter(c => c.file != file).concat([{file: file, card: card, text: vcard}]);
 			done++;
 		} catch (e) {
 			failed++;

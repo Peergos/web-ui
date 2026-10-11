@@ -63,6 +63,10 @@ public class AddressBookSafetyTest {
                 scenario(failures, "moveIntoOpenedBook", d, () -> moveIntoOpenedBook(d, api, data));
                 scenario(failures, "failedLoad", d, () -> failedLoad(d));
                 scenario(failures, "doubleSave", d, () -> doubleSave(d, api, data));
+                scenario(failures, "changedElsewhere", d, () -> changedElsewhere(d, api, data));
+                scenario(failures, "overwriteWhenAsked", d, () -> overwriteWhenAsked(d, api, data));
+                scenario(failures, "deletedElsewhere", d, () -> deletedElsewhere(d, api, data));
+                scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -108,9 +112,9 @@ public class AddressBookSafetyTest {
     static void importWhileSwitching(WebDriver d, UserContext api, String data) {
         openBook(d, "default", "Contacts", "Carol Current");
         AddressBookTest.inFrame(d, HOLD, "saveCard", null, 700);
-        String three = "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-1\\r\\nFN:Imp One\\r\\nEND:VCARD\\r\\n"
-                + "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nEND:VCARD\\r\\n"
-                + "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-3\\r\\nFN:Imp Three\\r\\nEND:VCARD\\r\\n";
+        String three = "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-1\\r\\nFN:Imp One\\r\\nN:One;Imp;;;\\r\\nEND:VCARD\\r\\n"
+                + "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nN:Two;Imp;;;\\r\\nEND:VCARD\\r\\n"
+                + "BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-3\\r\\nFN:Imp Three\\r\\nN:Three;Imp;;;\\r\\nEND:VCARD\\r\\n";
         AddressBookTest.inFrame(d, "importText('" + three + "'); setTimeout(() => openBook('big'), 1000); return 1;");
         AddressBookTest.waitInFrame(d, "the import to finish", "return document.getElementById('status').textContent.startsWith('Imported') ? true : null");
         AddressBookTest.inFrame(d, RELEASE);
@@ -178,6 +182,99 @@ public class AddressBookSafetyTest {
         if (stored != 1)
             throw new AssertionError("Saving a new contact twice in a row should store it once, not " + stored + " times");
         System.out.println("  ok   Save pressed twice while the first is on its way stores the contact once");
+    }
+
+    // Another device's change, written to the address book past the app, while it shows the card.
+    static void elsewhere(WebDriver d, String script) {
+        d.script("window.__wrote = null; " + script + ".then(() => window.__wrote = 'done', e => window.__wrote = 'failed ' + e); return 1;");
+        d.waitForScript("the change elsewhere", "window.__wrote != null", 60_000);
+        if (! "done".equals(String.valueOf(d.script("return window.__wrote"))))
+            throw new IllegalStateException("Could not make the change elsewhere: " + d.script("return window.__wrote"));
+    }
+
+    static void edit(WebDriver d, String file, String title) {
+        AddressBookTest.inFrame(d, "selectContact(arguments[0]); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;", file);
+        AddressBookTest.waitInFrame(d, "the edit form", "return document.querySelector('#detail input[placeholder=\"Job title\"]') ? true : null");
+        AddressBookTest.inFrame(d, "const t = document.querySelector('#detail input[placeholder=\"Job title\"]'); t.value = arguments[0]; t.dispatchEvent(new Event('input')); return 1;", title);
+    }
+
+    static void answer(WebDriver d, String question, String button) {
+        d.waitUntil("Peergos asking " + question, () -> Boolean.TRUE.equals(d.script(
+                "const g = document.querySelector('.pg-dialog'); return !!g && g.textContent.includes(arguments[0])", question)) ? true : null, 30_000);
+        d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === arguments[0]).click(); return 1;", button);
+    }
+
+    static String card(UserContext api, String data, String file) {
+        return AddressBookTest.stored(api, data + "default").stream().filter(c -> c.contains("UID:" + file.replace(".vcf", "")))
+                .findFirst().orElse("(none)").replace("\r\n", "|");
+    }
+
+    static void waitForCard(UserContext api, String data, String file, String text, String what) {
+        try {
+            AddressBookTest.waitFor(text, () -> card(api, data, file).contains(text));
+        } catch (AssertionError e) {
+            throw new AssertionError(what + ": " + card(api, data, file));
+        }
+    }
+
+    // a contact changed elsewhere after it was opened isn't saved over without asking; No keeps
+    // the change and shows it, and a save from there keeps both
+    static void changedElsewhere(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Imp Two");
+        edit(d, "imp-2.vcf", "Pilot");
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'imp-2.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nN:Two;Imp;;;\\r\\nTEL:+1 555 0102\\r\\nEND:VCARD\\r\\n')");
+        AddressBookTest.inFrame(d, "document.querySelector('#detail button[type=submit]').click(); return 1;");
+        answer(d, "Imp Two was changed elsewhere", "No");
+        AddressBookTest.waitInFrame(d, "the change from elsewhere on show", "return document.getElementById('status').textContent.startsWith('Not saved')"
+                + " && document.getElementById('detail').textContent.includes('+1 555 0102') ? true : null");
+        // read back until the store shows the change: the api's view can trail the page's by a moment
+        waitForCard(api, data, "imp-2.vcf", "TEL:+1 555 0102", "No should keep the change made elsewhere");
+        if (card(api, data, "imp-2.vcf").contains("TITLE:Pilot"))
+            throw new AssertionError("No should not save this version over the other: " + card(api, data, "imp-2.vcf"));
+        edit(d, "imp-2.vcf", "Pilot");
+        AddressBookTest.inFrame(d, "document.querySelector('#detail button[type=submit]').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+        if (Boolean.TRUE.equals(d.script("return !!document.querySelector('.pg-dialog')")))
+            throw new AssertionError("A save of the card as it is now should not ask");
+        AddressBookTest.waitFor("both changes to be stored", () -> card(api, data, "imp-2.vcf").contains("TITLE:Pilot"));
+        if (! card(api, data, "imp-2.vcf").contains("TEL:+1 555 0102"))
+            throw new AssertionError("The save should keep the change made elsewhere: " + card(api, data, "imp-2.vcf"));
+        System.out.println("  ok   a change made elsewhere is asked about, No keeps and shows it, and the next save keeps both");
+    }
+
+    // Yes saves over a change made elsewhere, as asked
+    static void overwriteWhenAsked(WebDriver d, UserContext api, String data) {
+        edit(d, "imp-2.vcf", "Captain");
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'imp-2.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nN:Two;Imp;;;\\r\\nNOTE:from the phone\\r\\nEND:VCARD\\r\\n')");
+        AddressBookTest.inFrame(d, "document.querySelector('#detail button[type=submit]').click(); return 1;");
+        answer(d, "Imp Two was changed elsewhere", "Yes");
+        AddressBookTest.waitFor("the save over it", () -> card(api, data, "imp-2.vcf").contains("TITLE:Captain"));
+        if (card(api, data, "imp-2.vcf").contains("from the phone"))
+            throw new AssertionError("Yes should save this version over the other: " + card(api, data, "imp-2.vcf"));
+        System.out.println("  ok   Yes saves over the change made elsewhere");
+    }
+
+    // a contact deleted elsewhere after it was opened is asked about too, and Yes saves it again
+    static void deletedElsewhere(WebDriver d, UserContext api, String data) {
+        edit(d, "imp-3.vcf", "Back");
+        elsewhere(d, "window.__addressBook.deleteContactCard('default', 'imp-3.vcf')");
+        AddressBookTest.inFrame(d, "document.querySelector('#detail button[type=submit]').click(); return 1;");
+        answer(d, "Imp Three was deleted elsewhere", "Yes");
+        AddressBookTest.waitFor("it to be saved again", () -> card(api, data, "imp-3.vcf").contains("TITLE:Back"));
+        System.out.println("  ok   a contact deleted elsewhere is asked about, and Yes saves it again");
+    }
+
+    // deleting a contact that changed elsewhere since it was opened leaves it, and shows the change
+    static void deleteChangedElsewhere(WebDriver d, UserContext api, String data) {
+        AddressBookTest.inFrame(d, "selectContact('imp-1.vcf'); return 1;");
+        AddressBookTest.waitInFrame(d, "the contact", "return [...document.querySelectorAll('#detail button')].some(b => b.textContent.trim() === 'Delete') ? true : null");
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'imp-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-1\\r\\nFN:Imp One\\r\\nN:One;Imp;;;\\r\\nNOTE:keep me\\r\\nEND:VCARD\\r\\n')");
+        AddressBookTest.inFrame(d, "[...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Delete').click(); return 1;");
+        answer(d, "Delete Imp One?", "Yes");
+        AddressBookTest.waitInFrame(d, "the refusal", "return document.getElementById('status').textContent.startsWith('Not deleted')"
+                + " && document.getElementById('detail').textContent.includes('keep me') ? true : null");
+        waitForCard(api, data, "imp-1.vcf", "NOTE:keep me", "A contact changed elsewhere should not be deleted");
+        System.out.println("  ok   deleting a contact changed elsewhere leaves it, and shows the change");
     }
 
     /** Runs one case, and carries on to the next if it fails, so a run says which of them hold. */
