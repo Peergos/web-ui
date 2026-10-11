@@ -27,7 +27,9 @@ aside, #list { border-right: 1px solid var(--line); display: flex; flex-directio
 .scroll { overflow-y: auto; flex: 1; }
 
 #books ul, #contacts { list-style: none; margin: 0; padding: 0; }
-#books li { padding: 8px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.list-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border: none; border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; }
+.list-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+#books .list-row { justify-content: space-between; gap: 8px; }
 #books li:hover, #contacts li:hover { background: var(--hover); }
 #books li.selected, #contacts li.selected { background: var(--selected); }
 #books .count { color: var(--muted); }
@@ -37,7 +39,6 @@ aside, #list { border-right: 1px solid var(--line); display: flex; flex-directio
 .search { padding: 8px 12px; border-bottom: 1px solid var(--line); }
 .search input { width: 100%; }
 #contacts .letter { padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--bg); position: sticky; top: 0; }
-#contacts li.card { padding: 8px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
 #contacts .sub { color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #contacts .names { min-width: 0; }
 .empty { padding: 24px; color: var(--muted); text-align: center; }

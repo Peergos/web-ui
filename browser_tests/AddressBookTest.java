@@ -61,6 +61,23 @@ public class AddressBookTest {
                     throw new AssertionError("Address Book should run on its own subdomain, not " + origin);
                 System.out.println("  ok   it runs on its own subdomain (" + origin + ")");
 
+                // every contact and address book is a button: Enter on a contact opens it, and the
+                // focus stays on its row, now marked as the open one
+                d.switchToFrame(FRAME);
+                try {
+                    d.sendKeys(d.find("#contacts li.card .list-row"), "\uE007");
+                } finally {
+                    d.switchToTop();
+                }
+                waitInFrame(d, "the contact opened from the keyboard", "const h = document.querySelector('#detail h1'); return h && h.textContent.includes('Carol Current') ? true : null");
+                Object focused = inFrame(d, "const a = document.activeElement; return a && a.classList.contains('list-row') ? a.getAttribute('aria-current') + ' ' + a.textContent.trim() : null");
+                if (! String.valueOf(focused).startsWith("true"))
+                    throw new AssertionError("The opened contact's row should keep the focus: " + focused);
+                Object rows = inFrame(d, "const r = [...document.querySelectorAll('#bookList .list-row, #contacts .list-row')]; return r.every(x => x.tagName === 'BUTTON') ? r.length : 0");
+                if (! (rows instanceof Number) || ((Number) rows).intValue() < 2)
+                    throw new AssertionError("Every book and contact row should be a button: " + rows);
+                System.out.println("  ok   rows are buttons; Enter opens a contact and the focus stays on its row (" + focused + ")");
+
                 // a new contact, typed in and saved, is stored where everything else reads it
                 inFrame(d, "document.getElementById('newContactButton').click(); return 1;");
                 inFrame(d, "const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Dee'; i.dispatchEvent(new Event('input'));"
@@ -80,9 +97,9 @@ public class AddressBookTest {
                 System.out.println("  ok   a new address book is named in Peergos' dialog, and stored (" + books + ")");
 
                 // deleting asks first, in Peergos' dialog; closing it keeps the contact
-                inFrame(d, "document.querySelector('#bookList li').click(); return 1;");
+                inFrame(d, "document.querySelector('#bookList .list-row').click(); return 1;");
                 waitInFrame(d, "the default book again", "return [...document.querySelectorAll('#contacts li')].some(l => l.textContent.includes('Dee Saved')) ? true : null");
-                inFrame(d, "[...document.querySelectorAll('#contacts li')].find(l => l.textContent.includes('Dee Saved')).click(); return 1;");
+                inFrame(d, "[...document.querySelectorAll('#contacts .list-row')].find(l => l.textContent.includes('Dee Saved')).click(); return 1;");
                 waitInFrame(d, "the contact's page", "return [...document.querySelectorAll('#detail button')].some(b => b.textContent.trim() === 'Delete') ? true : null");
                 inFrame(d, "[...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Delete').click(); return 1;");
                 d.waitForScript("Peergos' confirmation", "!!document.querySelector('.pg-dialog') && document.querySelector('.pg-dialog').textContent.includes('Delete Dee Saved?')", 30_000);

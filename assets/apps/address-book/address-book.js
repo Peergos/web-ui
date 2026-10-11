@@ -571,18 +571,37 @@ function avatar(card, big) {
 		style: 'background: hsl(' + (Math.abs(hash) % 360) + ', 45%, 50%)'});
 }
 
+// Each row is a button, so a book or a contact can be reached with Tab and opened with Enter or
+// Space. A list is drawn again whenever anything in it changes, which would drop the focus a
+// keyboard user had in it, so it goes to the open row instead.
+function row(open, onclick, children) {
+	return el('button', {type: 'button', class: 'list-row', 'aria-current': open ? 'true' : 'false', onclick: onclick}, children);
+}
+
+function keepFocus(list, draw) {
+	let hadFocus = list.contains(document.activeElement);
+	draw();
+	let open = list.querySelector('.list-row[aria-current="true"]');
+	if (hadFocus && open)
+		open.focus();
+}
+
 function renderBooks() {
 	let list = document.getElementById('bookList');
-	list.innerHTML = '';
 	let select = document.getElementById('bookSelect');
 	select.innerHTML = '';
-	books.forEach(b => {
-		list.appendChild(el('li', {class: b.id == currentBook ? 'selected' : '', onclick: () => openBook(b.id)}, [
-			el('span', {text: b.name}),
-			b.id == currentBook ? el('span', {class: 'count', text: String(cards.length)}) : null
-		]));
-		select.appendChild(el('option', {value: b.id, text: b.name}));
+	keepFocus(list, () => {
+		list.innerHTML = '';
+		books.forEach(b => {
+			list.appendChild(el('li', {class: b.id == currentBook ? 'selected' : ''}, [
+				row(b.id == currentBook, () => openBook(b.id), [
+					el('span', {text: b.name}),
+					b.id == currentBook ? el('span', {class: 'count', text: String(cards.length)}) : null
+				])
+			]));
+		});
 	});
+	books.forEach(b => select.appendChild(el('option', {value: b.id, text: b.name})));
 	select.appendChild(el('option', {value: '__new__', text: '+ New address book'}));
 	select.value = currentBook;
 	let book = books.find(b => b.id == currentBook);
@@ -600,6 +619,10 @@ function matches(card, query) {
 
 function renderContacts() {
 	let list = document.getElementById('contacts');
+	keepFocus(list, () => drawContacts(list));
+}
+
+function drawContacts(list) {
 	list.innerHTML = '';
 	let query = document.getElementById('search').value.trim();
 	let shown = cards.filter(c => matches(c.card, query))
@@ -618,10 +641,11 @@ function renderContacts() {
 		}
 		let sub = text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
 			: (prop(c.card, 'EMAIL') || prop(c.card, 'TEL') || {value: ''}).value;
-		list.appendChild(el('li', {class: 'card' + (c.file == selectedFile ? ' selected' : ''),
-			onclick: () => selectContact(c.file)}, [
-			avatar(c.card, false),
-			el('div', {class: 'names'}, [el('div', {text: displayName(c.card)}), el('div', {class: 'sub', text: sub})])
+		list.appendChild(el('li', {class: 'card' + (c.file == selectedFile ? ' selected' : '')}, [
+			row(c.file == selectedFile, () => selectContact(c.file), [
+				avatar(c.card, false),
+				el('div', {class: 'names'}, [el('div', {text: displayName(c.card)}), el('div', {class: 'sub', text: sub})])
+			])
 		]));
 	});
 }
