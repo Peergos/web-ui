@@ -2601,7 +2601,7 @@ module.exports = {
                     return;
                 }
                 let book = parts[0];
-                let bookExists = await that.contactsCall(app.existsInternal(that.contactsPath([book]), null)) == 1;
+                let bookExists = await that.addressBookExists(book);
                 if (parts.length == 1) {
                     if (apiMethod == 'GET') {
                         if (!bookExists && book != that.DEFAULT_ADDRESS_BOOK) {

@@ -283,9 +283,10 @@ function cardToForm(card) {
 	// it can be saved. Left as it is, it is saved as it was.
 	let fn = text(card, 'FN').trim();
 	let named = (nc[0] || '').trim() || (nc[1] || '').trim();
+	let company = org ? splitStructured(org.value)[0] : '';
 	return {
-		family: nc[0] || '', given: nc[1] || (named || fn == (org ? splitStructured(org.value)[0] : '') ? '' : fn),
-		org: org ? splitStructured(org.value)[0] : '',
+		family: nc[0] || '', given: nc[1] || (named || fn == company ? '' : fn),
+		org: company,
 		title: text(card, 'TITLE'),
 		bday: bday ? toDateInput(bday.value) : '',
 		bdayRaw: bday ? bday.value : '',
@@ -747,7 +748,7 @@ function renderBooks() {
 	keepFocus(list, () => {
 		list.innerHTML = '';
 		books.forEach(b => {
-			list.appendChild(el('li', {class: b.id == currentBook ? 'selected' : ''}, [
+			list.appendChild(el('li', {}, [
 				row(b.id == currentBook, () => openBook(b.id), [
 					el('span', {text: b.name}),
 					b.id == currentBook && ! loadFailed ? el('span', {class: 'count', text: String(cards.length)}) : null
@@ -802,7 +803,7 @@ function drawContacts(list) {
 		}
 		let sub = c.unreadable ? "Can't be read" : text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
 			: (prop(c.card, 'EMAIL') || prop(c.card, 'TEL') || {value: ''}).value;
-		list.appendChild(el('li', {class: 'card' + (c.file == selectedFile ? ' selected' : '')}, [
+		list.appendChild(el('li', {class: 'card'}, [
 			row(c.file == selectedFile, () => selectContact(c.file), [
 				avatar(c.card, false),
 				el('div', {class: 'names'}, [el('div', {text: displayName(c.card)}), el('div', {class: 'sub', text: sub})])

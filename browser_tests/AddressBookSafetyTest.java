@@ -161,7 +161,7 @@ public class AddressBookSafetyTest {
         String said = String.valueOf(shown);
         if (! said.contains("Couldn't load") || said.contains("No contacts yet"))
             throw new AssertionError("A book that couldn't be loaded should say so, not look empty: " + said);
-        Object count = AddressBookTest.inFrame(d, "const c = document.querySelector('#bookList li.selected .count'); return c ? c.textContent : 'none'");
+        Object count = AddressBookTest.inFrame(d, "const c = document.querySelector('#bookList .list-row[aria-current=\"true\"] .count'); return c ? c.textContent : 'none'");
         if (! "none".equals(String.valueOf(count)))
             throw new AssertionError("A book that couldn't be loaded should show no count: " + count);
         AddressBookTest.inFrame(d, "[...document.querySelectorAll('#contacts button')].find(b => b.textContent.trim() === 'Try again').click(); return 1;");
