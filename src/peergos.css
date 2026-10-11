@@ -85,22 +85,6 @@ body {
     position: inherit;
 }
 */
-.close {
-    color: #000;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    opacity: 1;
-    font-family: 'Cambria Math';
-}
-
-.close:hover,
-.close:focus {
-    color: #000;
-    text-decoration: none;
-    cursor: pointer;
-}
-
 @media (max-width: 980px) {
 
 }
@@ -207,73 +191,8 @@ table {
 
 
 
-.modal-mask {
-  position: fixed;
-  z-index: 2500;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, .5);
-  transition: opacity .3s ease;
-}
-
-.modal-mask-app {
-  position: fixed;
-  z-index: 2000;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, .5);
-  transition: opacity .3s ease;
-}
-
 .full-height {
     height:100%;
-}
-
-.modal-container {
-    width: 90%;
-    margin: 0px auto;
-    padding: 20px 30px;
-	color: var(--color);
-    background-color: var(--bg);
-    border-radius: 2px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
-    transition: all .3s ease;
-    /* font-family: Helvetica, Arial, sans-serif; */
-}
-
-@media (max-width: 600px) {
-    .modal-container {
-	width: 100%;
-	padding: 10px 10px;
-    }
-
-    .modal-body {
-	margin: 0 0;
-	padding: 10px;
-    }
-}
-
-.modal-header-app {
-    min-height:16px;
-    padding:15px;
-}
-
-.modal-header h3 {
-  margin-top: 0;
-  color: #26b99a;
-}
-
-.modal-header-app {
-    min-height:16px;
-    padding:15px;
-}
-
-.modal-body {
-  margin: 20px 0;
 }
 
 .fillspace {

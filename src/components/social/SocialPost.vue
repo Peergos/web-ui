@@ -414,17 +414,6 @@ module.exports = {
 }
 </script>
 <style>
-.modal-mask {
-  position: fixed;
-  z-index: 2500;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, .5);
-  transition: opacity .3s ease;
-}
-
 /* A post, a reply or an edit, on the surface the other dialogs use: the words, what goes
    with them, and who sees it, as one row of choices. */
 
