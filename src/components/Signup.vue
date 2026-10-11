@@ -221,9 +221,6 @@ module.exports = {
 	setPlan(quotaBytes) {
             this.desiredQuota = quotaBytes;
         },
-	lowercaseUsername(){
-	    this.username.toLowerCase()
-	},
 	addToWaitList() {
 	    var that = this;
 	    if (this.network == null) {

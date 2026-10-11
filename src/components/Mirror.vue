@@ -121,7 +121,6 @@ module.exports = {
 	    username: '',
 	    password: '',
 	    password2: '',
-	    email: '',
             annual: true,
             desiredQuota: 0,
             showPasswords: false,
@@ -205,26 +204,6 @@ module.exports = {
 	setPlan(quotaBytes) {
             this.desiredQuota = quotaBytes;
         },
-	lowercaseUsername(){
-	    this.username.toLowerCase()
-	},
-	addToWaitList() {
-	    var that = this;
-	    if (this.network == null) {
-		that.$toast.error(this.translate("LOGIN.SERVER.NETWORK"), {timeout:false})
-                return
-	    }
-	    let emailRegEx = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,24}))$/ ;
-	    if(!emailRegEx.test(that.email)) {
-		that.$toast.error('Invalid email.',{timeout:false})
-                return
-	    }
-	    this.network.instanceAdmin.addToWaitList(that.email).thenApply(function(res) {
-		that.email='';
-		that.$toast.info("Congratulations, you have joined the waiting list. We'll be in touch as soon as a place is available.")
-	    });
-
-	},
         startAddCardListener(future) {
             var that = this;
             this.currentFocusFunction = function(event) {
