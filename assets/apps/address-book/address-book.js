@@ -9,11 +9,20 @@ let loadFailed = false;
 
 // ------------------------------------------------------------------ vCard
 
+// the start or the end of a card, whatever a file has around it: a byte order mark, spaces
+function delimiter(line) {
+	let upper = line.replace(/^\uFEFF/, '').trim().toUpperCase();
+	return upper == 'BEGIN:VCARD' || upper == 'END:VCARD' ? upper : null;
+}
+
 function unfold(text) {
 	let lines = [];
 	let softBreak = false;
 	for (let line of text.split(/\r\n|\r|\n/)) {
-		if (softBreak)
+		if (softBreak && delimiter(line) != null)
+			// a value whose last line ends in =, with nothing after it, ends with the card
+			lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1);
+		if (softBreak && delimiter(line) == null)
 			// a quoted-printable value goes on after a line ending in =, with nothing in front
 			lines[lines.length - 1] = lines[lines.length - 1].slice(0, -1) + line;
 		else if ((line.startsWith(' ') || line.startsWith('\t')) && lines.length > 0)
@@ -156,10 +165,21 @@ function plainProps(props) {
 }
 
 function parseCards(text) {
-	let result = [], current = null;
+	let result = [], current = null, nested = 0;
 	for (let line of unfold(text)) {
-		let upper = line.toUpperCase();
-		if (upper == 'BEGIN:VCARD') {
+		let upper = delimiter(line);
+		if (nested > 0) {
+			// vCard 2.1's AGENT holds a card of its own, inside this one, which is passed over
+			nested += upper == 'BEGIN:VCARD' ? 1 : upper == 'END:VCARD' ? -1 : 0;
+		} else if (upper == 'BEGIN:VCARD') {
+			let last = current != null ? current[current.length - 1] : null;
+			if (last != null && last.name == 'AGENT' && ! last.value.trim()) {
+				nested = 1;
+				continue;
+			}
+			// one cut short, with no END:VCARD before the next, is read as far as it goes
+			if (current != null && current.length > 0)
+				result.push({props: plainProps(current)});
 			current = [];
 		} else if (upper == 'END:VCARD') {
 			if (current != null)

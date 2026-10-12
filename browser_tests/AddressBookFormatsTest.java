@@ -44,6 +44,7 @@ public class AddressBookFormatsTest {
                 List<String> failures = new ArrayList<>();
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "quotedPrintableByType", d, () -> quotedPrintableByType(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "everyCard", d, () -> everyCard(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeepMore", d, () -> editsKeepMore(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "unreadable", d, () -> unreadable(d, api, book));
@@ -118,6 +119,31 @@ public class AddressBookFormatsTest {
         AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + change
                 + " document.querySelector('#detail button[type=submit]').click(); return 1;");
         AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+    }
+
+    // An import reads every card a file has, as files are found: one cut short before the next,
+    // one after a byte order mark where two exports were joined, a quoted-printable value ending
+    // the card on a soft break, and a vCard 2.1 AGENT's card inside another.
+    static void everyCard(WebDriver d, UserContext api, String book) {
+        String file = String.join("\r\n",
+                "BEGIN:VCARD", "VERSION:3.0", "UID:cut-1", "FN:Cut Short",
+                "BEGIN:VCARD", "VERSION:3.0", "UID:whole-1", "FN:Whole One", "END:VCARD",
+                "﻿BEGIN:VCARD ", "VERSION:3.0", "UID:bom-1", "FN:Bom Start", "END:VCARD",
+                "BEGIN:VCARD", "VERSION:2.1", "UID:soft-1", "FN:Soft Break", "NOTE;ENCODING=QUOTED-PRINTABLE:=41=42=", "END:VCARD",
+                "BEGIN:VCARD", "VERSION:2.1", "UID:boss-1", "FN:Big Boss", "AGENT:",
+                "BEGIN:VCARD", "VERSION:2.1", "FN:Assistant", "END:VCARD",
+                "EMAIL:boss@example.org", "END:VCARD", "");
+        String said = importFile(d, "joined.vcf", file);
+        String[][] wanted = {{"cut-1", "FN:Cut Short"}, {"whole-1", "FN:Whole One"}, {"bom-1", "FN:Bom Start"},
+                {"soft-1", "NOTE:AB"}, {"boss-1", "EMAIL:boss@example.org"}};
+        for (String[] w : wanted) {
+            String card = "|" + stored(api, book, w[0]) + "|";
+            if (! card.contains("|" + w[1] + "|"))
+                throw new AssertionError("Every card in the file should be imported whole, " + w[0] + " with " + w[1] + ": " + card);
+        }
+        if (AddressBookTest.stored(api, book).stream().anyMatch(c -> c.contains("FN:Assistant") && ! c.contains("Big Boss")))
+            throw new AssertionError("An AGENT's own card should stay inside its card, not become a contact of its own");
+        System.out.println("  ok   an import reads every card a file has, cut short, joined, ending on a soft break, or holding another (" + said + ")");
     }
 
     // Each decoded value is written back for what it is: a link as it was, a list's items and the
