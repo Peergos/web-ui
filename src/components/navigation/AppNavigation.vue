@@ -123,10 +123,17 @@ module.exports = {
 	flex-shrink: 0;
 }
 
+/* Nine rows of 64px with the storage under them are taller than a laptop's window once the
+   browser's own bars are off it, and the rail can't scroll without cutting off the labels shown
+   beside it: on a short window the rows give up height instead, down to the menu item's
+   minimum */
 .app-navigation .nav-list {
 	margin-top: var(--app-margin);
 	margin-bottom: auto;
 	padding: 0;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
 }
 
 
@@ -197,6 +204,12 @@ module.exports = {
 
 	.app-navigation .menu-item .menu__tooltip {
 		display: none;
+	}
+
+	/* a phone held sideways is shorter than even the shortest rows: in the panel, which has
+	   no labels beside it to cut off, they scroll, with the storage staying under them */
+	.app-navigation .nav-list {
+		overflow-y: auto;
 	}
 
 	/* a tap on the view dismisses the panel, without dimming what is under it: the

@@ -64,6 +64,35 @@ public class AddressBookTest {
                     throw new AssertionError("Address Book should run on its own subdomain, not " + origin);
                 System.out.println("  ok   it runs on its own subdomain (" + origin + ")");
 
+                // its menu row stays in reach in a short window - a laptop's, once the browser's
+                // own bars are off it - and in a phone's panel held sideways
+                String row = "const row = [...document.querySelectorAll('.app-navigation .menu-item')].find(m => m.textContent.includes('Address Book'));";
+                // sized by the page's own height: a window's frame takes some of it, more in some engines
+                int frame = ((Number) d.script("return window.outerHeight - window.innerHeight")).intValue();
+                d.setWindowRect(1366, 610 + frame);
+                Object reach = d.waitUntil("the short window", () -> d.scriptQuiet(row
+                        + " const r = row.getBoundingClientRect(), s = document.querySelector('.app-navigation .navigation-storage').getBoundingClientRect();"
+                        + " const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);"
+                        + " return innerHeight < 640 ? (r.bottom <= innerHeight && s.bottom <= innerHeight + 1 && hit && row.contains(hit) ? 'in reach'"
+                        + "   : 'row ' + Math.round(r.top) + '-' + Math.round(r.bottom) + ', storage to ' + Math.round(s.bottom) + ', window ' + innerHeight) : null"), 30_000);
+                if (! "in reach".equals(reach))
+                    throw new AssertionError("Address Book's menu row should be in reach in a short window: " + reach);
+                Object laptop = d.script("return innerWidth + 'x' + innerHeight");
+                d.setWindowRect(844, 390 + frame);
+                MobileNavTest.toggleSidebar(d);
+                Object panel = d.waitUntil("the phone's panel", () -> d.scriptQuiet(row
+                        + " if (innerWidth > 1024 || ! document.querySelector('.app-navigation.expanded')) return null;"
+                        + " row.scrollIntoView({block: 'nearest'});"
+                        + " const r = row.getBoundingClientRect(), hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);"
+                        + " return r.top >= 0 && r.bottom <= innerHeight && hit && row.contains(hit) ? 'in reach'"
+                        + "   : 'row ' + Math.round(r.top) + '-' + Math.round(r.bottom) + ', window ' + innerHeight"), 30_000);
+                if (! "in reach".equals(panel))
+                    throw new AssertionError("Address Book's menu row should be in reach in a phone's panel held sideways: " + panel);
+                Object phone = d.script("return innerWidth + 'x' + innerHeight");
+                MobileNavTest.toggleSidebar(d);
+                d.setWindowRect(1280, 900);
+                System.out.println("  ok   its menu row is in reach in a short window (" + laptop + ") and in a phone's panel held sideways (" + phone + ")");
+
                 // every contact and address book is a button: Enter on a contact opens it, and the
                 // focus stays on its row, now marked as the open one
                 Object firstName = inFrame(d, "return document.querySelector('#contacts li.card .list-row .names div').textContent");
