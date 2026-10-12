@@ -404,7 +404,8 @@ function formToCard(form, card) {
 // parent, at the address this page's own is a subdomain of, is listened to.
 const hostOrigin = location.protocol + '//' + location.host.substring(location.host.indexOf('.') + 1);
 const pendingRequests = new Map();
-let nextRequestId = 1;
+// from a random start, so an answer to the page this one replaced can't pass for one of its own
+let nextRequestId = crypto.getRandomValues(new Uint32Array(1))[0];
 let started = false;
 
 function host(type, payload) {

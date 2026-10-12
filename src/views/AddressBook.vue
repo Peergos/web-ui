@@ -7,7 +7,7 @@
 		</AppHeader>
 		<main>
 			<p v-if="frameFailed" class="pg-note address-book-view__failed">{{ translate("ADDRESSBOOK.UNAVAILABLE") }}</p>
-			<iframe id="address-book-iframe" :src="frameSrc" :title="translate('APPNAV.ADDRESSBOOK')"
+			<iframe id="address-book-iframe" ref="frame" :src="frameSrc" :title="translate('APPNAV.ADDRESSBOOK')"
 				@load="ping()" frameBorder="0"></iframe>
 			<AppPrompt
 				v-if="showPrompt"
@@ -113,8 +113,10 @@ module.exports = {
 		frameUrl() {
 			return this.frameDomain() + "/apps/address-book/index.html?theme=" + encodeURIComponent(this.currentTheme || "light");
 		},
+		// This view's own frame, and none once the view is gone: an answer still on its way then
+		// is dropped, rather than posted to the frame of the Address Book opened next.
 		frame() {
-			return document.getElementById("address-book-iframe");
+			return this.$refs.frame;
 		},
 		// Targeted at the frame's own origin: these messages carry the user's contacts.
 		post(obj) {

@@ -69,6 +69,8 @@ public class AddressBookSafetyTest {
                 scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
                 scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
                 scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
+                // last, as it leaves the view and opens a new one
+                scenario(failures, "answerAfterLeaving", d, () -> answerAfterLeaving(d));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
             }
@@ -319,6 +321,22 @@ public class AddressBookSafetyTest {
         AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
         AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
         System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
+    }
+
+    // an answer still on its way when the view is left goes nowhere, rather than to the frame of the
+    // Address Book opened next, which could take it for the answer to a request of its own
+    static void answerAfterLeaving(WebDriver d) {
+        d.script("window.__leftView = window.__addressBook; return 1;");
+        Page.gotoDrive(d);
+        Page.gotoView(d, "Address Book", "saveCard", "__addressBook");
+        AddressBookTest.waitInFrame(d, "the new view's contacts", "return document.querySelectorAll('#contacts .list-row').length > 0 ? true : null");
+        AddressBookTest.inFrame(d, "window.__strays = []; window.addEventListener('message', e => { if (e.data && e.data.stray) window.__strays.push(e.data.requestId); }); return 1;");
+        d.script("window.__leftView.post({type: 'answer', requestId: 7, stray: true}); return 1;");
+        WebDriver.sleep(1500);
+        Object strays = AddressBookTest.inFrame(d, "return window.__strays.length");
+        if (! "0".equals(String.valueOf(strays)))
+            throw new AssertionError("An answer from a view left behind should not reach the next one's frame: " + strays + " did");
+        System.out.println("  ok   an answer from a view left behind doesn't reach the next one's frame");
     }
 
     /** Runs one case, and carries on to the next if it fails, so a run says which of them hold. */
