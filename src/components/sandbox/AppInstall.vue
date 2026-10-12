@@ -126,6 +126,7 @@ module.exports = {
             prompt_action: 'ok',
             showPrompt: false,
             messenger: null,
+            closed: false,
             templateAppSeparator: "!",
             appIconBase64Image: "",
             installedApps: [],
@@ -148,9 +149,14 @@ module.exports = {
             this.installFolder.substring(0, this.installFolder.length -1) : this.installFolder;
         this.initAppInstall();
     },
+    beforeUnmount: function() {
+        this.closed = true;
+    },
     methods: {
         initAppInstall() {
             let that = this;
+            if (that.closed)
+                return;
             if(!that.sandboxedApps.appsLoaded) {
                 setTimeout( () => { that.initAppInstall();}, 1000);
             } else {
@@ -171,6 +177,9 @@ module.exports = {
             let that = this;
             this.showSpinner = true;
             that.verifyJSONFile(this.appPropsFile, this.installAppFromFolder).thenApply((res) => {
+                // closed while the manifest was read: its answer is for an install no one is waiting on
+                if (that.closed)
+                    return;
                 that.showSpinner = false;
                 if (res.errors.length > 0) {
                     that.showError("Unable to install App: " + res.errors.join(', '));
