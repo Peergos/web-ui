@@ -46,6 +46,7 @@ public class Suite {
             // Sorting is shared state drawn by two views: the header's menu sets it, the
             // table's headings set it, and both views must follow whichever did.
             run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
+            run(failures, "a file's menu in the last row opens without moving the page", () -> DriveMenuScrollTest.run(args1));
             run(failures, "a long path trail opens out", () -> PathExpandTest.run(args1));
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
             run(failures, "what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));
