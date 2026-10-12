@@ -176,6 +176,17 @@ public class AddressBookTest {
                         + " document.querySelector('#detail button[type=submit]').click(); return 1;");
                 waitForStored(api, data + work, "FN:Wendy Work");
                 waitInFrame(d, "the book's contact", "return [...document.querySelectorAll('#contacts li')].some(l => l.textContent.includes('Wendy Work')) ? true : null");
+                // the question names the book, and counts its contacts, as stored, whatever the
+                // frame asking says
+                inFrame(d, "host('deleteBook', {book: arguments[0], name: 'Something else'}); return 1;", work);
+                d.waitForScript("Peergos' confirmation", "!!document.getElementById('confirm-header-id')", 30_000);
+                Object named = d.script("const t = document.getElementById('confirm-header-id').textContent.trim(),"
+                        + " b = document.getElementById('confirm-body-id').textContent.trim();"
+                        + " return t === arguments[0] && b.includes('the contact in it') ? 'as stored' : t + ' / ' + b", "Delete " + renamed + "?");
+                if (! "as stored".equals(named))
+                    throw new AssertionError("The delete question should name the book, and count its contacts, as stored: " + named);
+                d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'No').click(); return 1;");
+                d.waitForScript("the confirmation to close", "!document.getElementById('confirm-header-id')", 10_000);
                 for (String answer : new String[] {"close", "No"}) {
                     inFrame(d, "document.getElementById('deleteBookButton').click(); return 1;");
                     d.waitForScript("Peergos' confirmation", "!!document.getElementById('confirm-header-id')", 30_000);
@@ -193,7 +204,7 @@ public class AddressBookTest {
                     if (stored(api, data + work).stream().noneMatch(c -> c.contains("FN:Wendy Work")))
                         throw new AssertionError("Answering the delete question with " + answer + " should keep the address book and its contact");
                 }
-                System.out.println("  ok   deleting an address book asks first, naming it; closing the question or No keeps it and its contacts");
+                System.out.println("  ok   deleting an address book asks first, naming it and counting its contacts as stored; closing the question or No keeps it and its contacts");
                 inFrame(d, "document.getElementById('deleteBookButton').click(); return 1;");
                 d.waitForScript("Peergos' confirmation", "!!document.getElementById('confirm-header-id')", 30_000);
                 d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'Yes').click(); return 1;");

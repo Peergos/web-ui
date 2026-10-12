@@ -260,7 +260,14 @@ module.exports = {
 			// the bridge would only recreate it empty
 			if (data.book == this.DEFAULT_ADDRESS_BOOK)
 				throw new Error("The default address book can't be deleted");
-			if (! await this.confirm(this.named("ADDRESSBOOK.DELETE.BOOK", data.name != null ? data.name : data.book), this.translate("ADDRESSBOOK.DELETE.BOOK.BODY")))
+			// named and counted as stored, rather than as the frame says: this question is all
+			// that stands between a click and every contact in the book
+			let name = await this.readAddressBookName(data.book);
+			let count = await this.countContactCards(data.book);
+			let body = count == 0 ? this.translate("ADDRESSBOOK.DELETE.BOOK.EMPTY")
+				: count == 1 ? this.translate("ADDRESSBOOK.DELETE.BOOK.ONE")
+				: this.translate("ADDRESSBOOK.DELETE.BOOK.BODY").replace("$COUNT", String(count));
+			if (! await this.confirm(this.named("ADDRESSBOOK.DELETE.BOOK", name), body))
 				return {cancelled: true};
 			if (await this.addressBookExists(data.book))
 				await this.deleteAddressBook(data.book);

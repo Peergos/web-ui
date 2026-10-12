@@ -90,6 +90,11 @@ module.exports = {
                 }
             }));
         },
+        countContactCards: async function(book) {
+            let app = await this.getContactsApp();
+            let names = (await this.contactsCall(app.dirInternal(this.contactsPath([book]), null))).toArray();
+            return names.filter(n => n.endsWith('.vcf')).length;
+        },
         // the card as stored now, or null if there is none
         readContactCard: async function(book, file) {
             let app = await this.getContactsApp();
