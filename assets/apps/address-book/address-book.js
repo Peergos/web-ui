@@ -66,9 +66,13 @@ function parseLine(raw) {
 
 // vCard 2.1 writes any value that isn't plain ASCII as quoted-printable, as Android's own
 // contacts export does, and this app reads and writes plain text. Such a value is decoded once,
-// as the card is read, and the card becomes a 3.0 one, the version without quoted-printable. The
-// parts of a structured value are decoded each on its own, so a ; in one stays part of it.
+// as the card is read, and the card becomes a 3.0 one, the version without quoted-printable.
+// Each value is written back the 3.0 way for what it is: a link as it was, the parts of a
+// structured value or the items of a list each escaped on their own, so a ; or a , inside one
+// stays part of it. Android's own X- properties are structured too.
 const STRUCTURED = ['N', 'ADR', 'ORG'];
+const LISTS = ['CATEGORIES', 'NICKNAME'];
+const URIS = ['URL', 'PHOTO', 'LOGO', 'SOUND', 'KEY', 'SOURCE', 'MEMBER', 'IMPP', 'GEO', 'CALURI', 'CALADRURI', 'FBURL'];
 
 function isQuotedPrintable(p) {
 	return p.params.some(x => (x.key == 'ENCODING' || x.key == 'TYPE') && x.values.some(v => v.toUpperCase() == 'QUOTED-PRINTABLE'));
@@ -76,12 +80,16 @@ function isQuotedPrintable(p) {
 
 function decodeQuotedPrintable(s, charset) {
 	let bytes = [];
-	for (let i = 0; i < s.length; i++) {
-		if (s[i] == '=' && /^[0-9A-Fa-f]{2}$/.test(s.substring(i + 1, i + 3))) {
-			bytes.push(parseInt(s.substring(i + 1, i + 3), 16));
+	let encoder = new TextEncoder();
+	// by character rather than by UTF-16 unit, so one left as it was outside the BMP stays whole
+	let chars = Array.from(s);
+	for (let i = 0; i < chars.length; i++) {
+		let hex = (chars[i + 1] || '') + (chars[i + 2] || '');
+		if (chars[i] == '=' && /^[0-9A-Fa-f]{2}$/.test(hex)) {
+			bytes.push(parseInt(hex, 16));
 			i += 2;
 		} else {
-			bytes.push(...new TextEncoder().encode(s[i]));
+			bytes.push(...encoder.encode(chars[i]));
 		}
 	}
 	let decoder;
@@ -93,6 +101,42 @@ function decodeQuotedPrintable(s, charset) {
 	return decoder.decode(new Uint8Array(bytes));
 }
 
+// splits on a separator that isn't escaped with a backslash
+function splitUnescaped(s, sep) {
+	let parts = [], current = '';
+	for (let i = 0; i < s.length; i++) {
+		if (s[i] == '\\' && i + 1 < s.length) { current += s[i] + s[i + 1]; i++; }
+		else if (s[i] == sep) { parts.push(current); current = ''; }
+		else current += s[i];
+	}
+	parts.push(current);
+	return parts;
+}
+
+// a piece of a decoded 2.1 value, written the 3.0 way: 2.1 escapes only a separator that isn't one
+function from21(text) {
+	return escapeText(text.replace(/\\([;,])/g, '$1'));
+}
+
+// decoded whole, and only then split: an exporter that encodes every byte, as Android's does,
+// encodes the separators too
+function plainValue(p, charset) {
+	let text = decodeQuotedPrintable(p.value, charset);
+	if (URIS.includes(p.name) || p.params.some(x => x.key == 'VALUE' && x.values.some(v => v.toLowerCase() == 'uri')))
+		return text;
+	if (STRUCTURED.includes(p.name) || p.name.startsWith('X-'))
+		return splitUnescaped(text, ';').map(from21).join(';');
+	if (LISTS.includes(p.name))
+		return splitUnescaped(text, ',').map(from21).join(',');
+	return from21(text);
+}
+
+// 2.1 shorthands written the 3.0 way: a bare TEL;CELL as TYPE=CELL, ENCODING=BASE64 as b
+function as30(p) {
+	let params = p.params.map(x => x.key == 'ENCODING' && x.values.some(v => v.toUpperCase() == 'BASE64') ? {key: 'ENCODING', values: ['b']} : x);
+	return parseLine(line(p.group, p.name, params, p.value));
+}
+
 function plainProps(props) {
 	let decoded = false;
 	let out = props.map(p => {
@@ -100,14 +144,15 @@ function plainProps(props) {
 			return p;
 		decoded = true;
 		let charset = (p.params.find(x => x.key == 'CHARSET') || {values: []}).values[0];
-		let parts = STRUCTURED.includes(p.name) ? p.value.split(';') : [p.value];
-		let value = parts.map(part => escapeText(decodeQuotedPrintable(part, charset))).join(';');
 		let params = p.params.filter(x => x.key != 'ENCODING' && x.key != 'CHARSET')
 			.map(x => x.key != 'TYPE' ? x : {key: 'TYPE', values: x.values.filter(v => v.toUpperCase() != 'QUOTED-PRINTABLE')})
 			.filter(x => x.values.length > 0);
-		return parseLine(line(p.group, p.name, params, value));
+		return parseLine(line(p.group, p.name, params, plainValue(p, charset)));
 	});
-	return decoded ? out.map(p => p.name == 'VERSION' ? parseLine('VERSION:3.0') : p) : out;
+	let version = out.find(p => p.name == 'VERSION');
+	if (! decoded || (version && version.value.trim() != '2.1'))
+		return out;
+	return out.map(p => p.name == 'VERSION' ? parseLine('VERSION:3.0') : as30(p));
 }
 
 function parseCards(text) {
@@ -137,7 +182,7 @@ function unescapeText(s) {
 }
 
 function escapeText(s) {
-	return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+	return s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
 }
 
 function splitStructured(value) {
@@ -240,7 +285,8 @@ function line(group, name, params, value) {
 function fold(l) {
 	let out = [], current = '', bytes = 0;
 	for (let c of l) {
-		let size = new TextEncoder().encode(c).length;
+		let code = c.codePointAt(0);
+		let size = code < 0x80 ? 1 : code < 0x800 ? 2 : code < 0x10000 ? 3 : 4;
 		if (bytes + size > (out.length == 0 ? 75 : 74)) {
 			out.push(current);
 			current = '';

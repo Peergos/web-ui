@@ -43,6 +43,7 @@ public class AddressBookFormatsTest {
                 AddressBookTest.waitInFrame(d, "the app", "return document.getElementById('bookTitle').textContent === 'Contacts' ? true : null");
                 List<String> failures = new ArrayList<>();
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "quotedPrintableByType", d, () -> quotedPrintableByType(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeepMore", d, () -> editsKeepMore(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "unreadable", d, () -> unreadable(d, api, book));
@@ -117,6 +118,30 @@ public class AddressBookFormatsTest {
         AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + change
                 + " document.querySelector('#detail button[type=submit]').click(); return 1;");
         AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+    }
+
+    // Each decoded value is written back for what it is: a link as it was, a list's items and the
+    // parts of Android's own fields each on their own - the separators encoded with the rest, as
+    // Android encodes every byte - a ; Android escaped as one, and 2.1's shorthands the 3.0 way.
+    static void quotedPrintableByType(WebDriver d, UserContext api, String book) {
+        String card21 = String.join("\r\n", "BEGIN:VCARD", "VERSION:2.1",
+                "FN;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + qp("Zoë Byté"),
+                "NOTE;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + qp("a\\;b é"),
+                "CATEGORIES;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + qp("Família,Work"),
+                "URL;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + qp("https://example.com/ü?a=1,2;b"),
+                "X-ANDROID-CUSTOM;CHARSET=UTF-8;ENCODING=QUOTED-PRINTABLE:" + qp("vnd.android.cursor.item/nickname;Zoë;1;;;;;;;;;;;;;"),
+                "TEL;CELL:+1 555 0123",
+                "UID:qp-3",
+                "END:VCARD", "");
+        importFile(d, "android-fields.vcf", card21);
+        AddressBookTest.waitInFrame(d, "Zoë Byté in the list", "return [...document.querySelectorAll('#contacts .list-row')].some(r => r.textContent.includes('Zoë Byté')) ? true : null");
+        String card = "|" + stored(api, book, "qp-3") + "|";
+        String[] wanted = {"VERSION:3.0", "FN:Zoë Byté", "NOTE:a\\;b é", "CATEGORIES:Família,Work", "URL:https://example.com/ü?a=1,2;b",
+                "X-ANDROID-CUSTOM:vnd.android.cursor.item/nickname;Zoë;1;;;;;;;;;;;;;", "TEL;TYPE=CELL:+1 555 0123"};
+        List<String> missing = Arrays.stream(wanted).filter(w -> ! card.contains("|" + w + "|")).collect(java.util.stream.Collectors.toList());
+        if (! missing.isEmpty() || card.toUpperCase().contains("QUOTED-PRINTABLE"))
+            throw new AssertionError("Each decoded value should be written back for what it is, missing " + missing + ": " + card);
+        System.out.println("  ok   a decoded link, list, Android field, escaped ; and 2.1 shorthand are each written back for what they are");
     }
 
     // An edit keeps the second of what the form shows the first of - another company, title or
