@@ -48,6 +48,7 @@ public class Suite {
             run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
             run(failures, "a long path trail opens out", () -> PathExpandTest.run(args1));
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
+            run(failures, "what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
             run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "choosing between two apps for a file, and always using one", () -> AppChoiceTest.run(args1));
