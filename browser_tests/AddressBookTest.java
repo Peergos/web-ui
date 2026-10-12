@@ -109,7 +109,12 @@ public class AddressBookTest {
                 Object rows = inFrame(d, "const r = [...document.querySelectorAll('#bookList .list-row, #contacts .list-row')]; return r.every(x => x.tagName === 'BUTTON') ? r.length : 0");
                 if (! (rows instanceof Number) || ((Number) rows).intValue() < 2)
                     throw new AssertionError("Every book and contact row should be a button: " + rows);
-                System.out.println("  ok   rows are buttons; Enter opens a contact and the focus stays on its row (" + focused + ")");
+                // read out by their names: the picker and the search are labelled, and a row's initials aren't read
+                Object labelled = inFrame(d, "return !!document.getElementById('search').getAttribute('aria-label') && !!document.getElementById('bookSelect').getAttribute('aria-label')"
+                        + " && [...document.querySelectorAll('#contacts .list-row .avatar')].every(a => a.getAttribute('aria-hidden') === 'true' || a.getAttribute('alt') === '')");
+                if (! Boolean.TRUE.equals(labelled))
+                    throw new AssertionError("The search and the book picker should be labelled, and a row read as its name alone");
+                System.out.println("  ok   rows are buttons; Enter opens a contact and the focus stays on its row (" + focused + "); the search and picker are labelled");
 
                 // a contact with only a formatted name shows it in the form, and saves with a change
                 inFrame(d, "selectContact('acme-1.vcf'); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;");

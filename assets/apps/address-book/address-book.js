@@ -915,13 +915,31 @@ async function importText(textContent) {
 	finishImport(book, count);
 }
 
+// read as FileReader reads it, which every browser this runs in has: Blob's text() is newer
+// than Safari 13
+function readText(file) {
+	return new Promise((resolve, reject) => {
+		let reader = new FileReader();
+		reader.onload = () => resolve(reader.result);
+		reader.onerror = () => reject(reader.error);
+		reader.readAsText(file);
+	});
+}
+
 // every file of one import goes to the book it was started in, and is counted in one summary
 async function importFiles(input) {
 	let book = currentBook;
 	let count = importCount();
 	try {
-		for (let f of Array.from(input.files))
-			await importCards(await f.text(), book, count);
+		for (let f of Array.from(input.files)) {
+			try {
+				await importCards(await readText(f), book, count);
+			} catch (e) {
+				// a file that can't be read is one that failed
+				count.found++;
+				count.failed++;
+			}
+		}
 	} finally {
 		input.value = '';
 	}
@@ -949,7 +967,8 @@ function avatar(card, big) {
 	let initials = name.split(/\s+/).filter(x => x).slice(0, 2).map(x => x[0].toUpperCase()).join('');
 	let hash = 0;
 	for (let c of name) hash = (hash * 31 + c.charCodeAt(0)) | 0;
-	return el('div', {class: 'avatar' + (big ? ' big' : ''), text: initials || '?',
+	// the initials are only a picture of the name beside them, which is what is read out
+	return el('div', {class: 'avatar' + (big ? ' big' : ''), text: initials || '?', 'aria-hidden': 'true',
 		style: 'background: hsl(' + (Math.abs(hash) % 360) + ', 45%, 50%)'});
 }
 
@@ -963,9 +982,10 @@ function row(open, onclick, children) {
 function keepFocus(list, draw) {
 	let hadFocus = list.contains(document.activeElement);
 	draw();
-	let open = list.querySelector('.list-row[aria-current="true"]');
-	if (hadFocus && open)
-		open.focus();
+	// with none open, the first row, so the place stays in the list rather than going to the page
+	let row = list.querySelector('.list-row[aria-current="true"]') || list.querySelector('.list-row');
+	if (hadFocus && row)
+		row.focus();
 }
 
 function renderBooks() {
