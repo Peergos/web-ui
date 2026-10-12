@@ -181,7 +181,14 @@ module.exports = {
 		async loadBook(data) {
 			this.checkBook(data.book);
 			let exists = await this.addressBookExists(data.book);
-			return {cards: exists ? await this.listContactCards(data.book) : []};
+			this.checkStillThere(data.book, exists);
+			return {cards: exists ? await this.listContactCards(data.book, true) : []};
+		},
+		// The default book is there before anything is written to it. Any other that isn't has
+		// been deleted, here or on another device, and isn't brought back by a write to it.
+		checkStillThere(book, exists) {
+			if (! exists && book != this.DEFAULT_ADDRESS_BOOK)
+				throw new Error("No such address book");
 		},
 		// expected is the card as the frame last read it, or null for one that should not exist
 		// yet. A card changed or deleted elsewhere since - by a synced phone, a CardDAV client,
@@ -191,6 +198,7 @@ module.exports = {
 			this.checkCard(data.book, data.file);
 			if (typeof data.vcard != 'string' || ! /^BEGIN:VCARD/i.test(data.vcard.trim()))
 				throw new Error("Not a vCard");
+			this.checkStillThere(data.book, await this.addressBookExists(data.book));
 			if (data.expected !== undefined) {
 				let current = await this.readContactCard(data.book, data.file);
 				if (current !== data.expected) {
@@ -211,7 +219,13 @@ module.exports = {
 			this.checkCard(data.book, data.file);
 			if (data.name != null && ! await this.confirm(this.named("ADDRESSBOOK.DELETE.CONTACT", data.name), ''))
 				return {cancelled: true};
-			let current = await this.readContactCard(data.book, data.file);
+			let current;
+			try {
+				current = await this.readContactCard(data.book, data.file);
+			} catch (e) {
+				// one that can't be read was listed empty, and is deleted as that
+				current = '';
+			}
 			if (current == null)
 				return {deleted: true};
 			if (data.expected !== undefined && current !== data.expected)

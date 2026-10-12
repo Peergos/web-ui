@@ -69,6 +69,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
                 scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
                 scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
+                scenario(failures, "deletedBookStaysDeleted", d, () -> deletedBookStaysDeleted(d, api, data));
                 // last, as it leaves the view and opens a new one
                 scenario(failures, "answerAfterLeaving", d, () -> answerAfterLeaving(d));
                 if (! failures.isEmpty())
@@ -321,6 +322,26 @@ public class AddressBookSafetyTest {
         AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
         AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
         System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
+    }
+
+    // a book deleted while it is open, on another device say, isn't brought back by a save into
+    // it: the save is refused, and opening the book again says it can't be loaded
+    static void deletedBookStaysDeleted(WebDriver d, UserContext api, String data) {
+        elsewhere(d, "window.__addressBook.writeAddressBookName('gone', 'Gone')");
+        AddressBookTest.inFrame(d, "loadBooks().then(() => openBook('gone')); return 1;");
+        AddressBookTest.waitInFrame(d, "the Gone book", "return document.getElementById('bookTitle').textContent === 'Gone'"
+                + " && document.getElementById('contacts').textContent.includes('No contacts yet') ? true : null");
+        elsewhere(d, "window.__addressBook.deleteAddressBook('gone')");
+        AddressBookTest.inFrame(d, "document.getElementById('newContactButton').click();"
+                + " const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Ghost'; i.dispatchEvent(new Event('input'));"
+                + " document.querySelector('#detail button[type=submit]').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "the save to be refused", "return document.getElementById('status').textContent === 'Could not save the contact' ? true : null");
+        AddressBookTest.inFrame(d, "openBook('gone'); return 1;");
+        AddressBookTest.waitInFrame(d, "the book to say it can't be loaded", "return document.getElementById('contacts').textContent.includes(\"Couldn't load\") ? true : null");
+        AddressBookTest.waitFor("the book to stay gone", () -> api.getByPath(data + "gone").join().isEmpty());
+        AddressBookTest.inFrame(d, "loadBooks().then(() => openBook('default')); return 1;");
+        AddressBookTest.waitInFrame(d, "the default book", "return document.getElementById('bookTitle').textContent === 'Contacts' ? true : null");
+        System.out.println("  ok   a book deleted while it is open isn't brought back by a save into it, and says it can't be loaded");
     }
 
     // an answer still on its way when the view is left goes nowhere, rather than to the frame of the

@@ -73,13 +73,21 @@ module.exports = {
             let app = await this.getContactsApp();
             return await this.contactsCall(app.existsInternal(this.contactsPath([book]), null)) == 1;
         },
-        // every card in a book, as text, with the name of the file it is in
-        listContactCards: async function(book) {
+        // Every card in a book, as text, with the name of the file it is in. Tolerant, a file that
+        // can't be read comes back empty rather than failing the whole book: Address Book shows it
+        // as a file it can't read, which can then be deleted.
+        listContactCards: async function(book, tolerant) {
             let app = await this.getContactsApp();
             let names = (await this.contactsCall(app.dirInternal(this.contactsPath([book]), null))).toArray();
             return await Promise.all(names.filter(n => n.endsWith('.vcf')).map(async n => {
-                let bytes = await this.contactsCall(app.readInternal(this.contactsPath([book, n]), null));
-                return {file: n, vcard: new TextDecoder().decode(new Uint8Array(bytes))};
+                try {
+                    let bytes = await this.contactsCall(app.readInternal(this.contactsPath([book, n]), null));
+                    return {file: n, vcard: new TextDecoder().decode(new Uint8Array(bytes))};
+                } catch (e) {
+                    if (! tolerant)
+                        throw e;
+                    return {file: n, vcard: ''};
+                }
             }));
         },
         // the card as stored now, or null if there is none
