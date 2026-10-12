@@ -6,6 +6,11 @@ let cards = [];
 let selectedFile = null;
 // the open book couldn't be read: its list says so, rather than looking empty
 let loadFailed = false;
+// the open book is still being read: nothing is listed, so nothing of the book before it is
+// shown, searched or acted on as this one's
+let loading = false;
+// counts each opening of a book, so a load that answers after a later one began is passed over
+let loadToken = 0;
 
 // ------------------------------------------------------------------ vCard
 
@@ -548,11 +553,15 @@ function fileFor(card) {
 // ------------------------------------------------------------------ actions
 
 async function openBook(id) {
+	let token = ++loadToken;
 	currentBook = id;
 	selectedFile = null;
+	cards = [];
+	loading = true;
+	loadFailed = false;
 	try { localStorage.setItem('addressbook.book', id); } catch (e) {}
 	renderBooks();
-	document.getElementById('contacts').innerHTML = '<li class="empty">Loading…</li>';
+	renderContacts();
 	renderDetail();
 	let loaded = [], failed = false;
 	try {
@@ -560,10 +569,11 @@ async function openBook(id) {
 	} catch (e) {
 		failed = true;
 	}
-	// a book opened since has taken this one's place, and these are not its contacts
-	if (currentBook != id)
+	// opened again since, this book or another: the later opening's contacts are the ones shown
+	if (token != loadToken)
 		return;
 	cards = loaded;
+	loading = false;
 	loadFailed = failed;
 	renderBooks();
 	renderContacts();
@@ -661,6 +671,12 @@ async function saveContact(form, entry) {
 		status('Saved');
 		return;
 	}
+	// the book is being read again, maybe from before this was saved: read once more after it
+	if (loading) {
+		status('Saved');
+		await reopen(book, file);
+		return;
+	}
 	let updated = {file: file, card: parseCards(vcard)[0], text: vcard};
 	cards = cards.filter(c => c.file != file).concat([updated]);
 	selectedFile = file;
@@ -687,6 +703,10 @@ async function deleteContact(entry) {
 	}
 	if (currentBook != book)
 		return;
+	if (loading) {
+		await reopen(book, null);
+		return;
+	}
 	cards = cards.filter(c => c.file != entry.file);
 	selectedFile = null;
 	renderBooks();
@@ -734,7 +754,9 @@ async function moveContact(entry, target) {
 		return;
 	}
 	status('Moved to ' + (book ? book.name : target) + (placed.how == 'beside' ? ', beside a different version of it there' : ''));
-	if (currentBook == from) {
+	if (currentBook == from && loading) {
+		await reopen(from, null);
+	} else if (currentBook == from) {
 		cards = cards.filter(c => c.file != entry.file);
 		selectedFile = null;
 		renderContacts();
@@ -774,34 +796,49 @@ async function splitFile(entry) {
 		await reopen(book, null);
 }
 
-async function importText(textContent) {
+function importCount() {
+	return {found: 0, added: 0, there: 0, beside: 0, failed: 0, missed: false};
+}
+
+// Adds the cards in a file's text to a book, counting how each went: an import adds and never
+// replaces - a contact imported again is already there, and one changed since is kept beside
+// the imported version rather than lost to it.
+async function importCards(textContent, book, count) {
 	let parsed = parseCards(textContent);
-	if (parsed.length == 0) {
-		status('No contacts found in that file');
-		return;
-	}
-	let book = currentBook;
-	// an import adds and never replaces: a contact imported again is already there, and one
-	// changed since is kept beside the imported version rather than lost to it
-	let count = {added: 0, there: 0, beside: 0, failed: 0};
-	for (let card of parsed) {
+	count.found += parsed.length;
+	for (let i = 0; i < parsed.length; i++) {
+		let card = parsed[i];
 		if (!prop(card, 'UID'))
 			card.props.push(parseLine('UID:' + newUid()));
 		if (!prop(card, 'VERSION'))
 			card.props.unshift(parseLine('VERSION:3.0'));
-		status('Importing ' + (count.added + count.there + count.beside + count.failed + 1) + ' of ' + parsed.length, true);
+		status('Importing ' + (i + 1) + ' of ' + parsed.length, true);
 		try {
 			let placed = await addCard(book, card);
 			count[placed.how]++;
-			if (currentBook == book && placed.how != 'there')
+			if (currentBook == book && loading)
+				count.missed = true;
+			else if (currentBook == book && placed.how != 'there')
 				cards = cards.filter(c => c.file != placed.file).concat([{file: placed.file, card: placed.card, text: placed.text}]);
 		} catch (e) {
 			count.failed++;
 		}
 	}
+}
+
+function finishImport(book, count) {
+	if (count.found == 0) {
+		status('No contacts found in that file');
+		return;
+	}
 	if (currentBook == book) {
-		renderBooks();
-		renderContacts();
+		// read again while the import went on: once more, now that it is in
+		if (loading || count.missed) {
+			openBook(book);
+		} else {
+			renderBooks();
+			renderContacts();
+		}
 	}
 	status('Imported ' + (count.added + count.beside)
 		+ (count.there > 0 ? ', ' + count.there + ' already here' : '')
@@ -809,10 +846,24 @@ async function importText(textContent) {
 		+ (count.failed > 0 ? ', ' + count.failed + ' failed' : ''));
 }
 
+async function importText(textContent) {
+	let book = currentBook;
+	let count = importCount();
+	await importCards(textContent, book, count);
+	finishImport(book, count);
+}
+
+// every file of one import goes to the book it was started in, and is counted in one summary
 async function importFiles(input) {
-	for (let f of input.files)
-		await importText(await f.text());
-	input.value = '';
+	let book = currentBook;
+	let count = importCount();
+	try {
+		for (let f of Array.from(input.files))
+			await importCards(await f.text(), book, count);
+	} finally {
+		input.value = '';
+	}
+	finishImport(book, count);
 }
 
 // ------------------------------------------------------------------ rendering
@@ -865,7 +916,7 @@ function renderBooks() {
 			list.appendChild(el('li', {}, [
 				row(b.id == currentBook, () => openBook(b.id), [
 					el('span', {text: b.name}),
-					b.id == currentBook && ! loadFailed ? el('span', {class: 'count', text: String(cards.length)}) : null
+					b.id == currentBook && ! loadFailed && ! loading ? el('span', {class: 'count', text: String(cards.length)}) : null
 				])
 			]));
 		});
@@ -897,6 +948,10 @@ function renderContacts() {
 
 function drawContacts(list) {
 	list.innerHTML = '';
+	if (loading) {
+		list.appendChild(el('li', {class: 'empty', text: 'Loading…'}));
+		return;
+	}
 	if (loadFailed) {
 		list.appendChild(el('li', {class: 'empty'}, [
 			el('p', {text: "Couldn't load this address book."}),

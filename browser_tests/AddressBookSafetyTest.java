@@ -23,6 +23,13 @@ public class AddressBookSafetyTest {
             + " window.host = (t, p) => t === arguments[0] && (arguments[1] == null || p.book === arguments[1])"
             + "   ? new Promise(r => setTimeout(r, arguments[2])).then(() => window.__real(t, p)) : window.__real(t, p); return 1;";
     static final String RELEASE = "if (window.__real) window.host = window.__real; return 1;";
+    // lets the next named request through at once and holds back only its answer, for the given
+    // time, as a slow answer from Peergos would be: once
+    static final String HOLD_ANSWER_ONCE = "window.__real = window.__real || host; let once = true;"
+            + " window.host = (t, p) => { const r = window.__real(t, p);"
+            + "   if (once && t === arguments[0] && p != null && p.book === arguments[1]) {"
+            + "     once = false; return r.then(v => new Promise(ok => setTimeout(() => ok(v), arguments[2]))); }"
+            + "   return r; }; return 1;";
 
     public static void main(String[] args) throws Exception {
         try {
@@ -60,6 +67,9 @@ public class AddressBookSafetyTest {
                 scenario(failures, "slowBook", d, () -> slowBook(d, api, data));
                 scenario(failures, "lateSave", d, () -> lateSave(d, api, data));
                 scenario(failures, "importWhileSwitching", d, () -> importWhileSwitching(d, api, data));
+                scenario(failures, "twoFilesWhileSwitching", d, () -> twoFilesWhileSwitching(d, api, data));
+                scenario(failures, "searchWhileLoading", d, () -> searchWhileLoading(d));
+                scenario(failures, "olderLoadAnswersLast", d, () -> olderLoadAnswersLast(d));
                 scenario(failures, "moveIntoOpenedBook", d, () -> moveIntoOpenedBook(d, api, data));
                 scenario(failures, "failedLoad", d, () -> failedLoad(d));
                 scenario(failures, "doubleSave", d, () -> doubleSave(d, api, data));
@@ -81,6 +91,73 @@ public class AddressBookSafetyTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    // an import of several files goes wholly to the book it was started in, however the view
+    // moves meanwhile, and says so once for them all
+    static void twoFilesWhileSwitching(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Carol Current");
+        Path a, b;
+        try {
+            Path dir = Temp.directory("peergos-absafe-two-");
+            a = dir.resolve("first.vcf");
+            b = dir.resolve("second.vcf");
+            Files.writeString(a, "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:tf-a\r\nFN:Two Files A\r\nN:A;Two Files;;;\r\nEND:VCARD\r\n");
+            Files.writeString(b, "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:tf-b\r\nFN:Two Files B\r\nN:B;Two Files;;;\r\nEND:VCARD\r\n");
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; return 1;");
+        AddressBookTest.inFrame(d, HOLD, "saveCard", "default", 2500);
+        d.switchToFrame(AddressBookTest.FRAME);
+        try {
+            d.sendKeys(d.find("#importFile"), a.toAbsolutePath() + "\n" + b.toAbsolutePath());
+        } finally {
+            d.switchToTop();
+        }
+        WebDriver.sleep(800);
+        AddressBookTest.inFrame(d, "openBook('big'); return 1;");
+        Object said = AddressBookTest.waitInFrame(d, "the import", "const t = document.getElementById('status').textContent; return t.startsWith('Imported') ? t : null");
+        AddressBookTest.inFrame(d, RELEASE);
+        AddressBookTest.waitFor("both files' contacts in the book the import started in", () -> AddressBookTest.stored(api, data + "default").stream()
+                .filter(c -> c.contains("UID:tf-a") || c.contains("UID:tf-b")).count() == 2);
+        if (AddressBookTest.stored(api, data + "big").stream().anyMatch(c -> c.contains("Two Files")))
+            throw new AssertionError("No file of an import should go to the book opened meanwhile");
+        if (! "Imported 2".equals(String.valueOf(said)))
+            throw new AssertionError("An import of two files should say so once for both, not: " + said);
+        System.out.println("  ok   an import of two files goes wholly to the book it started in, however the view moves, and says so once (" + said + ")");
+    }
+
+    // nothing of the book that was open is listed while the next one loads, so a search can't
+    // bring its contacts back to be opened, edited or deleted as the new book's
+    static void searchWhileLoading(WebDriver d) {
+        openBook(d, "default", "Contacts", "Carol Current");
+        AddressBookTest.inFrame(d, HOLD, "loadBook", "big", 3000);
+        Object listed = AddressBookTest.inFrame(d, "openBook('big'); const s = document.getElementById('search'); s.value = 'carol'; s.dispatchEvent(new Event('input'));"
+                + " selectContact('carol-1.vcf'); return document.getElementById('contacts').textContent + ' / ' + document.getElementById('detail').textContent");
+        AddressBookTest.inFrame(d, "const s = document.getElementById('search'); s.value = ''; s.dispatchEvent(new Event('input')); return 1;");
+        AddressBookTest.inFrame(d, RELEASE);
+        if (String.valueOf(listed).contains("Carol"))
+            throw new AssertionError("Nothing of the book that was open should show while the next loads: " + listed);
+        openBook(d, "big", "Big", "Bob Big");
+        System.out.println("  ok   nothing of the book that was open shows while the next one loads, searched for or not");
+    }
+
+    // a load that answers after a later load of the same book is passed over: the later one,
+    // with what was added in between, stays on show
+    static void olderLoadAnswersLast(WebDriver d) {
+        openBook(d, "default", "Contacts", "Carol Current");
+        AddressBookTest.inFrame(d, HOLD_ANSWER_ONCE, "loadBook", "default", 4000);
+        AddressBookTest.inFrame(d, "openBook('default'); return 1;");
+        WebDriver.sleep(800);
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'late-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:late-1\\r\\nFN:Late One\\r\\nN:One;Late;;;\\r\\nEND:VCARD\\r\\n')");
+        openBook(d, "default", "Contacts", "Late One");
+        WebDriver.sleep(4500);
+        AddressBookTest.inFrame(d, RELEASE);
+        Object rows = AddressBookTest.inFrame(d, SHOWN);
+        if (! s(rows).contains("Late One"))
+            throw new AssertionError("A load that answered after a later one should not replace it: " + s(rows));
+        System.out.println("  ok   a load answering after a later one of the same book is passed over");
     }
 
     // a book that is slow to load, replaced by one opened after it
