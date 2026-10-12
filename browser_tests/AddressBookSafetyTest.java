@@ -67,6 +67,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "overwriteWhenAsked", d, () -> overwriteWhenAsked(d, api, data));
                 scenario(failures, "deletedElsewhere", d, () -> deletedElsewhere(d, api, data));
                 scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
+                scenario(failures, "changedAgainWhileAsked", d, () -> changedAgainWhileAsked(d, api, data));
                 scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
                 scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
                 scenario(failures, "deletedBookStaysDeleted", d, () -> deletedBookStaysDeleted(d, api, data));
@@ -322,6 +323,26 @@ public class AddressBookSafetyTest {
         AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
         AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
         System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
+    }
+
+    // a Yes is to saving over the change it asked about: another made while the question was
+    // open is asked about in turn, and No to that keeps it
+    static void changedAgainWhileAsked(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Imp Two");
+        edit(d, "imp-2.vcf", "Major");
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'imp-2.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nN:Two;Imp;;;\\r\\nNOTE:first change\\r\\nEND:VCARD\\r\\n')");
+        AddressBookTest.inFrame(d, "document.querySelector('#detail button[type=submit]').click(); return 1;");
+        d.waitUntil("Peergos asking about the first change", () -> Boolean.TRUE.equals(d.script(
+                "const g = document.querySelector('.pg-dialog'); return !!g && g.textContent.includes('Imp Two was changed elsewhere')")) ? true : null, 30_000);
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'imp-2.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:imp-2\\r\\nFN:Imp Two\\r\\nN:Two;Imp;;;\\r\\nNOTE:second change\\r\\nEND:VCARD\\r\\n')");
+        d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'Yes').click(); return 1;");
+        // the first question fades out as the second comes
+        WebDriver.sleep(1500);
+        answer(d, "Imp Two was changed elsewhere", "No");
+        waitForCard(api, data, "imp-2.vcf", "NOTE:second change", "No to the second question should keep the second change");
+        if (card(api, data, "imp-2.vcf").contains("TITLE:Major"))
+            throw new AssertionError("A Yes to the first change should not save over the second: " + card(api, data, "imp-2.vcf"));
+        System.out.println("  ok   a change made while the question was open is asked about too, and No keeps it");
     }
 
     // a book deleted while it is open, on another device say, isn't brought back by a save into

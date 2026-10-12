@@ -200,14 +200,19 @@ module.exports = {
 				throw new Error("Not a vCard");
 			this.checkStillThere(data.book, await this.addressBookExists(data.book));
 			if (data.expected !== undefined) {
+				let seen = data.expected;
 				let current = await this.readContactCard(data.book, data.file);
-				if (current !== data.expected) {
+				// a Yes is to saving over the change it asked about: one made since, while the
+				// question was open, is asked about in turn
+				while (current !== seen) {
 					let gone = current == null;
 					let overwrite = data.ask === true && await this.confirm(
 						this.named(gone ? "ADDRESSBOOK.CONFLICT.DELETED" : "ADDRESSBOOK.CONFLICT", data.name != null ? data.name : ''),
 						this.translate(gone ? "ADDRESSBOOK.CONFLICT.DELETED.BODY" : "ADDRESSBOOK.CONFLICT.BODY"));
 					if (! overwrite)
 						return {conflict: true, current: current};
+					seen = current;
+					current = await this.readContactCard(data.book, data.file);
 				}
 			}
 			await this.writeContactCard(data.book, data.file, data.vcard);
