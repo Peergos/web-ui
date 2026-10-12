@@ -43,8 +43,12 @@ public class AddressBookSafetyTest {
         }
     }
 
+    // whether this run's driver can give the import's file input a file, which safaridriver can't
+    static boolean picker = true;
+
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
+        picker = Page.canDriveFilePicker(engine);
         String given = args.length > 1 ? args[1] : null;
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
@@ -135,11 +139,19 @@ public class AddressBookSafetyTest {
         }
         AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; return 1;");
         AddressBookTest.inFrame(d, HOLD, "saveCard", "default", 2500);
-        d.switchToFrame(AddressBookTest.FRAME);
-        try {
-            d.sendKeys(d.find("#importFile"), a.toAbsolutePath() + "\n" + b.toAbsolutePath());
-        } finally {
-            d.switchToTop();
+        if (picker) {
+            d.switchToFrame(AddressBookTest.FRAME);
+            try {
+                d.sendKeys(d.find("#importFile"), a.toAbsolutePath() + "\n" + b.toAbsolutePath());
+            } finally {
+                d.switchToTop();
+            }
+        } else {
+            try {
+                AddressBookTest.handFiles(d, List.of(List.of("first.vcf", Files.readString(a)), List.of("second.vcf", Files.readString(b))));
+            } catch (java.io.IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
         WebDriver.sleep(800);
         AddressBookTest.inFrame(d, "openBook('big'); return 1;");

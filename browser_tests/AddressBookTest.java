@@ -94,17 +94,24 @@ public class AddressBookTest {
                 System.out.println("  ok   its menu row is in reach in a short window (" + laptop + ") and in a phone's panel held sideways (" + phone + ")");
 
                 // every contact and address book is a button: Enter on a contact opens it, and the
-                // focus stays on its row, now marked as the open one
+                // focus stays on its row, now marked as the open one. Where the driver can't type
+                // into the frame, the row is clicked from the page instead, and the focus, which a
+                // click doesn't give a button in WebKit, isn't asked about.
+                boolean keys = canTypeInFrame(engine);
                 Object firstName = inFrame(d, "return document.querySelector('#contacts li.card .list-row .names div').textContent");
-                d.switchToFrame(FRAME);
-                try {
-                    d.sendKeys(d.find("#contacts li.card .list-row"), "\uE007");
-                } finally {
-                    d.switchToTop();
+                if (keys) {
+                    d.switchToFrame(FRAME);
+                    try {
+                        d.sendKeys(d.find("#contacts li.card .list-row"), "\uE007");
+                    } finally {
+                        d.switchToTop();
+                    }
+                } else {
+                    inFrame(d, "document.querySelector('#contacts li.card .list-row').click(); return 1;");
                 }
-                waitInFrame(d, "the contact opened from the keyboard", "const h = document.querySelector('#detail h1'); return h && h.textContent === arguments[0] ? true : null", firstName);
-                Object focused = inFrame(d, "const a = document.activeElement; return a && a.classList.contains('list-row') ? a.getAttribute('aria-current') + ' ' + a.textContent.trim() : null");
-                if (! String.valueOf(focused).startsWith("true"))
+                waitInFrame(d, "the contact opened from its row", "const h = document.querySelector('#detail h1'); return h && h.textContent === arguments[0] ? true : null", firstName);
+                Object focused = keys ? inFrame(d, "const a = document.activeElement; return a && a.classList.contains('list-row') ? a.getAttribute('aria-current') + ' ' + a.textContent.trim() : null") : "not asked";
+                if (keys && ! String.valueOf(focused).startsWith("true"))
                     throw new AssertionError("The opened contact's row should keep the focus: " + focused);
                 Object rows = inFrame(d, "const r = [...document.querySelectorAll('#bookList .list-row, #contacts .list-row')]; return r.every(x => x.tagName === 'BUTTON') ? r.length : 0");
                 if (! (rows instanceof Number) || ((Number) rows).intValue() < 2)
@@ -114,7 +121,8 @@ public class AddressBookTest {
                         + " && [...document.querySelectorAll('#contacts .list-row .avatar')].every(a => a.getAttribute('aria-hidden') === 'true' || a.getAttribute('alt') === '')");
                 if (! Boolean.TRUE.equals(labelled))
                     throw new AssertionError("The search and the book picker should be labelled, and a row read as its name alone");
-                System.out.println("  ok   rows are buttons; Enter opens a contact and the focus stays on its row (" + focused + "); the search and picker are labelled");
+                System.out.println("  ok   rows are buttons; " + (keys ? "Enter opens a contact and the focus stays on its row (" + focused + ")" : "a click opens a contact")
+                        + "; the search and picker are labelled");
 
                 // a contact with only a formatted name shows it in the form, and saves with a change
                 inFrame(d, "selectContact('acme-1.vcf'); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;");
@@ -370,6 +378,19 @@ public class AddressBookTest {
                 throw new AssertionError("Timed out waiting for " + what);
             WebDriver.sleep(1000);
         }
+    }
+
+    /** WebKitGTK's driver can't type into a frame from another origin: nothing in it is focusable
+     *  to it, a text field included. Safari's driver is WebKit's too, and is taken to be the same. */
+    static boolean canTypeInFrame(String engine) {
+        Browsers.Engine e = Browsers.engine(engine);
+        return e != Browsers.Engine.WEBKIT && e != Browsers.Engine.SAFARI;
+    }
+
+    /** What the import's file picker would hand the page, for a driver that can't give a file input
+     *  a file (see Page.canDriveFilePicker): each [name, text] as a file. */
+    static void handFiles(WebDriver d, List<List<String>> files) {
+        inFrame(d, "importFiles({files: arguments[0].map(f => new File([f[1]], f[0])), value: ''}); return 1;", files);
     }
 
     /** A script run in the app's own page, inside its frame. */
