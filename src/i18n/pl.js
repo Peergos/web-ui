@@ -137,6 +137,7 @@ module.exports = {
     "APPNAV.NEWSFEED":"Kanał informacyjny",
     "APPNAV.SOCIAL":"Społecznościowe",
     "APPNAV.CAL":"Kalendarz",
+    "APPNAV.ADDRESSBOOK":"Kontakty",
     "APPNAV.EMAIL":"E-mail",
     "APPNAV.UPGRADE":"Zmień subskrypcję",
     "SEARCH.SEARCH":"Wyszukiwanie",

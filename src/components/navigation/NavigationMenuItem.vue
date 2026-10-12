@@ -65,6 +65,8 @@ module.exports = {
 .menu-item {
 	position: relative;
 	height: 64px;
+	/* the shortest a row gets in a short window: see the rail's list */
+	min-height: 44px;
 	padding: 0;
 	list-style: none;
 	line-height: 64px;

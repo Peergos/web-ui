@@ -93,7 +93,7 @@ public class MobileNavTest {
      *  own, and on a phone the whole rail is off screen anyway - while the behaviour under test
      *  is the method's, at both widths.
      */
-    private static void toggleSidebar(WebDriver d) {
+    static void toggleSidebar(WebDriver d) {
         Object toggled = d.scriptQuiet("let root = null;"
                 + "root = " + Page.VUE + ".root();"
                 + "const queue = root ? [root] : [];"

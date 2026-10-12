@@ -1,0 +1,266 @@
+/* Inter is the Peergos UI's own typeface. This app is served from its own origin
+   (address-book.<host>), so it can't use the host UI's copy: a font fetched cross-origin needs
+   CORS headers the server doesn't send. Only the two weights used here are vendored, byte-identical
+   to web-ui's assets/fonts/inter, as the calendar's are. */
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("fonts/inter/Inter-Regular.woff2") format("woff2");
+}
+@font-face {
+	font-family: 'Inter';
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("fonts/inter/Inter-SemiBold.woff2") format("woff2");
+}
+
+/* Peergos' own design tokens, mirrored from web-ui's 0_variables.css and 2_status-cards.css under
+   the same names, so this app's lists, fields and buttons are the same shape and colour as the
+   rest of Peergos. Copied rather than imported for the same cross-origin reason as the font. */
+:root {
+	--color: #2c3e50;
+	--bg: #ffffff;
+	--bg-2: #f6f6f6;
+	--border-color: #e1e1e1;
+	--green-500: #26b99a;
+	--pg-muted: #566571;
+	--pg-surface-2: #f1f4f7;
+	--pg-track: #e6ebef;
+	--pg-tint-ok: #e8f8f3;
+	--pg-on-ok: #146b57;
+	--pg-tint-error: #fdecec;
+	--pg-on-error: #b3261e;
+	--pg-primary: #146b57;
+	--pg-primary-hover: #0a4533;
+	--pg-on-primary: #ffffff;
+	/* web-ui fades a disabled button to .55; the same colour, said outright */
+	--pg-disabled: #a1aab0;
+	--radius-control: 8px;
+	--radius-field: 10px;
+	color-scheme: light;
+}
+:root[data-theme="dark"] {
+	--color: #ffffff;
+	--bg: #2c3e50;
+	--bg-2: #283744;
+	--border-color: #566571;
+	--pg-muted: #a7b6c2;
+	--pg-surface-2: #22303c;
+	--pg-track: #1f2c37;
+	--pg-tint-ok: #1d4a41;
+	--pg-on-ok: #63e3bd;
+	--pg-tint-error: #4d2b2e;
+	--pg-on-error: #ffa1a1;
+	/* a dark fill recedes into a dark page, so the pair inverts, as web-ui's does */
+	--pg-primary: #63e3bd;
+	--pg-primary-hover: #3fdb9c;
+	--pg-on-primary: #283744;
+	--pg-disabled: #70808f;
+	color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+	font: 15px/1.4 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	color: var(--color);
+	background: var(--bg);
+	-webkit-tap-highlight-color: transparent;
+}
+
+/* web-ui's .pg-btn: the same size, weight, radius and focus ring */
+button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 40px;
+	padding: 9px 16px;
+	font: inherit;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: var(--color);
+	background: transparent;
+	border: 1px solid var(--border-color);
+	border-radius: var(--radius-control);
+	cursor: pointer;
+}
+/* a hover state only where something can hover: on a touch screen it sticks after a tap */
+@media (hover: hover) {
+	button:not(:disabled):hover { background: var(--bg-2); }
+	button.primary:not(:disabled):hover { background: var(--pg-primary-hover); border-color: var(--pg-primary-hover); }
+	button.danger:not(:disabled):hover { background: var(--pg-tint-error); }
+}
+/* not by opacity, which Firefox doesn't always paint in a frame from another origin */
+button:disabled { color: var(--pg-disabled); cursor: default; }
+button:focus-visible { outline: 2px solid var(--green-500); outline-offset: 2px; }
+button.primary { color: var(--pg-on-primary); background: var(--pg-primary); border-color: var(--pg-primary); }
+/* a filled button only faded still reads as clickable, so an unavailable one gives up the accent */
+button.primary:disabled { color: var(--pg-muted); background: var(--pg-track); border-color: var(--pg-track); }
+button.danger { color: var(--pg-on-error); border-color: transparent; }
+button.link { color: var(--pg-muted); border-color: transparent; padding: 9px 10px; }
+button.link:disabled { color: var(--pg-disabled); }
+
+/* web-ui's .pg-input */
+input, select, textarea {
+	min-width: 0;
+	min-height: 40px;
+	padding: 8px 12px;
+	font: inherit;
+	font-size: 15px;
+	color: var(--color);
+	background: var(--pg-surface-2);
+	border: 1px solid var(--pg-track);
+	border-radius: var(--radius-field);
+}
+textarea { resize: vertical; min-height: 96px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 3px var(--pg-tint-ok); }
+/* a field the browser filled in keeps the field's own colour, focused or not, as web-ui's do */
+input:-webkit-autofill { background-clip: padding-box; box-shadow: 0 0 0 30px var(--pg-surface-2) inset; -webkit-text-fill-color: var(--color); }
+input:-webkit-autofill:focus { box-shadow: 0 0 0 30px var(--pg-surface-2) inset, 0 0 0 3px var(--pg-tint-ok); }
+
+#app { display: grid; grid-template-columns: 240px 320px 1fr; height: 100vh; }
+aside, #list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--pg-track); }
+.pane-head { display: flex; gap: 8px; align-items: center; min-height: 60px; padding: 10px 16px; }
+.pane-head h2 { flex: 1; margin: 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scroll { flex: 1; overflow-y: auto; }
+
+#books ul, #contacts { list-style: none; margin: 0; padding: 0 8px 8px; }
+#books .foot { padding: 12px 16px; border-top: 1px solid var(--pg-track); }
+#books .foot button { width: 100%; }
+
+/* a row of a list: a book or a contact */
+.list-row {
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 12px;
+	width: 100%;
+	min-height: 44px;
+	padding: 8px 10px;
+	font-size: 15px;
+	font-weight: 400;
+	text-align: left;
+	color: inherit;
+	background: none;
+	border: none;
+	border-radius: var(--radius-control);
+}
+.list-row:focus-visible { outline: 2px solid var(--green-500); outline-offset: -2px; }
+/* the open one, in the selection colour web-ui's lists use */
+.list-row[aria-current="true"], .list-row[aria-current="true"]:hover { color: var(--pg-on-ok); background: var(--pg-tint-ok); font-weight: 600; }
+#books .list-row { justify-content: space-between; }
+#books .count { font-size: 13px; font-weight: 400; color: var(--pg-muted); }
+#books .list-row[aria-current="true"] .count { color: inherit; }
+
+#bookSelect { display: none; flex: 1; }
+.search { padding: 0 16px 8px; }
+.search input { width: 100%; }
+#contacts .letter {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	padding: 12px 10px 4px;
+	font-size: 12px;
+	font-weight: 600;
+	letter-spacing: .04em;
+	color: var(--pg-muted);
+	background: var(--bg);
+}
+#contacts .names { min-width: 0; }
+#contacts .names > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#contacts .sub { font-size: 13px; font-weight: 400; color: var(--pg-muted); }
+.empty { padding: 24px 16px; text-align: center; color: var(--pg-muted); }
+.empty p { margin: 0 0 12px; }
+
+.avatar {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	object-fit: cover;
+	font-size: 14px;
+	font-weight: 600;
+	color: #ffffff;
+}
+.avatar.big { width: 88px; height: 88px; font-size: 32px; }
+
+#detail { min-height: 0; overflow-y: auto; }
+.detail { max-width: 680px; margin: 0 auto; padding: 24px; }
+.detail-head { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+.detail h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; overflow-wrap: break-word; }
+.detail ul.several { margin: 8px 0 16px; padding-left: 20px; }
+.detail-head > div { min-width: 0; }
+.detail-head .sub { color: var(--pg-muted); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.actions .move { display: inline-flex; gap: 8px; }
+.field { display: grid; grid-template-columns: 120px 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--pg-track); }
+.field .label { font-size: 14px; color: var(--pg-muted); }
+.field .value { white-space: pre-wrap; word-break: break-word; }
+.unreadable {
+	padding: 12px;
+	font-size: 13px;
+	white-space: pre-wrap;
+	word-break: break-all;
+	color: var(--pg-muted);
+	background: var(--pg-surface-2);
+	border: 1px solid var(--pg-track);
+	border-radius: var(--radius-field);
+}
+
+form h3 { margin: 24px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--pg-muted); }
+form .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+form .row > input, form .row > textarea { flex: 1; }
+form .adr { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+form .adr .wide { grid-column: span 2; }
+/* an address is several fields tall: its kind and its remove button go at the top */
+form .row.address { align-items: flex-start; }
+form select { width: 112px; }
+
+#status {
+	position: fixed;
+	bottom: 16px;
+	left: 50%;
+	display: none;
+	max-width: calc(100% - 32px);
+	padding: 10px 16px;
+	font-size: 14px;
+	color: var(--bg);
+	background: var(--color);
+	border-radius: var(--radius-control);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, .2);
+	transform: translateX(-50%);
+}
+.back { display: none; margin-bottom: 12px; }
+
+/* Too narrow for three columns, a contact needs the room more than the list of address books,
+   which goes into the picker above the contacts. */
+@media (max-width: 1099px) {
+	#app { grid-template-columns: 320px 1fr; }
+	aside { display: none; }
+	/* the book's name is in its picker here */
+	#bookTitle { display: none; }
+	#bookSelect { display: block; }
+}
+/* and on a phone, one column at a time */
+@media (max-width: 760px) {
+	#app { grid-template-columns: 1fr; }
+	#list { border-right: none; }
+	#app.show-detail #list { display: none; }
+	#app:not(.show-detail) #detail { display: none; }
+	.back { display: inline-flex; }
+	.detail { padding: 16px; }
+	.field { grid-template-columns: 96px 1fr; }
+	form .adr { grid-template-columns: 1fr; }
+	form .adr .wide { grid-column: auto; }
+	/* its kind and remove button on a line of their own, the fields below them */
+	form .row.address .adr { order: 3; flex-basis: 100%; }
+	form .row.address > button.link { margin-left: auto; }
+}

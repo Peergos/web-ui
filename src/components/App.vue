@@ -169,6 +169,7 @@ const Mirror = require("./Mirror.vue");
 const Drive = require("../views/Drive.vue");
 const NewsFeed = require("../views/NewsFeed.vue");
 const Social = require("../views/Social.vue");
+const AddressBook = require("../views/AddressBook.vue");
 const Calendar = require("../views/Calendar.vue");
 const Launcher = require("../views/Launcher.vue");
 const SharedWith = require("../views/SharedWith.vue");
@@ -209,6 +210,7 @@ module.exports = {
                 LinkPassword,
 		NewsFeed,
 		Social,
+		AddressBook,
 		Calendar,
 		Launcher,
 		SharedWith,
@@ -512,7 +514,7 @@ module.exports = {
 	    }
 
             const that = this;
-            const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "Email", "Launcher", "SharedWith", "Sync", "Mount"]
+            const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "AddressBook", "Email", "Launcher", "SharedWith", "Sync", "Mount"]
             const inDrive = this.currentView == "Drive";
 	    if (app === "Drive") {
                 if (inDrive) {

@@ -1286,7 +1286,7 @@ module.exports = {
 				const appFromUrl = props == null ? null : props.app;
 				const argsFromUrl = props == null ? null : props.args;
 
-				const apps = ['Calendar', 'NewsFeed', 'Social', 'Launcher', 'SharedWith']
+				const apps = ['Calendar', 'AddressBook', 'NewsFeed', 'Social', 'Launcher', 'SharedWith']
 
 				if (pathFromUrl != null && !apps.includes(appFromUrl) ) {
 

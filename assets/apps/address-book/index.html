@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Address Book</title>
+<link rel="stylesheet" href="address-book.css">
+</head>
+<body>
+<div id="app">
+	<aside id="books">
+		<div class="pane-head"><h2>Address books</h2></div>
+		<ul class="scroll" id="bookList"></ul>
+		<div class="foot"><button type="button" id="newBookButton">+ New address book</button></div>
+	</aside>
+	<section id="list">
+		<div class="pane-head">
+			<h2 id="bookTitle"></h2>
+			<select id="bookSelect" aria-label="Address book"></select>
+			<button type="button" class="link" id="renameBookButton" title="Rename address book">Rename</button>
+			<button type="button" class="link" id="deleteBookButton" title="Delete address book">Delete</button>
+		</div>
+		<div class="pane-head">
+			<button type="button" class="primary" id="newContactButton">+ New contact</button>
+			<button type="button" id="importButton">Import .vcf</button>
+			<input type="file" id="importFile" accept=".vcf,text/vcard" multiple hidden>
+		</div>
+		<div class="search"><input id="search" type="search" placeholder="Search" aria-label="Search contacts"></div>
+		<ul class="scroll" id="contacts"></ul>
+	</section>
+	<main id="detail"></main>
+</div>
+<div id="status"></div>
+<script src="address-book.js"></script>
+</body>
+</html>

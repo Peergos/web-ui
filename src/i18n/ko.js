@@ -140,6 +140,7 @@ module.exports = {
     "APPNAV.NEWSFEED":"뉴스피드",
     "APPNAV.SOCIAL":"소셜",
     "APPNAV.CAL":"캘린더",
+    "APPNAV.ADDRESSBOOK":"주소록",
     "APPNAV.EMAIL":"이메일",
     "APPNAV.UPGRADE":"업그레이드",
     "SEARCH.SEARCH":"검색",
