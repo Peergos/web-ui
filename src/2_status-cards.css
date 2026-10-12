@@ -1469,6 +1469,21 @@ input.pg-input:focus {
 	border-color: var(--green-500);
 	box-shadow: 0 0 0 3px var(--pg-tint-ok);
 }
+/* A field the browser filled in, such as a saved login, keeps the field's own colour, focused
+   or not. The browser's fill (yellow in Firefox, blue in Chrome) can't be overridden, so a
+   shadow inside the edge in the field's colour covers it, and focus only turns the edge green.
+   The focus ring above would otherwise replace that shadow and uncover the browser's fill.
+   Kept inside the edge, the fill doesn't show either at the rounded corners. */
+input.pg-input:-webkit-autofill {
+	background-clip: padding-box;
+	box-shadow: 0 0 0 30px var(--pg-surface-2) inset;
+	/* the browser makes a filled field's text the system's colour, which the caret follows: dark
+	   on the dark theme's field without this */
+	caret-color: var(--color);
+}
+input.pg-input:-webkit-autofill:focus {
+	box-shadow: 0 0 0 30px var(--pg-surface-2) inset, 0 0 0 3px var(--pg-tint-ok);
+}
 .pg-dialog--prompt {
 	width: 420px;
 }

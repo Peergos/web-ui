@@ -135,6 +135,17 @@ module.exports = {
 	border-color: var(--green-500);
 	box-shadow: 0 0 0 3px var(--pg-tint-ok);
 }
+/* a saved password the browser filled in keeps the field's colour, as input.pg-input does */
+.pg-dialog .password__wrapper input:-webkit-autofill,
+.pg-auth .password__wrapper input:-webkit-autofill {
+	background-clip: padding-box;
+	box-shadow: 0 0 0 30px var(--pg-surface-2) inset;
+	caret-color: var(--color);
+}
+.pg-dialog .password__wrapper input:-webkit-autofill:focus,
+.pg-auth .password__wrapper input:-webkit-autofill:focus {
+	box-shadow: 0 0 0 30px var(--pg-surface-2) inset, 0 0 0 3px var(--pg-tint-ok);
+}
 .pg-dialog .password__wrapper .eye,
 .pg-auth .password__wrapper .eye {
 	top: 50%;
