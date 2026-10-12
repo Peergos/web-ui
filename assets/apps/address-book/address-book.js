@@ -11,6 +11,9 @@ let loadFailed = false;
 let loading = false;
 // counts each opening of a book, so a load that answers after a later one began is passed over
 let loadToken = 0;
+// counts what the user opens in the detail pane, so an action that finishes later redraws the
+// pane only if it still shows what the action started from, and leaves alone what they opened
+let paneVersion = 0;
 
 // ------------------------------------------------------------------ vCard
 
@@ -554,6 +557,7 @@ function fileFor(card) {
 
 async function openBook(id) {
 	let token = ++loadToken;
+	paneVersion++;
 	currentBook = id;
 	selectedFile = null;
 	cards = [];
@@ -587,6 +591,29 @@ async function reopen(book, file) {
 		renderContacts();
 		renderDetail();
 	}
+}
+
+// The book read again once an action is done: as reopen while the pane still shows what the
+// action started from, and otherwise only its list, leaving what the user opened since.
+async function reload(book, file, pane) {
+	if (currentBook != book)
+		return;
+	if (paneVersion == pane) {
+		await reopen(book, file);
+		return;
+	}
+	let token = ++loadToken;
+	let loaded = null;
+	try {
+		loaded = await loadCards(book);
+	} catch (e) {}
+	if (token != loadToken)
+		return;
+	loading = false;
+	loadFailed = loaded == null;
+	cards = loaded || [];
+	renderBooks();
+	renderContacts();
 }
 
 function onBookSelect(value) {
@@ -635,12 +662,14 @@ async function deleteBook() {
 }
 
 function newContact() {
+	paneVersion++;
 	selectedFile = null;
 	renderContacts();
 	renderForm(null);
 }
 
 function selectContact(file) {
+	paneVersion++;
 	selectedFile = file;
 	renderContacts();
 	renderDetail();
@@ -650,6 +679,7 @@ function selectContact(file) {
 // time it finishes, and that book's list is left alone.
 async function saveContact(form, entry) {
 	let book = currentBook;
+	let pane = paneVersion;
 	let vcard = formToCard(form, entry ? entry.card : null);
 	let file = entry ? entry.file : fileFor(parseCards(vcard)[0]);
 	let answer;
@@ -663,8 +693,7 @@ async function saveContact(form, entry) {
 	}
 	if (answer.conflict) {
 		status('Not saved. It had changed elsewhere, so it now shows that change');
-		if (currentBook == book)
-			await reopen(book, answer.current != null ? file : null);
+		await reload(book, answer.current != null ? file : null, pane);
 		return;
 	}
 	if (currentBook != book) {
@@ -674,27 +703,29 @@ async function saveContact(form, entry) {
 	// the book is being read again, maybe from before this was saved: read once more after it
 	if (loading) {
 		status('Saved');
-		await reopen(book, file);
+		await reload(book, file, pane);
 		return;
 	}
 	let updated = {file: file, card: parseCards(vcard)[0], text: vcard};
 	cards = cards.filter(c => c.file != file).concat([updated]);
-	selectedFile = file;
+	if (paneVersion == pane) {
+		selectedFile = file;
+		renderDetail();
+	}
 	renderBooks();
 	renderContacts();
-	renderDetail();
 	status('Saved');
 }
 
 async function deleteContact(entry) {
 	let book = currentBook;
+	let pane = paneVersion;
 	try {
 		let answer = await host('deleteCard', {book: book, file: entry.file, name: displayName(entry.card), expected: entry.text});
 		if (answer.cancelled) return;
 		if (answer.conflict) {
 			status('Not deleted. It had changed elsewhere, so it now shows that change');
-			if (currentBook == book)
-				await reopen(book, entry.file);
+			await reload(book, entry.file, pane);
 			return;
 		}
 	} catch (e) {
@@ -704,14 +735,16 @@ async function deleteContact(entry) {
 	if (currentBook != book)
 		return;
 	if (loading) {
-		await reopen(book, null);
+		await reload(book, null, pane);
 		return;
 	}
 	cards = cards.filter(c => c.file != entry.file);
-	selectedFile = null;
+	if (paneVersion == pane) {
+		selectedFile = null;
+		renderDetail();
+	}
 	renderBooks();
 	renderContacts();
-	renderDetail();
 }
 
 // Puts a card in a book without replacing one there under the same name: the same card is left
@@ -735,6 +768,7 @@ async function addCard(book, card) {
 
 async function moveContact(entry, target) {
 	let from = currentBook;
+	let pane = paneVersion;
 	let vcard = serialise(entry.card.props.map(p => p.raw));
 	let moved, placed;
 	try {
@@ -749,18 +783,20 @@ async function moveContact(entry, target) {
 	if (moved.conflict) {
 		// both are kept: the copy as it was read, and the original with the change made to it
 		status('Copied to ' + (book ? book.name : target) + '. The original had changed elsewhere, so it was kept too');
-		if (currentBook == from)
-			await reopen(from, null);
+		await reload(from, null, pane);
 		return;
 	}
 	status('Moved to ' + (book ? book.name : target) + (placed.how == 'beside' ? ', beside a different version of it there' : ''));
 	if (currentBook == from && loading) {
-		await reopen(from, null);
+		await reload(from, null, pane);
 	} else if (currentBook == from) {
 		cards = cards.filter(c => c.file != entry.file);
-		selectedFile = null;
+		if (paneVersion == pane) {
+			selectedFile = null;
+			renderDetail();
+		}
+		renderBooks();
 		renderContacts();
-		renderDetail();
 	} else if (currentBook == target) {
 		// opened while the contact was on its way, so it may have been read without it
 		openBook(target);
@@ -771,6 +807,7 @@ async function moveContact(entry, target) {
 // deletes the file - unless it changed meanwhile, when it stays too.
 async function splitFile(entry) {
 	let book = currentBook;
+	let pane = paneVersion;
 	let failed = 0;
 	status('Making each a contact', true);
 	for (let card of entry.cards) {
@@ -792,8 +829,7 @@ async function splitFile(entry) {
 			status('Each is a contact now, but the file could not be deleted');
 		}
 	}
-	if (currentBook == book)
-		await reopen(book, null);
+	await reload(book, null, pane);
 }
 
 function importCount() {
@@ -990,7 +1026,7 @@ function showDetailPane(show) {
 }
 
 function backButton() {
-	return el('button', {class: 'back', text: '‹ Back', onclick: () => { selectedFile = null; renderContacts(); renderDetail(); }});
+	return el('button', {class: 'back', text: '‹ Back', onclick: () => { paneVersion++; selectedFile = null; renderContacts(); renderDetail(); }});
 }
 
 function renderDetail() {
@@ -1053,7 +1089,7 @@ function renderDetail() {
 			])
 		]),
 		el('div', {class: 'actions'}, [
-			el('button', {class: 'primary', text: 'Edit', onclick: () => renderForm(entry)}),
+			el('button', {class: 'primary', text: 'Edit', onclick: () => { paneVersion++; renderForm(entry); }}),
 			move,
 			el('button', {class: 'danger', text: 'Delete', onclick: () => deleteContact(entry)})
 		]),
@@ -1123,7 +1159,12 @@ function renderForm(entry) {
 	};
 	draw();
 
-	let cancel = () => entry ? renderDetail() : (selectedFile = null, renderDetail());
+	let cancel = () => {
+		paneVersion++;
+		if (! entry)
+			selectedFile = null;
+		renderDetail();
+	};
 	// One save at a time: a second click, or Enter, while the first is on its way would save a new
 	// contact twice, as two contacts.
 	let save = el('button', {class: 'primary', type: 'submit', text: 'Save'});

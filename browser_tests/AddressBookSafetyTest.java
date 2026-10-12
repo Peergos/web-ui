@@ -73,6 +73,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "moveIntoOpenedBook", d, () -> moveIntoOpenedBook(d, api, data));
                 scenario(failures, "failedLoad", d, () -> failedLoad(d));
                 scenario(failures, "doubleSave", d, () -> doubleSave(d, api, data));
+                scenario(failures, "saveThenNewContact", d, () -> saveThenNewContact(d, api, data));
                 scenario(failures, "changedElsewhere", d, () -> changedElsewhere(d, api, data));
                 scenario(failures, "overwriteWhenAsked", d, () -> overwriteWhenAsked(d, api, data));
                 scenario(failures, "deletedElsewhere", d, () -> deletedElsewhere(d, api, data));
@@ -91,6 +92,26 @@ public class AddressBookSafetyTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    // a save that finishes once the user has moved on - to a new contact, say - leaves what they
+    // opened as it is, typing and all
+    static void saveThenNewContact(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Imp Two");
+        edit(d, "imp-2.vcf", "Conductor");
+        AddressBookTest.inFrame(d, HOLD, "saveCard", "default", 2500);
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; document.querySelector('#detail button[type=submit]').click();"
+                + " document.getElementById('newContactButton').click();"
+                + " const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Typing'; i.dispatchEvent(new Event('input')); return 1;");
+        AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+        AddressBookTest.inFrame(d, RELEASE);
+        Object pane = AddressBookTest.inFrame(d, "const h = document.querySelector('#detail h1'), i = document.querySelector('#detail input[placeholder=\"First name\"]');"
+                + " return (h ? h.textContent : '') + ' / ' + (i ? i.value : '')");
+        if (! "New contact / Typing".equals(String.valueOf(pane)))
+            throw new AssertionError("A save finishing after a new contact was begun should leave that as it is: " + pane);
+        AddressBookTest.waitFor("the save", () -> card(api, data, "imp-2.vcf").contains("TITLE:Conductor"));
+        AddressBookTest.inFrame(d, "[...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Cancel').click(); return 1;");
+        System.out.println("  ok   a save finishing after a new contact was begun leaves that as it is, typing and all");
     }
 
     // an import of several files goes wholly to the book it was started in, however the view
