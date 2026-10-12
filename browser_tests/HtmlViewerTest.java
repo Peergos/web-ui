@@ -113,8 +113,12 @@ public class HtmlViewerTest {
                     requireText(d, "the index");
                     requireImage(d, "beside", SAME_W, SAME_H, "beside the page");
                     requireImage(d, "below", SUB_W, SUB_H, "in a subdirectory");
+                    // only Peergos' own Custom Apps page is told the theme in its address
+                    Object search = d.script("return location.search");
+                    if (! "".equals(search))
+                        throw new AssertionError("A page shown with View should keep its own address, not gain: " + search);
                 });
-                System.out.println("  index.html rendered, both images loaded");
+                System.out.println("  index.html rendered, both images loaded, at its own address");
 
                 clickInFrame(d, "tosibling");
                 inFrame(d, () -> requireText(d, "reached the sibling"));

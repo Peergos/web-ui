@@ -125,7 +125,10 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
                         iframe.src = src;
                 } else {
                     let anchor = props.htmlAnchor.length > 0 ? '#' + props.htmlAnchor : "";
-                    let src = allowBrowsing ? appPath.substring(1) + anchor : "index.html" + path;
+                    // Peergos' own Custom Apps page is told the theme in its address, as an app is, so
+                    // it can paint in it from the start. A user's own page keeps the address it has.
+                    let query = props.isAppGallery === true ? '?theme=' + encodeURIComponent(theme) : '';
+                    let src = allowBrowsing ? appPath.substring(1) + query + anchor : "index.html" + path;
                     iframe.src= src;
                     iframe.contentWindow.focus();
                 }
