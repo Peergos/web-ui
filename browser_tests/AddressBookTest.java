@@ -13,9 +13,9 @@ import java.util.*;
  *
  *  It shows what is already stored where phones, CardDAV clients and the Custom Apps version of
  *  it put contacts, and what it saves lands there: every check reads the stored files back over
- *  the api rather than trusting the page. Its questions - a name for a new address book, whether
- *  to delete - are asked in Peergos' own dialogs, and closing one without answering changes
- *  nothing. It follows Peergos' theme.
+ *  the api rather than trusting the page. Its questions - a name for a new or renamed address
+ *  book, whether to delete a contact or a whole book - are asked in Peergos' own dialogs, and
+ *  closing one without answering changes nothing. It follows Peergos' theme.
  *
  *  Usage: java -cp ../server/Peergos.jar AddressBookTest.java [engine] [peergos url]
  */
@@ -112,6 +112,71 @@ public class AddressBookTest {
                 String books = bookNames(api, data);
                 System.out.println("  ok   a new address book is named in Peergos' dialog, and stored (" + books + ")");
 
+                // renaming starts from the current name; closing the dialog keeps it
+                inFrame(d, "document.getElementById('renameBookButton').click(); return 1;");
+                d.waitForScript("Peergos' rename dialog", "!!document.getElementById('prompt-input')", 30_000);
+                Object offered = d.script("return document.getElementById('prompt-input').value");
+                if (! "Work".equals(offered))
+                    throw new AssertionError("The rename dialog should start from the current name, not: " + offered);
+                d.script("document.querySelector('.app-prompt .pg-dialog__close').click(); return 1;");
+                d.waitForScript("the rename dialog to close", "!document.getElementById('prompt-input')", 10_000);
+                WebDriver.sleep(1500);
+                if (! bookNames(api, data).equals(books))
+                    throw new AssertionError("Closing the rename dialog should keep the name: " + bookNames(api, data));
+                // a name is the user's own text: stored as typed, and shown as text
+                String renamed = "Work & <b>Home</b> $&";
+                inFrame(d, "document.getElementById('renameBookButton').click(); return 1;");
+                d.waitForScript("Peergos' rename dialog", "!!document.getElementById('prompt-input')", 30_000);
+                CustomGroupsTest.setInput(d, "#prompt-input", renamed);
+                d.script("document.getElementById('prompt-button-id').click(); return 1;");
+                waitInFrame(d, "the new name", "return document.getElementById('bookTitle').textContent === arguments[0]"
+                        + " && [...document.querySelectorAll('#bookList li')].some(l => l.textContent.includes(arguments[0])) ? true : null", renamed);
+                waitFor("the new name to be stored", () -> bookNames(api, data).equals("{\"name\":\"" + renamed + "\"}"));
+                if (Boolean.TRUE.equals(inFrame(d, "return !!document.querySelector('#bookList b, #bookTitle b')")))
+                    throw new AssertionError("A book's name should be shown as text");
+                System.out.println("  ok   renaming starts from the current name, closing keeps it, and the new one is stored and shown as typed");
+
+                // deleting an address book asks first, naming it; closing the question or No keeps it and its contacts
+                String work = String.valueOf(inFrame(d, "return document.getElementById('bookSelect').value"));
+                if (work.equals("default"))
+                    throw new AssertionError("The new address book should be the one open");
+                // a contact made here goes into the book that's open
+                inFrame(d, "document.getElementById('newContactButton').click(); return 1;");
+                inFrame(d, "const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Wendy'; i.dispatchEvent(new Event('input'));"
+                        + " const f = document.querySelector('#detail input[placeholder=\"Last name\"]'); f.value = 'Work'; f.dispatchEvent(new Event('input'));"
+                        + " document.querySelector('#detail button[type=submit]').click(); return 1;");
+                waitForStored(api, data + work, "FN:Wendy Work");
+                waitInFrame(d, "the book's contact", "return [...document.querySelectorAll('#contacts li')].some(l => l.textContent.includes('Wendy Work')) ? true : null");
+                for (String answer : new String[] {"close", "No"}) {
+                    inFrame(d, "document.getElementById('deleteBookButton').click(); return 1;");
+                    d.waitForScript("Peergos' confirmation", "!!document.getElementById('confirm-header-id')", 30_000);
+                    // compared in the page, as chromium's driver hands back a < escaped
+                    Object asked = d.script("const t = document.getElementById('confirm-header-id').textContent.trim(); return t === arguments[0] ? 'named' : t",
+                            "Delete " + renamed + "?");
+                    if (! "named".equals(asked))
+                        throw new AssertionError("The confirmation should name the address book, not: " + asked);
+                    if (answer.equals("close"))
+                        d.script("document.querySelector('.pg-dialog .pg-dialog__close').click(); return 1;");
+                    else
+                        d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'No').click(); return 1;");
+                    d.waitForScript("the confirmation to close", "!document.getElementById('confirm-header-id')", 10_000);
+                    WebDriver.sleep(1500);
+                    if (stored(api, data + work).stream().noneMatch(c -> c.contains("FN:Wendy Work")))
+                        throw new AssertionError("Answering the delete question with " + answer + " should keep the address book and its contact");
+                }
+                System.out.println("  ok   deleting an address book asks first, naming it; closing the question or No keeps it and its contacts");
+                inFrame(d, "document.getElementById('deleteBookButton').click(); return 1;");
+                d.waitForScript("Peergos' confirmation", "!!document.getElementById('confirm-header-id')", 30_000);
+                d.script("[...document.querySelectorAll('.pg-dialog button')].find(b => b.textContent.trim() === 'Yes').click(); return 1;");
+                waitFor("the address book to be deleted", () -> api.getByPath(data + work).join().isEmpty());
+                if (stored(api, data + "default").stream().noneMatch(c -> c.contains("FN:Carol Current")))
+                    throw new AssertionError("Deleting an address book should leave the others");
+                waitInFrame(d, "the default book, with the deleted one gone",
+                        "return document.getElementById('deleteBookButton').disabled"
+                                + " && ! [...document.querySelectorAll('#bookList li')].some(l => l.textContent.includes('Work &'))"
+                                + " && [...document.querySelectorAll('#contacts li')].some(l => l.textContent.includes('Carol Current')) ? true : null");
+                System.out.println("  ok   Yes deletes the address book and its contacts, and only it; the default one opens, and can't be deleted");
+
                 // deleting asks first, in Peergos' dialog; closing it keeps the contact
                 inFrame(d, "document.querySelector('#bookList .list-row').click(); return 1;");
                 waitInFrame(d, "the default book again", "return [...document.querySelectorAll('#contacts li')].some(l => l.textContent.includes('Dee Saved')) ? true : null");
@@ -132,6 +197,53 @@ public class AddressBookTest {
                 if (stored(api, data + "default").stream().noneMatch(c -> c.contains("FN:Carol Current")))
                     throw new AssertionError("Deleting one contact should leave the others");
                 System.out.println("  ok   Yes deletes the contact, and only it");
+
+                // search narrows the list by name or phone; clearing it shows everyone again
+                String names = "return [...document.querySelectorAll('#contacts .list-row')].map(r => r.textContent.trim()).join('|')";
+                for (String query : new String[] {"current", "7946 0001"}) {
+                    inFrame(d, "const s = document.getElementById('search'); s.value = arguments[0]; s.dispatchEvent(new Event('input')); return 1;", query);
+                    Object found = inFrame(d, names);
+                    if (! String.valueOf(found).contains("Carol Current") || String.valueOf(found).contains("Acme"))
+                        throw new AssertionError("Searching '" + query + "' should find Carol Current alone, not: " + found);
+                }
+                inFrame(d, "const s = document.getElementById('search'); s.value = ''; s.dispatchEvent(new Event('input')); return 1;");
+                Object everyone = inFrame(d, names);
+                if (! String.valueOf(everyone).contains("Carol Current") || ! String.valueOf(everyone).contains("Acme Support"))
+                    throw new AssertionError("Clearing the search should show everyone: " + everyone);
+                System.out.println("  ok   search narrows the list by name or phone, and clearing it shows everyone");
+
+                // Cancel leaves a contact as it was
+                String carol = stored(api, data + "default").stream().filter(c -> c.contains("UID:carol-1")).findFirst().orElseThrow();
+                inFrame(d, "selectContact('carol-1.vcf'); [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Edit').click(); return 1;");
+                waitInFrame(d, "the edit form", "return document.querySelector('#detail input[placeholder=\"First name\"]') ? true : null");
+                inFrame(d, "const i = document.querySelector('#detail input[placeholder=\"First name\"]'); i.value = 'Changed'; i.dispatchEvent(new Event('input'));"
+                        + " [...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Cancel').click(); return 1;");
+                waitInFrame(d, "the contact's page again", "const h = document.querySelector('#detail h1'); return h && h.textContent === 'Carol Current' ? true : null");
+                WebDriver.sleep(1500);
+                if (! stored(api, data + "default").contains(carol))
+                    throw new AssertionError("Cancel should leave the contact as it was: " + stored(api, data + "default"));
+                System.out.println("  ok   Cancel leaves a contact as it was");
+
+                // on a phone: a contact on its own page with Back, and the address books in a picker
+                d.setWindowRect(390, 844);
+                String visible = "const shown = id => document.getElementById(id).getClientRects().length > 0; ";
+                waitInFrame(d, "the contact on its own", visible + "return ! shown('list') && ! shown('books')"
+                        + " && document.querySelector('#detail .back').getClientRects().length > 0 ? true : null");
+                inFrame(d, "document.querySelector('#detail .back').click(); return 1;");
+                waitInFrame(d, "the list, with the picker", visible + "return shown('list') && ! shown('detail') && shown('bookSelect') ? true : null");
+                // picking "+ New address book" asks for a name; closing that leaves the picker on the open book
+                inFrame(d, "const s = document.getElementById('bookSelect'); s.value = '__new__'; s.dispatchEvent(new Event('change')); return 1;");
+                d.waitForScript("Peergos' name dialog", "!!document.getElementById('prompt-input')", 30_000);
+                d.script("document.querySelector('.app-prompt .pg-dialog__close').click(); return 1;");
+                d.waitForScript("the name dialog to close", "!document.getElementById('prompt-input')", 10_000);
+                Object picked = inFrame(d, "return document.getElementById('bookSelect').value");
+                if (! "default".equals(picked))
+                    throw new AssertionError("The picker should stay on the open address book, not: " + picked);
+                Object width = inFrame(d, "return innerWidth");
+                if (Boolean.TRUE.equals(inFrame(d, "return document.documentElement.scrollWidth > innerWidth + 1")))
+                    throw new AssertionError("Nothing should scroll sideways at " + width + "px");
+                d.setWindowRect(1280, 900);
+                System.out.println("  ok   narrow (" + width + "px): the address books in a picker, a contact on its own page with Back, nothing sideways");
 
                 // Peergos' theme reaches it, without a reload
                 Object before = inFrame(d, "return document.documentElement.getAttribute('data-theme')");
