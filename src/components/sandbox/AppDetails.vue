@@ -130,6 +130,12 @@ module.exports = {
             this.showSpinner = true;
             that.readJSONFile(this.appPropsFile).thenApply((res) => {
                 that.showSpinner = false;
+                // a manifest that can't be read or parsed leaves nothing to show
+                if (res == null) {
+                    that.$toast.error("Unable to read peergos-app.json. See console for details", {timeout: false});
+                    that.close();
+                    return;
+                }
                 that.appHasFileAssociation = res.fileExtensions.length > 0 || res.mimeTypes.length > 0 || res.fileTypes.length > 0;
                 that.appProperties = res;
                 that.loadGrants();

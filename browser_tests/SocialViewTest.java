@@ -64,7 +64,7 @@ public class SocialViewTest {
             System.out.println("  ok   every list shows its people and its count, and the verified friend says so, with no empty state while loading");
 
             click(d, "Friends", p.friend, ".social-person__link");
-            d.waitForScript("the friend's profile", "document.body.innerText.includes('" + p.friend + "') && !!document.querySelector('.modal-mask, .pg-dialog__mask')", 30_000);
+            d.waitForScript("the friend's profile", "document.body.innerText.includes('" + p.friend + "') && !!document.querySelector('.pg-dialog__mask')", 30_000);
             d.navigate(url + "/");
             Page.login(d, p.me, People.PASSWORD);
             openSocial(d);

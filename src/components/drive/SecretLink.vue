@@ -550,10 +550,6 @@ module.exports = {
     }
 </script>
 <style>
-/* unscoped, and every other modal's body has come to rely on it: kept as it was */
-.modal-body {
-    margin: 0px 0;
-}
 .secret-link {
     position: relative;
     width: 560px;
