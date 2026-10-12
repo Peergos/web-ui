@@ -548,9 +548,23 @@ async function loadCards(book) {
 	});
 }
 
+// The same UID always makes the same name, so a contact imported again is found where it was
+// put the first time: what a file name shouldn't hold is swapped for a -.
 function fileFor(card) {
-	let uid = text(card, 'UID').replace(/^urn:uuid:/i, '');
-	return (/^[A-Za-z0-9_\-@.]{1,200}$/.test(uid) && !uid.startsWith('.') ? uid : newUid()) + '.vcf';
+	let name = text(card, 'UID').replace(/^urn:uuid:/i, '').replace(/[^A-Za-z0-9_\-@.]/g, '-').substring(0, 200);
+	return (name && !name.startsWith('.') ? name : newUid()) + '.vcf';
+}
+
+// whether two texts are the same card, written the way this app writes it: one the Custom Apps
+// version stored as the quoted-printable it was imported as is the same as it read now
+function sameCard(a, b) {
+	if (a == null || b == null || a === b)
+		return a === b;
+	let written = t => {
+		let parsed = parseCards(t);
+		return parsed.length == 1 ? serialise(parsed[0].props.map(p => p.raw)) : t;
+	};
+	return written(a) === written(b);
 }
 
 // ------------------------------------------------------------------ actions
@@ -753,11 +767,21 @@ async function deleteContact(entry) {
 async function addCard(book, card) {
 	let vcard = serialise(card.props.map(p => p.raw));
 	let file = fileFor(card);
-	let answer = await host('saveCard', {book: book, file: file, vcard: vcard, expected: null});
-	if (! answer.conflict)
-		return {file: file, card: card, text: vcard, how: 'added'};
-	if (answer.current === vcard)
-		return {file: file, card: card, text: vcard, how: 'there'};
+	// one with its UID under another name - as a CardDAV client names its own - is found too,
+	// in the book that is open
+	let uid = text(card, 'UID');
+	let twin = uid && currentBook == book && ! loading
+		? cards.find(c => ! c.unreadable && ! c.several && c.file != file && text(c.card, 'UID') == uid) : null;
+	if (twin != null) {
+		if (sameCard(twin.text, vcard))
+			return {file: twin.file, card: twin.card, text: twin.text, how: 'there'};
+	} else {
+		let answer = await host('saveCard', {book: book, file: file, vcard: vcard, expected: null});
+		if (! answer.conflict)
+			return {file: file, card: card, text: vcard, how: 'added'};
+		if (sameCard(answer.current, vcard))
+			return {file: file, card: card, text: answer.current, how: 'there'};
+	}
 	card.props = card.props.filter(p => p.name != 'UID').concat([parseLine('UID:' + newUid())]);
 	vcard = serialise(card.props.map(p => p.raw));
 	file = fileFor(card);

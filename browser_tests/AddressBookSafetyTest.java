@@ -83,6 +83,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "deleteChangedElsewhere", d, () -> deleteChangedElsewhere(d, api, data));
                 scenario(failures, "changedAgainWhileAsked", d, () -> changedAgainWhileAsked(d, api, data));
                 scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
+                scenario(failures, "importFindsByUid", d, () -> importFindsByUid(d, api, data));
                 scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
                 scenario(failures, "moveOnPressOnce", d, () -> moveOnPressOnce(d, api, data));
                 scenario(failures, "deletedBookStaysDeleted", d, () -> deletedBookStaysDeleted(d, api, data));
@@ -424,6 +425,49 @@ public class AddressBookSafetyTest {
         AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
         AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
         System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
+    }
+
+    // An import knows a contact already there by its UID, under whatever name it has: one whose
+    // UID no file name could hold, one a CardDAV client stored under a name of its own, and one
+    // the Custom Apps version stored as the quoted-printable it was imported as.
+    static void importFindsByUid(WebDriver d, UserContext api, String data) {
+        openBook(d, "default", "Contacts", "Imp One");
+        String odd = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:5AD380FD-B2DE-4261:ABPerson\r\nFN:Odd Uid\r\nN:Uid;Odd;;;\r\nEND:VCARD\r\n";
+        importAndWait(d, odd);
+        String again = importAndWait(d, odd);
+        AddressBookTest.waitFor("the odd UID's contact to be stored", () -> count(api, data + "default", "FN:Odd Uid") >= 1);
+        WebDriver.sleep(1500);
+        if (count(api, data + "default", "FN:Odd Uid") != 1 || ! again.contains("1 already here"))
+            throw new AssertionError("A contact whose UID no file name holds, imported again, should be found there: " + again
+                    + ", stored " + count(api, data + "default", "FN:Odd Uid"));
+        String dav = "BEGIN:VCARD\r\nVERSION:3.0\r\nUID:dav-1\r\nFN:Dav Named\r\nN:Named;Dav;;;\r\nEND:VCARD\r\n";
+        write(d, "resource-17.vcf", dav);
+        openBook(d, "default", "Contacts", "Dav Named");
+        String davAgain = importAndWait(d, dav);
+        String qp21 = AddressBookFormatsTest.android("old-qp-1", "Zoë Old", "Zoë", "Old", "imported long ago");
+        write(d, "old-qp-1.vcf", qp21);
+        openBook(d, "default", "Contacts", "Zoë Old");
+        String oldAgain = importAndWait(d, qp21);
+        // the api's view trails the page's writes: until both files are seen, and a moment more
+        AddressBookTest.waitFor("the files written here to be seen", () -> count(api, data + "default", "UID:dav-1") >= 1
+                && count(api, data + "default", "UID:old-qp-1") >= 1);
+        WebDriver.sleep(2000);
+        if (count(api, data + "default", "UID:dav-1") != 1 || ! davAgain.contains("1 already here"))
+            throw new AssertionError("A contact a CardDAV client stored under its own name should be found there: " + davAgain
+                    + ", stored " + count(api, data + "default", "UID:dav-1"));
+        if (count(api, data + "default", "UID:old-qp-1") != 1 || count(api, data + "default", "FN:Zoë Old") != 0 || ! oldAgain.contains("1 already here"))
+            throw new AssertionError("A contact the Custom Apps version stored as quoted-printable should be found there: " + oldAgain);
+        System.out.println("  ok   an import knows a contact already there by its UID, under any name or encoding ("
+                + again + " / " + davAgain + " / " + oldAgain + ")");
+    }
+
+    // a file put in the open book as another app would, from the page around Address Book
+    static void write(WebDriver d, String file, String text) {
+        d.script("window.__wrote = null; window.__addressBook.writeContactCard('default', arguments[0], arguments[1])"
+                + ".then(() => window.__wrote = 'done', e => window.__wrote = 'failed ' + e); return 1;", file, text);
+        d.waitForScript("the file written", "window.__wrote != null", 60_000);
+        if (! "done".equals(String.valueOf(d.script("return window.__wrote"))))
+            throw new IllegalStateException("Could not write " + file + ": " + d.script("return window.__wrote"));
     }
 
     // Move moves once, on a press of Move: picking a book alone - as the arrow keys do on a
