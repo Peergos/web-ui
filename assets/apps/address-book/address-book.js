@@ -527,8 +527,13 @@ async function loadCards(book) {
 	return list.map(c => {
 		let parsed = parseCards(c.vcard);
 		// text: the card exactly as read, which a save or a delete says it expects to find
-		if (parsed.length > 0)
+		if (parsed.length == 1)
 			return {file: c.file, card: parsed[0], text: c.vcard};
+		// A file of several contacts, as a copy into the book may leave, isn't edited or moved
+		// as its first one, which would lose the rest: each can be made a contact of its own.
+		if (parsed.length > 1)
+			return {file: c.file, card: {props: [parseLine('FN:' + escapeText(displayName(parsed[0]) + ' and ' + (parsed.length - 1) + ' more'))]},
+				cards: parsed, text: c.vcard, several: true};
 		// A file that isn't a vCard at all still shows, by its name, so it can be deleted
 		// rather than lie there unseen.
 		return {file: c.file, card: {props: [parseLine('FN:' + escapeText(c.file))]}, text: c.vcard, unreadable: true};
@@ -740,6 +745,35 @@ async function moveContact(entry, target) {
 	}
 }
 
+// Makes each contact in a file of several a contact of its own, as an import would, and then
+// deletes the file - unless it changed meanwhile, when it stays too.
+async function splitFile(entry) {
+	let book = currentBook;
+	let failed = 0;
+	status('Making each a contact', true);
+	for (let card of entry.cards) {
+		if (!prop(card, 'UID'))
+			card.props.push(parseLine('UID:' + newUid()));
+		try {
+			await addCard(book, card);
+		} catch (e) {
+			failed++;
+		}
+	}
+	if (failed > 0) {
+		status(failed + ' of them could not be made contacts, so the file stays');
+	} else {
+		try {
+			let answer = await host('deleteCard', {book: book, file: entry.file, expected: entry.text});
+			status(answer.conflict ? 'Each is a contact now. The file had changed elsewhere, so it stays too' : 'Each is a contact of its own now');
+		} catch (e) {
+			status('Each is a contact now, but the file could not be deleted');
+		}
+	}
+	if (currentBook == book)
+		await reopen(book, null);
+}
+
 async function importText(textContent) {
 	let parsed = parseCards(textContent);
 	if (parsed.length == 0) {
@@ -844,6 +878,10 @@ function renderBooks() {
 	document.getElementById('deleteBookButton').disabled = currentBook == DEFAULT_BOOK;
 }
 
+function entryMatches(entry, query) {
+	return entry.several ? entry.cards.some(card => matches(card, query)) : matches(entry.card, query);
+}
+
 function matches(card, query) {
 	if (!query) return true;
 	let haystack = [displayName(card), text(card, 'ORG')]
@@ -867,7 +905,7 @@ function drawContacts(list) {
 		return;
 	}
 	let query = document.getElementById('search').value.trim();
-	let shown = cards.filter(c => matches(c.card, query))
+	let shown = cards.filter(c => entryMatches(c, query))
 		.sort((a, b) => sortKey(a.card).localeCompare(sortKey(b.card)));
 	if (shown.length == 0) {
 		list.appendChild(el('li', {class: 'empty', text: cards.length == 0 ? 'No contacts yet' : 'No matches'}));
@@ -881,7 +919,7 @@ function drawContacts(list) {
 			letter = first;
 			list.appendChild(el('li', {class: 'letter', text: letter}));
 		}
-		let sub = c.unreadable ? "Can't be read" : text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
+		let sub = c.unreadable ? "Can't be read" : c.several ? c.cards.length + ' contacts in one file' : text(c.card, 'ORG') ? splitStructured(prop(c.card, 'ORG').value)[0]
 			: (prop(c.card, 'EMAIL') || prop(c.card, 'TEL') || {value: ''}).value;
 		list.appendChild(el('li', {class: 'card'}, [
 			row(c.file == selectedFile, () => selectContact(c.file), [
@@ -917,6 +955,19 @@ function renderDetail() {
 			el('p', {text: "This file can't be read as a contact. Here is how it starts:"}),
 			el('pre', {class: 'unreadable', text: entry.text.substring(0, 400)}),
 			el('div', {class: 'actions'}, [el('button', {class: 'danger', text: 'Delete', onclick: () => deleteContact(entry)})])
+		]));
+		return;
+	}
+	if (entry.several) {
+		pane.appendChild(el('div', {class: 'detail'}, [
+			backButton(),
+			el('h1', {text: entry.file}),
+			el('p', {text: 'This file holds ' + entry.cards.length + ' contacts. To edit or move one, first make each a contact of its own:'}),
+			el('ul', {class: 'several'}, entry.cards.map(card => el('li', {text: displayName(card)}))),
+			el('div', {class: 'actions'}, [
+				el('button', {class: 'primary', text: 'Make each a contact', onclick: () => splitFile(entry)}),
+				el('button', {class: 'danger', text: 'Delete', onclick: () => deleteContact(entry)})
+			])
 		]));
 		return;
 	}

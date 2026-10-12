@@ -45,6 +45,7 @@ public class AddressBookFormatsTest {
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "quotedPrintableByType", d, () -> quotedPrintableByType(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "everyCard", d, () -> everyCard(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "severalInOneFile", d, () -> severalInOneFile(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeepMore", d, () -> editsKeepMore(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "unreadable", d, () -> unreadable(d, api, book));
@@ -119,6 +120,34 @@ public class AddressBookFormatsTest {
         AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + change
                 + " document.querySelector('#detail button[type=submit]').click(); return 1;");
         AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+    }
+
+    // A file of several contacts, as a copy into the book may leave, shows as one entry naming
+    // them, which isn't edited or moved as its first contact - that lost the others - and Make
+    // each a contact turns it into a file a contact, losing none.
+    static void severalInOneFile(WebDriver d, UserContext api, String book) {
+        AddressBookSafetyTest.elsewhere(d, "window.__addressBook.writeContactCard('default', 'pair-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:ann-1\\r\\nFN:Ann One\\r\\nN:One;Ann;;;\\r\\nEND:VCARD"
+                + "\\r\\nBEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:ben-2\\r\\nFN:Ben Two\\r\\nN:Two;Ben;;;\\r\\nEND:VCARD\\r\\n')");
+        AddressBookSafetyTest.openBook(d, "default", "Contacts", "Ann One and 1 more");
+        AddressBookTest.inFrame(d, "const s = document.getElementById('search'); s.value = 'Ben'; s.dispatchEvent(new Event('input')); return 1;");
+        Object found = AddressBookTest.inFrame(d, "return [...document.querySelectorAll('#contacts .list-row')].map(r => r.textContent.trim()).join('|')");
+        AddressBookTest.inFrame(d, "const s = document.getElementById('search'); s.value = ''; s.dispatchEvent(new Event('input')); return 1;");
+        if (! String.valueOf(found).contains("Ann One and 1 more"))
+            throw new AssertionError("A search for any contact in a file of several should find the file: " + found);
+        AddressBookTest.inFrame(d, "selectContact('pair-1.vcf'); return 1;");
+        Object page = AddressBookTest.waitInFrame(d, "its page", "const p = document.getElementById('detail');"
+                + " return p.textContent.includes('Make each a contact') ? p.textContent + ([...p.querySelectorAll('button')].some(b => b.textContent.trim() === 'Edit') ? ' [Edit]' : '') : null");
+        if (! String.valueOf(page).contains("Ann One") || ! String.valueOf(page).contains("Ben Two") || String.valueOf(page).contains("[Edit]"))
+            throw new AssertionError("A file of several should name them all, and not be edited as one: " + page);
+        AddressBookTest.inFrame(d, "[...document.querySelectorAll('#detail button')].find(b => b.textContent.trim() === 'Make each a contact').click(); return 1;");
+        AddressBookTest.waitInFrame(d, "each a contact", "return document.getElementById('status').textContent === 'Each is a contact of its own now' ? true : null");
+        AddressBookTest.waitFor("the file of both to go", () -> AddressBookTest.stored(api, book).stream().noneMatch(c -> c.contains("Ann One") && c.contains("Ben Two")));
+        String ann = "|" + stored(api, book, "ann-1") + "|", ben = "|" + stored(api, book, "ben-2") + "|";
+        if (! ann.contains("|FN:Ann One|") || ! ben.contains("|FN:Ben Two|"))
+            throw new AssertionError("Each should be a contact of its own: " + ann + " / " + ben);
+        AddressBookTest.waitInFrame(d, "both in the list", "const r = [...document.querySelectorAll('#contacts .list-row')].map(x => x.textContent);"
+                + " return r.some(x => x.includes('Ann One') && ! x.includes('more')) && r.some(x => x.includes('Ben Two')) ? true : null");
+        System.out.println("  ok   a file of several contacts names them all, isn't edited as its first, and becomes one contact a file");
     }
 
     // An import reads every card a file has, as files are found: one cut short before the next,

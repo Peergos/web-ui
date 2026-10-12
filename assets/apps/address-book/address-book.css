@@ -196,6 +196,7 @@ aside, #list { display: flex; flex-direction: column; min-height: 0; border-righ
 .detail { max-width: 680px; margin: 0 auto; padding: 24px; }
 .detail-head { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
 .detail h1 { margin: 0 0 4px; font-size: 22px; font-weight: 600; overflow-wrap: break-word; }
+.detail ul.several { margin: 8px 0 16px; padding-left: 20px; }
 .detail-head > div { min-width: 0; }
 .detail-head .sub { color: var(--pg-muted); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
