@@ -200,6 +200,7 @@ aside, #list { display: flex; flex-direction: column; min-height: 0; border-righ
 .detail-head > div { min-width: 0; }
 .detail-head .sub { color: var(--pg-muted); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.actions .move { display: inline-flex; gap: 8px; }
 .field { display: grid; grid-template-columns: 120px 1fr; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--pg-track); }
 .field .label { font-size: 14px; color: var(--pg-muted); }
 .field .value { white-space: pre-wrap; word-break: break-word; }

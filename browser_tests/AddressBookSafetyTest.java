@@ -23,6 +23,9 @@ public class AddressBookSafetyTest {
             + " window.host = (t, p) => t === arguments[0] && (arguments[1] == null || p.book === arguments[1])"
             + "   ? new Promise(r => setTimeout(r, arguments[2])).then(() => window.__real(t, p)) : window.__real(t, p); return 1;";
     static final String RELEASE = "if (window.__real) window.host = window.__real; return 1;";
+    // the open contact moved to Big as a person moves it: the book picked, then Move pressed
+    static final String MOVE_TO_BIG = "const m = document.querySelector('#detail .move select'); m.value = 'big'; m.dispatchEvent(new Event('change'));"
+            + " document.querySelector('#detail .move button').click();";
     // lets the next named request through at once and holds back only its answer, for the given
     // time, as a slow answer from Peergos would be: once
     static final String HOLD_ANSWER_ONCE = "window.__real = window.__real || host; let once = true;"
@@ -81,6 +84,7 @@ public class AddressBookSafetyTest {
                 scenario(failures, "changedAgainWhileAsked", d, () -> changedAgainWhileAsked(d, api, data));
                 scenario(failures, "importAgain", d, () -> importAgain(d, api, data));
                 scenario(failures, "moveBesideTwin", d, () -> moveBesideTwin(d, api, data));
+                scenario(failures, "moveOnPressOnce", d, () -> moveOnPressOnce(d, api, data));
                 scenario(failures, "deletedBookStaysDeleted", d, () -> deletedBookStaysDeleted(d, api, data));
                 // last, as it leaves the view and opens a new one
                 scenario(failures, "answerAfterLeaving", d, () -> answerAfterLeaving(d));
@@ -241,9 +245,8 @@ public class AddressBookSafetyTest {
         AddressBookTest.inFrame(d, "selectContact('carol-1.vcf'); return 1;");
         AddressBookTest.waitInFrame(d, "the contact's move menu", "return document.querySelector('#detail select') ? true : null");
         AddressBookTest.inFrame(d, HOLD, "saveCard", null, 1500);
-        // the way a person moves it: the Move to menu
-        AddressBookTest.inFrame(d, "const m = document.querySelector('#detail select'); m.value = 'big'; m.dispatchEvent(new Event('change'));"
-                + " setTimeout(() => openBook('big'), 300); return 1;");
+        // the way a person moves it: the book picked, then Move
+        AddressBookTest.inFrame(d, MOVE_TO_BIG + " setTimeout(() => openBook('big'), 300); return 1;");
         AddressBookTest.waitInFrame(d, "the move to finish", "return document.getElementById('status').textContent.startsWith('Moved') ? true : null");
         AddressBookTest.inFrame(d, RELEASE);
         AddressBookTest.waitForStored(api, data + "big", "FN:Carol Current");
@@ -416,11 +419,37 @@ public class AddressBookSafetyTest {
         openBook(d, "default", "Contacts", "Twin Here");
         AddressBookTest.inFrame(d, "selectContact('twin-1.vcf'); return 1;");
         AddressBookTest.waitInFrame(d, "the contact's move menu", "return document.querySelector('#detail select') ? true : null");
-        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; const m = document.querySelector('#detail select'); m.value = 'big'; m.dispatchEvent(new Event('change')); return 1;");
+        AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + MOVE_TO_BIG + " return 1;");
         Object said = AddressBookTest.waitInFrame(d, "the move", "const t = document.getElementById('status').textContent; return t.startsWith('Moved') ? t : null");
         AddressBookTest.waitFor("both in the target", () -> count(api, data + "big", "FN:Twin") == 2);
         AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Twin") == 0);
         System.out.println("  ok   a move into a book where its name is taken keeps both there (" + said + ")");
+    }
+
+    // Move moves once, on a press of Move: picking a book alone - as the arrow keys do on a
+    // select in some browsers - moves nothing, and while a move is on its way neither the picker
+    // nor the button takes another go, so the contact can't end up in two books
+    static void moveOnPressOnce(WebDriver d, UserContext api, String data) {
+        elsewhere(d, "window.__addressBook.writeContactCard('default', 'mover-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:mover-1\\r\\nFN:Mover One\\r\\nN:One;Mover;;;\\r\\nEND:VCARD\\r\\n')");
+        openBook(d, "default", "Contacts", "Mover One");
+        AddressBookTest.inFrame(d, "selectContact('mover-1.vcf'); return 1;");
+        AddressBookTest.waitInFrame(d, "the move picker", "return document.querySelector('#detail .move select') ? true : null");
+        AddressBookTest.inFrame(d, "const m = document.querySelector('#detail .move select'); m.value = 'big'; m.dispatchEvent(new Event('change')); return 1;");
+        WebDriver.sleep(2000);
+        if (count(api, data + "big", "FN:Mover One") != 0)
+            throw new AssertionError("Picking a book alone should move nothing");
+        AddressBookTest.inFrame(d, HOLD, "saveCard", "big", 2000);
+        Object busy = AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; const b = document.querySelector('#detail .move button'); b.click(); b.click();"
+                + " return document.querySelector('#detail .move select').disabled && b.disabled");
+        AddressBookTest.waitInFrame(d, "the move", "return document.getElementById('status').textContent.startsWith('Moved') ? true : null");
+        AddressBookTest.inFrame(d, RELEASE);
+        AddressBookTest.waitFor("the contact in Big", () -> count(api, data + "big", "FN:Mover One") == 1);
+        WebDriver.sleep(1500);
+        if (! Boolean.TRUE.equals(busy) || count(api, data + "big", "FN:Mover One") != 1)
+            throw new AssertionError("A move should be made once, the picker and Move taking no other go while it is on its way: "
+                    + busy + ", " + count(api, data + "big", "FN:Mover One") + " in Big");
+        AddressBookTest.waitFor("none left behind", () -> count(api, data + "default", "FN:Mover One") == 0);
+        System.out.println("  ok   picking a book moves nothing until Move is pressed, and a move is made once");
     }
 
     // a Yes is to saving over the change it asked about: another made while the question was

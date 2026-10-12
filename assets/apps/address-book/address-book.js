@@ -776,7 +776,9 @@ async function moveContact(entry, target) {
 		placed = await addCard(target, parseCards(vcard)[0]);
 		moved = await host('deleteCard', {book: from, file: entry.file, expected: entry.text});
 	} catch (e) {
-		status('Could not move the contact');
+		status(placed ? 'Copied to the other book, but could not be removed from this one' : 'Could not move the contact');
+		if (paneVersion == pane)
+			renderDetail();
 		return;
 	}
 	let book = books.find(b => b.id == target);
@@ -1075,9 +1077,24 @@ function renderDetail() {
 	add('Birthday', form.bday ? new Date(form.bday + 'T00:00:00').toLocaleDateString() : form.bdayRaw);
 	add('Note', form.note);
 
+	// A book is picked, and then moved to by pressing Move: picking alone, as the arrow keys do on
+	// a select in some browsers, moves nothing. While a move is on its way neither takes another
+	// go, so a contact can't be sent to two books.
 	let others = books.filter(b => b.id != currentBook);
-	let move = others.length == 0 ? null : el('select', {onchange: e => { if (e.target.value) moveContact(entry, e.target.value); }},
-		[el('option', {value: '', text: 'Move to…'})].concat(others.map(b => el('option', {value: b.id, text: b.name}))));
+	let move = null;
+	if (others.length > 0) {
+		let target = el('select', {'aria-label': 'Move to'},
+			[el('option', {value: '', text: 'Move to…'})].concat(others.map(b => el('option', {value: b.id, text: b.name}))));
+		let go = el('button', {type: 'button', text: 'Move'});
+		go.disabled = true;
+		target.onchange = () => go.disabled = ! target.value;
+		go.onclick = () => {
+			target.disabled = go.disabled = true;
+			status('Moving', true);
+			moveContact(entry, target.value);
+		};
+		move = el('span', {class: 'move'}, [target, go]);
+	}
 
 	pane.appendChild(el('div', {class: 'detail'}, [
 		backButton(),
