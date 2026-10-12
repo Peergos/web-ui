@@ -95,8 +95,11 @@ module.exports = {
 	text-decoration: none;
 }
 
+/* the fade and the nudge only. The drive's menu moves to its place once it knows its height and
+   has to be there before it is focused: with its position animated too, the focus scrolls the
+   page to wherever the menu is on the way - below the page, for the last row. */
 .drop-enter-active, .drop-leave-active  {
-  transition: all 0.2s ease-out;
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
 }
 
 .drop-enter-from, .drop-leave-to {
