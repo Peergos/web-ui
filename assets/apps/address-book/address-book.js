@@ -280,7 +280,8 @@ function cardToForm(card) {
 	let bday = prop(card, 'BDAY');
 	// A card with only a formatted name - some exporters write no structured one - shows it in
 	// the first name, rather than empty name fields that would have it typed in again before
-	// it can be saved. Left as it is, it is saved as it was.
+	// it can be saved. Left as it is, its name is saved as it was, apart from the structured one
+	// a vCard 3.0 card must have.
 	let fn = text(card, 'FN').trim();
 	let named = (nc[0] || '').trim() || (nc[1] || '').trim();
 	let company = org ? splitStructured(org.value)[0] : '';
@@ -336,37 +337,49 @@ function formToCard(form, card) {
 	}
 	if (card != null)
 		card.props.filter(p => !MANAGED.includes(p.name)).forEach(p => lines.push(p.raw));
+	// The form shows the first of each of these: any after it, a second note or the name in
+	// another language, is kept as it was, after the first, which is the one other apps show.
+	let rest = name => {
+		if (card != null)
+			props(card, name).slice(1).forEach(p => lines.push(p.raw));
+	};
 
 	let namesSame = before && before.given == form.given && before.family == form.family;
 	let n = card && prop(card, 'N');
+	let parts = n ? splitStructured(n.value) : [];
+	while (parts.length < 5) parts.push('');
 	if (namesSame && n) {
 		lines.push(n.raw);
-	} else if (n || ver == '3.0' || form.given.trim() || form.family.trim()) {
-		let c = n ? splitStructured(n.value) : [];
-		while (c.length < 5) c.push('');
-		c[0] = form.family; c[1] = form.given;
-		lines.push('N:' + c.map(escapeText).join(';'));
+	} else if (n || ver == '3.0' || ! namesSame && (form.given.trim() || form.family.trim())) {
+		parts[0] = form.family; parts[1] = form.given;
+		lines.push(line(n ? n.group : '', 'N', n ? n.params : [], parts.map(escapeText).join(';')));
 	}
+	rest('N');
 	let fn = card && prop(card, 'FN');
 	if (namesSame && fn && fn.value.trim()) {
 		lines.push(fn.raw);
 	} else {
-		let name = [form.given, form.family].filter(x => x.trim()).join(' ') || form.org
+		// the whole name, with the parts of it the form doesn't show: Dr. John Q. Smith Jr.
+		let name = [parts[3], form.given, parts[2], form.family, parts[4]].filter(x => x && x.trim()).join(' ') || form.org
 			|| (form.emails[0] || {}).value || (form.tels[0] || {}).value || '';
-		lines.push('FN:' + escapeText(name));
+		lines.push(line(fn ? fn.group : '', 'FN', [], escapeText(name)));
 	}
-	let single = (name, value, previous, build) => {
+	rest('FN');
+	// A changed value keeps its group, which a label another app gave it hangs on, and its
+	// parameters, such as its language.
+	let single = (name, value, previous, build, keep) => {
 		let p = card && prop(card, name);
 		if (p && before && value == previous) lines.push(p.raw);
-		else if (value.trim()) lines.push(build(value));
+		else if (value.trim()) lines.push(line(p ? p.group : '', name, p ? p.params.filter(keep || (() => true)) : [], build(value)));
+		rest(name);
 	};
 	// the departments after the company name stay with it when only the name is changed
 	let units = card && prop(card, 'ORG') ? splitStructured(prop(card, 'ORG').value).slice(1) : [];
-	single('ORG', form.org, before && before.org, v => 'ORG:' + [v].concat(units).map(escapeText).join(';'));
-	single('TITLE', form.title, before && before.title, v => 'TITLE:' + escapeText(v));
-	single('BDAY', form.bday, before && before.bday,
-		v => 'BDAY:' + (ver == '4.0' ? v.replace(/-/g, '') : v));
-	single('NOTE', form.note, before && before.note, v => 'NOTE:' + escapeText(v));
+	single('ORG', form.org, before && before.org, v => [v].concat(units).map(escapeText).join(';'));
+	single('TITLE', form.title, before && before.title, v => escapeText(v));
+	// a birthday picked as a date is one now, whatever kind of value it was before
+	single('BDAY', form.bday, before && before.bday, v => ver == '4.0' ? v.replace(/-/g, '') : v, x => x.key != 'VALUE');
+	single('NOTE', form.note, before && before.note, v => escapeText(v));
 
 	let clean = s => s.replace(/[\r\n]+/g, ' ').trim();
 	form.tels.filter(t => clean(t.value)).forEach(t => {
@@ -391,7 +404,7 @@ function formToCard(form, card) {
 			lines.push(typedLine(a, 'ADR', a.kind, next.map(escapeText).join(';'), PLACE_TYPES, ver));
 	});
 	form.urls.filter(u => clean(u.value)).forEach(u => {
-		lines.push(u.orig && u.orig.value == u.value ? u.orig.raw : line(u.orig ? u.orig.group : '', 'URL', [], clean(u.value)));
+		lines.push(u.orig && u.orig.value == u.value ? u.orig.raw : line(u.orig ? u.orig.group : '', 'URL', u.orig ? u.orig.params : [], clean(u.value)));
 	});
 	lines.push('REV:' + revision());
 	return serialise(lines);

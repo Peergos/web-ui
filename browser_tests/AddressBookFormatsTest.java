@@ -44,6 +44,7 @@ public class AddressBookFormatsTest {
                 List<String> failures = new ArrayList<>();
                 AddressBookSafetyTest.scenario(failures, "quotedPrintable", d, () -> quotedPrintable(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "editsKeep", d, () -> editsKeep(d, api, book));
+                AddressBookSafetyTest.scenario(failures, "editsKeepMore", d, () -> editsKeepMore(d, api, book));
                 AddressBookSafetyTest.scenario(failures, "unreadable", d, () -> unreadable(d, api, book));
                 if (! failures.isEmpty())
                     throw new AssertionError("Failed: " + String.join("; ", failures));
@@ -116,6 +117,38 @@ public class AddressBookFormatsTest {
         AddressBookTest.inFrame(d, "document.getElementById('status').textContent = ''; " + change
                 + " document.querySelector('#detail button[type=submit]').click(); return 1;");
         AddressBookTest.waitInFrame(d, "the save", "return document.getElementById('status').textContent === 'Saved' ? true : null");
+    }
+
+    // An edit keeps the second of what the form shows the first of - another company, title or
+    // note, the name in another language - and a changed value keeps its group and parameters:
+    // the label an app tied to a website, a note's language. A changed name is written whole,
+    // with the parts of it the form doesn't show.
+    static void editsKeepMore(WebDriver d, UserContext api, String book) {
+        AddressBookSafetyTest.elsewhere(d, "window.__addressBook.writeContactCard('default', 'multi-1.vcf', 'BEGIN:VCARD\\r\\nVERSION:3.0\\r\\nUID:multi-1"
+                + "\\r\\nN:Smith;John;Quincy;Dr.;Jr.\\r\\nFN:Dr. John Quincy Smith Jr.\\r\\nFN;LANGUAGE=ja:スミス ジョン"
+                + "\\r\\nORG:Acme\\r\\nORG:Night School\\r\\nTITLE:Engineer\\r\\nTITLE:Tutor"
+                + "\\r\\nNOTE;LANGUAGE=en:first note\\r\\nNOTE:second note"
+                + "\\r\\nitem1.URL;TYPE=WORK:https://example.org/a\\r\\nitem1.X-ABLabel:Blog\\r\\nTEL;TYPE=CELL:+1 555 0111\\r\\nEND:VCARD\\r\\n')");
+        AddressBookSafetyTest.openBook(d, "default", "Contacts", "John Quincy Smith");
+        editAndSave(d, "multi-1.vcf", "const f = document.querySelector('#detail input[placeholder=\"Last name\"]'); f.value = 'Smyth'; f.dispatchEvent(new Event('input'));"
+                + " const n = document.querySelector('#detail textarea'); n.value = 'first note, edited'; n.dispatchEvent(new Event('input'));"
+                + " const u = document.querySelector('#detail input[type=url]'); u.value = 'https://example.org/b'; u.dispatchEvent(new Event('input'));");
+        String[] wanted = {"FN:Dr. John Quincy Smyth Jr.", "N:Smyth;John;Quincy;Dr.;Jr.", "FN;LANGUAGE=ja:スミス ジョン", "ORG:Acme", "ORG:Night School",
+                "TITLE:Engineer", "TITLE:Tutor", "NOTE;LANGUAGE=en:first note\\, edited", "NOTE:second note",
+                "item1.URL;TYPE=WORK:https://example.org/b", "item1.X-ABLabel:Blog", "TEL;TYPE=CELL:+1 555 0111"};
+        storedLine(api, book, "multi-1", "FN:", "FN:Dr. John Quincy Smyth Jr.");
+        String card = "|" + stored(api, book, "multi-1") + "|";
+        List<String> missing = Arrays.stream(wanted).filter(w -> ! card.contains("|" + w + "|")).collect(java.util.stream.Collectors.toList());
+        if (! missing.isEmpty())
+            throw new AssertionError("An edit should keep, and write whole, " + missing + ": " + card);
+        // the first of each stays first: it's the one other apps, and this one, show
+        String[][] firsts = {{"FN:Dr. John Quincy Smyth Jr.", "FN;LANGUAGE=ja:スミス ジョン"}, {"ORG:Acme", "ORG:Night School"},
+                {"TITLE:Engineer", "TITLE:Tutor"}, {"NOTE;LANGUAGE=en:first note\\, edited", "NOTE:second note"}};
+        List<String> moved = Arrays.stream(firsts).filter(f -> card.indexOf("|" + f[0] + "|") > card.indexOf("|" + f[1] + "|"))
+                .map(f -> f[0]).collect(java.util.stream.Collectors.toList());
+        if (! moved.isEmpty())
+            throw new AssertionError("An edit should keep the first of each first, as the one other apps show: " + moved + ": " + card);
+        System.out.println("  ok   an edit keeps a second name, company, title and note, after the first, a changed value's label and language, and writes a changed name whole");
     }
 
     // an edit keeps what it didn't touch: a phone stored as a tel: URI stays one, the departments
