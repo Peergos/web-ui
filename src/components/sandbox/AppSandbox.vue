@@ -799,7 +799,7 @@ module.exports = {
                 let appName =  that.isTemplateApp ? that.currentAppName.substring(0, that.currentAppName.indexOf("!")) : that.currentAppName;
                 let allowUnsafeEvalInCSP = that.permissionsMap.get(that.PERMISSION_CSP_UNSAFE_EVAL) != null;
                 let props = { appDevMode: appName === localAppDev, allowUnsafeEvalInCSP: allowUnsafeEvalInCSP, isPathWritable: that.isPathWritable(),
-                    htmlAnchor: that.htmlAnchor == null ? "" : that.htmlAnchor};
+                    htmlAnchor: that.htmlAnchor == null ? "" : that.htmlAnchor, isAppGallery: that.isAppGalleryMode};
                 let func = function() {
                     that.postMessage({type: 'init', appName: appName, appPath: that.appPath,
                     allowBrowsing: that.browserMode, theme: theme, chatId: that.currentChatId,

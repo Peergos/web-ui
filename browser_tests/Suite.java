@@ -20,6 +20,10 @@ public class Suite {
             // Before anything uploads: if the browser's BLAKE3 disagreed with the Java one,
             // every later hash in the run is built on it, and the failure to look at is this.
             run(failures, "browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));
+            // Before the links: the first of them puts the admin's own first two folders in a link,
+            // and the one it makes writable is recommended-apps, Custom Apps' page. From then on that
+            // no longer resolves as a public file, so Custom Apps can't be opened for the rest of the run.
+            run(failures, "Custom Apps, told Peergos' theme in its address", () -> CustomAppsThemeTest.run(args1));
             run(failures, "a secret link over several items", () -> MultiLinkCheck.run(args1));
             run(failures, "a secret link that can no longer be opened", () -> SecretLinkUnavailableTest.run(args1));
             run(failures, "every secret link at once, and adding to one", () -> LinksOverviewCheck.run(args1));
