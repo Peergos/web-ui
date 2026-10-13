@@ -123,7 +123,10 @@
 							</p>
 							<div v-else-if="activityOf(pair)" class="pg-activityrow">
 								<p class="pg-activity pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':act'] }"
-									:title="activityOf(pair, true)" @click="toggleExpand(pair.label + ':act')">{{ activityOf(pair, expanded[pair.label + ':act']) }}</p>
+									:title="activityOf(pair, true)" @click="toggleExpand(pair.label + ':act')">{{ activityOf(pair, expanded[pair.label + ':act']) }}<span
+									v-if="progressOf(pair) && progressOf(pair).file != null" class="pg-filebar" role="progressbar"
+									:aria-valuenow="progressOf(pair).file" aria-valuemin="0" aria-valuemax="100"><span
+									:style="{ width: progressOf(pair).file + '%' }"></span></span></p>
 								<span v-if="progressOf(pair)" class="pg-pct">{{ progressLabel(progressOf(pair)) }}</span>
 							</div>
 
@@ -135,10 +138,6 @@
 									<span :style="{ width: progressOf(pair).pct + '%' }"></span>
 								</div>
 								<div v-else class="pg-bar" role="progressbar" :aria-label="translate('SYNC.STATE.SYNCING')"><span></span></div>
-								<div v-if="progressOf(pair) && progressOf(pair).file != null" class="pg-bar pg-bar--determinate pg-bar--file"
-									role="progressbar" :aria-valuenow="progressOf(pair).file" aria-valuemin="0" aria-valuemax="100">
-									<span :style="{ width: progressOf(pair).file + '%' }"></span>
-								</div>
 							</template>
 
 							<div class="pg-card__foot">
