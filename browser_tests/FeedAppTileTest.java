@@ -64,10 +64,19 @@ public class FeedAppTileTest {
             List<String> results = new ArrayList<>();
             for (int i = 0; i < 2; i++) {
                 int index = i;
-                results.add(d.waitUntil("tile " + i + " to read its file and probe the host", () -> {
-                    Object r = inTile(d, index, "let el = document.getElementById('result'); return el ? el.textContent : null;");
-                    return r == null || String.valueOf(r).isEmpty() ? null : String.valueOf(r);
-                }, 60_000));
+                try {
+                    results.add(d.waitUntil("tile " + i + " to read its file and probe the host", () -> {
+                        Object r = inTile(d, index, "let el = document.getElementById('result'); return el ? el.textContent : null;");
+                        return r == null || String.valueOf(r).isEmpty() ? null : String.valueOf(r);
+                    }, 60_000));
+                } catch (IllegalStateException e) {
+                    System.out.println("  the tiles: " + d.scriptQuiet("return JSON.stringify([...document.querySelectorAll('" + OUTER + "')]"
+                            + ".map(f => f.getAttribute('src') + ' shown=' + (f.offsetParent != null)))"));
+                    System.out.println("  inside tile " + i + ": " + inTileState(d, index));
+                    if (d instanceof MarionetteDriver)
+                        System.out.println(((MarionetteDriver) d).loadReport());
+                    throw e;
+                }
                 System.out.println("  tile " + i + " says: " + results.get(i));
             }
             String all = String.join(" | ", results);
@@ -109,6 +118,26 @@ public class FeedAppTileTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** Where each level of a tile got to: the sandbox page, and the app's page inside it. */
+    static String inTileState(WebDriver d, int index) {
+        String where = "location.href + ' ' + document.readyState + ' inner=' + (() => {"
+                + " const f = document.querySelector('" + INNER + "'); return f ? f.getAttribute('src') : 'none'; })()";
+        StringBuilder state = new StringBuilder();
+        try {
+            d.script("document.querySelectorAll('" + OUTER + "').forEach((f, i) => f.setAttribute('data-tile-index', i)); return 1;");
+            d.switchToFrame(OUTER + "[data-tile-index='" + index + "']");
+            state.append("sandbox: ").append(d.scriptQuiet("return " + where));
+            d.switchToFrame(INNER);
+            state.append("; app page: ").append(d.scriptQuiet("return location.href + ' ' + document.readyState"
+                    + " + ' ' + (document.body ? document.body.innerText.replace(/\\s+/g, ' ').slice(0, 120) : 'no body')"));
+        } catch (RuntimeException e) {
+            state.append(" (stopped: ").append(e.getMessage()).append(")");
+        } finally {
+            d.switchToTop();
+        }
+        return state.toString();
     }
 
     static Object inTile(WebDriver d, int index, String body) {

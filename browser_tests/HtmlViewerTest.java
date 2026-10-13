@@ -260,6 +260,7 @@ public class HtmlViewerTest {
             // same from in here, so say what the frame holds and what the drive handed it.
             System.out.println("  frame holds: " + d.scriptQuiet("return ["
                     + "'href=' + location.href,"
+                    + "'src=' + (() => { try { return window.frameElement ? window.frameElement.getAttribute('src') : 'no frame element'; } catch (x) { return 'unreadable'; } })(),"
                     + "'readyState=' + document.readyState,"
                     + "'bodyLength=' + (document.body ? document.body.innerHTML.length : -1),"
                     + "'text=' + (document.body ? document.body.innerText"
@@ -275,6 +276,8 @@ public class HtmlViewerTest {
                     + "      + ' sizeLow=' + p.sizeLow() + ' sizeHigh=' + p.sizeHigh();"
                     + "  } catch (ex) { return 'threw: ' + ex; }"
                     + "})()"));
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
             throw e;
         }
     }

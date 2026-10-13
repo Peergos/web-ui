@@ -193,6 +193,8 @@ public class MarkdownLinksTest {
                     + "          'frameReady=' + v.isIframeInitialised"
                     + "         ].join(' ');"
                     + "})()"));
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
             throw e;
         }
     }

@@ -423,12 +423,20 @@ public class AddressBookTest {
     }
 
     static Object waitInFrame(WebDriver d, String what, String body, Object... args) {
-        return d.waitUntil(what, () -> {
-            try {
-                return inFrame(d, body, args);
-            } catch (RuntimeException e) {
-                return null;
-            }
-        }, 60_000);
+        try {
+            return d.waitUntil(what, () -> {
+                try {
+                    return inFrame(d, body, args);
+                } catch (RuntimeException e) {
+                    return null;
+                }
+            }, 60_000);
+        } catch (IllegalStateException e) {
+            System.out.println("  the frame: " + d.scriptQuiet("const f = document.getElementById('address-book-iframe');"
+                    + " return f ? 'src=' + f.getAttribute('src') : 'no frame'"));
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
+            throw e;
+        }
     }
 }

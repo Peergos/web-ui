@@ -332,7 +332,13 @@ public class MarionetteDriver implements WebDriver {
     private static String describe(Object error) {
         if (error instanceof Map) {
             Map m = (Map) error;
-            return m.get("error") + ": " + String.valueOf(m.get("message"));
+            String described = m.get("error") + ": " + String.valueOf(m.get("message"));
+            // a dialog the page or the browser opened is dismissed before the error is reported,
+            // so what it said is only here
+            Object data = m.get("data");
+            if (data instanceof Map && ((Map) data).get("text") != null)
+                described += " - it said: " + ((Map) data).get("text");
+            return described;
         }
         return String.valueOf(error);
     }
@@ -496,16 +502,68 @@ public class MarionetteDriver implements WebDriver {
         } catch (RuntimeException e) {
             why.append("\n  tab: unreachable (").append(e.getMessage()).append(")");
         }
-        // a navigation that never leaves about:blank can be one waiting on a content process
-        try {
-            why.append("\n  content processes: ").append(chromeScript(
-                    "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
-                            + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));"));
-        } catch (RuntimeException e) {
-            why.append("\n  content processes: unavailable (").append(e.getMessage()).append(")");
-        }
+        why.append("\n").append(loadReport());
         why.append("\n  ").append(windowSummary());
         return why.toString();
+    }
+
+    /** What firefox itself is doing about loading: every frame of the tab with the process it is
+     *  in and whether it is still loading, the service workers that can answer a navigation, the
+     *  connections per host, and the processes - as firefox lists them, and as the os does, since
+     *  a process still being launched is in the second list and not the first. For a page or a
+     *  frame that stays on about:blank, which on a windows runner sends no request at all. */
+    public String loadReport() {
+        StringBuilder report = new StringBuilder();
+        report.append("  frames:\n").append(chromeQuiet(
+                "const lines = [];"
+                + "const describe = (bc, depth) => {"
+                + "  const parts = ['bc' + bc.id];"
+                + "  try { parts.push('uri=' + (bc.currentURI ? bc.currentURI.spec : null)); } catch (e) {}"
+                + "  try { parts.push('remote=' + bc.currentRemoteType); } catch (e) {}"
+                + "  try { const wg = bc.currentWindowGlobal;"
+                + "        parts.push('doc=' + (wg && wg.documentURI ? wg.documentURI.spec : null) + ' pid=' + (wg ? wg.osPid : null)); } catch (e) {}"
+                + "  try { parts.push('loading=' + (bc.webProgress ? bc.webProgress.isLoadingDocument : null)); } catch (e) {}"
+                + "  lines.push('    ' + '  '.repeat(depth) + parts.join(' '));"
+                + "  let kids = [];"
+                + "  try { kids = typeof bc.getChildren === 'function' ? bc.getChildren() : bc.children; } catch (e) {}"
+                + "  for (const k of kids || []) describe(k, depth + 1);"
+                + "};"
+                + "describe(gBrowser.selectedBrowser.browsingContext, 0);"
+                + "return lines.join('\\n');"));
+        report.append("\n  service workers:\n").append(chromeQuiet(
+                "const swm = Cc['@mozilla.org/serviceworkers/manager;1'].getService(Ci.nsIServiceWorkerManager);"
+                + "const regs = swm.getAllRegistrations();"
+                + "const lines = [];"
+                + "for (let i = 0; i < regs.length; i++) {"
+                + "  const r = regs.queryElementAt(i, Ci.nsIServiceWorkerRegistrationInfo);"
+                + "  const w = r.activeWorker;"
+                + "  lines.push('    ' + r.scope + ' active=' + (w ? 'state' + w.state + ' fetch=' + w.handlesFetchEvents"
+                + "      + ' faults=' + w.navigationFaultCount : 'none')"
+                + "      + ' installing=' + !!r.installingWorker + ' waiting=' + !!r.waitingWorker);"
+                + "}"
+                + "return lines.join('\\n') || '    none';"));
+        report.append("\n  connections: ").append(chromeQuiet(
+                "const dash = Cc['@mozilla.org/network/dashboard;1'].getService(Ci.nsIDashboard);"
+                + "return new Promise(resolve => dash.requestHttpConnections(data => resolve(JSON.stringify("
+                + "  (data.connections || []).map(c => c.host + ':' + c.port + ' active=' + (c.active || []).length"
+                + "    + ' idle=' + (c.idle || []).length + ' halfOpen=' + (c.halfOpens || []).length)))));"));
+        report.append("\n  processes: ").append(chromeQuiet(
+                "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
+                + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));"));
+        if (browser != null) {
+            List<String> os = new ArrayList<>();
+            browser.descendants().forEach(h -> os.add(h.pid() + ""));
+            report.append("\n  os children of ").append(browser.pid()).append(": ").append(os);
+        }
+        return report.toString();
+    }
+
+    private String chromeQuiet(String body) {
+        try {
+            return String.valueOf(chromeScript(body));
+        } catch (RuntimeException e) {
+            return "    unavailable (" + e.getMessage() + ")";
+        }
     }
 
     /** Stamps the document we are leaving, so a navigation that times out can be told apart
