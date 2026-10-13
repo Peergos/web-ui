@@ -43,8 +43,14 @@ public class NewsFeedBlockTest {
 
             NewsFeedViewTest.signIn(d, url, me);
             NewsFeedViewTest.openFeed(d);
-            d.waitForScript("the post and its comment", "document.querySelector('#feed').textContent.includes(" + NewsFeedViewTest.js(post)
-                    + ") && document.querySelector('#feed').textContent.includes(" + NewsFeedViewTest.js(comment) + ")", 120_000);
+            try {
+                d.waitForScript("the post and its comment", "document.querySelector('#feed').textContent.includes(" + NewsFeedViewTest.js(post)
+                        + ") && document.querySelector('#feed').textContent.includes(" + NewsFeedViewTest.js(comment) + ")", 120_000);
+            } catch (IllegalStateException e) {
+                String shown = NewsFeedViewTest.feedText(d);
+                System.out.println("  the feed shows: " + (shown.length() > 600 ? shown.substring(0, 600) : shown));
+                throw e;
+            }
             if (NewsFeedViewTest.feedText(d).contains(HIDDEN))
                 throw new AssertionError("Nothing is hidden before blocking anyone");
             System.out.println("  ok   a friend's post and a comment on it reach the feed");

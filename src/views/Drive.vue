@@ -1065,7 +1065,8 @@ module.exports = {
 
 	beforeUnmount() {
 		window.removeEventListener('resize', this.onResize );
-
+		// an open still waiting for the apps would otherwise bring the drive back
+		this.closed = true;
 	},
 
 
@@ -3289,10 +3290,14 @@ module.exports = {
 			let that = this;
 			let path = this.path;
 			let ready = latestFile.isWrapper ? latestFile.getFile() : peergos.shared.util.Futures.of(latestFile);
-			ready.thenApply(latest => {
+			// a folder's sharing is read after its listing, so Share pressed as soon as the folder
+			// shows can come before it is in
+			let sharing = this.sharedWithState != null ? peergos.shared.util.Futures.of(this.sharedWithState)
+				: this.context.getDirectorySharingState(peergos.client.PathUtils.directoryToPath(path.length == 0 ? ["/"] : path));
+			ready.thenCompose(latest => sharing.thenApply(sharedWithState => {
 				that.filesToShare = [latest];
 				that.pathToFile = path;
-				let fileSharedWithState = that.sharedWithState.get(filename);
+				let fileSharedWithState = sharedWithState.get(filename);
 				let read_usernames = fileSharedWithState.readAccess.toArray([]);
 				let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
 				that.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
@@ -3301,7 +3306,7 @@ module.exports = {
 				that.allowReadWriteSharing = true;
 				that.allowCreateSecretLink = true;
 				that.showShare = true;
-			});
+			}));
 		},
 		closeShare() {
 			this.showShare = false;
@@ -3461,7 +3466,20 @@ module.exports = {
                     this.openFile(true)
                 },
 
-		openFile(writable) {
+        // Picks up an open that had to wait - for the apps, or for a listed file to be read. A listing
+        // arriving meanwhile empties the selection, which isn't the user changing their mind: going
+        // elsewhere, or picking something else, is.
+        resumeOpen(filename, path, writable, waited) {
+            let unchanged = this.selectedFiles.length == 0
+                || (this.selectedFiles.length == 1 && this.selectedFiles[0].getName() == filename);
+            let current = this.files.find(f => f.getName() == filename);
+            if (this.closed || this.getPath != path || this.picking || ! unchanged || current == null)
+                return;
+            this.selectedFiles = [current];
+            this.openFile(writable, waited);
+        },
+
+		openFile(writable, waited = 0) {
 		    // TODO: once we support selecting files re-enable this
 		    //if (this.selectedFiles.length == 0)
 		    //    return;
@@ -3471,6 +3489,15 @@ module.exports = {
             let that = this;
 		    var file = this.selectedFiles[0];
 		    var filename = file.getName();
+            // Which app opens a file depends on the apps installed, read once after sign-in. A file
+            // opened before they are in would skip them - its default app, and the choice between
+            // two that open it - for an inbuilt viewer, so it waits for them, ten seconds at most.
+            // A secret link reads no apps, so has none to wait for.
+            if (this.context.username != null && ! this.sandboxedApps.appsLoaded && waited < 100) {
+                let path = this.getPath;
+                setTimeout(() => that.resumeOpen(filename, path, writable, waited + 1), 100);
+                return;
+            }
 
 		    if (file.isArchiveEntry) {
 		        let archiveApp = this.archiveViewer(file);
@@ -3483,8 +3510,10 @@ module.exports = {
 		        return;
 		    }
 
-                    if (file.isWrapper)
-                        return file.getFile().thenApply(f => {that.openFile(writable)});
+            if (file.isWrapper) {
+                let path = this.getPath;
+                return file.getFile().thenApply(f => that.resumeOpen(filename, path, writable, waited));
+            }
 
             var app = this.getApp(file, this.getPath, writable);
             if (app != "hex" && app != "editor") {

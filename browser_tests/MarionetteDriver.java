@@ -29,6 +29,8 @@ public class MarionetteDriver implements WebDriver {
     private final List<String> frames = new ArrayList<>();
     private String recovery = "not attempted";
     private boolean firstLoad = true;
+    // the size a test asked for, which a browser started in place of this one is given too
+    private int[] windowSize;
 
     public MarionetteDriver(int port, Process browser) {
         this(port, browser, null);
@@ -72,20 +74,37 @@ public class MarionetteDriver implements WebDriver {
         }
     }
 
-    /** Replaces the browser with a freshly launched one and attaches to it. */
+    /** Replaces the browser with a freshly launched one and attaches to it.
+     *
+     *  The replacement is probed, as Browsers.launch probes the first: on a windows runner a fresh
+     *  browser can come up with its only window already gone, and nothing inside that browser gets
+     *  it back. The old one is stopped with its children, since killing only the parent leaves
+     *  its content processes to linger on a machine that is already struggling.
+     */
     private void relaunchBrowser() {
-        try {
-            socket.close();
-        } catch (IOException ignored) {
-            // it is being replaced
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+                // it is being replaced
+            }
+            HttpDriver.stop(browser, marker);
+            Browsers.Launched l = relaunch.get();
+            browser = l.process();
+            marker = l.profile();
+            frames.clear();
+            messageId = 0;
+            try {
+                attach(l.port());
+                command("WebDriver:ExecuteScript", Map.of("script", "return 1", "args", List.of()));
+                if (windowSize != null)
+                    setWindowRect(windowSize[0], windowSize[1]);
+                return;
+            } catch (RuntimeException unusable) {
+                System.out.println("  the fresh browser came up with no window to drive, starting another ("
+                        + unusable.getMessage() + ")");
+            }
         }
-        browser.destroyForcibly();
-        Browsers.Launched l = relaunch.get();
-        browser = l.process();
-        marker = l.profile();
-        frames.clear();
-        messageId = 0;
-        attach(l.port());
     }
 
     /** Opens a session with the settings every navigation in the suite relies on. Used again
@@ -313,7 +332,13 @@ public class MarionetteDriver implements WebDriver {
     private static String describe(Object error) {
         if (error instanceof Map) {
             Map m = (Map) error;
-            return m.get("error") + ": " + String.valueOf(m.get("message"));
+            String described = m.get("error") + ": " + String.valueOf(m.get("message"));
+            // a dialog the page or the browser opened is dismissed before the error is reported,
+            // so what it said is only here
+            Object data = m.get("data");
+            if (data instanceof Map && ((Map) data).get("text") != null)
+                described += " - it said: " + ((Map) data).get("text");
+            return described;
         }
         return String.valueOf(error);
     }
@@ -335,6 +360,7 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void setWindowRect(int width, int height) {
+        windowSize = new int[] {width, height};
         // Best effort, as on the http drivers: headless firefox will not go below about 500px
         // wide, and a test that needs narrower than that reads back what it actually got.
         try {
@@ -356,8 +382,11 @@ public class MarionetteDriver implements WebDriver {
         // about once in thirty, and then never arrives however long it is given, where one that
         // does arrive takes seconds. So that load gets a short wait and one more attempt, which
         // turns ten minutes of failure into a retry that almost always lands.
-        boolean first = firstLoad;
-        firstLoad = false;
+        // about:blank is no load at all - tests use it to leave a page - so it does not use up the
+        // first load's short wait on the page that follows it, which is the one that can be lost
+        boolean first = firstLoad && ! url.startsWith("about:");
+        if (first)
+            firstLoad = false;
         int attempts = first ? 3 : "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 2 : 3;
         long timeout = first ? Math.min(60_000, pageLoadTimeout()) : pageLoadTimeout();
         if (first)
@@ -380,13 +409,19 @@ public class MarionetteDriver implements WebDriver {
                 settle();
                 return;
             } catch (IllegalStateException e) {
-                if (! String.valueOf(e.getMessage()).contains("timed out"))
+                boolean timedOut = String.valueOf(e.getMessage()).contains("timed out");
+                // A fresh browser can also lose its only window on that first load, and then
+                // nothing inside it gets one back: another browser is the way on, as for a load
+                // that was lost.
+                boolean windowLost = first && ! timedOut && isDiscardedWindow(e);
+                if (! timedOut && ! windowLost)
                     throw e;
                 last = e;
-                if (marked && arrivedAt(url, mark))
+                if (timedOut && marked && arrivedAt(url, mark))
                     return;
                 if (attempt + 1 < attempts) {
-                    System.out.println("  page load timed out, navigating again: " + url);
+                    System.out.println(timedOut ? "  page load timed out, navigating again: " + url
+                            : "  the browser lost its window on its first load, loading again: " + url);
                     // A first load that was lost has been seen lost again on every retry in that
                     // same browser, while a fresh browser nearly always loads. So the first load
                     // alone is retried in a new browser, where one can be started.
@@ -396,6 +431,8 @@ public class MarionetteDriver implements WebDriver {
                         setPageLoadTimeout(timeout);
                         continue;
                     }
+                    if (windowLost)
+                        throw e;
                     // A load that never finished leaves the tab waiting on it, so asking for
                     // that same page again is the step which has already failed. The load is
                     // stopped first, which is what makes the next attempt a different one.
@@ -465,16 +502,68 @@ public class MarionetteDriver implements WebDriver {
         } catch (RuntimeException e) {
             why.append("\n  tab: unreachable (").append(e.getMessage()).append(")");
         }
-        // a navigation that never leaves about:blank can be one waiting on a content process
-        try {
-            why.append("\n  content processes: ").append(chromeScript(
-                    "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
-                            + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));"));
-        } catch (RuntimeException e) {
-            why.append("\n  content processes: unavailable (").append(e.getMessage()).append(")");
-        }
+        why.append("\n").append(loadReport());
         why.append("\n  ").append(windowSummary());
         return why.toString();
+    }
+
+    /** What firefox itself is doing about loading: every frame of the tab with the process it is
+     *  in and whether it is still loading, the service workers that can answer a navigation, the
+     *  connections per host, and the processes - as firefox lists them, and as the os does, since
+     *  a process still being launched is in the second list and not the first. For a page or a
+     *  frame that stays on about:blank, which on a windows runner sends no request at all. */
+    public String loadReport() {
+        StringBuilder report = new StringBuilder();
+        report.append("  frames:\n").append(chromeQuiet(
+                "const lines = [];"
+                + "const describe = (bc, depth) => {"
+                + "  const parts = ['bc' + bc.id];"
+                + "  try { parts.push('uri=' + (bc.currentURI ? bc.currentURI.spec : null)); } catch (e) {}"
+                + "  try { parts.push('remote=' + bc.currentRemoteType); } catch (e) {}"
+                + "  try { const wg = bc.currentWindowGlobal;"
+                + "        parts.push('doc=' + (wg && wg.documentURI ? wg.documentURI.spec : null) + ' pid=' + (wg ? wg.osPid : null)); } catch (e) {}"
+                + "  try { parts.push('loading=' + (bc.webProgress ? bc.webProgress.isLoadingDocument : null)); } catch (e) {}"
+                + "  lines.push('    ' + '  '.repeat(depth) + parts.join(' '));"
+                + "  let kids = [];"
+                + "  try { kids = typeof bc.getChildren === 'function' ? bc.getChildren() : bc.children; } catch (e) {}"
+                + "  for (const k of kids || []) describe(k, depth + 1);"
+                + "};"
+                + "describe(gBrowser.selectedBrowser.browsingContext, 0);"
+                + "return lines.join('\\n');"));
+        report.append("\n  service workers:\n").append(chromeQuiet(
+                "const swm = Cc['@mozilla.org/serviceworkers/manager;1'].getService(Ci.nsIServiceWorkerManager);"
+                + "const regs = swm.getAllRegistrations();"
+                + "const lines = [];"
+                + "for (let i = 0; i < regs.length; i++) {"
+                + "  const r = regs.queryElementAt(i, Ci.nsIServiceWorkerRegistrationInfo);"
+                + "  const w = r.activeWorker;"
+                + "  lines.push('    ' + r.scope + ' active=' + (w ? 'state' + w.state + ' fetch=' + w.handlesFetchEvents"
+                + "      + ' faults=' + w.navigationFaultCount : 'none')"
+                + "      + ' installing=' + !!r.installingWorker + ' waiting=' + !!r.waitingWorker);"
+                + "}"
+                + "return lines.join('\\n') || '    none';"));
+        report.append("\n  connections: ").append(chromeQuiet(
+                "const dash = Cc['@mozilla.org/network/dashboard;1'].getService(Ci.nsIDashboard);"
+                + "return new Promise(resolve => dash.requestHttpConnections(data => resolve(JSON.stringify("
+                + "  (data.connections || []).map(c => c.host + ':' + c.port + ' active=' + (c.active || []).length"
+                + "    + ' idle=' + (c.idle || []).length + ' halfOpen=' + (c.halfOpens || []).length)))));"));
+        report.append("\n  processes: ").append(chromeQuiet(
+                "return ChromeUtils.requestProcInfo().then(info => JSON.stringify("
+                + "info.children.map(c => c.type + (c.origin ? ' ' + c.origin : '') + ' ' + c.pid)));"));
+        if (browser != null) {
+            List<String> os = new ArrayList<>();
+            browser.descendants().forEach(h -> os.add(h.pid() + ""));
+            report.append("\n  os children of ").append(browser.pid()).append(": ").append(os);
+        }
+        return report.toString();
+    }
+
+    private String chromeQuiet(String body) {
+        try {
+            return String.valueOf(chromeScript(body));
+        } catch (RuntimeException e) {
+            return "    unavailable (" + e.getMessage() + ")";
+        }
     }
 
     /** Stamps the document we are leaving, so a navigation that times out can be told apart

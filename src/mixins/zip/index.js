@@ -59,8 +59,9 @@ module.exports = {
             }
         },
         // progress.toastId names the toast showing this zip, and progress.transfer, when there is one,
-        // is how its Cancel reaches the loop writing it
-        zipFiles(zipFilename, allFiles, progress) {
+        // is how its Cancel reaches the loop writing it. again: whether this is the second try at an
+        // archive the browser dropped as it started.
+        zipFiles(zipFilename, allFiles, progress, again) {
             let that = this;
             let mimeType = "application/zip";
             let toastId = progress.toastId != null ? progress.toastId : zipFilename;
@@ -70,6 +71,8 @@ module.exports = {
             let zipFuture = peergos.shared.util.Futures.incomplete();
             let disposeFrame = null;
             let interceptUrl = null;
+            // set when this try gives way to another, which then completes the archive's future
+            let startingAgain = false;
             // The same record the file downloader keeps: an archive that is being written to a
             // stream nobody is reading looks exactly like one that is merely slow, and only
             // whether the browser asked for it tells the two apart.
@@ -81,10 +84,29 @@ module.exports = {
                     if (e.data.unknownDownload === interceptUrl)
                         that.showToastError("The browser stopped the download before it started."
                             + " Please try again.");
-                    // cancelled from the browser's own downloads list rather than from our toast
-                    if (e.data.cancelledDownload === interceptUrl && transfer != null && transfers.cancel(toastId) != null) {
-                        that.$toast.dismiss(toastId);
-                        that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000});
+                    if (e.data.cancelledDownload === interceptUrl && transfer != null) {
+                        // dropped by the browser moments after it was served, as the file downloader
+                        // explains: this try stops, and another starts under the same toast, once
+                        if (e.data.after < 1000 && ! again && ! transfer.cancelled) {
+                            startingAgain = true;
+                            transfers.cancel(toastId);
+                            if (disposeFrame != null)
+                                disposeFrame();
+                            let retry = Object.assign({}, progress, {done: 0, transfer: transfers.start(toastId, 'download')});
+                            that.zipFiles(zipFilename, allFiles, retry, true).thenApply(res => {
+                                zipFuture.complete(res);
+                                return true;
+                            }).exceptionally(t => {
+                                zipFuture.completeExceptionally(t);
+                                return null;
+                            });
+                            return;
+                        }
+                        // cancelled from the browser's own downloads list rather than from our toast
+                        if (transfers.cancel(toastId) != null) {
+                            that.$toast.dismiss(toastId);
+                            that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000});
+                        }
                     }
                 };
                 navigator.serviceWorker.addEventListener('message', lostListener);
@@ -107,14 +129,22 @@ module.exports = {
                     interceptUrl = url
                     clearTimeout(handshakeTimer)
                     disposeFrame = downloadUrl.startDownload(url)
-                    that.startZipDownload(zipFilename, allFiles, progress, zipFuture, writerContainer);
+                    // the loop's own end, which a try that has given way to another doesn't report
+                    let zipped = peergos.shared.util.Futures.incomplete();
+                    zipped.thenApply(res => {
+                        if (! startingAgain)
+                            zipFuture.complete(res);
+                        return res;
+                    });
+                    that.startZipDownload(zipFilename, allFiles, progress, zipped, writerContainer);
                 },function (seekHi, seekLo, seekLength, uuid) {},undefined, progress.max);
             writerContainer.writer = fileStream.getWriter();
             if (transfer != null) {
                 transfer.onCancel(() => {
                     clearTimeout(handshakeTimer);
                     writerContainer.writer.abort('Download cancelled').catch(() => {});
-                    zipFuture.complete(false);
+                    if (! startingAgain)
+                        zipFuture.complete(false);
                 });
             }
             zipFuture.thenApply(res => {

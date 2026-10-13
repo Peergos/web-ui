@@ -60,10 +60,19 @@ public class CalendarApp {
         // data-pending is the app's own count of reads still outstanding, and it is only
         // set once a load has begun - the bar's own hidden/shown is a delayed presentation
         // of the same thing and is no answer to "has it loaded".
-        d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
-                "const bar = document.getElementById('load-progress');"
-                        + "return !!bar && bar.dataset.pending === '0'"
-                        + " && !!document.querySelector('[role=\"gridcell\"]')"), 120_000);
+        try {
+            d.waitUntil("the calendar app to load", () -> inFrameQuiet(d,
+                    "const bar = document.getElementById('load-progress');"
+                            + "return !!bar && bar.dataset.pending === '0'"
+                            + " && !!document.querySelector('[role=\"gridcell\"]')"), 120_000);
+        } catch (IllegalStateException e) {
+            System.out.println("  the calendar frame: " + d.scriptQuiet("const f = document.querySelector('" + FRAME + "');"
+                    + " return f ? 'src=' + f.getAttribute('src') : 'no frame'"));
+            System.out.println("  inside it: " + inFrameText(d));
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
+            throw e;
+        }
     }
 
     /** Runs a script inside the app and comes back out, whatever it does. */
@@ -85,8 +94,28 @@ public class CalendarApp {
         }
     }
 
+    private static Object inFrameText(WebDriver d) {
+        try {
+            d.switchToFrame(FRAME);
+        } catch (RuntimeException e) {
+            return "could not enter it: " + e.getMessage();
+        }
+        try {
+            return d.scriptQuiet("return location.href + ' ' + document.readyState + ' '"
+                    + " + (document.body ? document.body.innerText.replace(/\\s+/g, ' ').slice(0, 160) : 'no body')");
+        } finally {
+            d.switchToTop();
+        }
+    }
+
     public static void waitInFrame(WebDriver d, String what, String booleanBody, long timeoutMillis) {
-        d.waitUntil(what, () -> inFrameQuiet(d, "return !!(" + booleanBody + ")"), timeoutMillis);
+        try {
+            d.waitUntil(what, () -> inFrameQuiet(d, "return !!(" + booleanBody + ")"), timeoutMillis);
+        } catch (IllegalStateException e) {
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
+            throw e;
+        }
     }
 
     /** Sets a form control and tells the page, the way typing into it would. */

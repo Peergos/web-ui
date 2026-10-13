@@ -74,6 +74,19 @@ public class Proxy {
         stats.merge(name, 1, Integer::sum);
     }
 
+    // the storage requests seen, newest last, as "<millis> <path>"
+    private final Deque<String> recent = new ConcurrentLinkedDeque<>();
+
+    /** The storage requests that arrived since a moment, by path: what a count alone can't say. */
+    public List<String> storageSince(long millis) {
+        List<String> since = new ArrayList<>();
+        for (String r : recent) {
+            if (Long.parseLong(r.substring(0, r.indexOf(' '))) >= millis)
+                since.add(r.substring(r.indexOf(' ') + 1));
+        }
+        return since;
+    }
+
     private static boolean isStorage(String path) {
         return path.startsWith("/api/v0/") || path.startsWith("/peergos/v0/");
     }
@@ -105,6 +118,9 @@ public class Proxy {
 
         if (isStorage(path)) {
             bump("storage_requests");
+            recent.add(System.currentTimeMillis() + " " + path);
+            while (recent.size() > 2000)
+                recent.poll();
             if (latencyMillis > 0)
                 WebDriver.sleep((long) latencyMillis);
             if (hangProb > 0 && Math.random() < hangProb) {

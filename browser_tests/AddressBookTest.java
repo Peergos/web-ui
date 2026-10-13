@@ -4,6 +4,7 @@ import peergos.shared.user.UserContext;
 import peergos.shared.user.fs.AsyncReader;
 import peergos.shared.user.fs.FileWrapper;
 import peergos.shared.util.PathUtil;
+import peergos.shared.util.Serialize;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -67,9 +68,7 @@ public class AddressBookTest {
                 // its menu row stays in reach in a short window - a laptop's, once the browser's
                 // own bars are off it - and in a phone's panel held sideways
                 String row = "const row = [...document.querySelectorAll('.app-navigation .menu-item')].find(m => m.textContent.includes('Address Book'));";
-                // sized by the page's own height: a window's frame takes some of it, more in some engines
-                int frame = ((Number) d.script("return window.outerHeight - window.innerHeight")).intValue();
-                d.setWindowRect(1366, 610 + frame);
+                pageHeight(d, 1366, 610);
                 Object reach = d.waitUntil("the short window", () -> d.scriptQuiet(row
                         + " const r = row.getBoundingClientRect(), s = document.querySelector('.app-navigation .navigation-storage').getBoundingClientRect();"
                         + " const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);"
@@ -78,7 +77,7 @@ public class AddressBookTest {
                 if (! "in reach".equals(reach))
                     throw new AssertionError("Address Book's menu row should be in reach in a short window: " + reach);
                 Object laptop = d.script("return innerWidth + 'x' + innerHeight");
-                d.setWindowRect(844, 390 + frame);
+                pageHeight(d, 844, 390);
                 MobileNavTest.toggleSidebar(d);
                 Object panel = d.waitUntil("the phone's panel", () -> d.scriptQuiet(row
                         + " if (innerWidth > 1024 || ! document.querySelector('.app-navigation.expanded')) return null;"
@@ -324,22 +323,27 @@ public class AddressBookTest {
         folder.uploadOrReplaceFile(name, new AsyncReader.ArrayBacked(bytes), bytes.length, api.network, api.crypto, () -> false, x -> {}).join();
     }
 
-    /** Every card in a book, as stored. */
+    /** Every card in a book, as stored. Each is read from the listing itself: one the app deletes
+     *  or replaces after the listing is gone by its name as well, and waiting for it there waits
+     *  for good. A card that can't be read means the book is listed again. */
     static List<String> stored(UserContext api, String bookPath) {
-        Optional<FileWrapper> dir = api.getByPath(bookPath).join();
-        if (dir.isEmpty())
-            return List.of();
-        List<String> cards = new ArrayList<>();
-        for (FileWrapper f : dir.get().getChildren(api.crypto.hasher, api.network).join()) {
-            if (f.getName().endsWith(".vcf")) {
-                try {
-                    cards.add(new String(NoAppsYetTest.read(api, bookPath + "/" + f.getName()), StandardCharsets.UTF_8));
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
+        for (int attempt = 1; ; attempt++) {
+            Optional<FileWrapper> dir = api.getByPath(bookPath).join();
+            if (dir.isEmpty())
+                return List.of();
+            try {
+                List<String> cards = new ArrayList<>();
+                for (FileWrapper f : dir.get().getChildren(api.crypto.hasher, api.network).join())
+                    if (f.getName().endsWith(".vcf"))
+                        cards.add(new String(Serialize.readFully(f.getInputStream(api.network, api.crypto, x -> {}).join(),
+                                f.getSize()).join(), StandardCharsets.UTF_8));
+                return cards;
+            } catch (RuntimeException e) {
+                if (attempt == 5)
+                    throw e;
+                WebDriver.sleep(1000);
             }
         }
-        return cards;
     }
 
     static String waitForStored(UserContext api, String bookPath, String text) {
@@ -380,6 +384,21 @@ public class AddressBookTest {
         }
     }
 
+    /** A window of the given width whose page is the given height. What a window's frame takes
+     *  differs between engines and needn't stay the same once the window is resized - Brave's page
+     *  came out 136px short of what the frame measured beforehand allowed for - so the page is
+     *  measured after each resize and the window corrected by the difference. */
+    static void pageHeight(WebDriver d, int width, int height) {
+        int window = height + ((Number) d.script("return window.outerHeight - window.innerHeight")).intValue();
+        for (int i = 0; i < 4; i++) {
+            d.setWindowRect(width, window);
+            int missing = height - ((Number) d.script("return window.innerHeight")).intValue();
+            if (missing == 0)
+                return;
+            window += missing;
+        }
+    }
+
     /** WebKitGTK's driver can't type into a frame from another origin: nothing in it is focusable
      *  to it, a text field included. Safari's driver is WebKit's too, and is taken to be the same. */
     static boolean canTypeInFrame(String engine) {
@@ -404,12 +423,20 @@ public class AddressBookTest {
     }
 
     static Object waitInFrame(WebDriver d, String what, String body, Object... args) {
-        return d.waitUntil(what, () -> {
-            try {
-                return inFrame(d, body, args);
-            } catch (RuntimeException e) {
-                return null;
-            }
-        }, 60_000);
+        try {
+            return d.waitUntil(what, () -> {
+                try {
+                    return inFrame(d, body, args);
+                } catch (RuntimeException e) {
+                    return null;
+                }
+            }, 60_000);
+        } catch (IllegalStateException e) {
+            System.out.println("  the frame: " + d.scriptQuiet("const f = document.getElementById('address-book-iframe');"
+                    + " return f ? 'src=' + f.getAttribute('src') : 'no frame'"));
+            if (d instanceof MarionetteDriver)
+                System.out.println(((MarionetteDriver) d).loadReport());
+            throw e;
+        }
     }
 }

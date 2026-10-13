@@ -56,6 +56,7 @@ public class CancelDownloadTest {
             Page.gotoDrive(d);
             String path = "/" + Server.USERNAME + "/cancel-dl.bin";
             Page.resolve(d, path);
+            awaitQuiet(proxy);
             proxy.configure(LATENCY_MILLIS, 0, 0);
 
             // --- from the toast -------------------------------------------------------------
@@ -118,12 +119,14 @@ public class CancelDownloadTest {
     }
 
     static int cancelFromToast(WebDriver d, Proxy proxy) {
+        awaitBrowserDownload(d);
         int atCancel = proxy.stat("storage_requests");
         d.script("document.querySelector('.progress__cancel').click(); return 1;");
         return atCancel;
     }
 
     static int cancelInBrowser(MarionetteDriver d, Proxy proxy) {
+        awaitBrowserDownload(d);
         int atCancel = proxy.stat("storage_requests");
         Object cancelled = d.chromeScript(
                 "const { Downloads } = ChromeUtils.importESModule('resource://gre/modules/Downloads.sys.mjs');"
@@ -135,6 +138,44 @@ public class CancelDownloadTest {
         if (((Number) cancelled).intValue() == 0)
             throw new AssertionError("The browser had no running download to cancel");
         return atCancel;
+    }
+
+    /** Waits for the page to stop fetching on its own. A first sign in has work of its own to do,
+     *  writes among it, and once the latency is on that work drags on into the time a cancelled
+     *  download should be quiet, where it is counted against the download. */
+    static void awaitQuiet(Proxy proxy) {
+        long end = System.currentTimeMillis() + 120_000;
+        int seen = proxy.stat("storage_requests");
+        long quietSince = System.currentTimeMillis();
+        while (System.currentTimeMillis() < end && System.currentTimeMillis() - quietSince < 5_000) {
+            WebDriver.sleep(500);
+            int now = proxy.stat("storage_requests");
+            if (now != seen) {
+                seen = now;
+                quietSince = System.currentTimeMillis();
+            }
+        }
+    }
+
+    /** Firefox only: waits until firefox lists the download itself.
+     *
+     *  Firefox decides where a download goes once its response has started, and only then keeps a
+     *  record of it. A download that fails before that - and a cancel fails the stream firefox is
+     *  reading - is reported in an alert of firefox's own instead of its downloads list, and the
+     *  next command the test sends trips over the alert. A loaded runner can take longer to get
+     *  there than the page takes to be part way through, so a cancel waits for it.
+     */
+    static void awaitBrowserDownload(WebDriver d) {
+        if (! (d instanceof MarionetteDriver))
+            return;
+        MarionetteDriver m = (MarionetteDriver) d;
+        d.waitUntil("firefox to list the download", () -> {
+            Object running = m.chromeScript(
+                    "const { Downloads } = ChromeUtils.importESModule('resource://gre/modules/Downloads.sys.mjs');"
+                    + "return Downloads.getList(Downloads.ALL).then(list => list.getAll())"
+                    + "  .then(all => all.filter(dl => ! dl.stopped).length);");
+            return running instanceof Number && ((Number) running).intValue() > 0 ? Boolean.TRUE : null;
+        }, 120_000);
     }
 
     static void awaitPartWay(WebDriver d) {
@@ -158,10 +199,12 @@ public class CancelDownloadTest {
     static void assertStopped(Proxy proxy, int atCancel, String what) {
         WebDriver.sleep(15_000);
         int settled = proxy.stat("storage_requests");
+        long quietFrom = System.currentTimeMillis();
         WebDriver.sleep(15_000);
         int later = proxy.stat("storage_requests") - settled;
         if (later > IDLE_ALLOWANCE)
-            throw new AssertionError(what + " kept fetching: " + later + " storage requests between 15s and 30s after the cancel");
+            throw new AssertionError(what + " kept fetching: " + later + " storage requests between 15s and 30s after the cancel: "
+                    + proxy.storageSince(quietFrom));
         System.out.println("  ok   " + what + " stopped fetching (" + (settled - atCancel)
                 + " requests as it settled, " + later + " after)");
     }
