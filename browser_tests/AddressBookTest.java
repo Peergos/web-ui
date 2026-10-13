@@ -4,6 +4,7 @@ import peergos.shared.user.UserContext;
 import peergos.shared.user.fs.AsyncReader;
 import peergos.shared.user.fs.FileWrapper;
 import peergos.shared.util.PathUtil;
+import peergos.shared.util.Serialize;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -322,22 +323,27 @@ public class AddressBookTest {
         folder.uploadOrReplaceFile(name, new AsyncReader.ArrayBacked(bytes), bytes.length, api.network, api.crypto, () -> false, x -> {}).join();
     }
 
-    /** Every card in a book, as stored. */
+    /** Every card in a book, as stored. Each is read from the listing itself: one the app deletes
+     *  or replaces after the listing is gone by its name as well, and waiting for it there waits
+     *  for good. A card that can't be read means the book is listed again. */
     static List<String> stored(UserContext api, String bookPath) {
-        Optional<FileWrapper> dir = api.getByPath(bookPath).join();
-        if (dir.isEmpty())
-            return List.of();
-        List<String> cards = new ArrayList<>();
-        for (FileWrapper f : dir.get().getChildren(api.crypto.hasher, api.network).join()) {
-            if (f.getName().endsWith(".vcf")) {
-                try {
-                    cards.add(new String(NoAppsYetTest.read(api, bookPath + "/" + f.getName()), StandardCharsets.UTF_8));
-                } catch (Exception e) {
-                    throw new IllegalStateException(e);
-                }
+        for (int attempt = 1; ; attempt++) {
+            Optional<FileWrapper> dir = api.getByPath(bookPath).join();
+            if (dir.isEmpty())
+                return List.of();
+            try {
+                List<String> cards = new ArrayList<>();
+                for (FileWrapper f : dir.get().getChildren(api.crypto.hasher, api.network).join())
+                    if (f.getName().endsWith(".vcf"))
+                        cards.add(new String(Serialize.readFully(f.getInputStream(api.network, api.crypto, x -> {}).join(),
+                                f.getSize()).join(), StandardCharsets.UTF_8));
+                return cards;
+            } catch (RuntimeException e) {
+                if (attempt == 5)
+                    throw e;
+                WebDriver.sleep(1000);
             }
         }
-        return cards;
     }
 
     static String waitForStored(UserContext api, String bookPath, String text) {
