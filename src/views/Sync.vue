@@ -134,11 +134,11 @@
 									:aria-label="translate('SYNC.STATE.SYNCING')">
 									<span :style="{ width: progressOf(pair).pct + '%' }"></span>
 								</div>
+								<div v-else class="pg-bar" role="progressbar" :aria-label="translate('SYNC.STATE.SYNCING')"><span></span></div>
 								<div v-if="progressOf(pair) && progressOf(pair).file != null" class="pg-bar pg-bar--determinate pg-bar--file"
 									role="progressbar" :aria-valuenow="progressOf(pair).file" aria-valuemin="0" aria-valuemax="100">
 									<span :style="{ width: progressOf(pair).file + '%' }"></span>
 								</div>
-								<div v-else class="pg-bar" role="progressbar" :aria-label="translate('SYNC.STATE.SYNCING')"><span></span></div>
 							</template>
 
 							<div class="pg-card__foot">
