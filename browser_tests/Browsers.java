@@ -114,7 +114,7 @@ public class Browsers {
         Path profile = Temp.directory("peergos-ff-profile-");
         int port = freePort();
         // Marionette reads its port from the profile, so there is no race with a fixed one.
-        String prefs = String.join("\n",
+        List<String> prefs = new ArrayList<>(List.of(
                 "user_pref(\"marionette.port\", " + port + ");",
                 // a headless browser on a runner without a display reports no pointing device at
                 // all, and the calendar only turns on drag-to-move for a mouse: fine, hovering
@@ -139,9 +139,16 @@ public class Browsers {
                 "user_pref(\"browser.sessionstore.resume_from_crash\", false);",
                 "user_pref(\"toolkit.startup.max_resumed_crashes\", -1);",
                 "user_pref(\"browser.tabs.warnOnClose\", false);",
-                "user_pref(\"datareporting.healthreport.uploadEnabled\", false);",
-                "");
-        Files.writeString(profile.resolve("user.js"), prefs);
+                "user_pref(\"datareporting.healthreport.uploadEnabled\", false);"));
+        // On a windows runner a new content process now and then never finishes starting, and with
+        // site isolation every app's frame - the calendar, the address book, a viewer - needs one of
+        // its own for its subdomain: the frame sits on about:blank for good. Without site isolation
+        // the frame loads in the page's own process. Only on windows, where this happens; elsewhere
+        // the tests keep the process model people run with.
+        if (isWindows())
+            prefs.add("user_pref(\"fission.autostart\", false);");
+        prefs.add("");
+        Files.writeString(profile.resolve("user.js"), String.join("\n", prefs));
 
         List<String> cmd = new ArrayList<>(List.of(
                 // system access lets a test reach the browser's own ui, such as its downloads list
