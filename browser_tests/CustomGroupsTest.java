@@ -155,12 +155,25 @@ public class CustomGroupsTest {
     static void openShareDialog(WebDriver d, String name) {
         Page.gotoDrive(d);
         Page.waitForInDrive(d, name, 120_000);
-        Page.select(d, name);
-        // the drive opens the dialog only for exactly one selected file, and says nothing when
-        // the selection has not landed yet - so make sure it has, and that the dialog did open
-        d.waitForScript("the selection", "window.__drive.selectedFiles.length === 1", 10_000);
-        d.script("window.__drive.showShareWith(); return 1;");
-        d.waitForScript("the share dialog", "!!document.querySelector('.drive-share')", 30_000);
+        // Selected and asked in one script: a listing refresh landing between the two empties the
+        // selection, and the drive opens nothing for an empty one. The dialog opens once the folder
+        // itself has been read, which a loaded runner takes its time over, so each try waits a while.
+        for (int round = 0; ; round++) {
+            Object asked = d.script("const f = (window.__drive.files || []).find(x => x.getName() === arguments[0]);"
+                    + " if (! f) return false; window.__drive.selectedFiles = [f]; window.__drive.showShareWith(); return true;", name);
+            if (! Boolean.TRUE.equals(asked))
+                throw new IllegalStateException("No entry called " + name + " in " + Page.driveListing(d));
+            try {
+                d.waitForScript("the share dialog", "!!document.querySelector('.drive-share')", 60_000);
+                break;
+            } catch (IllegalStateException e) {
+                System.out.println("  the drive: " + d.scriptQuiet("return 'showShare=' + window.__drive.showShare"
+                        + " + ' toShare=' + (window.__drive.filesToShare || []).length"
+                        + " + ' selected=' + window.__drive.selectedFiles.length"));
+                if (round == 2)
+                    throw e;
+            }
+        }
         try {
             d.waitForScript("the share dialog's groups", "document.querySelectorAll('.share-groups label').length >= 3"
                     + " && ![...document.querySelectorAll('.share-groups label')].some(l => /family\\s*$/.test(l.innerText.trim()))", 60_000);
