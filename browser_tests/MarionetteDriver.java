@@ -29,6 +29,8 @@ public class MarionetteDriver implements WebDriver {
     private final List<String> frames = new ArrayList<>();
     private String recovery = "not attempted";
     private boolean firstLoad = true;
+    // the size a test asked for, which a browser started in place of this one is given too
+    private int[] windowSize;
 
     public MarionetteDriver(int port, Process browser) {
         this(port, browser, null);
@@ -72,20 +74,37 @@ public class MarionetteDriver implements WebDriver {
         }
     }
 
-    /** Replaces the browser with a freshly launched one and attaches to it. */
+    /** Replaces the browser with a freshly launched one and attaches to it.
+     *
+     *  The replacement is probed, as Browsers.launch probes the first: on a windows runner a fresh
+     *  browser can come up with its only window already gone, and nothing inside that browser gets
+     *  it back. The old one is stopped with its children, since killing only the parent leaves
+     *  its content processes to linger on a machine that is already struggling.
+     */
     private void relaunchBrowser() {
-        try {
-            socket.close();
-        } catch (IOException ignored) {
-            // it is being replaced
+        for (int attempt = 0; attempt < 3; attempt++) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+                // it is being replaced
+            }
+            HttpDriver.stop(browser, marker);
+            Browsers.Launched l = relaunch.get();
+            browser = l.process();
+            marker = l.profile();
+            frames.clear();
+            messageId = 0;
+            try {
+                attach(l.port());
+                command("WebDriver:ExecuteScript", Map.of("script", "return 1", "args", List.of()));
+                if (windowSize != null)
+                    setWindowRect(windowSize[0], windowSize[1]);
+                return;
+            } catch (RuntimeException unusable) {
+                System.out.println("  the fresh browser came up with no window to drive, starting another ("
+                        + unusable.getMessage() + ")");
+            }
         }
-        browser.destroyForcibly();
-        Browsers.Launched l = relaunch.get();
-        browser = l.process();
-        marker = l.profile();
-        frames.clear();
-        messageId = 0;
-        attach(l.port());
     }
 
     /** Opens a session with the settings every navigation in the suite relies on. Used again
@@ -335,6 +354,7 @@ public class MarionetteDriver implements WebDriver {
 
     @Override
     public void setWindowRect(int width, int height) {
+        windowSize = new int[] {width, height};
         // Best effort, as on the http drivers: headless firefox will not go below about 500px
         // wide, and a test that needs narrower than that reads back what it actually got.
         try {
@@ -356,8 +376,11 @@ public class MarionetteDriver implements WebDriver {
         // about once in thirty, and then never arrives however long it is given, where one that
         // does arrive takes seconds. So that load gets a short wait and one more attempt, which
         // turns ten minutes of failure into a retry that almost always lands.
-        boolean first = firstLoad;
-        firstLoad = false;
+        // about:blank is no load at all - tests use it to leave a page - so it does not use up the
+        // first load's short wait on the page that follows it, which is the one that can be lost
+        boolean first = firstLoad && ! url.startsWith("about:");
+        if (first)
+            firstLoad = false;
         int attempts = first ? 3 : "1".equals(System.getenv("PEERGOS_TEST_SLOW")) ? 2 : 3;
         long timeout = first ? Math.min(60_000, pageLoadTimeout()) : pageLoadTimeout();
         if (first)
@@ -380,13 +403,19 @@ public class MarionetteDriver implements WebDriver {
                 settle();
                 return;
             } catch (IllegalStateException e) {
-                if (! String.valueOf(e.getMessage()).contains("timed out"))
+                boolean timedOut = String.valueOf(e.getMessage()).contains("timed out");
+                // A fresh browser can also lose its only window on that first load, and then
+                // nothing inside it gets one back: another browser is the way on, as for a load
+                // that was lost.
+                boolean windowLost = first && ! timedOut && isDiscardedWindow(e);
+                if (! timedOut && ! windowLost)
                     throw e;
                 last = e;
-                if (marked && arrivedAt(url, mark))
+                if (timedOut && marked && arrivedAt(url, mark))
                     return;
                 if (attempt + 1 < attempts) {
-                    System.out.println("  page load timed out, navigating again: " + url);
+                    System.out.println(timedOut ? "  page load timed out, navigating again: " + url
+                            : "  the browser lost its window on its first load, loading again: " + url);
                     // A first load that was lost has been seen lost again on every retry in that
                     // same browser, while a fresh browser nearly always loads. So the first load
                     // alone is retried in a new browser, where one can be started.
@@ -396,6 +425,8 @@ public class MarionetteDriver implements WebDriver {
                         setPageLoadTimeout(timeout);
                         continue;
                     }
+                    if (windowLost)
+                        throw e;
                     // A load that never finished leaves the tab waiting on it, so asking for
                     // that same page again is the step which has already failed. The load is
                     // stopped first, which is what makes the next attempt a different one.

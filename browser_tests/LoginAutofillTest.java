@@ -39,18 +39,19 @@ public class LoginAutofillTest {
             for (String theme : new String[] {"light", "dark"}) {
                 try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-autofill-"), headless)) {
                     MarionetteDriver ff = (MarionetteDriver) d;
+                    d.setWindowRect(1280, 860);
+                    // The first load before the login is saved: a first load that is lost goes on in a
+                    // freshly started browser, which would have neither the login nor the settings.
+                    d.navigate(url + "/");
                     // automation turns the password manager off; a person's browser has it on
                     ff.chromeScript("for (const n of ['signon.rememberSignons', 'signon.autofillForms', 'signon.autofillForms.http'])"
                             + " Services.prefs.setBoolPref(n, true); return 1;");
                     ff.chromeScript("const login = Cc['@mozilla.org/login-manager/loginInfo;1'].createInstance(Ci.nsILoginInfo);"
                             + " login.init('" + url.replaceAll("/+$", "") + "', '', null, 'someone', 'a-saved-password', '', '');"
                             + " return Services.logins.addLoginAsync(login).then(() => 1);");
-                    d.setWindowRect(1280, 860);
-                    d.navigate(url + "/");
-                    if (theme.equals("dark")) {
+                    if (theme.equals("dark"))
                         d.script("localStorage.setItem('theme', 'dark-mode'); return 1;");
-                        d.navigate(url + "/");
-                    }
+                    d.navigate(url + "/");
                     d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
                     d.waitForScript("the browser to fill the form", "(() => { const u = document.querySelector('input[name=username]'),"
                             + " p = document.querySelector('input[type=password]'); return !!u && !!p && u.matches(':autofill') && p.matches(':autofill'); })()", 30_000);
