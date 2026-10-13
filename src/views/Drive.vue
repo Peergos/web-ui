@@ -3290,10 +3290,14 @@ module.exports = {
 			let that = this;
 			let path = this.path;
 			let ready = latestFile.isWrapper ? latestFile.getFile() : peergos.shared.util.Futures.of(latestFile);
-			ready.thenApply(latest => {
+			// a folder's sharing is read after its listing, so Share pressed as soon as the folder
+			// shows can come before it is in
+			let sharing = this.sharedWithState != null ? peergos.shared.util.Futures.of(this.sharedWithState)
+				: this.context.getDirectorySharingState(peergos.client.PathUtils.directoryToPath(path.length == 0 ? ["/"] : path));
+			ready.thenCompose(latest => sharing.thenApply(sharedWithState => {
 				that.filesToShare = [latest];
 				that.pathToFile = path;
-				let fileSharedWithState = that.sharedWithState.get(filename);
+				let fileSharedWithState = sharedWithState.get(filename);
 				let read_usernames = fileSharedWithState.readAccess.toArray([]);
 				let edit_usernames = fileSharedWithState.writeAccess.toArray([]);
 				that.sharedWithData = { read_shared_with_users: read_usernames, edit_shared_with_users: edit_usernames };
@@ -3302,7 +3306,7 @@ module.exports = {
 				that.allowReadWriteSharing = true;
 				that.allowCreateSecretLink = true;
 				that.showShare = true;
-			});
+			}));
 		},
 		closeShare() {
 			this.showShare = false;
