@@ -67,9 +67,7 @@ public class AddressBookTest {
                 // its menu row stays in reach in a short window - a laptop's, once the browser's
                 // own bars are off it - and in a phone's panel held sideways
                 String row = "const row = [...document.querySelectorAll('.app-navigation .menu-item')].find(m => m.textContent.includes('Address Book'));";
-                // sized by the page's own height: a window's frame takes some of it, more in some engines
-                int frame = ((Number) d.script("return window.outerHeight - window.innerHeight")).intValue();
-                d.setWindowRect(1366, 610 + frame);
+                pageHeight(d, 1366, 610);
                 Object reach = d.waitUntil("the short window", () -> d.scriptQuiet(row
                         + " const r = row.getBoundingClientRect(), s = document.querySelector('.app-navigation .navigation-storage').getBoundingClientRect();"
                         + " const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);"
@@ -78,7 +76,7 @@ public class AddressBookTest {
                 if (! "in reach".equals(reach))
                     throw new AssertionError("Address Book's menu row should be in reach in a short window: " + reach);
                 Object laptop = d.script("return innerWidth + 'x' + innerHeight");
-                d.setWindowRect(844, 390 + frame);
+                pageHeight(d, 844, 390);
                 MobileNavTest.toggleSidebar(d);
                 Object panel = d.waitUntil("the phone's panel", () -> d.scriptQuiet(row
                         + " if (innerWidth > 1024 || ! document.querySelector('.app-navigation.expanded')) return null;"
@@ -377,6 +375,21 @@ public class AddressBookTest {
             if (System.currentTimeMillis() > until)
                 throw new AssertionError("Timed out waiting for " + what);
             WebDriver.sleep(1000);
+        }
+    }
+
+    /** A window of the given width whose page is the given height. What a window's frame takes
+     *  differs between engines and needn't stay the same once the window is resized - Brave's page
+     *  came out 136px short of what the frame measured beforehand allowed for - so the page is
+     *  measured after each resize and the window corrected by the difference. */
+    static void pageHeight(WebDriver d, int width, int height) {
+        int window = height + ((Number) d.script("return window.outerHeight - window.innerHeight")).intValue();
+        for (int i = 0; i < 4; i++) {
+            d.setWindowRect(width, window);
+            int missing = height - ((Number) d.script("return window.innerHeight")).intValue();
+            if (missing == 0)
+                return;
+            window += missing;
         }
     }
 
