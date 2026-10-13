@@ -658,6 +658,12 @@ a.pg-btn {
 	transition: width .3s ease;
 }
 
+/* the current file under the pass's bar: thinner, so the whole pass reads first */
+.pg-bar--file {
+	height: 2px;
+	margin-top: 4px;
+}
+
 /* the percentage sits beside the activity text, which names what is progressing.
    min-width:0 lets a long path shrink rather than push the number off a phone screen */
 .pg-activityrow {

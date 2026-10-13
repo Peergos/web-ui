@@ -705,6 +705,7 @@ module.exports = {
     "SYNC.STATE.PENDING":"Waiting to sync",
     "SYNC.STATE.SYNCED":"Up to date",
     "SYNC.STATE.SYNCING":"Syncing",
+    "SYNC.PROGRESS.FILES":"{n} of {m} files",
     "SYNC.STATE.ERROR":"Needs attention",
     "SYNC.SUMMARY.PAUSED.TITLE":"Syncing is paused",
     "SYNC.SUMMARY.OK":"Everything is up to date",
