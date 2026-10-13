@@ -658,29 +658,6 @@ a.pg-btn {
 	transition: width .3s ease;
 }
 
-/* the current file's transfer, inline after the line naming it, so it can't be read as the pass */
-.pg-filebar {
-	display: inline-block;
-	position: relative;
-	width: 56px;
-	height: 4px;
-	margin-left: 8px;
-	vertical-align: middle;
-	border-radius: var(--radius-pill);
-	background-color: var(--pg-track);
-	overflow: hidden;
-}
-
-.pg-filebar > span {
-	position: absolute;
-	top: 0;
-	left: 0;
-	height: 100%;
-	border-radius: var(--radius-pill);
-	background-color: var(--pg-muted);
-	transition: width .3s ease;
-}
-
 /* the percentage sits beside the activity text, which names what is progressing.
    min-width:0 lets a long path shrink rather than push the number off a phone screen */
 .pg-activityrow {

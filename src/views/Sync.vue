@@ -123,10 +123,7 @@
 							</p>
 							<div v-else-if="activityOf(pair)" class="pg-activityrow">
 								<p class="pg-activity pg-clamp" :class="{ 'pg-clamp--open': expanded[pair.label + ':act'] }"
-									:title="activityOf(pair, true)" @click="toggleExpand(pair.label + ':act')">{{ activityOf(pair, expanded[pair.label + ':act']) }}<span
-									v-if="progressOf(pair) && progressOf(pair).file != null" class="pg-filebar" role="progressbar"
-									:aria-valuenow="progressOf(pair).file" aria-valuemin="0" aria-valuemax="100"><span
-									:style="{ width: progressOf(pair).file + '%' }"></span></span></p>
+									:title="activityOf(pair, true)" @click="toggleExpand(pair.label + ':act')">{{ activityOf(pair, expanded[pair.label + ':act']) }}</p>
 								<span v-if="progressOf(pair)" class="pg-pct">{{ progressLabel(progressOf(pair)) }}</span>
 							</div>
 
@@ -465,22 +462,20 @@ module.exports = {
 		},
 
 		// the message carries totals for long operations, so show real progress: the pass's
-		// file count drives the bar, and a large file's own transfer gets a second, thinner one
+		// file count when there is one, as a large file's own transfer is already in the words
 		progressOf(pair) {
 			let msg = pair.msg;
 			if (msg == null)
 				return null;
-			let bytes = /([\d.]+)\s*\/\s*([\d.]+)\s*(KiB|MiB|GiB)/.exec(msg);
-			let file = bytes != null && Number(bytes[2]) > 0 ?
-				Math.min(100, Math.round(Number(bytes[1]) * 100 / Number(bytes[2]))) :
-				null;
 			let files = /\((\d+)\s*\/\s*(\d+)\)\s*files synced/.exec(msg);
 			if (files != null && Number(files[2]) > 0) {
 				let done = Number(files[1]), total = Number(files[2]);
-				return { pct: Math.min(100, Math.round(done * 100 / total)), done: done, total: total, file: file };
+				return { pct: Math.min(100, Math.round(done * 100 / total)), done: done, total: total };
 			}
-			if (file != null)
-				return { pct: file, file: null };
+			// single file: the only figure available while one large file transfers
+			let bytes = /([\d.]+)\s*\/\s*([\d.]+)\s*(KiB|MiB|GiB)/.exec(msg);
+			if (bytes != null && Number(bytes[2]) > 0)
+				return { pct: Math.min(100, Math.round(Number(bytes[1]) * 100 / Number(bytes[2]))) };
 			return null;
 		},
 		progressLabel(progress) {
