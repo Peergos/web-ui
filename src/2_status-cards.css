@@ -488,10 +488,12 @@ a.pg-btn {
 	text-overflow: ellipsis;
 }
 
+/* The head gives way first, so the leaf is only cut when it alone is longer than the
+   row. A percentage cap can't do this: the value is sized by its own text, so the cap
+   cut a leaf whose head was short, as with D:\Photos. */
 .pg-path__tail {
-	/* never shrinks; the cap only bites if the leaf alone is longer than the row */
-	flex: 0 0 auto;
-	max-width: 65%;
+	flex: 0 1 auto;
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
