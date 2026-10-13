@@ -461,8 +461,8 @@ module.exports = {
 			return /cancelled|canceled|InterruptedException/i.test("" + msg);
 		},
 
-		// the message carries totals for long operations, so show real progress: the pass's
-		// file count when there is one, as a large file's own transfer is already in the words
+		// the bar is only ever the whole pass, so it never jumps back to one file's transfer,
+		// which is already in the words
 		progressOf(pair) {
 			let msg = pair.msg;
 			if (msg == null)
@@ -472,15 +472,9 @@ module.exports = {
 				let done = Number(files[1]), total = Number(files[2]);
 				return { pct: Math.min(100, Math.round(done * 100 / total)), done: done, total: total };
 			}
-			// single file: the only figure available while one large file transfers
-			let bytes = /([\d.]+)\s*\/\s*([\d.]+)\s*(KiB|MiB|GiB)/.exec(msg);
-			if (bytes != null && Number(bytes[2]) > 0)
-				return { pct: Math.min(100, Math.round(Number(bytes[1]) * 100 / Number(bytes[2]))) };
 			return null;
 		},
 		progressLabel(progress) {
-			if (progress.total == null)
-				return progress.pct + "%";
 			return this.fmt2("SYNC.PROGRESS.FILES", Math.min(progress.done, progress.total), progress.total) + " (" + progress.pct + "%)";
 		},
 
@@ -564,8 +558,8 @@ module.exports = {
 					this.prettifyHostFolder(pair.localpath);
 				return action + path.split(" ==> ")
 					.map(p => absolute ? this.joinPath(root, p) : p.substring(p.lastIndexOf('/') + 1))
-					.join(" ==> ") + trailer.replace(/ \(\d+\/\d+\) files synced$/, "");
-			});
+					.join(" ==> ") + trailer;
+			}).replace(/ \(\d+\/\d+\) files synced$/, "");
 		},
 
 		/* ---------- server calls ---------- */
