@@ -102,7 +102,8 @@ module.exports = {
       link.click()
     },
 
-    downloadFile: function (file, fileLabel) {
+    // again: whether this is the second try at a download the browser dropped as it started
+    downloadFile: function (file, fileLabel, again) {
       console.log('downloading ' + file.getFileProperties().name)
 
       let result = peergos.shared.util.Futures.incomplete();
@@ -257,10 +258,29 @@ module.exports = {
                 // only our own download: another one going wrong is not this one's problem
                 if (e.data.unknownDownload === interceptUrl)
                   fail('The browser stopped the download before it started. Please try again.')
-                // cancelled from the browser's own downloads list rather than from our toast
-                if (e.data.cancelledDownload === interceptUrl && transfers.cancel(toastId) != null) {
-                  that.$toast.dismiss(toastId)
-                  that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000})
+                if (e.data.cancelledDownload === interceptUrl) {
+                  // Dropped moments after it was served: nobody cancelled that. Chrome on windows
+                  // has been seen to drop a download as it takes it over from the frame that
+                  // started it, when the body comes from a service worker - a download started
+                  // while another is running, mostly - within a quarter of a second, before the
+                  // download is even in its list. Such a download is started again, once.
+                  if (e.data.after < 1000 && ! again && ! transfer.cancelled) {
+                    startingAgain = true
+                    transfers.cancel(toastId)
+                    that.downloadFile(file, fileLabel, true).thenApply(done => {
+                      result.complete(done)
+                      return true
+                    }).exceptionally(t => {
+                      result.completeExceptionally(t)
+                      return null
+                    })
+                    return
+                  }
+                  // cancelled from the browser's own downloads list rather than from our toast
+                  if (transfers.cancel(toastId) != null) {
+                    that.$toast.dismiss(toastId)
+                    that.$toast(that.translate != null ? that.translate('DRIVE.DOWNLOAD.CANCELLED') : 'Download cancelled', {timeout: 4000})
+                  }
                 }
               }
               navigator.serviceWorker.addEventListener('message', lostListener)
@@ -268,6 +288,8 @@ module.exports = {
             // a download that stops part way must fail the stream, otherwise the browser
             // sits on a part file for ever with no indication that anything went wrong
             let failed = false
+            // set when this try gives way to another, which then completes the result
+            let startingAgain = false
             let fail = (message) => {
               if (failed)
                 return
@@ -290,7 +312,8 @@ module.exports = {
               }
               if (transfer.cancelled) {
                 reader.close()
-                result.complete(false)
+                if (! startingAgain)
+                  result.complete(false)
               } else
                 result.completeExceptionally(new Error(message))
             }

@@ -109,11 +109,15 @@ function setupStreamingEntry(port, entry) {
 function withCompletion (stream, onDone) {
   const reader = stream.getReader()
   let finished = false
+  // How soon a cancel came: one moments after the download was served is the browser dropping it
+  // as it takes the download over from the frame, before anybody could have stopped it, and the
+  // page starts such a download again
+  const served = Date.now()
   const done = (cancelled) => {
     if (finished)
       return
     finished = true
-    onDone(cancelled)
+    onDone(cancelled, Date.now() - served)
   }
   return new ReadableStream({
     pull (controller) {
@@ -311,9 +315,9 @@ self.onfetch = event => {
                 // The page keeps the frame that is fetching this alive until it hears the body
                 // has been read to the end, because taking the frame away first aborts the
                 // fetch and the browser throws away what it had written.
-                const body = withCompletion(stream, cancelled =>
+                const body = withCompletion(stream, (cancelled, after) =>
                     self.clients.matchAll().then(cs => cs.forEach(c =>
-                        c.postMessage(cancelled ? {cancelledDownload: url} : {finishedDownload: url}))))
+                        c.postMessage(cancelled ? {cancelledDownload: url, after: after} : {finishedDownload: url}))))
                 return event.respondWith(new Response(body, { headers }))
           }
     }
