@@ -142,6 +142,7 @@
 				<!-- Not mounted: say what it costs before they commit, not after -->
 				<section v-else class="pg-card mount-setup">
 					<p v-if="config.canMountDrive" class="pg-note">{{ translate("MOUNT.BODY") }}</p>
+					<p v-else-if="isMac" class="pg-note">{{ translate("MOUNT.MAC.DRIVE_SOON") }}</p>
 
 					<div class="mount-field">
 						<label for="mount-user">{{ translate("MOUNT.PEERGOS_USER") }}</label>
@@ -401,6 +402,9 @@ module.exports = {
         },
         enabled() {
             return loopback.isLoopbackHost(window.location.hostname);
+        },
+        isMac() {
+            return detectOs() === "macOS";
         },
     },
     created() {
