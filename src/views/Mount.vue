@@ -12,12 +12,7 @@
 			<Spinner v-if="showSpinner"></Spinner>
 
 
-			<section v-if="isMac" class="pg-empty">
-				<h2>{{ translate("MOUNT.TITLE") }}</h2>
-				<p>Coming soon to macOS.</p>
-			</section>
-
-			<section v-else-if="! enabled" class="pg-empty">
+			<section v-if="! enabled" class="pg-empty">
 				<h2>{{ translate("MOUNT.DISABLED.TITLE") }}</h2>
 				<p>{{ translate("MOUNT.DISABLED") }}
 					<a href="https://peergos.org/download" target="_blank" rel="noopener">https://peergos.org/download</a></p>
@@ -146,7 +141,7 @@
 
 				<!-- Not mounted: say what it costs before they commit, not after -->
 				<section v-else class="pg-card mount-setup">
-					<p class="pg-note">{{ translate("MOUNT.BODY") }}</p>
+					<p v-if="config.canMountDrive" class="pg-note">{{ translate("MOUNT.BODY") }}</p>
 
 					<div class="mount-field">
 						<label for="mount-user">{{ translate("MOUNT.PEERGOS_USER") }}</label>
@@ -163,7 +158,7 @@
 					     without a drive, and none of them needs a second password. -->
 					<!-- with nothing else on offer the drive is the whole point of the page, so a
 					     switch for it could only turn the one useful thing off -->
-					<label v-if="config.canSyncCalendar || config.canSyncContacts" class="pg-switch">
+					<label v-if="config.canMountDrive && (config.canSyncCalendar || config.canSyncContacts)" class="pg-switch">
 						<input type="checkbox" v-model="form.mountDrive" />
 						<span class="pg-switch__track" aria-hidden="true"></span>
 						<span>{{ translate("MOUNT.USE.DRIVE") }}</span>
@@ -319,7 +314,7 @@ module.exports = {
         return {
             // the can* flags come from the server, which knows what this platform's backend does
             config: { enabled: false, mountPoint: "", mountDrive: false, syncCalendar: false, syncContacts: false,
-                    canSyncCalendar: false, canSyncContacts: false, davClients: false },
+                    canMountDrive: false, canSyncCalendar: false, canSyncContacts: false, davClients: false },
             form: { peergosPassword: "", autoMount: true, mountDrive: true, syncCalendar: false, syncContacts: false },
             showSpinner: false,
             progressToastId: null,
@@ -407,9 +402,6 @@ module.exports = {
         enabled() {
             return loopback.isLoopbackHost(window.location.hostname);
         },
-        isMac() {
-            return detectOs() === "macOS";
-        },
     },
     created() {
         // the 2FA lookup waits for the user to ask to mount: nothing security sensitive
@@ -457,6 +449,9 @@ module.exports = {
             let that = this;
             this.localPost("/peergos/v0/mount/get-config").then(function(result) {
                 that.config = result;
+                // where there is no drive to mount, the switch for it is hidden and must not be on
+                if (! result.canMountDrive)
+                    that.form.mountDrive = false;
                 // the server reports a failed restore here and nowhere else, so a
                 // dropped error leaves the page claiming a mount that is not there
                 if (result != null && result.error)
@@ -598,6 +593,7 @@ module.exports = {
             try {
                 // the mount revokes its own second factor as it tears down - it still holds the
                 // credentials to do so, and it works even if this tab goes away mid-unmount
+                const hadDrive = this.config.mountDrive;
                 await this.localPost("/peergos/v0/mount/disable");
                 // only the live mount state changes here: the can* flags are platform facts,
                 // and dropping them hides every switch on the form this leaves behind
@@ -606,7 +602,7 @@ module.exports = {
                         syncCalendar: false, syncContacts: false });
                 this.stopWorking();
                 const os = detectOs();
-                if (os === "Windows" || os === "macOS") {
+                if (hadDrive && (os === "Windows" || os === "macOS")) {
                     this.$toast.info(this.translate("MOUNT.UNMOUNTED.LOCAL_FILES"), {timeout: false});
                 }
             } catch (err) {
