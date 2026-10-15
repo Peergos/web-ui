@@ -2000,6 +2000,26 @@ function openLinkedEntry(id, tries) {
     if ((tries || 0) < 100) setTimeout(function () { openLinkedEntry(id, (tries || 0) + 1); }, 100);
 }
 
+// An entry the host was asked to show, from a reminder on the phone: go to the occurrence and
+// open its detail. Its month arrives after the grid moves, so this looks again until the chip
+// is drawn, for long enough that a slow store still gets there, and then says it is gone.
+function showRequestedEntry(id, at, tries) {
+    if (!tries) gotoDateWithTransition(at);
+    let ev = calendar.getEventById(id);
+    let cal = ev ? getCalendarById(ev.extendedProps.calendarId) : null;
+    if (cal && !cal.visible) {
+        cal.visible = true;
+        applyCalendarVisibility();
+        renderCalendarList();
+    }
+    if (openPopoverNear(id, at)) return;
+    if ((tries || 0) * 100 < SEARCH_JUMP_TIMEOUT_MS) {
+        setTimeout(function () { showRequestedEntry(id, at, (tries || 0) + 1); }, 100);
+        return;
+    }
+    if (!ev) showToast('That event is no longer in the calendar');
+}
+
 function closeSearchResults() {
     searchResults.classList.remove('open');
 }
@@ -4615,7 +4635,11 @@ let hostHandlers = Object.assign(Object.create(null), {
     respondCalendarColorChange: function (data) {
         respondToCalendarColorChange(data.calendarName, data.newColor);
     },
-    respondDeleteCalendar: function (data) { respondToCalendarDelete(data.calendar); }
+    respondDeleteCalendar: function (data) { respondToCalendarDelete(data.calendar); },
+    showEntry: function (data) {
+        if (typeof data.id !== 'string' || typeof data.at !== 'number' || !isFinite(data.at)) return;
+        showRequestedEntry(data.id, new Date(data.at));
+    }
 });
 
 // Said as soon as there is something here to listen, and in every document this frame

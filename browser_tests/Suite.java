@@ -80,6 +80,7 @@ public class Suite {
             run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
             run(failures, "calendar repeat and reminder", () -> CalendarRepeatTest.run(args1));
             run(failures, "calendar task", () -> CalendarTaskTest.run(args1));
+            run(failures, "a link to a calendar entry opens it", () -> CalendarEntryLinkTest.run(args1));
             run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
             run(failures, "custom sharing groups", () -> CustomGroupsTest.run(args1));
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
