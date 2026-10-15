@@ -739,6 +739,7 @@ module.exports = {
     "MOUNT.SUMMARY.MOUNTED":"Your Drive is mounted as a folder",
     "MOUNT.SUMMARY.NOTMOUNTED":"Mount your Drive as a folder on this device",
     "MOUNT.BODY":"Files stay in Peergos and are fetched as you open them, so the folder costs no disk space until you use it.",
+    "MOUNT.MAC.DRIVE_SOON":"Mounting your Drive is coming soon to macOS, but you can still sync your calendars and contacts.",
     "MOUNT.TITLE":"Mount as Drive",
     "MOUNT.ACTIVE":"Mounted at",
     "MOUNT.ENABLE":"Enable",

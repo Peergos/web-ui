@@ -41,11 +41,6 @@ public class MountDeviceTest {
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             Page.gotoView(d, "Mount", "onAddMount", "__mount");
             WebDriver.sleep(1500);
-            if (Boolean.TRUE.equals(d.script("return window.__mount.isMac"))) {
-                System.out.println("  skip macOS has no mounts yet, so there is nothing to sync into");
-                System.out.println("PASS");
-                return;
-            }
 
             // a desktop: clients to point at Peergos, so none of this shows
             d.script("Object.assign(window.__mount.config, {enabled: false, davClients: true, canSyncCalendar: true, canSyncContacts: true}); return 1;");
