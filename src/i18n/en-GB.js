@@ -15,6 +15,7 @@ module.exports = {
     "LOGIN.SERVER.NETWORK":"Unable to connect to the configured server.",
     "LOGIN.SERVER.CERTIFICATE":"The HTTPS certificate for this server is not trusted by the desktop app. Use a valid trusted certificate or install your internal CA in the system/Java trust store.",
     "LOGIN.SERVER.CONFIGURE_FIRST":"Configure your Peergos server URL above, save, and restart the app.",
+    "LOGIN.SERVER.RETRYING":"Can't reach the server, retrying automatically. If the server URL above is wrong, change it, save, and restart the app.",
     "SIGNUP.USERNAME":"public username",
     "SIGNUP.GENERATE":"Generate password",
     "SIGNUP.CLICKGEN":"Click generate password",
