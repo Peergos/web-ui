@@ -123,7 +123,10 @@ function postProm(url, data, timeout) {
 		try {
             let trailer = req.getResponseHeader("Trailer");
             if (trailer == null) {
-                reject('Unexpected error from server. Status code: ' + req.status);
+                if (req.status == 429)
+                    future.completeExceptionally(new peergos.shared.storage.TooManyRequestsException("Too Many Requests"));
+                else
+                    reject('Unexpected error from server. Status code: ' + req.status);
             } else {
                 if (trailer.startsWith('Storage+quota+reached')) {
                     future.completeExceptionally(new peergos.shared.storage.StorageQuotaExceededException(decodeURIComponent(trailer)));
@@ -133,6 +136,9 @@ function postProm(url, data, timeout) {
                     future.completeExceptionally(peergos.shared.storage.PointerCasException.fromString(decodeURIComponent(trailer)));
                 } else if (trailer.startsWith('Rate+Limit')) {
                     future.completeExceptionally(new peergos.shared.storage.MajorRateLimitException(decodeURIComponent(trailer)));
+                } else if (req.status == 429) {
+                    // refused without being acted on, so even a bulk commit can be retried
+                    future.completeExceptionally(new peergos.shared.storage.TooManyRequestsException(decodeURIComponent(trailer)));
                 } else {
                     reject(decodeURIComponent(trailer));
                 }
