@@ -13,8 +13,8 @@ import java.time.*;
  */
 public class CalendarEntryLinkTest {
 
-    static final String EVENT = "Dentist appointment";
-    static final String SERIES = "Weekly standup";
+    static final String EVENT = "Entry link appointment";
+    static final String SERIES = "Entry link weekly series";
 
     public static void main(String[] args) throws Exception {
         try {
@@ -43,16 +43,16 @@ public class CalendarEntryLinkTest {
             ZonedDateTime eventStart = LocalDate.now(ZoneOffset.UTC).plusMonths(3).withDayOfMonth(12)
                     .atTime(9, 0).atZone(ZoneOffset.UTC);
             CalendarApp.write(d, calendar + "/" + eventStart.getYear() + "/" + eventStart.getMonthValue(),
-                    "dentist.ics", ics("dentist", eventStart, "SUMMARY:" + EVENT));
+                    "entry-link-one.ics", ics("entry-link-one", eventStart, "SUMMARY:" + EVENT));
             ZonedDateTime seriesStart = LocalDate.now(ZoneOffset.UTC).minusMonths(2).withDayOfMonth(3)
                     .atTime(10, 0).atZone(ZoneOffset.UTC);
-            CalendarApp.write(d, calendar + "/recurring", "standup.ics",
-                    ics("standup", seriesStart, "SUMMARY:" + SERIES + "\r\nRRULE:FREQ=WEEKLY"));
+            CalendarApp.write(d, calendar + "/recurring", "entry-link-series.ics",
+                    ics("entry-link-series", seriesStart, "SUMMARY:" + SERIES + "\r\nRRULE:FREQ=WEEKLY"));
             ZonedDateTime occurrence = seriesStart.plusWeeks(14);
 
             // from elsewhere in the app, as a tap with the app open on Drive
             Page.gotoView(d, "Drive", "downloadFile", "__drive");
-            follow(d, "dentist", eventStart);
+            follow(d, "entry-link-one", eventStart);
             awaitPopover(d, EVENT);
             if (Boolean.TRUE.equals(d.script("const p = " + Page.VUE + ".root().getPropsFromUrl();"
                     + " return !!(p && p.args && p.args.entry);")))
@@ -61,7 +61,7 @@ public class CalendarEntryLinkTest {
 
             // with the calendar already open, on another entry
             CalendarApp.inFrame(d, "document.getElementById('popover-close').click(); return 1;");
-            follow(d, "standup", occurrence);
+            follow(d, "entry-link-series", occurrence);
             awaitPopover(d, SERIES);
             String time = String.valueOf(CalendarApp.inFrame(d, "return document.getElementById('popover-time').textContent;"));
             if (! time.contains(Integer.toString(occurrence.getDayOfMonth())))
@@ -70,7 +70,7 @@ public class CalendarEntryLinkTest {
 
             // a cold start, before signing in: away first, as only the fragment differs
             d.navigate("about:blank");
-            d.navigate(url + "/#" + fragment("dentist", eventStart));
+            d.navigate(url + "/#" + fragment("entry-link-one", eventStart));
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             awaitPopover(d, EVENT);
