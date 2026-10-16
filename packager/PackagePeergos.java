@@ -133,7 +133,12 @@ public class PackagePeergos {
                        "--add-launcher", "peergos=windows-cli.properties"
                        );
         } else if (isMac) {
-            runCommand("swiftc", "-parse-as-library", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
+            // Match the JVM rather than the host: the x86_64 package is built on Apple
+            // Silicon under Rosetta, where an unforced swiftc would emit arm64.
+            String swiftArch = ARCH.equals("amd64") ? "x86_64" : "arm64";
+            runCommand("arch", "-" + swiftArch, "swiftc", "-parse-as-library", "-o", "PeergosWebView", "MacWebview.swift", "-framework", "Cocoa", "-framework", "WebKit");
+            if (runCommand("lipo", "PeergosWebView", "-verify_arch", swiftArch) != 0)
+                throw new IllegalStateException("PeergosWebView was not built for " + swiftArch);
             runCommand("security", "find-identity", "-v", "-p", "codesigning", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db");
             runCommand("codesign", "--force", "--options", "runtime", "--timestamp",
                        "--keychain", System.getenv("RUNNER_TEMP") + "/app-signing.keychain-db",
