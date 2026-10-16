@@ -25,6 +25,8 @@ module.exports = Vuex.createStore({
 		crypto: null,
 		network: null,
 		networkLoading: true,
+		// the last attempt to reach the server failed, and another is scheduled
+		networkRetrying: false,
         context: null,
         mirrorBatId: null,
 		download: null,
@@ -156,6 +158,9 @@ module.exports = Vuex.createStore({
 		},
 		SET_NETWORK_LOADING(state, payload) {
 		    state.networkLoading = payload;
+		},
+		SET_NETWORK_RETRYING(state, payload) {
+		    state.networkRetrying = payload;
 		},
 		SET_CONTEXT(state, payload) {
 		    state.context = payload;

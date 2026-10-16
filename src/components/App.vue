@@ -143,6 +143,9 @@ const ModalFeedback = require("./modal/ModalFeedback.vue");
 const ModalMigrate = require("./modal/ModalMigrate.vue");
 const LinkPassword = require("./LinkPassword.vue");
 
+const NETWORK_RETRY_MIN_MILLIS = 2000;
+const NETWORK_RETRY_MAX_MILLIS = 60000;
+
 /* Safari only grew addEventListener on a media query in version 14, and the app still runs
    where it has not, so both spellings live here rather than at each call site. */
 function onQueryChange(query, handler) {
@@ -237,7 +240,10 @@ module.exports = {
                     desktopServerSaved: false,
                     desktopServerConnectionError: "",
                     showServerModal: false,
-                    isDesktopProxy: false
+                    isDesktopProxy: false,
+                    networkRetryTimer: null,
+                    networkRetryDelay: NETWORK_RETRY_MIN_MILLIS,
+                    networkAttemptInFlight: false
 		};
 	},
 
@@ -310,11 +316,14 @@ module.exports = {
 	peergos.shared.user.fs.archive.Inflate.initJS();
 	this.updateNetwork();
 
+	window.addEventListener("online", this.onOnline);
 	window.addEventListener("hashchange", this.onUrlChange, false);
 	window.addEventListener("resize", this.onWindowResize, { passive: true });
     },
 
     beforeUnmount() {
+	clearTimeout(this.networkRetryTimer);
+	window.removeEventListener("online", this.onOnline);
 	window.removeEventListener("hashchange", this.onUrlChange);
 	window.removeEventListener("resize", this.onWindowResize);
 	if (this.coarsePointerQuery)
@@ -365,11 +374,14 @@ module.exports = {
             }
             if (message == null)
                 message = "";
-            if (message.indexOf("PKIX path building failed") >= 0 ||
-                message.indexOf("certificate_unknown") >= 0 ||
-                message.indexOf("unable to find valid certification path") >= 0)
+            if (this.isCertificateError(message))
                 return this.translate("LOGIN.SERVER.CERTIFICATE");
             return this.translate("LOGIN.SERVER.NETWORK") + (message.length > 0 ? " " + message : "");
+        },
+        isCertificateError(message) {
+            return message.indexOf("PKIX path building failed") >= 0 ||
+                message.indexOf("certificate_unknown") >= 0 ||
+                message.indexOf("unable to find valid certification path") >= 0;
         },
         loadDesktopServerSettings() {
             if (! this.isLocalhost || this.isLoggedIn || this.isSecretLink) {
@@ -543,21 +555,49 @@ module.exports = {
 	    }
 	},
 
+	/* The page is loaded once and can outlive many network outages: the desktop app starts it
+	   hidden in the tray, possibly before the network is up. So a failure to reach the server
+	   is retried with backoff, and straight away when the browser says it is back online. */
 	updateNetwork() {
 	    let that = this;
+	    clearTimeout(this.networkRetryTimer);
+	    if (this.networkAttemptInFlight)
+		return;
+	    this.networkAttemptInFlight = true;
 	    peergos.shared.NetworkAccess.buildJS(
 		!that.isLocalhost,
 		0, true
 	    ).thenApply(function (network) {
+		that.networkAttemptInFlight = false;
+		that.networkRetryDelay = NETWORK_RETRY_MIN_MILLIS;
+		that.$toast.dismiss("network");
 		that.desktopServerConnectionError = "";
+		that.$store.commit("SET_NETWORK_RETRYING", false);
 		that.$store.commit("SET_NETWORK_LOADING", false);
 		that.$store.commit("SET_NETWORK", network);
 	    }).exceptionally(function (throwable) {
+		    that.networkAttemptInFlight = false;
+		    let message = "" + (throwable != null && throwable.getMessage != null ? throwable.getMessage() : throwable);
 		    let errorMessage = that.formatNetworkError(throwable);
 		    that.desktopServerConnectionError = errorMessage;
 		    that.$store.commit("SET_NETWORK_LOADING", false);
-		    that.$toast.error(errorMessage, {timeout:false});
+		    if (! that.$store.state.networkRetrying)
+			that.$toast.error(errorMessage, {timeout:false, id: "network"});
+		    // an untrusted certificate stays untrusted until the user changes something
+		    if (that.isCertificateError(message)) {
+			that.$store.commit("SET_NETWORK_RETRYING", false);
+			return;
+		    }
+		    that.$store.commit("SET_NETWORK_RETRYING", true);
+		    let delay = that.networkRetryDelay || NETWORK_RETRY_MIN_MILLIS;
+		    that.networkRetryDelay = Math.min(delay * 2, NETWORK_RETRY_MAX_MILLIS);
+		    that.networkRetryTimer = setTimeout(() => that.updateNetwork(), delay);
 		});
+	},
+
+	onOnline() {
+	    if (this.network == null)
+		this.updateNetwork();
 	},
 
 	checkIfDomainNeedsUnblocking() {

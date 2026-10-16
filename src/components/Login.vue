@@ -28,7 +28,7 @@
 		</label>
 
 		<p class="pg-auth__hint" v-if="network == null && !networkLoading && isLocalhost">
-			{{ translate('LOGIN.SERVER.CONFIGURE_FIRST') }}
+			{{ translate(networkRetrying ? 'LOGIN.SERVER.RETRYING' : 'LOGIN.SERVER.CONFIGURE_FIRST') }}
 		</p>
 		<button type="button" class="pg-btn pg-btn--primary" :disabled="isLoggingIn || network == null" @click="login()">
 			{{ translate('LOGIN.BUTTON') }}
@@ -66,6 +66,7 @@ module.exports = {
 			'crypto',
 			'network',
 			'networkLoading',
+			'networkRetrying',
 			'context'
 		]),
 		...Vuex.mapGetters([
