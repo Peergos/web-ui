@@ -97,6 +97,7 @@ const downloaderMixin = require("../../mixins/downloader/index.js");
 const sandboxMixin = require("../../mixins/sandbox/index.js");
 const i18n = require("../../i18n/index.js");
 const transfers = require("../../mixins/transfers/index.js");
+const archiveMixin = require("../../mixins/archive/index.js");
 
 module.exports = {
     components: {
@@ -130,9 +131,12 @@ module.exports = {
             templateAppSeparator: "!",
             appIconBase64Image: "",
             installedApps: [],
+            // installing from a folder inside a zip: the archive's reader and that folder's path in it
+            archiveReader: null,
+            archiveFolder: "",
         }
     },
-    props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateAppIconBase64", "templateInstanceChatId"],
+    props: ['appPropsFile','installFolder', "appInstallSuccessFunc", "templateInstanceAppName", "templateInstanceTitle", "templateAppIconBase64", "templateInstanceChatId", "appArchive"],
     mixins:[mixins, downloaderMixin, sandboxMixin, i18n],
     computed: {
         ...Vuex.mapState([
@@ -147,6 +151,10 @@ module.exports = {
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.installAppFromFolder = this.installFolder.endsWith('/')  ?
             this.installFolder.substring(0, this.installFolder.length -1) : this.installFolder;
+        if (this.appArchive != null) {
+            this.archiveReader = this.appArchive.reader;
+            this.archiveFolder = this.appArchive.entry;
+        }
         this.initAppInstall();
     },
     beforeUnmount: function() {
@@ -176,7 +184,14 @@ module.exports = {
         loadAppProperties: function() {
             let that = this;
             this.showSpinner = true;
-            that.verifyJSONFile(this.appPropsFile, this.installAppFromFolder).thenApply((res) => {
+            let verified = this.archiveReader == null ?
+                this.verifyJSONFile(this.appPropsFile, this.installAppFromFolder) :
+                this.verifyJSONFile(this.appPropsFile, null).thenApply(res => {
+                    if (res.errors.length == 0)
+                        that.validateArchiveAppIcon(res.props.appIcon, res.errors);
+                    return res;
+                });
+            verified.thenApply((res) => {
                 // closed while the manifest was read: its answer is for an install no one is waiting on
                 if (that.closed)
                     return;
@@ -283,9 +298,11 @@ module.exports = {
                     that.showSpinner = true;
                     callback(that.appProperties.displayName + " - " + title, appIconBase64);
                 };
-                this.context.getByPath(this.installAppFromFolder + '/assets/' + this.appProperties.appIcon).thenApply(iconFileOpt => {
-                    if (iconFileOpt.ref != null) {
-                        let file = iconFileOpt.ref;
+                let iconFile = this.archiveReader == null ?
+                    this.context.getByPath(this.installAppFromFolder + '/assets/' + this.appProperties.appIcon).thenApply(iconFileOpt => iconFileOpt.ref) :
+                    peergos.shared.util.Futures.of(this.archiveFile('assets/' + this.appProperties.appIcon));
+                iconFile.thenApply(file => {
+                    if (file != null) {
                         let fileProps = file.getFileProperties();
                         var low = fileProps.sizeLow();
                         if (low < 0) low = low + Math.pow(2, 32);
@@ -359,35 +376,33 @@ module.exports = {
                 }else {
                     appName = that.appProperties.name + that.templateAppSeparator + that.uuid();
                 }
-                that.context.getByPath(that.installAppFromFolder).thenApply(srcDirectoryOpt => {
-                    that.calculateTotalSize(srcDirectoryOpt.ref, that.installAppFromFolder).thenApply(statistics => {
-                        let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
-                        if (spaceAfterOperation < 0) {
-                            that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
-                            that.showSpinner = false;
-                        } else {
-                            that.spinnerMessage = "Installing App: " + displayName;
-                            var existingChatId = "";
-                            var appIconBase64 = selectedAppIconBase64;
-                            if (oldProperties != null) {
-                                existingChatId = oldProperties.chatId;
-                                appIconBase64 = oldProperties.templateIconBase64;
-                            } else if(that.templateInstanceChatId != null && that.templateInstanceChatId.length > 0) {
-                                existingChatId = that.templateInstanceChatId;
-                                appIconBase64 = that.templateAppIconBase64;
-                            }
-                            that.createNewTemplateApp(appName, displayName, appIconBase64, existingChatId).thenApply(chatId => {
-                                if (chatId == null) {
-                                    that.showError("App installation failed");
-                                    that.showSpinner = false;
-                                } else {
-                                    peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                                        that.attemptAppInstall(0, srcDirectoryOpt.ref, appName, displayName, chatId, appIconBase64, oldProperties != null);
-                                    });
-                                }
-                            });
+                that.withSourceSize((srcDirectory, apparentSize) => {
+                    let spaceAfterOperation = that.checkAvailableSpace(apparentSize);
+                    if (spaceAfterOperation < 0) {
+                        that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+                        that.showSpinner = false;
+                    } else {
+                        that.spinnerMessage = "Installing App: " + displayName;
+                        var existingChatId = "";
+                        var appIconBase64 = selectedAppIconBase64;
+                        if (oldProperties != null) {
+                            existingChatId = oldProperties.chatId;
+                            appIconBase64 = oldProperties.templateIconBase64;
+                        } else if(that.templateInstanceChatId != null && that.templateInstanceChatId.length > 0) {
+                            existingChatId = that.templateInstanceChatId;
+                            appIconBase64 = that.templateAppIconBase64;
                         }
-                    });
+                        that.createNewTemplateApp(appName, displayName, appIconBase64, existingChatId).thenApply(chatId => {
+                            if (chatId == null) {
+                                that.showError("App installation failed");
+                                that.showSpinner = false;
+                            } else {
+                                peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
+                                    that.attemptAppInstall(0, srcDirectory, appName, displayName, chatId, appIconBase64, oldProperties != null);
+                                });
+                            }
+                        });
+                    }
                 });
             });
         },
@@ -395,20 +410,133 @@ module.exports = {
            let that = this;
            let displayName = this.appProperties.displayName;
            let appName = this.appProperties.name;
-           that.context.getByPath(that.installAppFromFolder).thenApply(srcDirectoryOpt => {
-               that.calculateTotalSize(srcDirectoryOpt.ref, that.installAppFromFolder).thenApply(statistics => {
-                   let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
-                   if (spaceAfterOperation < 0) {
-                       that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
-                       that.showSpinner = false;
-                   } else {
-                       that.spinnerMessage = "Installing App: " + displayName;
-                       peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
-                             that.attemptAppInstall(0, srcDirectoryOpt.ref, appName, displayName);
-                       });
-                   }
-               });
+           that.withSourceSize((srcDirectory, apparentSize) => {
+               let spaceAfterOperation = that.checkAvailableSpace(apparentSize);
+               if (spaceAfterOperation < 0) {
+                   that.showError("App installation size exceeds available Space.  Please free up " + that.convertBytesToHumanReadable('' + -spaceAfterOperation) + " and try again");
+                   that.showSpinner = false;
+               } else {
+                   that.spinnerMessage = "Installing App: " + displayName;
+                   peergos.shared.user.App.init(that.context, appName).thenApply(ready => {
+                         that.attemptAppInstall(0, srcDirectory, appName, displayName);
+                   });
+               }
            });
+        },
+        /** The source folder (null for one in an archive) and the space installing it will take. */
+        withSourceSize(callback) {
+            if (this.archiveReader != null) {
+                let apparentSize = 4096;
+                this.archiveFiles(this.archiveFolder).forEach(entry => {
+                    let size = entry.getSize();
+                    apparentSize += size + (4096 - (size % 4096));
+                });
+                callback(null, apparentSize);
+                return;
+            }
+            let that = this;
+            this.context.getByPath(this.installAppFromFolder).thenApply(srcDirectoryOpt => {
+                that.calculateTotalSize(srcDirectoryOpt.ref, that.installAppFromFolder).thenApply(statistics => {
+                    callback(srcDirectoryOpt.ref, statistics.apparentSize);
+                });
+            });
+        },
+        archivePath(relativePath) {
+            return this.archiveFolder.length == 0 ? relativePath : this.archiveFolder + "/" + relativePath;
+        },
+        /** The archive entry at a path relative to the app folder, or null. */
+        archiveFile(relativePath) {
+            let entry = this.archiveReader.getEntryJS(this.archivePath(relativePath));
+            if (entry == null || entry.isDirectory)
+                return null;
+            let size = entry.getSize();
+            let low = size % 4294967296;
+            if (low > 2147483647)
+                low -= 4294967296;
+            let reader = this.archiveReader;
+            return {
+                getFileProperties: () => ({
+                    name: entry.getName(),
+                    sizeLow: () => low,
+                    sizeHigh: () => Math.floor(size / 4294967296),
+                }),
+                getInputStream: () => reader.readJS(entry),
+            };
+        },
+        archiveFiles(entryPath) {
+            let res = [];
+            this.archiveReader.listDirectoryJS(entryPath).forEach(child => {
+                if (child.isDirectory)
+                    res.push(...this.archiveFiles(child.path));
+                else
+                    res.push(child);
+            });
+            return res;
+        },
+        validateArchiveAppIcon(iconFilename, errors) {
+            if (iconFilename.length == 0)
+                return;
+            let icon = this.archiveReader.getEntryJS(this.archivePath("assets/" + iconFilename));
+            if (icon == null || icon.isDirectory) {
+                errors.push("Invalid App icon. Image file not found: " + iconFilename);
+            } else if (peergos.shared.user.fs.FileProperties.getType(archiveMixin.methods.archiveMimeType(iconFilename), false) != 'image') {
+                errors.push("Invalid App icon. Image format not supported");
+            }
+        },
+        /** The files of a folder of the app in the archive, as uploads to the same place in the installed app;
+         *  null if the archive has no such folder.
+         */
+        gatherArchiveFolder(folderName) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let root = this.archivePath(folderName);
+            let dir = this.archiveReader.getEntryJS(root);
+            if (dir == null || !dir.isDirectory) {
+                future.complete(null);
+                return future;
+            }
+            let prefix = this.archiveFolder.length == 0 ? 0 : this.archiveFolder.length + 1;
+            let byFolder = new Map();
+            this.archiveFiles(root).forEach(entry => {
+                let folder = entry.getParentPath().substring(prefix);
+                if (!byFolder.has(folder))
+                    byFolder.set(folder, []);
+                byFolder.get(folder).push(entry);
+            });
+            let entries = [...byFolder.entries()];
+            let total = entries.reduce((n, [folder, files]) => n + files.length, 0);
+            let uploads = new Map();
+            let opened = 0;
+            let failed = false;
+            let finish = () => {
+                let folders = entries.map(([folder, files]) => new peergos.shared.user.fs.FileWrapper.FolderUploadProperties(
+                    peergos.client.JsUtil.asList(folder.split('/')),
+                    peergos.client.JsUtil.asList(files.map(entry => uploads.get(entry.path)))));
+                future.complete(folders);
+            };
+            if (total == 0) {
+                finish();
+                return future;
+            }
+            entries.forEach(([folder, files]) => files.forEach(entry => {
+                this.archiveReader.readJS(entry).thenApply(reader => {
+                    let size = entry.getSize();
+                    let low = size % 4294967296;
+                    if (low > 2147483647)
+                        low -= 4294967296;
+                    uploads.set(entry.path, new peergos.shared.user.fs.FileWrapper.FileUploadProperties(entry.getName(),
+                        callbacks.supplier(() => reader), Math.floor(size / 4294967296), low,
+                        java.util.Optional.empty(), java.util.Optional.empty(), false, true, x => {}));
+                    if (++opened == total)
+                        finish();
+                }).exceptionally(throwable => {
+                    if (!failed) {
+                        failed = true;
+                        future.completeExceptionally(throwable);
+                    }
+                    return null;
+                });
+            }));
+            return future;
         },
         attemptAppInstall: function(attemptCount, srcDirectory, appName, displayName, chatId, appIconBase64, isUpdateInstall) {
            let that = this;
@@ -433,6 +561,9 @@ module.exports = {
            });
         },
         gatherDataFiles: function(appName, appDirectory) {
+            if (this.archiveReader != null)
+                return this.gatherArchiveFolder('data').thenApply(folders =>
+                    folders == null || folders.length == 0 ? [] : peergos.client.JsUtil.asList(folders));
             let future = peergos.shared.util.Futures.incomplete();
             let dataFolderName = 'data';
             let that = this;
@@ -502,6 +633,21 @@ module.exports = {
         copyAssetsFolder(appName) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
+            if (this.archiveReader != null) {
+                this.gatherArchiveFolder('assets').thenApply(folders => {
+                    if (folders == null) {
+                        future.complete(false);
+                    } else {
+                        that.copyAllDataFiles(folders.length == 0 ? [] : peergos.client.JsUtil.asList(folders), appName)
+                            .thenApply(res => future.complete(res));
+                    }
+                }).exceptionally(throwable => {
+                    console.log('unable to copy app assets. error: ' + throwable.getMessage());
+                    future.complete(false);
+                    return null;
+                });
+                return future;
+            }
             let appFolderPath = "/" + this.context.username + "/.apps/" + appName;
             this.context.getByPath(this.installAppFromFolder + '/assets').thenApply(srcAssetsDirOpt => {
                 if (srcAssetsDirOpt.ref != null) {
@@ -612,8 +758,10 @@ module.exports = {
         updateAppManifest: function(appName, appDisplayName, chatId, appIconBase64) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            this.context.getByPath(this.installAppFromFolder + '/peergos-app.json').thenApply(propsFileOpt => {
-                that.readJSONFile(propsFileOpt.ref).thenApply(props => {
+            let manifest = this.archiveReader != null ? peergos.shared.util.Futures.of(this.appPropsFile) :
+                this.context.getByPath(this.installAppFromFolder + '/peergos-app.json').thenApply(propsFileOpt => propsFileOpt.ref);
+            manifest.thenApply(propsFile => {
+                that.readJSONFile(propsFile).thenApply(props => {
                     props.source = props.source.length > 0 ? props.source : that.installAppFromFolder;
                     if (that.isTemplateApp) {
                         props.name = appName;

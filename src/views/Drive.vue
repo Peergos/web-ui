@@ -284,7 +284,7 @@
         >
           {{ translate("DRIVE.ADD.LAUNCH") }}
         </li>
-        <li id="app-run" v-if="isInstallable" @keyup.enter="runApp()" @click="runApp()">
+        <li id="app-run" v-if="isInstallable && archive == null" @keyup.enter="runApp()" @click="runApp()">
           {{ translate("DRIVE.RUN") }}
         </li>
         <li
@@ -398,6 +398,7 @@
       :appInstallSuccessFunc="appInstallSuccess"
       :appPropsFile="selectedFiles[0]"
       :installFolder="getPath"
+      :appArchive="archive"
     >
     </AppInstall>
     <AppSandbox
@@ -793,8 +794,6 @@ module.exports = {
 		},
 
         isInstallable: function() {
-           if (this.archive != null)
-               return false;
            try {
                if (this.selectedFiles.length != 1)
                    return false;
