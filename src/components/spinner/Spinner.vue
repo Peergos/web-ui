@@ -1,5 +1,5 @@
 <template>
-<div style="width:100%; left:0; top:0;">
+<div class="pg-spinner" style="width:100%; left:0; top:0;">
     <div id="spinner" style="width:100%; height:100%; ">
         <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
     </div>
