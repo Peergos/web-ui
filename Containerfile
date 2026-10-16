@@ -25,7 +25,7 @@ RUN mkdir /tmp/classes && cd /tmp/classes && jar xf /opt/peergos/server/Peergos.
     echo "Linking modules: $MODULES" && \
     jlink --add-modules "$MODULES,jdk.naming.dns,jdk.zipfs,jdk.crypto.ec" \
         --strip-debug --no-man-pages --no-header-files \
-        --output /opt/java && \
+        --output /opt/jre && \
     rm -rf /tmp/classes
 
 
@@ -36,13 +36,13 @@ LABEL org.opencontainers.image.description="Peergos is a peer-to-peer encrypted 
 LABEL org.opencontainers.image.source="https://github.com/Peergos/web-ui"
 LABEL org.opencontainers.image.licenses="GPLv3"
 
-ENV JAVA_HOME=/opt/java
+ENV JAVA_HOME=/opt/jre
 ENV PATH="${JAVA_HOME}/bin:${PATH}"
 ENV PEERGOS_PATH=/opt/peergos/data
 
 WORKDIR /opt/peergos
 RUN mkdir -p /opt/peergos/data
-COPY --from=build /opt/java /opt/java
+COPY --from=build /opt/jre /opt/jre
 COPY --from=build /opt/peergos/server /opt/peergos/server
 COPY --from=build /opt/peergos/native-libs /opt/peergos/native-libs
 COPY docker-entrypoint.sh /opt/peergos/docker-entrypoint.sh
