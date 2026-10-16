@@ -76,11 +76,6 @@ modules:
         url: https://download.gnome.org/sources/libsecret/0.21/libsecret-0.21.7.tar.xz
         sha256: 6b452e4750590a2b5617adc40026f28d2f4903de15f1250e1d1c40bfd68ed55e
 
-  - name: openjdk
-    buildsystem: simple
-    build-commands:
-      - /usr/lib/sdk/openjdk25/install.sh
-
   - name: ant
     buildsystem: simple
     build-commands:
@@ -136,11 +131,23 @@ modules:
   - name: peergos
     buildsystem: simple
     build-commands:
-      - export JAVA_HOME=/app/jdk
-      - export PATH=$JAVA_HOME/bin:$PATH/app/jdk
-
       - ant dist
 
+      # A runtime of only the modules Peergos uses, rather than the SDK's install.sh
+      # which copies every module of the JDK. Stray dependency module-info.class
+      # files make jdeps treat the fat jar as a named module, so it reads the
+      # extracted classes. jdk.naming.dns, jdk.zipfs and jdk.crypto.ec are loaded
+      # via service lookup, invisible to jdeps.
+      - |
+        mkdir jdeps-classes && cd jdeps-classes && jar xf ../server/Peergos.jar &&
+        find . -name module-info.class -delete &&
+        MODULES=$(jdeps --ignore-missing-deps --multi-release 25 --print-module-deps -R .) &&
+        echo "Linking modules: $MODULES" &&
+        jlink --add-modules "$MODULES,jdk.naming.dns,jdk.zipfs,jdk.crypto.ec" \
+            --strip-debug --no-man-pages --no-header-files --output /app/jre &&
+        cd .. && rm -rf jdeps-classes
+
+      - java packager/StripNatives.java server/Peergos.jar
       - install -Dm644 server/Peergos.jar /app/share/peergos/Peergos.jar
 
       - install -Dm755 peergos.sh /app/bin/peergos
