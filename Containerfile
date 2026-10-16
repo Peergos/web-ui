@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install --assume-yes ant git
 COPY . /opt/peergos
 WORKDIR /opt/peergos
 
-RUN ant dist
+RUN ant dist && java packager/StripNatives.java server/Peergos.jar
 
 ARG TARGETARCH
 RUN NACL_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "amd64") && \
