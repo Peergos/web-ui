@@ -64,8 +64,9 @@ public class NetworkRetryTest {
             WebDriver.sleep(500);
             if (Boolean.TRUE.equals(d.script("return " + Page.VUE + ".root().$store.state.networkRetrying")))
                 throw new AssertionError("Once connected it should stop retrying");
-            if (Boolean.TRUE.equals(d.script("return document.body.innerText.includes('Unable to connect to the configured server')")))
-                throw new AssertionError("Once connected the error should go");
+            // the toast takes 750ms to animate out, and some engines count its text until then
+            d.waitForScript("the error to go once connected",
+                    "! document.body.innerText.includes('Unable to connect to the configured server')", 5_000);
             if (Boolean.TRUE.equals(d.script("return document.querySelector('.pg-auth button.pg-btn--primary').disabled")))
                 throw new AssertionError("Once connected Sign in should be enabled");
             System.out.println("  ok   once the server is back it connects without a reload, and the error goes");

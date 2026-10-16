@@ -117,6 +117,9 @@ module.exports = {
             // What the frame was last sent, so a frame that comes up after it can be given
             // the same thing rather than nothing at all.
             lastLoad: null,
+            // An entry a link asked to open, such as a reminder tapped on the phone, held until
+            // the frame has been sent the calendars it lives in.
+            requestedEntry: null,
             // Both undone in beforeUnmount: the window outlives this view.
             messageListener: null,
             shareRetry: null,
@@ -230,9 +233,11 @@ module.exports = {
     },
 	mounted(){
         document.body.style.overflow = 'hidden';
+        window.addEventListener('hashchange', this.onHashChange);
     },
     beforeUnmount(){
         document.body.style.overflow = '';
+        window.removeEventListener('hashchange', this.onHashChange);
         this.cancelSweeps();
         clearTimeout(this.listenerRetry);
         clearTimeout(this.shareRetry);
@@ -246,9 +251,14 @@ module.exports = {
     getInputParameters: function() {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
-        const props = this.getPropsFromUrl();
-        
-        let filename = props.args.filename;
+        const props = this.getPropsFromUrl() || {};
+        const args = props.args || {};
+        this.requestedEntry = this.entryFromArgs(args);
+        // a link that only names the app means the user's own calendars
+        if (props.path == null && this.context != null && ! this.isSecretLink)
+            props.path = this.context.username;
+
+        let filename = args.filename;
         let isFile = filename != null && filename.length > 0;
         if (!isFile) {
             //loading calendar from left hand menu + shared calendar importing
@@ -1046,6 +1056,34 @@ module.exports = {
             // Carried with the state rather than left to the handshake alone, which only
             // ran once - a later load would otherwise paint a light calendar in a dark app.
             currentTheme: this.$store.getters.currentTheme});
+        this.showRequestedEntry();
+    },
+    /** {id, at} from a link's args: the entry's UID and the start of the occurrence, in ms. */
+    entryFromArgs: function(args) {
+        let entry = args == null ? null : args.entry;
+        if (entry == null || ! this.isString(entry.id) || typeof entry.at !== 'number' || ! isFinite(entry.at))
+            return null;
+        return {id: entry.id, at: entry.at};
+    },
+    showRequestedEntry: function() {
+        if (this.requestedEntry == null || this.lastLoad == null)
+            return;
+        let entry = this.requestedEntry;
+        this.requestedEntry = null;
+        this.postMessage({type: 'showEntry', id: entry.id, at: entry.at});
+        // a reload, or the app coming back to this page, is not the user asking for it again
+        if (! this.isSecretLink)
+            this.updateHistory("Calendar", this.context.username, {});
+    },
+    // A link followed while the calendar is already open: the view stays, so nothing else
+    // would read it.
+    onHashChange: function() {
+        let props = this.getPropsFromUrl();
+        let entry = props == null || props.app !== "Calendar" ? null : this.entryFromArgs(props.args);
+        if (entry == null)
+            return;
+        this.requestedEntry = entry;
+        this.showRequestedEntry();
     },
     postDeleteCalendar: function(calendar, data) {
         let that = this;
