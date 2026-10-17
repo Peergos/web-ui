@@ -859,6 +859,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"Access",
     "APP.GRANT.WRITE":"Let this app change files here",
     "APP.GRANT.PERSIST":"Remember this until I revoke it",
+    "APP.GRANT.SUGGESTED.NEW":"new folder",
     "APP.GRANT.REFUSED":"Couldn't give the app $PATH",
     "APP.GRANT.STALE.CHANGED":"$NAME had access to $PATH, which has changed. Allow it again?",
     "APP.GRANT.STALE.GONE":"The folder $NAME had access to no longer exists. Forget it?",

@@ -1,13 +1,15 @@
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.nio.file.*;
+import java.time.*;
 import java.util.*;
 
 /** An app asks for a folder, the user approves it in the picker, and the app keeps using it.
  *
  *  The app holds no manifest permission at all: the picker is the consent. It addresses the
  *  folder only through the grant id the picker hands back, and the test checks every verb on
- *  that url against the bytes the drive then holds. The grant has to outlive the sandbox, follow
+ *  that url against the bytes the drive then holds, the listing's details, and a rename and a
+ *  move through the grant. The grant has to outlive the sandbox, follow
  *  the folder through a rename, ask once to be renewed after an unshare rotates the folder's
  *  keys, and stop working when it is revoked from the app details.
  *
@@ -109,6 +111,83 @@ public class AppFolderGrantTest {
             check(call(d, "DELETE", base + "sub/todo.md", null, null).status == 204, "delete");
             check(call(d, "GET", base + "sub/todo.md", null, null).status == 404, "deleted");
 
+            // the listing with details: when each entry changed and, for a file, how big it is. The
+            // file went up minutes ago, so a time off by whole hours is a time zone mistake.
+            Map<String, Object> detailed = listing(call(d, "GET", base + "?details=true", null, null).text);
+            Map<String, Object> entry = entries(detailed, "files").stream()
+                    .filter(f -> "existing.txt".equals(f.get("name"))).findFirst().orElse(null);
+            check(entry != null && ((Number) entry.get("size")).longValue() == "already here".length(), "details give a file's size " + detailed);
+            Instant changed = Instant.parse((String) entry.get("modified"));
+            check(Duration.between(changed, Instant.now()).abs().toMinutes() < 30, "details give when it changed: " + changed);
+            check(entries(detailed, "subFolders").stream()
+                    .anyMatch(f -> "made".equals(f.get("name")) && f.get("modified") != null && ! f.containsKey("size")),
+                    "a folder has a time and no size " + detailed);
+
+            // rename and move take their argument as the body and answer 201 with where the entry is now; a taken
+            // name, a hidden one or a path is refused
+            Response renamed = call(d, "POST", base + "existing.txt?action=rename", "note.txt", null);
+            check(renamed.status == 201 && (base + "note.txt").equals(renamed.location), "rename " + renamed);
+            check(call(d, "GET", base + "existing.txt", null, null).status == 404, "the old name is gone");
+            check(call(d, "GET", base + "note.txt", null, null).text.equals("already here"), "read under the new name");
+            check(call(d, "POST", base + "note.txt?action=rename", "big.bin", null).status == 400, "a taken name is refused");
+            check(call(d, "POST", base + "note.txt?action=rename", ".hidden", null).status == 400, "a hidden name is refused");
+            check(call(d, "POST", base + "note.txt?action=rename", "a/b", null).status == 400, "a path is refused");
+            Response moved = call(d, "POST", base + "note.txt?action=move", id + "/made", null);
+            check(moved.status == 201 && (base + "made/note.txt").equals(moved.location), "move " + moved);
+            check(call(d, "GET", base + "note.txt", null, null).status == 404, "moved away");
+            check(call(d, "GET", base + "made/note.txt", null, null).text.equals("already here"), "read where it went");
+            check(Fixtures.listing(jar, url, user, password, NOTES + "/made").contains("note.txt"), "the move is in the drive");
+
+            // a shared entry asks the user, as Drive does, whether people keep access; closing the question keeps it
+            check(call(d, "POST", base + "made/kept?type=directory", "", null).status == 201, "mkdir for the shared moves");
+            d.script("const ctx = window.__launcher.context; window.__linked = false;"
+                    + "ctx.createSecretLink(arguments[0], false, java.util.Optional.empty(), '', '', false)"
+                    + "  .thenApply(l => window.__linked = true);", "/" + user + "/" + NOTES + "/made/note.txt");
+            d.waitForScript("the secret link", "window.__linked === true", 120_000);
+            start(d, "sharedMove", "POST", base + "made/note.txt?action=move", id + "/made/kept", null);
+            d.waitForScript("the keep-access question", "!!document.getElementById('confirm-header-id')", 60_000);
+            String question = String.valueOf(d.script("return document.getElementById('confirm-header-id').textContent"));
+            check(question.contains("access"), "the move asks about access: " + question);
+            d.script("document.getElementById('confirm-header-id').closest('.pg-dialog').querySelector('.pg-dialog__close').click();");
+            Response dismissed = await(d, "sharedMove");
+            check(dismissed.status == 201 && (base + "made/kept/note.txt").equals(dismissed.location), "closing the question moves it, access kept " + dismissed);
+            start(d, "sharedMoveBack", "POST", base + "made/kept/note.txt?action=move", id + "/made", null);
+            d.waitForScript("the keep-access question again", "!!document.getElementById('confirm-header-id')", 60_000);
+            d.script("[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'No').click();");
+            Response notKept = await(d, "sharedMoveBack");
+            check(notKept.status == 201 && (base + "made/note.txt").equals(notKept.location), "answering no moves it too " + notKept);
+            check(call(d, "GET", base + "made/note.txt", null, null).text.equals("already here"), "read the shared file where it went");
+            // left open when the app closes, the question is answered as a dismissal is: the move goes ahead, and the
+            // writes held up behind it go on
+            check(call(d, "PUT", base + "made/closing.txt", "closing", null).status == 201, "a shared file to move as the app closes");
+            d.script("const ctx = window.__launcher.context; window.__linked = false;"
+                    + "ctx.createSecretLink(arguments[0], false, java.util.Optional.empty(), '', '', false)"
+                    + "  .thenApply(l => window.__linked = true);", "/" + user + "/" + NOTES + "/made/closing.txt");
+            d.waitForScript("the secret link again", "window.__linked === true", 120_000);
+            start(d, "sharedMoveClosed", "POST", base + "made/closing.txt?action=move", id + "/made/kept", null);
+            d.waitForScript("the keep-access question once more", "!!document.getElementById('confirm-header-id')", 60_000);
+            closeApp(d);
+            launch(d);
+            d.waitUntil("the move to go ahead", () -> call(d, "GET", base + "made/kept/closing.txt", null, null).text.equals("closing") ? true : null, 60_000);
+            check(call(d, "PUT", base + "made/after-close.txt", "x", null).status == 201, "closing the app answers it, and the folder takes writes again");
+
+            // a Greek name, and the location of what it made comes back percent-encoded: a header holds only Latin-1
+            String greek = "Σημείωση.txt";
+            Response greekPut = call(d, "PUT", base + greek, "γεια", null);
+            check(greekPut.status == 201 && (base + java.net.URLEncoder.encode(greek, "UTF-8")).equals(greekPut.location), "a Greek name " + greekPut);
+            check(call(d, "GET", base + greek, null, null).text.equals("γεια"), "read the Greek name back");
+
+            // # and ? in a name, sent as %23 and %3F, and % and & in a new name; a slash inside a segment is refused
+            check(call(d, "PUT", base + "Q%23%3F.txt", "odd", null).status == 201, "a name with # and ?");
+            // read from the folder's own listing: the CLI's printed one comes out differently on windows
+            Map<String, Object> named = listing(call(d, "GET", base + "?details=true", null, null).text);
+            check(entries(named, "files").stream().anyMatch(f -> "Q#?.txt".equals(f.get("name"))),
+                    "the drive holds the name as given " + named.get("files"));
+            Response odd = call(d, "POST", base + "Q%23%3F.txt?action=rename", "50% off & more.txt", null);
+            check(odd.status == 201 && (base + "50%25%20off%20%26%20more.txt").equals(odd.location), "a new name with % and & " + odd);
+            check(call(d, "GET", odd.location, null, null).text.equals("odd"), "read it where the location says");
+            check(call(d, "GET", base + "a%2Fb.txt", null, null).status == 400, "a slash inside a name is refused");
+
             check(call(d, "GET", base + "%2E%2E/" + PHOTOS, null, null).status == 400, "no way out through ..");
             check(call(d, "GET", "/peergos-api/v0/folder/bnotagrant/existing.txt", null, null).status == 400, "unknown grant");
             check(call(d, "GET", "/" + user + "/" + NOTES + "/existing.txt", null, null).status != 200, "no absolute path access");
@@ -133,6 +212,8 @@ public class AppFolderGrantTest {
             String readId = (String) read.get("grantId");
             check(Boolean.FALSE.equals(read.get("write")), "read grant " + read);
             check(call(d, "PUT", "/peergos-api/v0/folder/" + readId + "/x.md", "x", null).status == 403, "read grant refuses writes");
+            check(call(d, "POST", base + "made/note.txt?action=move", readId + "/", null).status == 403, "no moving into a read grant");
+            check(call(d, "GET", base + "made/note.txt", null, null).text.equals("already here"), "the refused move left it be");
 
             // the plain picker is unchanged: no switches, and absolute paths back
             start(d, "legacy", "GET", "/peergos-api/v0/folders/?multiple=false", null, null);
@@ -190,6 +271,55 @@ public class AppFolderGrantTest {
             grants = call(d, "GET", "/peergos-api/v0/grants/", null, null);
             check(! grants.text.contains(id) && grants.text.contains(readId), "revoked grant is gone " + grants);
             check(call(d, "PUT", base + "after.md", "x", null).status == 400, "revoked grant refuses writes");
+
+            // a folder the app suggests: the picker starts on it, marked new, and makes it only if it is chosen
+            String suggested = "Suggested" + RUN, ask = "/peergos-api/v0/folders/?write=true&persist=true&multiple=false&suggest=";
+            start(d, "suggestCancel", "GET", ask + suggested, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            String selected = String.valueOf(d.script("return document.querySelector('.fp-selection__value').title"));
+            check(selected.equals("/" + user + "/" + suggested), "the picker starts on the suggested folder: " + selected);
+            pickerButton(d, "Cancel");
+            check(await(d, "suggestCancel").text.equals("[]"), "a cancel grants nothing");
+            check(! exists(d, "/" + user + "/" + suggested), "and makes nothing");
+            start(d, "suggest", "GET", ask + suggested, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            pickerButton(d, "Select");
+            Map<String, Object> made = only(await(d, "suggest").text);
+            check(("/" + user + "/" + suggested).equals(made.get("path")) && Boolean.TRUE.equals(made.get("write")), "chosen, it is granted: " + made);
+            check(exists(d, "/" + user + "/" + suggested), "and made in the drive");
+            check(call(d, "PUT", "/peergos-api/v0/folder/" + made.get("grantId") + "/first.txt", "x", null).status == 201, "and written to");
+            // made by hand under the suggested name, with the picker's New folder, it is chosen as any new folder is
+            String byHand = "ByHand" + RUN;
+            start(d, "suggestByHand", "GET", ask + byHand, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            d.script("document.querySelector('.fp-picker__new').click();");
+            d.waitForScript("the new folder prompt", "!!document.getElementById('prompt-input')", 60_000);
+            d.script("const i = document.getElementById('prompt-input'); i.value = arguments[0];"
+                    + "i.dispatchEvent(new Event('input', {bubbles: true})); return 1;", byHand);
+            d.script("document.getElementById('prompt-button-id').click();");
+            d.waitForScript("the folder made", "!document.getElementById('prompt-input') && !document.querySelector('.fp-selection__new')", 60_000);
+            pickerButton(d, "Select");
+            Map<String, Object> handGrant = only(await(d, "suggestByHand").text);
+            check(("/" + user + "/" + byHand).equals(handGrant.get("path")), "made by hand under the suggested name, it is granted: " + handGrant);
+            // a folder already there is not chosen for the user: an app proposes a new folder, never one with files in it
+            start(d, "suggestExisting", "GET", ask + PHOTOS, null, null);
+            awaitPicker(d);
+            WebDriver.sleep(2000);
+            check(Boolean.TRUE.equals(d.script("return !!document.querySelector('.fp-selection__empty')")), "an existing folder is not preselected");
+            pickerButton(d, "Cancel");
+            await(d, "suggestExisting");
+            // a suggestion is a name, never a path
+            for (String bad : List.of("..%2Fescape", ".hidden", "a%2Fb")) {
+                start(d, "suggestBad", "GET", ask + bad, null, null);
+                awaitPicker(d);
+                WebDriver.sleep(1000);
+                check(Boolean.TRUE.equals(d.script("return !!document.querySelector('.fp-selection__empty')")), "no suggestion from " + bad);
+                pickerButton(d, "Cancel");
+                await(d, "suggestBad");
+            }
             System.out.println("PASS app folder grants");
         } finally {
             if (own != null)
@@ -263,10 +393,12 @@ public class AppFolderGrantTest {
         d.waitForScript("the app to close", "!document.querySelector('" + OUTER + "')", 60_000);
     }
 
+    // Back to the top even when a frame isn't there yet: on a slow machine the first look comes before the app's own
+    // frame exists, and left in the sandbox's frame every later look would search the wrong document for it.
     static Object inApp(WebDriver d, String body, Object... args) {
-        d.switchToFrame(OUTER);
-        d.switchToFrame(INNER);
         try {
+            d.switchToFrame(OUTER);
+            d.switchToFrame(INNER);
             return d.script(body, args);
         } finally {
             d.switchToTop();
@@ -313,11 +445,33 @@ public class AppFolderGrantTest {
         d.script("[...document.querySelectorAll('.fp-picker button')].find(b => b.textContent.trim() === 'Select').click();");
     }
 
+    static void pickerButton(WebDriver d, String label) {
+        d.script("[...document.querySelectorAll('.fp-picker button')].find(b => b.textContent.trim() === arguments[0]).click();", label);
+    }
+
+    static boolean exists(WebDriver d, String path) {
+        d.switchToTop();
+        d.script("window.__exists = null;"
+                + "window.__launcher.context.getByPath(arguments[0]).thenApply(o => window.__exists = o.ref != null);", path);
+        d.waitForScript("the drive lookup", "window.__exists !== null", 60_000);
+        return Boolean.TRUE.equals(d.script("return window.__exists"));
+    }
+
     @SuppressWarnings("unchecked")
     static Map<String, Object> only(String json) {
         List<Object> list = (List<Object>) peergos.shared.io.ipfs.api.JSONParser.parse(json);
         check(list.size() == 1, "one grant: " + json);
         return (Map<String, Object>) list.get(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    static Map<String, Object> listing(String json) {
+        return (Map<String, Object>) peergos.shared.io.ipfs.api.JSONParser.parse(json);
+    }
+
+    @SuppressWarnings("unchecked")
+    static List<Map<String, Object>> entries(Map<String, Object> listing, String key) {
+        return (List<Map<String, Object>>) listing.get(key);
     }
 
     static boolean headerShows(WebDriver d, String path) {
