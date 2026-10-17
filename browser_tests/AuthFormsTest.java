@@ -111,6 +111,15 @@ public class AuthFormsTest {
                 WebDriver.sleep(400);
                 billing(d, TABS[tab], "[role=tabpanel]");
             }
+            // and the upgrade dialog, signed in
+            d.navigate(server.url() + "/");
+            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.gotoDrive(d);
+            d.waitForScript("paid mode", "(() => { const p = window.__drive.$store.state.paymentProperties; return p && p.isPaid(); })()", 60_000);
+            d.script("window.__drive.$store.commit('CURRENT_MODAL', 'ModalPro'); return 1;");
+            d.waitForScript("the upgrade dialog's plans", "!!document.querySelector('.app-modal__dialog .pg-segmented')", 30_000);
+            WebDriver.sleep(400);
+            billing(d, "the upgrade dialog", ".app-modal__dialog");
         }
     }
 

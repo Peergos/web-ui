@@ -4,10 +4,7 @@
 			<p>{{ translate("SPACE.CURRENT") }}: {{ quota }}</p>
 			<p v-if="!isPaid" class="pg-note">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 			<p v-if="willCharge()" class="pg-note">Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}</p>
-			<div v-if="!showCard" class="pro__billing" data-select="billing">
-				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': !annual}" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
-				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': annual}" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
-			</div>
+			<BillingPeriod v-if="!showCard" v-model="annual"/>
 			<div v-if="!showCard" class="pro__plans">
 				<div class="pro__plan">
 					<h4>Pro {{ translate("PAID.ACCOUNT") }}</h4>
@@ -59,11 +56,13 @@
 <script>
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
+const BillingPeriod = require("../form/BillingPeriod.vue");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
 	    AppModal,
+	    BillingPeriod,
             Confirm,
 	},
         mixins:[i18n],
@@ -168,10 +167,6 @@ module.exports = {
 			'updateQuota',
 			'updatePayment'
 		]),
-            setMonthly() {
-            this.annual = false;
-        },
-
         willCharge() {
             return this.paymentProperties.getExpiry().isPresent() && this.paymentProperties.desiredMb() > 0;
         },
@@ -182,9 +177,6 @@ module.exports = {
 
         nextCharge() {
             return this.paymentProperties.getNextCharge();
-        },
-        setAnnual() {
-            this.annual = true;
         },
         price1() {
             return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
@@ -274,48 +266,6 @@ module.exports = {
 <style>
 /* The plans side by side where there is room and one above the other where there is not,
    each on the field surface with its price and a way to choose it at the foot. */
-.pro__billing {
-	display: inline-flex;
-	align-self: center;
-	gap: 2px;
-	padding: 3px;
-	border-radius: var(--radius-pill);
-	background-color: var(--pg-surface-2);
-}
-
-.pro__billing-entry {
-	position: relative;
-	display: flex;
-	align-items: center;
-	height: 34px;
-	margin: 0;
-	padding: 0 16px;
-	border-radius: var(--radius-pill);
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	color: var(--pg-muted);
-	cursor: pointer;
-}
-
-/* the chosen period in the primary button's colours, which keep their contrast in both themes */
-.pro__billing-entry--on {
-	background-color: var(--pg-primary);
-	color: var(--pg-on-primary);
-}
-
-/* out of sight but still in the tab order, so the switch works from the keyboard too */
-.pro__billing input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
-	pointer-events: none;
-}
-.pro__billing-entry:focus-within {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
-
 .pro__plans {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
