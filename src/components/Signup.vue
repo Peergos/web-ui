@@ -1,15 +1,15 @@
 <template>
 	<div class="app-signup pg-auth">
 		<template v-if="showSignup()">
-			<FormUsername v-model="username" :placeholder="translate('SIGNUP.USERNAME')"/>
+			<FormUsername v-model="username" :placeholder="translate('SIGNUP.USERNAME')" autocomplete="username" @keyup.enter="signup()"/>
 
 			<button type="button" class="pg-btn pg-btn--primary generate-password" @click="generatePassword()">
 				{{ translate("SIGNUP.GENERATE") }}
 			</button>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.CLICKGEN')" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.CLICKGEN')" autocomplete="new-password" firstOfTwo @keyup.enter="signup()"/>
 
-			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" @keyup.enter="signup()"/>
+			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" autocomplete="new-password" @keyup.enter="signup()"/>
 
 			<label class="pg-auth__check">
 				<input type="checkbox" name="safePassword" v-model="safePassword"/>

@@ -35,11 +35,16 @@ module.exports = {
 		this.$refs.field.focus();
 	},
 	methods: {
-		// written back to the field as well: when it lowers to the value the form already has, nothing re-renders
+		// Written back to the field as well, since when it lowers to the value the form already has nothing re-renders,
+		// and with the caret put back where it was: setting the value moves it to the end, so a capital typed in the
+		// middle of a name would send the rest of the typing there.
 		changed(event) {
-			let lower = event.target.value.toLowerCase();
-			if (event.target.value !== lower)
-				event.target.value = lower;
+			let field = event.target, lower = field.value.toLowerCase();
+			if (field.value !== lower) {
+				let start = field.selectionStart, end = field.selectionEnd;
+				field.value = lower;
+				field.setSelectionRange(start, end);
+			}
 			this.$emit('update:modelValue', lower);
 		},
 	},

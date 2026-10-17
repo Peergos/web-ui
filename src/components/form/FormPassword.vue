@@ -3,7 +3,7 @@
 		<input
 			class="password"
 		        name="password"
-			autocomplete="current-password"
+			:autocomplete="autocomplete"
                         :placeholder="placeholder"
 			:type="visible ? 'text' : 'password'"
 			:value="modelValue"
@@ -46,6 +46,12 @@ module.exports = {
         passwordIsVisible:{
             type:Boolean,
             default:false
+        },
+        // new-password where an account is being made, so a password manager offers to save it rather than to fill
+        // in one it has
+        autocomplete:{
+            type:String,
+            default:'current-password'
         },
     },
     data() {

@@ -8,12 +8,13 @@ import java.util.*;
  *  the page's background colour - dark, or blank in the light theme - until the focus moved on.
  *
  *  And each form's text fields take text the way people move it: select all, copy, and paste into another field,
- *  which is read back from the field.
+ *  which is read back from the field. They tell a password manager what they hold - a new password where an account
+ *  is made - and keep a username in lower case without moving the caret. Enter in any field sends its form.
  *
  *  Usage: java -cp ../server/Peergos.jar AuthFormsTest.java [engine] [url]
  */
 public class AuthFormsTest {
-    static final String CTRL = "", RELEASE = "";
+    static final String CTRL = "\uE009", RELEASE = "\uE000", ENTER = "\uE007";
     static final String[] TABS = {"sign in", "mirror", "sign up"};
 
     public static void main(String[] args) throws Exception {
@@ -31,6 +32,8 @@ public class AuthFormsTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        String user = "forms" + new Random().nextInt(1_000_000), password = "authformstestpassword";
+        Fixtures.signUp(url, user, password);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-auth-forms-"), headless)) {
             d.setWindowRect(1280, 900);
             d.navigate(url + "/");
@@ -43,16 +46,16 @@ public class AuthFormsTest {
                     d.waitForScript("the sign-in card", "document.querySelectorAll('.tabs__header button').length === 3", 60_000);
                     String name = theme.equals("light") ? "light" : "dark";
                     for (int tab = 0; tab < TABS.length; tab++) {
-                        d.script("document.querySelectorAll('.tabs__header button')[arguments[0]].click(); return 1;", tab);
-                        // the tabs fade from one to the next, so the form is the open tab's once it is the only one
-                        d.waitForScript("the " + TABS[tab] + " form", "document.querySelectorAll('[role=tabpanel]').length === 1"
-                                + " && document.querySelectorAll('.tabs__header button')[" + tab + "].getAttribute('aria-selected') === 'true'"
-                                + " && !!document.querySelector('[role=tabpanel] input[name=username]')", 30_000);
-                        WebDriver.sleep(400);
+                        openTab(d, tab);
                         checkboxes(d, name + ", " + TABS[tab]);
                         clipboard(d, name + ", " + TABS[tab]);
+                        if (theme.equals("light")) {
+                            hints(d, TABS[tab], tab == 2 ? "new-password" : "current-password");
+                            caret(d, TABS[tab]);
+                        }
                     }
                 }
+                enter(d, url, user, password);
             } finally {
                 d.script(before == null ? "localStorage.removeItem('theme'); return 1;" : "localStorage.setItem('theme', arguments[0]); return 1;", before);
             }
@@ -86,6 +89,74 @@ public class AuthFormsTest {
                 throw new AssertionError("FAIL " + where + ", checkbox " + (i + 1) + ": nothing should cover it while it has the focus: " + shown);
             System.out.println("  ok   " + where + ", checkbox " + (i + 1) + " clicked: " + shown);
         }
+    }
+
+    static void openTab(WebDriver d, int tab) {
+        d.script("document.querySelectorAll('.tabs__header button')[arguments[0]].click(); return 1;", tab);
+        // the tabs fade from one to the next, so the form is the open tab's once it is the only one
+        d.waitForScript("the " + TABS[tab] + " form", "document.querySelectorAll('[role=tabpanel]').length === 1"
+                + " && document.querySelectorAll('.tabs__header button')[" + tab + "].getAttribute('aria-selected') === 'true'"
+                + " && !!document.querySelector('[role=tabpanel] input[name=username]')", 30_000);
+        WebDriver.sleep(400);
+    }
+
+    /** What the open form's fields tell a password manager: who, and whether the password is one it has or a new one. */
+    static void hints(WebDriver d, String where, String passwords) {
+        String said = String.valueOf(d.script("const p = document.querySelector('[role=tabpanel]');"
+                + " return [p.querySelector('input[name=username]').autocomplete]"
+                + ".concat([...p.querySelectorAll('input[type=password]')].map(i => i.autocomplete)).join(' ')"));
+        String[] each = said.split(" ");
+        boolean ok = each.length >= 2 && each[0].equals("username");
+        for (int i = 1; i < each.length; i++)
+            ok &= each[i].equals(passwords);
+        if (! ok)
+            throw new AssertionError("FAIL " + where + ": the fields should say username, then " + passwords + ": " + said);
+        System.out.println("  ok   " + where + ": the fields tell a password manager " + said);
+    }
+
+    /** A capital typed in the middle of a username comes out in lower case, with the caret after it. */
+    static void caret(WebDriver d, String where) {
+        d.script("document.querySelectorAll('[data-auth-clip]').forEach(i => i.removeAttribute('data-auth-clip'));"
+                + "document.querySelector('[role=tabpanel] input[name=username]').setAttribute('data-auth-clip', 'name'); return 1;");
+        Object name = d.find("[data-auth-clip=name]");
+        d.click(name);
+        d.sendKeys(name, CTRL + "a" + RELEASE);
+        d.sendKeys(name, "abcd");
+        d.script("document.querySelector('[data-auth-clip=name]').setSelectionRange(2, 2); return 1;");
+        d.sendKeys(name, "X");
+        d.sendKeys(name, "y");
+        String shown = String.valueOf(d.script("const i = document.querySelector('[data-auth-clip=name]'); return i.value + ' caret ' + i.selectionStart"));
+        if (! shown.equals("abxycd caret 4"))
+            throw new AssertionError("FAIL " + where + ": typing X then y after ab should give abxycd with the caret after y: " + shown);
+        System.out.println("  ok   " + where + ": a capital typed mid-name is lowered where it was typed, and typing goes on there: " + shown);
+    }
+
+    /** Enter in a username field sends its form: mirror and sign up answer that the rest is missing, sign in signs in. */
+    static void enter(WebDriver d, String url, String user, String password) {
+        d.script("localStorage.setItem('theme', 'light'); return 1;");
+        d.navigate(url + "/");
+        d.waitForScript("the sign-in card", "document.querySelectorAll('.tabs__header button').length === 3", 60_000);
+        for (int tab : new int[] {1, 2}) {
+            openTab(d, tab);
+            // closed as a person closes them: the forms share one toast, which would otherwise be updated, not shown again
+            d.script("document.querySelectorAll('.Vue-Toastification__close-button').forEach(b => b.click()); return 1;");
+            d.waitForScript("no toast left", "!document.querySelector('.Vue-Toastification__toast')", 15_000);
+            Object name = d.find("[role=tabpanel] input[name=username]");
+            d.click(name);
+            d.sendKeys(name, "someone" + ENTER);
+            d.waitForScript("the " + TABS[tab] + " form to answer", "!!document.querySelector('.Vue-Toastification__toast')", 15_000);
+            System.out.println("  ok   " + TABS[tab] + ": Enter in the username sends the form, which answers: "
+                    + d.script("return document.querySelector('.Vue-Toastification__toast').innerText.trim()"));
+        }
+        openTab(d, 0);
+        Object pass = d.find("[role=tabpanel] input[type=password]");
+        d.click(pass);
+        d.sendKeys(pass, password);
+        Object name = d.find("[role=tabpanel] input[name=username]");
+        d.click(name);
+        d.sendKeys(name, user + ENTER);
+        d.waitForScript("sign in by Enter", "/upgrade/i.test(document.body.innerText)", 120_000);
+        System.out.println("  ok   sign in: Enter in the username signs in");
     }
 
     /** The open form's username: select all and copy it, and paste it over its password. */

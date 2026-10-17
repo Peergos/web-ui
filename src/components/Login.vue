@@ -1,6 +1,6 @@
 <template>
 	<div class="app-login pg-auth" v-if="!autoLoggingIn">
-		<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username"/>
+		<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username" @keyup.enter="login()"/>
 		<MultiFactorAuth
 			v-if="showMultiFactorAuth"
 			v-on:hide-confirm="showMultiFactorAuth = false"
@@ -43,7 +43,7 @@ module.exports = {
 	data() {
 		return {
 			username: '',
-            password: [],
+            password: '',
 			passwordIsVisible: false,
 			demo: true,
             stayLoggedIn: false,

@@ -9,9 +9,9 @@
 			:consumer_func="consumer_func">
 		</MultiFactorAuth>
 		<template v-if="showSignup()">
-			<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')"/>
+			<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username" @keyup.enter="mirror()"/>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo @keyup.enter="mirror()"/>
 
 			<label class="pg-auth__check">
 				<input type="checkbox" name="tosAccepted" v-model="tosAccepted"/>
