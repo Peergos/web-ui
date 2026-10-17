@@ -840,6 +840,45 @@ a.pg-btn {
 	color: var(--pg-link);
 }
 
+/* ---------- segmented choice ---------- */
+/* One of a few, side by side in a pill, as monthly or yearly billing: radio buttons, so the arrow keys move the
+   choice, with the chosen one filled in the primary button's colours. */
+.pg-segmented {
+	display: flex;
+	align-self: center;
+	gap: 4px;
+	padding: 4px;
+	background-color: var(--pg-surface-2);
+	border-radius: var(--radius-pill);
+}
+.pg-segmented label {
+	position: relative;
+	min-width: 96px;
+	padding: 8px 16px;
+	border-radius: var(--radius-pill);
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	text-align: center;
+	cursor: pointer;
+}
+/* out of sight but still in the tab order */
+.pg-segmented input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+.pg-segmented label.active {
+	background-color: var(--pg-primary);
+	color: var(--pg-on-primary);
+}
+.pg-segmented label:focus-within {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
 /* ---------- narrow screens (Android webview, small windows) ---------- */
 
 @media (max-width: 700px) {
@@ -1011,43 +1050,6 @@ a.pg-btn {
 	text-align: center;
 }
 
-/* monthly or yearly */
-.pg-auth__billing {
-	display: flex;
-	align-self: center;
-	gap: 4px;
-	padding: 4px;
-	background-color: var(--pg-surface-2);
-	border-radius: var(--radius-pill);
-}
-.pg-auth__billing label {
-	position: relative;
-	min-width: 96px;
-	padding: 8px 16px;
-	border-radius: var(--radius-pill);
-	color: var(--pg-muted);
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	text-align: center;
-	cursor: pointer;
-}
-/* out of sight but still in the tab order */
-.pg-auth__billing input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
-	pointer-events: none;
-}
-/* the chosen one filled, as in the upgrade dialog: the same choice looks the same signed in or not */
-.pg-auth__billing label.active {
-	background-color: var(--pg-primary);
-	color: var(--pg-on-primary);
-}
-.pg-auth__billing label:focus-within {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
 
 .pg-plans {
 	display: flex;

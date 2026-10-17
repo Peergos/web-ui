@@ -24,10 +24,7 @@
 		</template>
 
 		<template v-else-if="showPaidPlans()">
-			<div class="pg-auth__billing" role="radiogroup" aria-label="Billing">
-				<label :class="{ active: ! annual }"><input type="radio" name="billing" value="monthly" :checked="! annual" @change="setMonthly()">Monthly</label>
-				<label :class="{ active: annual }"><input type="radio" name="billing" value="yearly" :checked="annual" @change="setAnnual()">Yearly</label>
-			</div>
+			<BillingPeriod v-model="annual"/>
 			<ul class="pg-plans">
 				<li class="pg-plan">
 					<h3>Pro Account</h3>
@@ -86,6 +83,7 @@ const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const FormUsername = require("./form/FormUsername.vue");
+const BillingPeriod = require("./form/BillingPeriod.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
@@ -95,6 +93,7 @@ module.exports = {
     components: {
 	FormPassword,
 	FormUsername,
+	BillingPeriod,
         Continue,
 	MultiFactorAuth,
     },
@@ -170,12 +169,6 @@ module.exports = {
                    that.showSignupWarning = true;
                 console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
             });
-        },
-        setMonthly() {
-            this.annual = false;
-        },
-        setAnnual() {
-            this.annual = true;
         },
         price1() {
             return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));

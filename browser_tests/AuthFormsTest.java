@@ -11,10 +11,13 @@ import java.util.*;
  *  which is read back from the field. They tell a password manager what they hold - a new password where an account
  *  is made - and keep a username in lower case without moving the caret. Enter in any field sends its form.
  *
+ *  On a paid instance, where sign up and mirror offer plans, monthly or yearly billing is switched by a click and by
+ *  the arrow keys, and the prices follow.
+ *
  *  Usage: java -cp ../server/Peergos.jar AuthFormsTest.java [engine] [url]
  */
 public class AuthFormsTest {
-    static final String CTRL = "\uE009", RELEASE = "\uE000", ENTER = "\uE007";
+    static final String CTRL = "\uE009", RELEASE = "\uE000", ENTER = "\uE007", LEFT = "\uE012";
     static final String[] TABS = {"sign in", "mirror", "sign up"};
 
     public static void main(String[] args) throws Exception {
@@ -63,6 +66,7 @@ public class AuthFormsTest {
             if (own != null)
                 own.close();
         }
+        paid(engine, headless);
         System.out.println("PASS");
     }
 
@@ -89,6 +93,45 @@ public class AuthFormsTest {
                 throw new AssertionError("FAIL " + where + ", checkbox " + (i + 1) + ": nothing should cover it while it has the focus: " + shown);
             System.out.println("  ok   " + where + ", checkbox " + (i + 1) + " clicked: " + shown);
         }
+    }
+
+    /** On a paid instance, sign up and mirror offer the plans, billed monthly or yearly: a click and the arrow keys
+     *  both switch the period, and the prices follow. */
+    static void paid(String engine, boolean headless) throws Exception {
+        try (QuotaAdminStandIn quotaService = QuotaAdminStandIn.start(false);
+             Server server = Server.startPaid(Paths.get("..", "server").toAbsolutePath().normalize(), quotaService.port());
+             WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-auth-paid-"), headless)) {
+            d.setWindowRect(1280, 900);
+            d.navigate(server.url() + "/");
+            d.waitForScript("the sign-in card", "document.querySelectorAll('.tabs__header button').length === 3", 60_000);
+            for (int tab : new int[] {1, 2}) {
+                d.script("document.querySelectorAll('.tabs__header button')[arguments[0]].click(); return 1;", tab);
+                d.waitForScript("the plans in " + TABS[tab], "document.querySelectorAll('[role=tabpanel]').length === 1"
+                        + " && !!document.querySelector('[role=tabpanel] .pg-segmented')", 30_000);
+                WebDriver.sleep(400);
+                billing(d, TABS[tab], "[role=tabpanel]");
+            }
+        }
+    }
+
+    /** The billing period inside the given element: Yearly clicked, then Monthly by the arrow keys from the chosen one. */
+    static void billing(WebDriver d, String where, String inside) {
+        String price = "return document.querySelector(arguments[0] + ' .pg-plan li:last-child, ' + arguments[0] + ' .pro__plan li:last-child').textContent.trim()";
+        d.click(d.find(inside + " .pg-segmented label:last-child"));
+        WebDriver.sleep(300);
+        String yearly = String.valueOf(d.script(price, inside));
+        if (! yearly.startsWith("£3 /"))
+            throw new AssertionError("FAIL " + where + ": Yearly clicked should price the first plan at £3 a month: " + yearly);
+        Object chosen = d.find(inside + " .pg-segmented input[value=yearly]");
+        d.sendKeys(chosen, LEFT);
+        WebDriver.sleep(300);
+        String monthly = String.valueOf(d.script(price, inside));
+        if (! monthly.startsWith("£4 /"))
+            throw new AssertionError("FAIL " + where + ": the left arrow should choose Monthly, at £4 a month: " + monthly);
+        String on = String.valueOf(d.script("return document.querySelector(arguments[0] + ' .pg-segmented label.active').textContent.trim()", inside));
+        if (! on.equals("Monthly"))
+            throw new AssertionError("FAIL " + where + ": Monthly should be shown as the choice: " + on);
+        System.out.println("  ok   " + where + ": a click chose yearly (" + yearly + "), the left arrow monthly (" + monthly + ")");
     }
 
     static void openTab(WebDriver d, int tab) {
