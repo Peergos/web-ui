@@ -149,7 +149,11 @@ public class AuthFormsTest {
         d.waitForScript("the " + TABS[tab] + " form", "document.querySelectorAll('[role=tabpanel]').length === 1"
                 + " && document.querySelectorAll('.tabs__header button')[" + tab + "].getAttribute('aria-selected') === 'true'"
                 + " && !!document.querySelector('[role=tabpanel] input[name=username]')", 30_000);
+        // The username takes the focus as its form opens, and on a phone that brings up the keyboard over the rest of
+        // the form, so it is put away first, as a person would before ticking anything.
         WebDriver.sleep(400);
+        d.script("if (document.activeElement) document.activeElement.blur(); return 1;");
+        WebDriver.sleep(600);
     }
 
     /** What the open form's fields tell a password manager: who, and whether the password is one it has or a new one. */
