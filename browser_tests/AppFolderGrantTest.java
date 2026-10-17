@@ -393,10 +393,12 @@ public class AppFolderGrantTest {
         d.waitForScript("the app to close", "!document.querySelector('" + OUTER + "')", 60_000);
     }
 
+    // Back to the top even when a frame isn't there yet: on a slow machine the first look comes before the app's own
+    // frame exists, and left in the sandbox's frame every later look would search the wrong document for it.
     static Object inApp(WebDriver d, String body, Object... args) {
-        d.switchToFrame(OUTER);
-        d.switchToFrame(INNER);
         try {
+            d.switchToFrame(OUTER);
+            d.switchToFrame(INNER);
             return d.script(body, args);
         } finally {
             d.switchToTop();
