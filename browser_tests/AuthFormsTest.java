@@ -17,7 +17,9 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar AuthFormsTest.java [engine] [url]
  */
 public class AuthFormsTest {
-    static final String CTRL = "\uE009", RELEASE = "\uE000", ENTER = "\uE007", LEFT = "\uE012";
+    static final String RELEASE = "\uE000", ENTER = "\uE007", LEFT = "\uE012";
+    // what goes with a, c and v for select all, copy and paste: Command on a Mac, Control elsewhere
+    static final String MOD = System.getProperty("os.name", "").toLowerCase().contains("mac") ? "\uE03D" : "\uE009";
     static final String[] TABS = {"sign in", "mirror", "sign up"};
 
     public static void main(String[] args) throws Exception {
@@ -176,7 +178,7 @@ public class AuthFormsTest {
                 + "document.querySelector('[role=tabpanel] input[name=username]').setAttribute('data-auth-clip', 'name'); return 1;");
         Object name = d.find("[data-auth-clip=name]");
         d.click(name);
-        d.sendKeys(name, CTRL + "a" + RELEASE);
+        d.sendKeys(name, MOD + "a" + RELEASE);
         d.sendKeys(name, "abcd");
         d.script("document.querySelector('[data-auth-clip=name]').setSelectionRange(2, 2); return 1;");
         d.sendKeys(name, "X");
@@ -224,17 +226,17 @@ public class AuthFormsTest {
                 + "visible('input[type=password]').setAttribute('data-auth-clip', 'to'); return 1;");
         Object from = d.find("[data-auth-clip=from]"), to = d.find("[data-auth-clip=to]");
         d.click(from);
-        d.sendKeys(from, CTRL + "a" + RELEASE);
+        d.sendKeys(from, MOD + "a" + RELEASE);
         d.sendKeys(from, text);
-        d.sendKeys(from, CTRL + "a" + RELEASE);
+        d.sendKeys(from, MOD + "a" + RELEASE);
         String selected = String.valueOf(d.script("const i = document.querySelector('[data-auth-clip=from]');"
                 + " return i.value.substring(i.selectionStart, i.selectionEnd)"));
         if (! selected.equals(text))
             throw new AssertionError("FAIL " + where + ": select all should select the whole username: " + selected);
-        d.sendKeys(from, CTRL + "c" + RELEASE);
+        d.sendKeys(from, MOD + "c" + RELEASE);
         d.click(to);
-        d.sendKeys(to, CTRL + "a" + RELEASE);
-        d.sendKeys(to, CTRL + "v" + RELEASE);
+        d.sendKeys(to, MOD + "a" + RELEASE);
+        d.sendKeys(to, MOD + "v" + RELEASE);
         String pasted = String.valueOf(d.script("return document.querySelector('[data-auth-clip=to]').value"));
         if (! pasted.equals(text))
             throw new AssertionError("FAIL " + where + ": the username copied should paste into the password: " + pasted);
