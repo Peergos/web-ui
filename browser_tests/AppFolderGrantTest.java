@@ -177,6 +177,17 @@ public class AppFolderGrantTest {
             check(greekPut.status == 201 && (base + java.net.URLEncoder.encode(greek, "UTF-8")).equals(greekPut.location), "a Greek name " + greekPut);
             check(call(d, "GET", base + greek, null, null).text.equals("γεια"), "read the Greek name back");
 
+            // # and ? in a name, sent as %23 and %3F, and % and & in a new name; a slash inside a segment is refused
+            check(call(d, "PUT", base + "Q%23%3F.txt", "odd", null).status == 201, "a name with # and ?");
+            // read from the folder's own listing: the CLI's printed one comes out differently on windows
+            Map<String, Object> named = listing(call(d, "GET", base + "?details=true", null, null).text);
+            check(entries(named, "files").stream().anyMatch(f -> "Q#?.txt".equals(f.get("name"))),
+                    "the drive holds the name as given " + named.get("files"));
+            Response odd = call(d, "POST", base + "Q%23%3F.txt?action=rename", "50% off & more.txt", null);
+            check(odd.status == 201 && (base + "50%25%20off%20%26%20more.txt").equals(odd.location), "a new name with % and & " + odd);
+            check(call(d, "GET", odd.location, null, null).text.equals("odd"), "read it where the location says");
+            check(call(d, "GET", base + "a%2Fb.txt", null, null).status == 400, "a slash inside a name is refused");
+
             check(call(d, "GET", base + "%2E%2E/" + PHOTOS, null, null).status == 400, "no way out through ..");
             check(call(d, "GET", "/peergos-api/v0/folder/bnotagrant/existing.txt", null, null).status == 400, "unknown grant");
             check(call(d, "GET", "/" + user + "/" + NOTES + "/existing.txt", null, null).status != 200, "no absolute path access");

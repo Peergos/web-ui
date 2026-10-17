@@ -560,7 +560,13 @@ function appResponse(event, inst) {
                 restFilePath = filePath.length > grantsRequest.length ? restFilePath.substring(grantsRequest.length) : '';
                 api = grantsRequest;
             } else if (filePath.startsWith(folderRequest)) {
-                restFilePath = restFilePath.substring(folderRequest.length);
+                // decodeURI leaves %23 and %3F as they are, so a name in a granted folder that holds # or ? could
+                // not be reached: what follows the prefix is decoded segment by segment, in full, instead
+                let relative = decodeSegments(requestedResource.pathname.substring(folderRequest.length).replace(/\/$/, ''));
+                if (relative == null) {
+                    return new Response('Bad path', {status: 400})
+                }
+                restFilePath = relative;
                 api = folderRequest;
             } else if (filePath.startsWith(profileRequest)) {
                 if (method != 'GET') {
@@ -704,6 +710,15 @@ function returnAppData(inst, method, filePath, uniqueId, ignoreBody) {
             });
         }
     });
+}
+// A segment that decodes to hold a slash would read as two, so it is refused, as is a malformed escape.
+function decodeSegments(path) {
+    try {
+        let segments = path.split('/').map(decodeURIComponent);
+        return segments.some(s => s.includes('/')) ? null : segments.join('/');
+    } catch (e) {
+        return null;
+    }
 }
 function alignToChunkBoundary(start, end) {
     if (end) {
