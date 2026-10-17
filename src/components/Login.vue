@@ -44,8 +44,6 @@ module.exports = {
 		return {
 			username: '',
             password: '',
-			passwordIsVisible: false,
-			demo: true,
             stayLoggedIn: false,
             isLoggingIn: false,
             autoLoggingIn: true,
@@ -130,9 +128,6 @@ module.exports = {
                     }
                 });
             }
-		},
-		togglePassword() {
-			this.passwordIsVisible = !this.passwordIsVisible
 		},
 		login() {
 		    if (this.isLoggingIn) {
