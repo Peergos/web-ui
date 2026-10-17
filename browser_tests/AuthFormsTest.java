@@ -35,9 +35,10 @@ public class AuthFormsTest {
         String engine = args.length > 0 ? args[0] : "firefox";
         String given = args.length > 1 ? args[1] : null;
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
-        // From safaridriver the Command key reaches the page but the letter pressed with it never does, so Command-A, C and
-        // V do nothing there: Safari's own select all, copy and paste are left to it
-        boolean shortcuts = ! "safari".equals(engine);
+        // safaridriver presses fewer keys than a person: a Command chord reaches the page as the Command key alone, so
+        // Command-A, C and V do nothing, and it types into nothing it can't see, such as a radio button behind its label.
+        // Safari's own shortcuts and arrow keys are left to it.
+        boolean keys = ! "safari".equals(engine);
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
         String user = "forms" + new Random().nextInt(1_000_000), password = "authformstestpassword";
@@ -56,7 +57,7 @@ public class AuthFormsTest {
                     for (int tab = 0; tab < TABS.length; tab++) {
                         openTab(d, tab);
                         checkboxes(d, name + ", " + TABS[tab]);
-                        if (shortcuts)
+                        if (keys)
                             clipboard(d, name + ", " + TABS[tab]);
                         if (theme.equals("light")) {
                             hints(d, TABS[tab], tab == 2 ? "new-password" : "current-password");
@@ -72,7 +73,7 @@ public class AuthFormsTest {
             if (own != null)
                 own.close();
         }
-        paid(engine, headless);
+        paid(engine, headless, keys);
         System.out.println("PASS");
     }
 
@@ -103,7 +104,7 @@ public class AuthFormsTest {
 
     /** On a paid instance, sign up and mirror offer the plans, billed monthly or yearly: a click and the arrow keys
      *  both switch the period, and the prices follow. */
-    static void paid(String engine, boolean headless) throws Exception {
+    static void paid(String engine, boolean headless, boolean keys) throws Exception {
         try (QuotaAdminStandIn quotaService = QuotaAdminStandIn.start(false);
              Server server = Server.startPaid(Paths.get("..", "server").toAbsolutePath().normalize(), quotaService.port());
              WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-auth-paid-"), headless)) {
@@ -115,7 +116,7 @@ public class AuthFormsTest {
                 d.waitForScript("the plans in " + TABS[tab], "document.querySelectorAll('[role=tabpanel]').length === 1"
                         + " && !!document.querySelector('[role=tabpanel] .pg-segmented')", 30_000);
                 WebDriver.sleep(400);
-                billing(d, TABS[tab], "[role=tabpanel]");
+                billing(d, TABS[tab], "[role=tabpanel]", keys);
             }
             // and the upgrade dialog, signed in
             d.navigate(server.url() + "/");
@@ -125,28 +126,32 @@ public class AuthFormsTest {
             d.script("window.__drive.$store.commit('CURRENT_MODAL', 'ModalPro'); return 1;");
             d.waitForScript("the upgrade dialog's plans", "!!document.querySelector('.app-modal__dialog .pg-segmented')", 30_000);
             WebDriver.sleep(400);
-            billing(d, "the upgrade dialog", ".app-modal__dialog");
+            billing(d, "the upgrade dialog", ".app-modal__dialog", keys);
         }
     }
 
-    /** The billing period inside the given element: Yearly clicked, then Monthly by the arrow keys from the chosen one. */
-    static void billing(WebDriver d, String where, String inside) {
+    /** The billing period inside the given element: Yearly clicked, then Monthly by the arrow keys from the chosen one -
+     *  or, without keys, by a click. */
+    static void billing(WebDriver d, String where, String inside, boolean keys) {
         String price = "return document.querySelector(arguments[0] + ' .pg-plan li:last-child').textContent.trim()";
         d.click(d.find(inside + " .pg-segmented label:last-child"));
         WebDriver.sleep(300);
         String yearly = String.valueOf(d.script(price, inside));
         if (! yearly.startsWith("£3 /"))
             throw new AssertionError("FAIL " + where + ": Yearly clicked should price the first plan at £3 a month: " + yearly);
-        Object chosen = d.find(inside + " .pg-segmented input[value=yearly]");
-        d.sendKeys(chosen, LEFT);
+        if (keys)
+            d.sendKeys(d.find(inside + " .pg-segmented input[value=yearly]"), LEFT);
+        else
+            d.click(d.find(inside + " .pg-segmented label:first-child"));
+        String how = keys ? "the left arrow" : "a click";
         WebDriver.sleep(300);
         String monthly = String.valueOf(d.script(price, inside));
         if (! monthly.startsWith("£4 /"))
-            throw new AssertionError("FAIL " + where + ": the left arrow should choose Monthly, at £4 a month: " + monthly);
+            throw new AssertionError("FAIL " + where + ": " + how + " should choose Monthly, at £4 a month: " + monthly);
         String on = String.valueOf(d.script("return document.querySelector(arguments[0] + ' .pg-segmented label.active').textContent.trim()", inside));
         if (! on.equals("Monthly"))
             throw new AssertionError("FAIL " + where + ": Monthly should be shown as the choice: " + on);
-        System.out.println("  ok   " + where + ": a click chose yearly (" + yearly + "), the left arrow monthly (" + monthly + ")");
+        System.out.println("  ok   " + where + ": a click chose yearly (" + yearly + "), " + how + " monthly (" + monthly + ")");
     }
 
     static void openTab(WebDriver d, int tab) {
