@@ -1685,6 +1685,13 @@ input.pg-input:-webkit-autofill:focus {
 	height: 100%;
 	border: 0;
 }
+/* over the page rather than beside it: as a flex item it squeezes the frame aside while it loads */
+.pg-viewer__body > .pg-spinner {
+	position: absolute;
+	inset: 0;
+	width: auto !important;
+	pointer-events: none;
+}
 
 /* a control with only an icon: the same box as a button, square */
 .pg-icon-btn {
