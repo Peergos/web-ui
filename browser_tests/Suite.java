@@ -30,6 +30,7 @@ public class Suite {
             run(failures, "the secret link editor", () -> LinkEditorCheck.run(args1));
             run(failures, "the interface in another language", () -> LanguageTest.run(args1));
             run(failures, "sign-in fields a saved login filled keep their colour", () -> LoginAutofillTest.run(args1));
+            run(failures, "the way in: checkboxes show their tick while focused, and fields copy and paste", () -> AuthFormsTest.run(args1));
             run(failures, "the page reconnects by itself once the server is reachable", () -> NetworkRetryTest.run(args1));
             run(failures, "upload file", () -> UploadTest.run(args1));
             run(failures, "upload a group of files", () -> UploadGroupTest.run(args1));

@@ -79,9 +79,12 @@ input[type=password]{
 	color: var(--color);
     background-color: var(--bg);
 }
-input:focus,
-input:active,
-input:focus-visible{
+/* Text fields only. A checkbox or a radio button keeps its own look while it has the focus, and the browser's focus
+   ring: the shadow inside the edge below would cover its tick in the page's background colour until the focus moved
+   on. :where adds nothing to the weight of these rules, so the fields' own focus styles still win over them. */
+input:where(:not([type=checkbox], [type=radio])):focus,
+input:where(:not([type=checkbox], [type=radio])):active,
+input:where(:not([type=checkbox], [type=radio])):focus-visible{
 	outline:none;
 	border: 2px solid var(--green-500)!important;
 }
@@ -90,9 +93,9 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active,
-input:focus,
-input:active,
-input:focus-visible{
+input:where(:not([type=checkbox], [type=radio])):focus,
+input:where(:not([type=checkbox], [type=radio])):active,
+input:where(:not([type=checkbox], [type=radio])):focus-visible{
 	color:var(--color);
 	font-size: var(--text);
 	box-shadow:none;

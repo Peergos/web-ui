@@ -816,6 +816,69 @@ a.pg-btn {
 	outline-offset: 2px;
 }
 
+/* ---------- checkbox ---------- */
+/* A choice to tick before going on, as on the way in: the browser's own box in the theme's colour, with its label -
+   links and all - beside it. For a setting that takes effect at once, .pg-switch. */
+.pg-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+	line-height: 1.45;
+	cursor: pointer;
+}
+.pg-check input {
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	margin: 1px 0 0;
+	accent-color: var(--pg-primary);
+	cursor: pointer;
+}
+.pg-check a {
+	color: var(--pg-link);
+}
+
+/* ---------- segmented choice ---------- */
+/* One of a few, side by side in a pill, as monthly or yearly billing: radio buttons, so the arrow keys move the
+   choice, with the chosen one filled in the primary button's colours. */
+.pg-segmented {
+	display: flex;
+	align-self: center;
+	gap: 4px;
+	padding: 4px;
+	background-color: var(--pg-surface-2);
+	border-radius: var(--radius-pill);
+}
+.pg-segmented label {
+	position: relative;
+	min-width: 96px;
+	padding: 8px 16px;
+	border-radius: var(--radius-pill);
+	color: var(--pg-muted);
+	font-size: var(--text-small);
+	font-weight: var(--bold);
+	text-align: center;
+	cursor: pointer;
+}
+/* out of sight but still in the tab order */
+.pg-segmented input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+	pointer-events: none;
+}
+.pg-segmented label.active {
+	background-color: var(--pg-primary);
+	color: var(--pg-on-primary);
+}
+.pg-segmented label:focus-within {
+	outline: 2px solid var(--green-500);
+	outline-offset: 2px;
+}
+
 /* ---------- narrow screens (Android webview, small windows) ---------- */
 
 @media (max-width: 700px) {
@@ -961,26 +1024,6 @@ a.pg-btn {
 	width: 100%;
 	min-height: 44px;
 }
-.pg-auth__check {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-	font-size: var(--text-small);
-	font-weight: var(--regular);
-	line-height: 1.45;
-	cursor: pointer;
-}
-.pg-auth__check input {
-	flex: 0 0 auto;
-	width: 18px;
-	height: 18px;
-	margin: 1px 0 0;
-	accent-color: var(--pg-primary);
-	cursor: pointer;
-}
-.pg-auth__check a {
-	color: var(--pg-link);
-}
 .pg-auth h2 {
 	margin: 0;
 	border: 0;
@@ -1007,43 +1050,6 @@ a.pg-btn {
 	text-align: center;
 }
 
-/* monthly or yearly */
-.pg-auth__billing {
-	display: flex;
-	align-self: center;
-	gap: 4px;
-	padding: 4px;
-	background-color: var(--pg-surface-2);
-	border-radius: var(--radius-pill);
-}
-.pg-auth__billing label {
-	position: relative;
-	min-width: 96px;
-	padding: 8px 16px;
-	border-radius: var(--radius-pill);
-	color: var(--pg-muted);
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	text-align: center;
-	cursor: pointer;
-}
-/* out of sight but still in the tab order */
-.pg-auth__billing input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
-	pointer-events: none;
-}
-/* the chosen one filled, as in the upgrade dialog: the same choice looks the same signed in or not */
-.pg-auth__billing label.active {
-	background-color: var(--pg-primary);
-	color: var(--pg-on-primary);
-}
-.pg-auth__billing label:focus-within {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
 
 .pg-plans {
 	display: flex;
@@ -1053,7 +1059,12 @@ a.pg-btn {
 	padding: 0;
 	list-style: none;
 }
-/* the upgrade dialog's plans: a tinted card, a ticked list, the button under it */
+/* side by side where there is room and one above the other where there is not, as in the upgrade dialog */
+.pg-plans--side-by-side {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+/* a plan: a tinted card, a ticked list, the button under it - at the foot, so cards side by side line them up */
 .pg-plan {
 	display: flex;
 	flex-direction: column;
@@ -1062,7 +1073,8 @@ a.pg-btn {
 	border-radius: var(--radius-control);
 	background-color: var(--pg-surface-2);
 }
-.pg-plan h3 {
+.pg-plan h3,
+.pg-plan h4 {
 	margin: 0;
 	font-size: 16px;
 	font-weight: var(--bold);
@@ -1071,6 +1083,7 @@ a.pg-btn {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+	flex: 1 1 auto;
 	margin: 0;
 	padding: 0;
 	list-style: none;
