@@ -28,39 +28,12 @@
 
 		<template v-else-if="showPaidPlans()">
 			<BillingPeriod v-model="annual"/>
-			<ul class="pg-plans">
-				<li class="pg-plan">
-					<h3>Pro Account</h3>
-					<ul>
-						<li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price1() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(200000000000)">Select Pro</button>
-				</li>
-				<li class="pg-plan">
-					<h3>Visionary Account</h3>
-					<ul>
-						<li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price2() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(1000000000000)">Select Visionary</button>
-				</li>
-				<li class="pg-plan">
-					<h3>Pioneer Account</h3>
-					<ul>
-						<li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price3() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(3000000000000)">Select Pioneer</button>
-				</li>
+			<PaidPlans :annual="annual" @choose="setPlan">
 				<li class="pg-plan">
 					<h3>{{ translate("SIGNUP.TRYTITLE") }}</h3>
 					<p><a href="https://peergos-demo.net/?signup=true" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TRY") }}</a>.</p>
 				</li>
-			</ul>
+			</PaidPlans>
 		</template>
 
 		<template v-else-if="showSignupWarning">
@@ -102,6 +75,7 @@ const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
 const FormUsername = require("./form/FormUsername.vue");
 const BillingPeriod = require("./form/BillingPeriod.vue");
+const PaidPlans = require("./form/PaidPlans.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
@@ -112,6 +86,7 @@ module.exports = {
 	    FormPassword,
 	    FormUsername,
 	    BillingPeriod,
+	    PaidPlans,
         Continue,
     },
 
@@ -186,15 +161,6 @@ module.exports = {
                    that.showSignupWarning = true;
                 console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
             });
-        },
-        price1() {
-            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price2() {
-            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price3() {
-            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
         },
         showPaidPlans() {
             return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;

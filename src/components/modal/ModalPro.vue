@@ -11,7 +11,7 @@
 					<ul>
 						<li>200 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price1() }}</li>
+						<li>&#x00A3;{{ planPrice(plans[0], annual) }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePro" @click="confirmUpdate(200000000000)">{{proButtonText}}</button>
 				</div>
@@ -20,7 +20,7 @@
 					<ul>
 						<li>1000 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
+						<li>&#x00A3;{{ planPrice(plans[1], annual) }}  {{ prorataTextVisionary }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disableVisionary" @click="confirmUpdate(1000000000000)">{{visionaryButtonText}}</button>
 				</div>
@@ -29,7 +29,7 @@
 					<ul>
 						<li>3000 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
+						<li>&#x00A3;{{ planPrice(plans[2], annual) }}  {{ prorataTextPioneer }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePioneer" @click="confirmUpdate(3000000000000)">{{pioneerButtonText}}</button>
 				</div>
@@ -58,6 +58,7 @@ const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
 const BillingPeriod = require("../form/BillingPeriod.vue");
 const i18n = require("../../i18n/index.js");
+const plansMixin = require("../../mixins/plans/index.js");
 
 module.exports = {
 	components: {
@@ -65,7 +66,7 @@ module.exports = {
 	    BillingPeriod,
             Confirm,
 	},
-        mixins:[i18n],
+        mixins:[i18n, plansMixin],
 	data() {
 		return {
 			unit:"GiB",
@@ -177,15 +178,6 @@ module.exports = {
 
         nextCharge() {
             return this.paymentProperties.getNextCharge();
-        },
-        price1() {
-            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price2() {
-            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price3() {
-            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
         },
         startAddCardListener: function(desired) {
                 var that = this;
