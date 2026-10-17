@@ -13,7 +13,7 @@
 
 			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo @keyup.enter="mirror()"/>
 
-			<label class="pg-auth__check">
+			<label class="pg-check">
 				<input type="checkbox" name="tosAccepted" v-model="tosAccepted"/>
 				<span>{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a></span>
 			</label>

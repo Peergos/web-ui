@@ -816,6 +816,30 @@ a.pg-btn {
 	outline-offset: 2px;
 }
 
+/* ---------- checkbox ---------- */
+/* A choice to tick before going on, as on the way in: the browser's own box in the theme's colour, with its label -
+   links and all - beside it. For a setting that takes effect at once, .pg-switch. */
+.pg-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+	line-height: 1.45;
+	cursor: pointer;
+}
+.pg-check input {
+	flex: 0 0 auto;
+	width: 18px;
+	height: 18px;
+	margin: 1px 0 0;
+	accent-color: var(--pg-primary);
+	cursor: pointer;
+}
+.pg-check a {
+	color: var(--pg-link);
+}
+
 /* ---------- narrow screens (Android webview, small windows) ---------- */
 
 @media (max-width: 700px) {
@@ -960,26 +984,6 @@ a.pg-btn {
 .pg-auth .pg-btn {
 	width: 100%;
 	min-height: 44px;
-}
-.pg-auth__check {
-	display: flex;
-	align-items: flex-start;
-	gap: 10px;
-	font-size: var(--text-small);
-	font-weight: var(--regular);
-	line-height: 1.45;
-	cursor: pointer;
-}
-.pg-auth__check input {
-	flex: 0 0 auto;
-	width: 18px;
-	height: 18px;
-	margin: 1px 0 0;
-	accent-color: var(--pg-primary);
-	cursor: pointer;
-}
-.pg-auth__check a {
-	color: var(--pg-link);
 }
 .pg-auth h2 {
 	margin: 0;

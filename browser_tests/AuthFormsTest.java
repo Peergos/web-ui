@@ -68,13 +68,13 @@ public class AuthFormsTest {
 
     /** Each checkbox in the open form, clicked as a person clicks it, is ticked and uncovered while it has the focus. */
     static void checkboxes(WebDriver d, String where) {
-        long count = ((Number) d.script("return [...document.querySelectorAll('.pg-auth__check input[type=checkbox]')]"
+        long count = ((Number) d.script("return [...document.querySelectorAll('.pg-check input[type=checkbox]')]"
                 + ".filter(b => b.offsetParent !== null).length")).longValue();
         if (count == 0)
             throw new AssertionError(where + ": no checkbox in the form");
         for (int i = 0; i < count; i++) {
             d.script("document.querySelectorAll('[data-auth-check]').forEach(b => b.removeAttribute('data-auth-check'));"
-                    + "[...document.querySelectorAll('.pg-auth__check input[type=checkbox]')].filter(b => b.offsetParent !== null)[arguments[0]]"
+                    + "[...document.querySelectorAll('.pg-check input[type=checkbox]')].filter(b => b.offsetParent !== null)[arguments[0]]"
                     + ".setAttribute('data-auth-check', ''); return 1;", i);
             Object box = d.find("[data-auth-check]");
             if (Boolean.TRUE.equals(d.script("return document.querySelector('[data-auth-check]').checked")))

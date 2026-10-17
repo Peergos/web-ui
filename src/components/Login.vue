@@ -11,7 +11,7 @@
 		</MultiFactorAuth>
 		<FormPassword v-model="password" :placeholder="translate('LOGIN.PASSWORD')" @keyup.enter="login()"/>
 
-		<label class="pg-auth__check">
+		<label class="pg-check">
 			<input type="checkbox" name="stayLoggedIn" v-model="stayLoggedIn"/>
 			<span>{{ translate('LOGIN.STAY') }}</span>
 		</label>

@@ -11,12 +11,12 @@
 
 			<FormPassword v-model="password2" :passwordIsVisible="showPasswords" :placeholder="translate('SIGNUP.REENTER')" autocomplete="new-password" @keyup.enter="signup()"/>
 
-			<label class="pg-auth__check">
+			<label class="pg-check">
 				<input type="checkbox" name="safePassword" v-model="safePassword"/>
 				<span>{{ translate("SIGNUP.AGREE") }}</span>
 			</label>
 
-			<label class="pg-auth__check">
+			<label class="pg-check">
 				<input type="checkbox" name="tosAccepted" v-model="tosAccepted"/>
 				<span>{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a></span>
 			</label>
