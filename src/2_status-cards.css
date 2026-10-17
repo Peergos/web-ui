@@ -1059,7 +1059,12 @@ a.pg-btn {
 	padding: 0;
 	list-style: none;
 }
-/* the upgrade dialog's plans: a tinted card, a ticked list, the button under it */
+/* side by side where there is room and one above the other where there is not, as in the upgrade dialog */
+.pg-plans--side-by-side {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+/* a plan: a tinted card, a ticked list, the button under it - at the foot, so cards side by side line them up */
 .pg-plan {
 	display: flex;
 	flex-direction: column;
@@ -1068,7 +1073,8 @@ a.pg-btn {
 	border-radius: var(--radius-control);
 	background-color: var(--pg-surface-2);
 }
-.pg-plan h3 {
+.pg-plan h3,
+.pg-plan h4 {
 	margin: 0;
 	font-size: 16px;
 	font-weight: var(--bold);
@@ -1077,6 +1083,7 @@ a.pg-btn {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+	flex: 1 1 auto;
 	margin: 0;
 	padding: 0;
 	list-style: none;

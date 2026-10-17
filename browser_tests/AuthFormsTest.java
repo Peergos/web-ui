@@ -125,7 +125,7 @@ public class AuthFormsTest {
 
     /** The billing period inside the given element: Yearly clicked, then Monthly by the arrow keys from the chosen one. */
     static void billing(WebDriver d, String where, String inside) {
-        String price = "return document.querySelector(arguments[0] + ' .pg-plan li:last-child, ' + arguments[0] + ' .pro__plan li:last-child').textContent.trim()";
+        String price = "return document.querySelector(arguments[0] + ' .pg-plan li:last-child').textContent.trim()";
         d.click(d.find(inside + " .pg-segmented label:last-child"));
         WebDriver.sleep(300);
         String yearly = String.valueOf(d.script(price, inside));

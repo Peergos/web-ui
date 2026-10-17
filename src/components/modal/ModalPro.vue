@@ -5,8 +5,8 @@
 			<p v-if="!isPaid" class="pg-note">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 			<p v-if="willCharge()" class="pg-note">Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}</p>
 			<BillingPeriod v-if="!showCard" v-model="annual"/>
-			<div v-if="!showCard" class="pro__plans">
-				<div class="pro__plan">
+			<div v-if="!showCard" class="pg-plans pg-plans--side-by-side">
+				<div class="pg-plan">
 					<h4>Pro {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>200 GB {{ translate("PAID.STORAGE") }}</li>
@@ -15,7 +15,7 @@
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePro" @click="confirmUpdate(200000000000)">{{proButtonText}}</button>
 				</div>
-				<div class="pro__plan">
+				<div class="pg-plan">
 					<h4>Visionary {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>1000 GB {{ translate("PAID.STORAGE") }}</li>
@@ -24,7 +24,7 @@
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disableVisionary" @click="confirmUpdate(1000000000000)">{{visionaryButtonText}}</button>
 				</div>
-				<div class="pro__plan">
+				<div class="pg-plan">
 					<h4>Pioneer {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>3000 GB {{ translate("PAID.STORAGE") }}</li>
@@ -256,46 +256,6 @@ module.exports = {
 };
 </script>
 <style>
-/* The plans side by side where there is room and one above the other where there is not,
-   each on the field surface with its price and a way to choose it at the foot. */
-.pro__plans {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 12px;
-}
-
-.pro__plan {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	padding: 16px;
-	border-radius: var(--radius-control);
-	background-color: var(--pg-surface-2);
-}
-
-.pro__plan h4 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.pro__plan ul {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	flex: 1 1 auto;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.pro__plan li {
-	padding-left: 26px;
-	font-size: var(--text-small);
-	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left 2px no-repeat;
-	background-size: 18px auto;
-}
-
 /* the payment provider's form keeps its own size where it fits and narrows where it does not */
 .pro__payment {
 	display: flex;
