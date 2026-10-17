@@ -4,7 +4,7 @@ on:
   # Pushes only on master: a branch with a pull request open would otherwise run the whole
   # matrix twice for every commit, once for the push and once for the pull request.
   push:
-    branches: [master]
+    branches: [master, 'ci/**']
   pull_request:
 
 # A new commit makes the run in progress for that branch pointless, and these jobs are long
@@ -122,7 +122,7 @@ jobs:
     - name: Run browser tests
       working-directory: browser_tests
       # windows is several times slower on the sqlite backed server
-      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || 45 }}
+      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || (matrix.engine == 'webkit' && 60 || 45) }}
       shell: bash
       env:
         # safari has no headless mode, and the macos runner has a ui session for it to use

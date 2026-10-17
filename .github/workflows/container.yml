@@ -1,7 +1,8 @@
 name: Create and publish a Container image
 
 on:
-  push
+  push:
+    branches-ignore: ['ci/**']
 
 # TODO: revert to building on `main` branch only 
 #on:

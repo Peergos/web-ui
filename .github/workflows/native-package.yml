@@ -1,6 +1,8 @@
 name: Native packager
 
-on: [push]
+on:
+  push:
+    branches-ignore: ['ci/**']
 
 jobs:
   build:

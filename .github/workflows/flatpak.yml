@@ -2,6 +2,7 @@ name: Flatpak
 
 on:
   push:
+    branches-ignore: ['ci/**']
   pull_request:
 
 jobs:
