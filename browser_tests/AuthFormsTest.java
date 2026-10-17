@@ -35,6 +35,9 @@ public class AuthFormsTest {
         String engine = args.length > 0 ? args[0] : "firefox";
         String given = args.length > 1 ? args[1] : null;
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
+        // safaridriver's key presses never reach Safari's menu shortcuts, so Command-A, C and V do nothing there: Safari's
+        // select all, copy and paste are its own, and left to it
+        boolean shortcuts = ! "safari".equals(engine);
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
         String user = "forms" + new Random().nextInt(1_000_000), password = "authformstestpassword";
@@ -53,7 +56,8 @@ public class AuthFormsTest {
                     for (int tab = 0; tab < TABS.length; tab++) {
                         openTab(d, tab);
                         checkboxes(d, name + ", " + TABS[tab]);
-                        clipboard(d, name + ", " + TABS[tab]);
+                        if (shortcuts)
+                            clipboard(d, name + ", " + TABS[tab]);
                         if (theme.equals("light")) {
                             hints(d, TABS[tab], tab == 2 ? "new-password" : "current-password");
                             caret(d, TABS[tab]);
@@ -178,7 +182,8 @@ public class AuthFormsTest {
                 + "document.querySelector('[role=tabpanel] input[name=username]').setAttribute('data-auth-clip', 'name'); return 1;");
         Object name = d.find("[data-auth-clip=name]");
         d.click(name);
-        d.sendKeys(name, MOD + "a" + RELEASE);
+        d.script("const i = document.querySelector('[data-auth-clip=name]'); i.value = '';"
+                + " i.dispatchEvent(new Event('input', {bubbles: true})); return 1;");
         d.sendKeys(name, "abcd");
         d.script("document.querySelector('[data-auth-clip=name]').setSelectionRange(2, 2); return 1;");
         d.sendKeys(name, "X");
