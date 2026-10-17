@@ -595,6 +595,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"Acceso",
     "APP.GRANT.WRITE":"Permitir que esta aplicación cambie archivos aquí",
     "APP.GRANT.PERSIST":"Recordarlo hasta que lo revoque",
+    "APP.GRANT.SUGGESTED.NEW":"carpeta nueva",
     "APP.GRANT.REFUSED":"No se pudo dar acceso a $PATH a la aplicación",
     "APP.GRANT.STALE.CHANGED":"$NAME tenía acceso a $PATH, que ha cambiado. ¿Permitirlo de nuevo?",
     "APP.GRANT.STALE.GONE":"La carpeta a la que $NAME tenía acceso ya no existe. ¿Olvidarla?",

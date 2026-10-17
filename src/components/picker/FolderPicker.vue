@@ -45,6 +45,7 @@
                 <span v-else class="pg-chips fp-selection__chips">
                     <span v-for="folder in selectedFoldersList" :key="folder" class="pg-chip" :title="folder">{{ pathLeaf(folder) }}</span>
                 </span>
+                <span v-if="suggestionPending" class="pg-chip fp-selection__new">{{ translate("APP.GRANT.SUGGESTED.NEW") }}</span>
             </div>
             <div class="pg-dialog__actions">
                 <span class="pg-dialog__spacer"></span>
@@ -113,9 +114,10 @@ module.exports = {
             disableDriveSelection: false,
             folderPickerTitle: '',
             chosen: {},
+            suggestionMade: false,
         }
     },
-    props: ['baseFolder', 'selectedFolder_func', 'multipleFolderSelection', 'initiallySelectedPaths', 'noDriveSelection', 'pickerTitle', 'pickerChoices', 'pickerChoicesTitle'],
+    props: ['baseFolder', 'selectedFolder_func', 'multipleFolderSelection', 'initiallySelectedPaths', 'noDriveSelection', 'pickerTitle', 'pickerChoices', 'pickerChoicesTitle', 'suggestedFolder'],
     mixins:[folderTreeMixin, i18n, paths, pick, scrollShadow, treeKeys],
     computed: {
         ...Vuex.mapState([
@@ -136,6 +138,10 @@ module.exports = {
         choicesTitle: function() {
             return this.pickerChoicesTitle != null ? this.pickerChoicesTitle : "";
         },
+        /** The selection holds the suggested folder, which does not exist yet. */
+        suggestionPending: function() {
+            return this.suggestedFolder != null && ! this.suggestionMade && this.selectedFoldersList.includes(this.suggestedFolder);
+        },
     },
     created: function() {
         let that = this;
@@ -144,6 +150,15 @@ module.exports = {
         // and inheriting the previous answer would silently apply it to the next folder
         this.choices.forEach(c => this.chosen[c.key] = c.checked === true);
         this.selectedFoldersList = this.initiallySelectedPaths.slice();
+        // A folder suggested by the caller becomes the selection only if nothing has that name yet: an app may
+        // propose a new folder, but not steer the choice onto one that holds the user's files. It is not what a
+        // cancel answers with, and is only made if it is still selected when the user confirms.
+        if (this.suggestedFolder != null && this.selectedFoldersList.length == 0) {
+            this.context.getByPath(this.suggestedFolder).thenApply(opt => {
+                if (opt.ref == null && that.selectedFoldersList.length == 0)
+                    that.selectedFoldersList = [that.suggestedFolder];
+            });
+        }
         let numberOfFriends = this.friendnames.length;
         let doNotShowDriveSelection = this.noDriveSelection !=null && this.noDriveSelection === true;
         let allowChangeOfDrive = !doNotShowDriveSelection && numberOfFriends > 0 && this.baseFolder === "/" + this.context.username;
@@ -235,6 +250,9 @@ module.exports = {
                 return dir.mkdir(newDirName, that.context.network, false, batId, that.context.crypto);
             }).thenApply(function(updatedDir) {
                 that.showSpinner = false;
+                // the user may make the suggested folder by hand, with New folder: it is there now
+                if (newPath === that.suggestedFolder)
+                    that.suggestionMade = true;
                 if (!that.multipleFolderSelection) {
                     that.selectedFoldersList = [newPath];
                 } else {
@@ -247,7 +265,19 @@ module.exports = {
             });
         },
         foldersSelected: function() {
-            this.selectedFolder_func(this.withoutNested(this.selectedFoldersList), Object.assign({}, this.chosen));
+            if (this.showSpinner)
+                return;
+            let that = this;
+            let folders = this.withoutNested(this.selectedFoldersList);
+            let done = () => that.selectedFolder_func(folders, Object.assign({}, that.chosen));
+            if (this.suggestedFolder == null || this.suggestionMade || ! folders.includes(this.suggestedFolder)) {
+                done();
+                return;
+            }
+            // the suggested folder was chosen, so it is made now; should something of that name have appeared since
+            // the picker opened, making it fails and the picker stays open
+            let slash = this.suggestedFolder.lastIndexOf("/");
+            this.mkdirAtPath(this.suggestedFolder.substring(0, slash), this.suggestedFolder.substring(slash + 1), done);
         }
     }
 }
@@ -311,6 +341,9 @@ module.exports = {
 }
 .fp-selection__empty {
     color: var(--pg-muted);
+}
+.fp-selection__new {
+    flex: 0 0 auto;
 }
 .fp-selection__chips {
     max-height: 72px;

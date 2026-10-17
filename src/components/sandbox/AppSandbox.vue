@@ -50,7 +50,8 @@
             :noDriveSelection="folderPickerNoDriveSelection"
             :pickerTitle="folderPickerTitle"
             :pickerChoices="folderPickerChoices"
-            :pickerChoicesTitle="folderPickerChoicesTitle">
+            :pickerChoicesTitle="folderPickerChoicesTitle"
+            :suggestedFolder="folderPickerSuggested">
         </FolderPicker>
         <AppPrompt
             v-if="showPrompt"
@@ -253,6 +254,7 @@ module.exports = {
             folderPickerTitle: null,
             folderPickerChoices: null,
             folderPickerChoicesTitle: null,
+            folderPickerSuggested: null,
             grantsInUse: new Map(),
             staleGrantsPrompted: new Set(),
             filePickerBaseFolder: "",
@@ -1187,7 +1189,7 @@ module.exports = {
                     }
                     let wantWrite = writeParam != null && writeParam.toLowerCase() == 'true';
                     let wantPersist = persistParam != null && persistParam.toLowerCase() == 'true';
-                    this.showGrantPicker(wantWrite, wantPersist, grants => {
+                    this.showGrantPicker(wantWrite, wantPersist, this.suggestedFolderName(params.get('suggest')), grants => {
                         let encoder = new TextEncoder();
                         let data = encoder.encode(JSON.stringify(grants));
                         that.buildResponse(headerFunc("application/json"), data, that.UPDATE_SUCCESS);
@@ -1198,6 +1200,7 @@ module.exports = {
                 this.folderPickerTitle = null;
                 this.folderPickerChoices = null;
                 this.folderPickerChoicesTitle = null;
+                this.folderPickerSuggested = null;
                 this.selectedFoldersFromPicker = function (chosenFolders) {
                     that.selectedFolders = chosenFolders;
                     that.selectedFolderStems = chosenFolders.map(n => n + '/');
@@ -1231,10 +1234,21 @@ module.exports = {
         appNameForDisplay: function() {
             return this.appProperties != null && this.appProperties.displayName ? this.appProperties.displayName : this.currentAppName;
         },
+        // An app may suggest the name of a new folder in the user's home, which the picker starts with as its
+        // selection and only makes if the user confirms it: one plain name, never a path.
+        suggestedFolderName: function(name) {
+            if (name == null)
+                return null;
+            let trimmed = name.trim();
+            if (trimmed.length == 0 || trimmed.length > 100 || trimmed.startsWith('.') || /[\/\\\u0000-\u001f\u007f]/.test(trimmed))
+                return null;
+            return trimmed;
+        },
         // the picker is the consent dialog: the switches start as the app asked and the user may change either
-        showGrantPicker: function(wantWrite, wantPersist, callback) {
+        showGrantPicker: function(wantWrite, wantPersist, suggested, callback) {
             let that = this;
             this.folderPickerNoDriveSelection = true;
+            this.folderPickerSuggested = suggested == null ? null : "/" + this.context.username + "/" + suggested;
             this.folderPickerTitle = this.translate(wantWrite ? "APP.GRANT.TITLE.WRITE" : "APP.GRANT.TITLE.READ")
                 .replace("$NAME", this.appNameForDisplay());
             this.folderPickerChoicesTitle = this.translate("APP.GRANT.CHOICES");

@@ -651,6 +651,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"Toegang",
     "APP.GRANT.WRITE":"Deze app hier bestanden laten wijzigen",
     "APP.GRANT.PERSIST":"Onthouden tot ik het intrek",
+    "APP.GRANT.SUGGESTED.NEW":"nieuwe map",
     "APP.GRANT.REFUSED":"Kon de app geen toegang geven tot $PATH",
     "APP.GRANT.STALE.CHANGED":"$NAME had toegang tot $PATH, dat is gewijzigd. Opnieuw toestaan?",
     "APP.GRANT.STALE.GONE":"De map waartoe $NAME toegang had, bestaat niet meer. Vergeten?",

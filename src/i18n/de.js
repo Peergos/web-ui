@@ -635,6 +635,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"Zugriff",
     "APP.GRANT.WRITE":"Dieser App erlauben, hier Dateien zu ändern",
     "APP.GRANT.PERSIST":"Merken, bis ich es widerrufe",
+    "APP.GRANT.SUGGESTED.NEW":"neuer Ordner",
     "APP.GRANT.REFUSED":"$PATH konnte der App nicht freigegeben werden",
     "APP.GRANT.STALE.CHANGED":"$NAME hatte Zugriff auf $PATH, das sich geändert hat. Erneut erlauben?",
     "APP.GRANT.STALE.GONE":"Der Ordner, auf den $NAME Zugriff hatte, existiert nicht mehr. Vergessen?",

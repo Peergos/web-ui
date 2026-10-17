@@ -570,6 +570,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"访问权限",
     "APP.GRANT.WRITE":"允许此应用更改此处的文件",
     "APP.GRANT.PERSIST":"记住此授权，直到我撤销",
+    "APP.GRANT.SUGGESTED.NEW":"新文件夹",
     "APP.GRANT.REFUSED":"无法将 $PATH 授予该应用",
     "APP.GRANT.STALE.CHANGED":"$NAME 曾有权访问 $PATH，但该文件夹已更改。是否再次允许？",
     "APP.GRANT.STALE.GONE":"$NAME 曾有权访问的文件夹已不存在。是否忘记它？",

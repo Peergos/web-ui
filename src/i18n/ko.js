@@ -635,6 +635,7 @@ module.exports = {
     "APP.GRANT.CHOICES":"접근 권한",
     "APP.GRANT.WRITE":"이 앱이 여기에서 파일을 변경하도록 허용",
     "APP.GRANT.PERSIST":"취소할 때까지 기억",
+    "APP.GRANT.SUGGESTED.NEW":"새 폴더",
     "APP.GRANT.REFUSED":"앱에 $PATH 접근 권한을 줄 수 없습니다",
     "APP.GRANT.STALE.CHANGED":"$NAME 앱이 접근하던 $PATH 폴더가 변경되었습니다. 다시 허용하시겠습니까?",
     "APP.GRANT.STALE.GONE":"$NAME 앱이 접근하던 폴더가 더 이상 존재하지 않습니다. 삭제하시겠습니까?",

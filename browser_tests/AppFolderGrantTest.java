@@ -271,6 +271,55 @@ public class AppFolderGrantTest {
             grants = call(d, "GET", "/peergos-api/v0/grants/", null, null);
             check(! grants.text.contains(id) && grants.text.contains(readId), "revoked grant is gone " + grants);
             check(call(d, "PUT", base + "after.md", "x", null).status == 400, "revoked grant refuses writes");
+
+            // a folder the app suggests: the picker starts on it, marked new, and makes it only if it is chosen
+            String suggested = "Suggested" + RUN, ask = "/peergos-api/v0/folders/?write=true&persist=true&multiple=false&suggest=";
+            start(d, "suggestCancel", "GET", ask + suggested, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            String selected = String.valueOf(d.script("return document.querySelector('.fp-selection__value').title"));
+            check(selected.equals("/" + user + "/" + suggested), "the picker starts on the suggested folder: " + selected);
+            pickerButton(d, "Cancel");
+            check(await(d, "suggestCancel").text.equals("[]"), "a cancel grants nothing");
+            check(! exists(d, "/" + user + "/" + suggested), "and makes nothing");
+            start(d, "suggest", "GET", ask + suggested, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            pickerButton(d, "Select");
+            Map<String, Object> made = only(await(d, "suggest").text);
+            check(("/" + user + "/" + suggested).equals(made.get("path")) && Boolean.TRUE.equals(made.get("write")), "chosen, it is granted: " + made);
+            check(exists(d, "/" + user + "/" + suggested), "and made in the drive");
+            check(call(d, "PUT", "/peergos-api/v0/folder/" + made.get("grantId") + "/first.txt", "x", null).status == 201, "and written to");
+            // made by hand under the suggested name, with the picker's New folder, it is chosen as any new folder is
+            String byHand = "ByHand" + RUN;
+            start(d, "suggestByHand", "GET", ask + byHand, null, null);
+            awaitPicker(d);
+            d.waitForScript("the suggestion marked new", "!!document.querySelector('.fp-selection__new')", 60_000);
+            d.script("document.querySelector('.fp-picker__new').click();");
+            d.waitForScript("the new folder prompt", "!!document.getElementById('prompt-input')", 60_000);
+            d.script("const i = document.getElementById('prompt-input'); i.value = arguments[0];"
+                    + "i.dispatchEvent(new Event('input', {bubbles: true})); return 1;", byHand);
+            d.script("document.getElementById('prompt-button-id').click();");
+            d.waitForScript("the folder made", "!document.getElementById('prompt-input') && !document.querySelector('.fp-selection__new')", 60_000);
+            pickerButton(d, "Select");
+            Map<String, Object> handGrant = only(await(d, "suggestByHand").text);
+            check(("/" + user + "/" + byHand).equals(handGrant.get("path")), "made by hand under the suggested name, it is granted: " + handGrant);
+            // a folder already there is not chosen for the user: an app proposes a new folder, never one with files in it
+            start(d, "suggestExisting", "GET", ask + PHOTOS, null, null);
+            awaitPicker(d);
+            WebDriver.sleep(2000);
+            check(Boolean.TRUE.equals(d.script("return !!document.querySelector('.fp-selection__empty')")), "an existing folder is not preselected");
+            pickerButton(d, "Cancel");
+            await(d, "suggestExisting");
+            // a suggestion is a name, never a path
+            for (String bad : List.of("..%2Fescape", ".hidden", "a%2Fb")) {
+                start(d, "suggestBad", "GET", ask + bad, null, null);
+                awaitPicker(d);
+                WebDriver.sleep(1000);
+                check(Boolean.TRUE.equals(d.script("return !!document.querySelector('.fp-selection__empty')")), "no suggestion from " + bad);
+                pickerButton(d, "Cancel");
+                await(d, "suggestBad");
+            }
             System.out.println("PASS app folder grants");
         } finally {
             if (own != null)
@@ -392,6 +441,18 @@ public class AppFolderGrantTest {
         d.waitForScript("the " + path + " row", "!!document.querySelector('.fp-row__input[value=\"" + path + "\"]')", 60_000);
         d.script("document.querySelector('.fp-row__input[value=\"' + arguments[0] + '\"]').click();", path);
         d.script("[...document.querySelectorAll('.fp-picker button')].find(b => b.textContent.trim() === 'Select').click();");
+    }
+
+    static void pickerButton(WebDriver d, String label) {
+        d.script("[...document.querySelectorAll('.fp-picker button')].find(b => b.textContent.trim() === arguments[0]).click();", label);
+    }
+
+    static boolean exists(WebDriver d, String path) {
+        d.switchToTop();
+        d.script("window.__exists = null;"
+                + "window.__launcher.context.getByPath(arguments[0]).thenApply(o => window.__exists = o.ref != null);", path);
+        d.waitForScript("the drive lookup", "window.__exists !== null", 60_000);
+        return Boolean.TRUE.equals(d.script("return window.__exists"));
     }
 
     @SuppressWarnings("unchecked")
