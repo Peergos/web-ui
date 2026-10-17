@@ -1387,9 +1387,11 @@ module.exports = {
                 return;
             }
             let bytes = convertToByteArray(new Int8Array(data));
+            // a header holds only Latin-1 and a name can hold anything, so each segment is percent-encoded
             let location = (relPath, inGrant) => {
                 let encoder = new TextEncoder();
-                return encoder.encode(that.apiRequest + '/folder/' + (inGrant || grantId) + '/' + relPath);
+                let path = relPath.split('/').map(encodeURIComponent).join('/');
+                return encoder.encode(that.apiRequest + '/folder/' + (inGrant || grantId) + '/' + path);
             };
             let write = (relPath, isNew) => that.sandboxedApp.writeGranted(grantId, relPath, bytes).thenApply(done => {
                 that.noteGrantInUse(grantId);

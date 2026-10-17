@@ -171,6 +171,12 @@ public class AppFolderGrantTest {
             d.waitUntil("the move to go ahead", () -> call(d, "GET", base + "made/kept/closing.txt", null, null).text.equals("closing") ? true : null, 60_000);
             check(call(d, "PUT", base + "made/after-close.txt", "x", null).status == 201, "closing the app answers it, and the folder takes writes again");
 
+            // a Greek name, and the location of what it made comes back percent-encoded: a header holds only Latin-1
+            String greek = "Σημείωση.txt";
+            Response greekPut = call(d, "PUT", base + greek, "γεια", null);
+            check(greekPut.status == 201 && (base + java.net.URLEncoder.encode(greek, "UTF-8")).equals(greekPut.location), "a Greek name " + greekPut);
+            check(call(d, "GET", base + greek, null, null).text.equals("γεια"), "read the Greek name back");
+
             check(call(d, "GET", base + "%2E%2E/" + PHOTOS, null, null).status == 400, "no way out through ..");
             check(call(d, "GET", "/peergos-api/v0/folder/bnotagrant/existing.txt", null, null).status == 400, "unknown grant");
             check(call(d, "GET", "/" + user + "/" + NOTES + "/existing.txt", null, null).status != 200, "no absolute path access");
