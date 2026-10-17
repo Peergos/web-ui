@@ -1,17 +1,6 @@
 <template>
 	<div class="app-login pg-auth" v-if="!autoLoggingIn">
-		<input
-			class="pg-input"
-			type="text"
-			autofocus
-			name="username"
-			autocomplete="username"
-			v-model="username"
-			:placeholder="translate('LOGIN.USERNAME')"
-			:aria-label="translate('LOGIN.USERNAME')"
-			ref="username"
-			@input="(val) => (username = username.toLowerCase())"
-		/>
+		<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username"/>
 		<MultiFactorAuth
 			v-if="showMultiFactorAuth"
 			v-on:hide-confirm="showMultiFactorAuth = false"
@@ -38,6 +27,7 @@
 
 <script>
 const FormPassword = require("./form/FormPassword.vue");
+const FormUsername = require("./form/FormUsername.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
@@ -47,6 +37,7 @@ const i18n = require("../i18n/index.js");
 module.exports = {
 	components: {
 		FormPassword,
+		FormUsername,
 		MultiFactorAuth,
 	},
 	data() {
@@ -87,8 +78,6 @@ module.exports = {
 
 	mounted() {
                 setTimeout(() => this.autoLogin(), 0);
-                if (this.$refs.username != null)
-                    this.$refs.username.focus()
 	},
 	methods: {
 		...Vuex.mapActions([

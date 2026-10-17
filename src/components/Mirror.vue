@@ -9,17 +9,7 @@
 			:consumer_func="consumer_func">
 		</MultiFactorAuth>
 		<template v-if="showSignup()">
-			<input
-				class="pg-input"
-				type="text"
-				autofocus
-				name="username"
-				v-model="username"
-				ref="username"
-				:placeholder="translate('LOGIN.USERNAME')"
-				:aria-label="translate('LOGIN.USERNAME')"
-				@input="(val) => (username = username.toLowerCase())"
-			/>
+			<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')"/>
 
 			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo />
 
@@ -95,6 +85,7 @@ const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
+const FormUsername = require("./form/FormUsername.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
@@ -103,6 +94,7 @@ const Continue = require("Continue.vue");
 module.exports = {
     components: {
 	FormPassword,
+	FormUsername,
         Continue,
 	MultiFactorAuth,
     },
@@ -156,7 +148,6 @@ module.exports = {
         },
     },
     mounted() {
-	this.$refs.username.focus()
 	this.loadSignupAvailability();
     },
 

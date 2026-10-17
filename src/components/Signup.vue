@@ -1,17 +1,7 @@
 <template>
 	<div class="app-signup pg-auth">
 		<template v-if="showSignup()">
-			<input
-				class="pg-input"
-				type="text"
-				autofocus
-				name="username"
-				v-model="username"
-				ref="username"
-				:placeholder="translate('SIGNUP.USERNAME')"
-				:aria-label="translate('SIGNUP.USERNAME')"
-				@input="(val) => (username = username.toLowerCase())"
-			/>
+			<FormUsername v-model="username" :placeholder="translate('SIGNUP.USERNAME')"/>
 
 			<button type="button" class="pg-btn pg-btn--primary generate-password" @click="generatePassword()">
 				{{ translate("SIGNUP.GENERATE") }}
@@ -113,6 +103,7 @@
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
+const FormUsername = require("./form/FormUsername.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
@@ -121,6 +112,7 @@ const Continue = require("Continue.vue");
 module.exports = {
     components: {
 	    FormPassword,
+	    FormUsername,
         Continue,
     },
 
@@ -173,7 +165,6 @@ module.exports = {
         },
     },
     mounted() {
-	this.$refs.username.focus()
 	this.loadSignupAvailability();
     },
 
