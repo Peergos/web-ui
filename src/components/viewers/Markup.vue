@@ -42,7 +42,7 @@
                     :context="context">
             </Gallery>
             <!-- the page's frame is added here once the file is known -->
-            <div id="md-container" style="display:flex;flex:1 1 auto;min-width:0;"></div>
+            <div id="md-container" style="position:relative;display:flex;flex:1 1 auto;min-width:0;"></div>
         </div>
     </section>
 </div>
@@ -157,7 +157,7 @@ module.exports = {
                     let func = function(iframe) {
                         iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme
                             , text:new TextDecoder().decode(data), extension: extension, subPath: subPath}, '*');
-                        that.showSpinner = false;
+                        setTimeout(() => that.revealFrame(iframe), 3000);
                     };
 
                     that.resetEditor(func);
@@ -195,7 +195,7 @@ module.exports = {
                         let func = function(iframe) {
                             iframe.contentWindow.postMessage({action: "respondToNavigateTo", theme: theme, text:new TextDecoder().decode(data)
                                 , extension: extension, subPath: subPath}, '*');
-                            that.showSpinner = false;
+                            setTimeout(() => that.revealFrame(iframe), 3000);
                         };
                         that.resetEditor(func);
                     });
@@ -218,6 +218,8 @@ module.exports = {
                 if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                     if (e.data.action == 'pong') {
                         that.isIframeInitialised = true;
+                    } else if(e.data.action == 'rendered') {
+                        that.revealFrame(iframe);
                     } else if(e.data.action == 'navigateTo') {
                         that.navigateToRequest(iframe, e.data.path);
                     } else if(e.data.action == 'externalLink') {
@@ -233,7 +235,8 @@ module.exports = {
         resetEditor: function(func) {
             let iframe = document.getElementById("md-editor");
             if (iframe != null) {
-                iframe.parentNode.removeChild(iframe);
+                this.removePreviousFrame();
+                iframe.id = 'md-editor-previous';
                 window.removeEventListener('message', this.messageHandler);
             }
             this.isIframeInitialised = false;
@@ -250,6 +253,9 @@ module.exports = {
             iframe.id = 'md-editor';
             iframe.style.width = '100%';
             iframe.style.height = '100%';
+            // hidden over the previous page until it has painted: a new frame is blank, white even in dark mode
+            iframe.style.position = 'absolute';
+            iframe.style.visibility = 'hidden';
             iframe.frameBorder="0";
             iframeContainer.appendChild(iframe);
 
@@ -263,6 +269,19 @@ module.exports = {
                         that.$toast.error("Unable to register service worker. Viewer will not work offline. \nTo enable offline usage, allow 3rd party cookies for " + window.location.protocol + "//[*]." + window.location.host + "\n Note: this is not tracking", {timeout:false});
                 }, 1000 * 10);
             });
+        },
+        revealFrame: function(iframe) {
+            if (iframe.id != 'md-editor' || iframe.style.visibility != 'hidden')
+                return;
+            this.removePreviousFrame();
+            iframe.style.position = '';
+            iframe.style.visibility = '';
+            this.showSpinner = false;
+        },
+        removePreviousFrame: function() {
+            let previous = document.getElementById("md-editor-previous");
+            if (previous != null)
+                previous.parentNode.removeChild(previous);
         },
         toggleBookmark: function(remove) {
             if(this.showSpinner || this.isSecretLink) {

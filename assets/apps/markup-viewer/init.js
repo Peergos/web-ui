@@ -96,6 +96,7 @@ function initialiseMarkdownEditor(theme, subPathInput, text) {
     let mdElement = document.getElementById('md-element');
     if (text.length == 0) {
         element.innerHTML = xss;
+        notifyRendered();
     } else {
         addMathJax(xss);
     }
@@ -149,13 +150,20 @@ function addMathJax(text) {
             return [node];
         }).then(() => {
             console.log('math typeset complete');
+            notifyRendered();
         });
 	};
     var script = document.createElement('script');
     script.onload = callback;
+    script.onerror = notifyRendered;
     script.setAttribute("type","text/javascript");
     script.setAttribute("src", './es5/tex-chtml.js');
     document.getElementsByTagName("head")[0].appendChild(script);
+}
+// the parent keeps the previous page up until this one has its content; not via
+// requestAnimationFrame, which a hidden frame throttles to once a second
+function notifyRendered() {
+    mainWindow.postMessage({action:'rendered'}, origin);
 }
 function updateResources() {
     const collection = document.getElementsByClassName("math-input");
