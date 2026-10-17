@@ -35,8 +35,8 @@ public class AuthFormsTest {
         String engine = args.length > 0 ? args[0] : "firefox";
         String given = args.length > 1 ? args[1] : null;
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
-        // safaridriver's key presses never reach Safari's menu shortcuts, so Command-A, C and V do nothing there: Safari's
-        // select all, copy and paste are its own, and left to it
+        // From safaridriver the Command key reaches the page but the letter pressed with it never does, so Command-A, C and
+        // V do nothing there: Safari's own select all, copy and paste are left to it
         boolean shortcuts = ! "safari".equals(engine);
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
@@ -176,7 +176,8 @@ public class AuthFormsTest {
         System.out.println("  ok   " + where + ": the fields tell a password manager " + said);
     }
 
-    /** A capital typed in the middle of a username comes out in lower case, with the caret after it. */
+    /** A capital typed in the middle of a username comes out in lower case, with the caret after it: typed in one go, the
+     *  caret moved back with the arrow keys, as a person would. */
     static void caret(WebDriver d, String where) {
         d.script("document.querySelectorAll('[data-auth-clip]').forEach(i => i.removeAttribute('data-auth-clip'));"
                 + "document.querySelector('[role=tabpanel] input[name=username]').setAttribute('data-auth-clip', 'name'); return 1;");
@@ -184,10 +185,7 @@ public class AuthFormsTest {
         d.click(name);
         d.script("const i = document.querySelector('[data-auth-clip=name]'); i.value = '';"
                 + " i.dispatchEvent(new Event('input', {bubbles: true})); return 1;");
-        d.sendKeys(name, "abcd");
-        d.script("document.querySelector('[data-auth-clip=name]').setSelectionRange(2, 2); return 1;");
-        d.sendKeys(name, "X");
-        d.sendKeys(name, "y");
+        d.sendKeys(name, "abcd" + LEFT + LEFT + "Xy");
         String shown = String.valueOf(d.script("const i = document.querySelector('[data-auth-clip=name]'); return i.value + ' caret ' + i.selectionStart"));
         if (! shown.equals("abxycd caret 4"))
             throw new AssertionError("FAIL " + where + ": typing X then y after ab should give abxycd with the caret after y: " + shown);
