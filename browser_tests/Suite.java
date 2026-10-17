@@ -116,6 +116,10 @@ public class Suite {
                 run(failures, "cancel downloads", () -> CancelDownloadTest.run(args1));
             }
             run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
+            // An account of its own, so not on WebKit, which cannot be relied on to bring the
+            // calendar up for an account opening it for the first time (see above).
+            if (! engine.startsWith("webkit"))
+                run(failures, "emptying the first calendar", () -> CalendarEmptyTest.run(args1));
             if (canPlaceDownloads) {
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
                 // The export half of this one downloads a file, so it belongs with the group

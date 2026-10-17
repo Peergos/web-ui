@@ -126,6 +126,8 @@ module.exports = {
             // Writes this host has started and not yet seen land, by entry id. A share
             // request for an entry can arrive while its own write is still in flight.
             pendingWrites: Object.create(null),
+            // the imports still uploading - see saveAllEvents and afterWritesSettle
+            bulkImports: [],
             listenerRetry: null,
             showSpinner: false,
             // Whether the view is working, apart from whether it is saying so: the spinner
@@ -413,6 +415,7 @@ module.exports = {
             saveAll: function(data) { that.saveAllEvents(calendar, data); },
             delete: function(data) { that.deleteEvent(calendar, data); },
             deleteCalendar: function(data) { that.deleteCalendar(calendar, data); },
+            emptyCalendar: function(data) { that.emptyCalendar(calendar, data); },
             removeSpinner: function() { that.removeSpinner(); },
             downloadIcs: function(data) { that.downloadIcsFile(data.filename, data.item); },
             emailEvent: function(data) { that.emailEvent(data); },
@@ -1148,6 +1151,107 @@ module.exports = {
         // user's answer to this side.
         this.confirmDeleteCalendar(data.calendarName, proceed, () => { that.showConfirm = false;});
     },
+    // Every event and task in one of our own calendars, gone; the calendar itself - its
+    // calendar.inf, its place in the list and whoever it is shared with - stays. The app offers
+    // it for the account's first calendar, the one that can't be deleted. Asked here every
+    // time, as a delete is, and read back from the store afterwards, as a refresh is, so the
+    // grid shows what is actually left.
+    emptyCalendar: function(calendar, data) {
+        let that = this;
+        let entry = this.findCalendar(data.calendarName);
+        // A calendar shared with us is its owner's to clear, even where we may write to it.
+        if (entry == null || (entry.owner != null && entry.owner != this.context.username)) {
+            this.showMessage(true, this.translate('CALENDAR.ERROR.EMPTY'));
+            return;
+        }
+        let now = new Date();
+        let when = this.requestedMonth(data) || {year: now.getFullYear(), month: now.getMonth() + 1};
+        let proceed = function() {
+            that.showConfirm = false;
+            that.displaySpinner();
+            that.afterWritesSettle(function() {
+                that.removeCalendarContents(calendar, entry.directory).thenApply(function(failed) {
+                    if (failed > 0) {
+                        that.showMessage(true, that.translate('CALENDAR.ERROR.EMPTY'));
+                    }
+                    that.mirrorToDevice();
+                    that.getPropertiesFile(calendar).thenApply(function(props) {
+                        that.calendarProperties = props;
+                        that.load(calendar, when.year, when.month);
+                    }).exceptionally(function(t) {
+                        that.removeSpinner();
+                        that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD'));
+                        return null;
+                    });
+                    return null;
+                });
+            });
+        };
+        this.confirm_message = this.translate('CALENDAR.EMPTY.CONFIRM').replace('$NAME', data.calendarName);
+        this.confirm_body = this.translate('CALENDAR.EMPTY.BODY');
+        this.confirm_consumer_cancel_func = function() { that.showConfirm = false; };
+        this.confirm_consumer_func = proceed;
+        this.showConfirm = true;
+    },
+    // Runs `next` once nothing is writing: a save still queued for an entry, or an import
+    // still uploading, would otherwise put a file back into the folders being cleared - or
+    // fail half way because its folder went from under it. Whatever queued meanwhile is
+    // waited for too.
+    afterWritesSettle: function(next) {
+        let that = this;
+        let pending = Object.values(this.pendingWrites).concat(this.bulkImports);
+        if (pending.length == 0) {
+            next();
+            return;
+        }
+        let left = pending.length;
+        let one = function() {
+            left--;
+            if (left == 0) {
+                that.afterWritesSettle(next);
+            }
+        };
+        pending.forEach(function(each) {
+            each.thenApply(function(r) { one(); return null; })
+                .exceptionally(function(t) { one(); return null; });
+        });
+    },
+    // Everything in the calendar's directory but its calendar.inf: the year folders,
+    // `recurring`, `tasks` and `shared` (our snapshots of other people's entries - theirs are
+    // untouched). One at a time, since they are siblings in one directory. Completes with how
+    // many could not be removed.
+    removeCalendarContents: function(calendar, directory) {
+        let that = this;
+        let future = peergos.shared.util.Futures.incomplete();
+        let dirPath = peergos.client.PathUtils.directoryToPath([directory]);
+        calendar.dirInternal(dirPath, null).thenApply(function(names) {
+            let children = names.toArray([]).map(function(n) { return String(n); })
+                .filter(function(name) { return name != that.NEW_CALENDAR_FILENAME; });
+            let failed = 0;
+            let next = function(index) {
+                if (index >= children.length) {
+                    future.complete(failed);
+                    return;
+                }
+                let path = peergos.client.PathUtils.directoryToPath([directory, children[index]]);
+                calendar.deleteInternal(path).thenApply(function(r) {
+                    next(index + 1);
+                    return null;
+                }).exceptionally(function(t) {
+                    failed++;
+                    next(index + 1);
+                    return null;
+                });
+            };
+            next(0);
+            return null;
+        }).exceptionally(function(t) {
+            // A calendar nothing was ever saved in has no directory yet: already empty.
+            future.complete(String(t).indexOf("NoSuchElementException") !== -1 ? 0 : 1);
+            return null;
+        });
+        return future;
+    },
     confirmDeleteCalendar: function(calendarName, deleteCalendarFunction, cancelFunction) {
 
         this.confirm_message= this.translate("CALENDAR.DELETE.CONFIRM").replace("$NAME", calendarName);
@@ -1860,7 +1964,16 @@ module.exports = {
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name, closeButton: false});
         }
         items.forEach(function(item) { that.prepareImportCalendarEvent(item, uploads); });
-        this.bulkUpload(uploads).thenApply(function(done) {
+        // Kept while it runs, so emptying a calendar can wait for it rather than delete a
+        // folder this is still writing into.
+        let upload = this.bulkUpload(uploads);
+        this.bulkImports.push(upload);
+        let settled = function() {
+            that.bulkImports = that.bulkImports.filter(function(each) { return each !== upload; });
+        };
+        upload.thenApply(function(done) { settled(); return null; })
+            .exceptionally(function(throwable) { settled(); return null; });
+        upload.thenApply(function(done) {
             that.removeSpinner();
             that.mirrorToDevice();
             if (done) {

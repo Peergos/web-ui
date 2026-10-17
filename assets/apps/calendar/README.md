@@ -116,6 +116,7 @@ App to host:
 | `downloadIcs` | save `item` as `filename` — the host owns this because a blob: URL never reaches the Android app's download listener |
 | `emailEvent` | open the stored `.ics` in the Peergos Email app as an attachment |
 | `deleteCalendar` | delete a calendar directory - the host asks the user first, every time |
+| `emptyCalendar` | delete every event and task in one of our own calendars and keep the calendar - offered for the first one, which can't be deleted; the host asks first, waits for writes in flight, then reads the store again as a refresh does |
 | `requestAddCalendar` / `requestRenameCalendar` / `requestCalendarColorChange` | calendar CRUD, host owns validation and uniqueness |
 | `openShare` | ask the host to open its own share dialog for this calendar or event |
 | `saveShared` | write an entry someone shared back to *their* file, and re-snapshot what landed |
@@ -175,7 +176,7 @@ Two things about this protocol are load-bearing:
   chosen there, in Peergos' own UI, by the person looking at it. `e.source`
   proves which frame a message came from; it says nothing about whether the
   user asked for it. Deleting a calendar is asked the same way: the host runs
-  its own confirm rather than trusting a flag from the frame.
+  its own confirm rather than trusting a flag from the frame. So is emptying one.
 - **A sweep answers exactly once.** The grid holds only the months it has
   fetched, so search and export ask the host to walk the rest of the store;
   it streams `sweepBatch` per month and ends with exactly one `sweepDone`
