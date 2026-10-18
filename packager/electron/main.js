@@ -70,6 +70,11 @@ const MENU_PAUSE = 5;
 const MINIMISED = !!process.env.PEERGOS_MINIMISED;
 const PORT = process.argv[2] || process.env.PEERGOS_PORT || '7777';
 
+// From the server: where to load the ui, with a single use code the page swaps for
+// the local api token, and that token for our own calls to the local apis.
+const LAUNCH_URL = process.env.PEERGOS_URL || 'http://localhost:' + PORT;
+const LOCAL_TOKEN = process.env.PEERGOS_LOCAL_TOKEN;
+
 // The server that spawned us. It exits when we do, and nothing carried the
 // reverse: a server stopped from under us - by the launch that replaces it, or by
 // a crash - left this window up on nothing, holding the lock against every launch
@@ -244,13 +249,14 @@ function applyStatus(next) {
 }
 
 // One local api call, as the sync apis all are: a POST with no body, answered
-// only over loopback and only when the Host header is the server's own, which is
-// what node sends by default. The reply is handed over as text, or null if the
-// server could not be reached.
+// only over loopback, only when the Host header is the server's own, which is
+// what node sends by default, and only with the local api token. The reply is
+// handed over as text, or null if the server could not be reached.
 function localPost(api, onReply) {
     // the localhost API only answers POST - a GET is a 405
     const request = http.request(
         {host: 'localhost', port: PORT, path: '/peergos/v0/sync/' + api, method: 'POST',
+         headers: LOCAL_TOKEN ? {'X-Peergos-Local-Token': LOCAL_TOKEN} : {},
          timeout: STATUS_TIMEOUT_MS},
         response => {
             let body = '';
@@ -457,7 +463,7 @@ function createWindow() {
         });
     }
 
-    win.loadURL('http://localhost:' + PORT);
+    win.loadURL(LAUNCH_URL);
 }
 
 function wireSession() {

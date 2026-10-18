@@ -651,7 +651,8 @@ class PeergosWindow(Gtk.ApplicationWindow):
         self.webview.connect("permission-request", self._on_permission)
         self.webview.connect("run-file-chooser", self._on_file_chooser)
         self.webview.get_network_session().connect("download-started", self._on_download_started)
-        self.webview.load_uri("http://localhost:" + port)
+        # the server's url carries a single use code the page swaps for the local api token
+        self.webview.load_uri(os.environ.get("PEERGOS_URL", "http://localhost:" + port))
 
     def _on_decide_policy(self, webview, decision, decision_type):
         if decision_type == WebKit.PolicyDecisionType.RESPONSE and not decision.is_mime_type_supported():
@@ -908,6 +909,9 @@ class StatusPoller:
         try:
             # the localhost API only answers POST - a GET is a 405
             request = urllib.request.Request(self.url, method="POST")
+            token = os.environ.get("PEERGOS_LOCAL_TOKEN")
+            if token:
+                request.add_header("X-Peergos-Local-Token", token)
             with urllib.request.urlopen(request, timeout=STATUS_TIMEOUT_S) as response:
                 status = json.loads(response.read().decode("utf-8"))
             state = status.get("state") or "NONE"

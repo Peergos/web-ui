@@ -3,9 +3,11 @@
 module.exports = {
     methods: {
         localPost(url, body, responseType) {
-            return new Promise(function(resolve, reject) {
+            return window.peergosLocalAuth.headers().then(headers => new Promise(function(resolve, reject) {
                 var req = new XMLHttpRequest();
                 req.open('POST', url);
+                for (const name in headers)
+                    req.setRequestHeader(name, headers[name]);
                 req.responseType = responseType != null ? responseType : 'json';
 
                 req.onload = function() {
@@ -36,7 +38,7 @@ module.exports = {
                 };
 
                 req.send(body != null ? body : new Int8Array(0));
-            })
+            }))
         }
     }
 }
