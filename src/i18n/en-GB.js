@@ -606,7 +606,7 @@ module.exports = {
     "CALENDAR.ERROR.LOAD.FILE":"Couldn't load calendar file",
     "CALENDAR.NEW.NAME":"New Calendar name",
     "CALENDAR.ENTER.NAME":"Enter a new name",
-    "CALENDAR.INVALID.NAME":"Invalid calendar name. Use only alphanumeric characters plus space, dash and underscore",
+    "CALENDAR.INVALID.NAME":"Invalid calendar name: use up to 64 characters, without line breaks, control or invisible characters",
     "CALENDAR.ALREADY.IMPORTED":"Calendar: $NAME already imported",
     "CALENDAR.ERROR.SAVE":"Unable to save calendar",
     "CALENDAR.SHARED.CHANGED":"Someone else changed this entry, so it was reloaded rather than overwritten",

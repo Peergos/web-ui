@@ -106,6 +106,7 @@ const DialogClose = require("../components/dialog/DialogClose.vue");
 const Error = require("../components/error/Error.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const names = require("../mixins/names/index.js");
 
 
 module.exports = {
@@ -191,13 +192,12 @@ module.exports = {
                     return;
                 if (prompt_result === that.displayedTitle)
                     return;
-                let newName = prompt_result.trim();
-                if (newName === '')
+                if (names.blank(prompt_result))
                     return;
-                if (newName === '.' || newName === '..')
-                    return;
-                if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showMessage(true, "Invalid " + that.genericLabel + " name. Use only alphanumeric characters plus space, dash and underscore");
+                // only ever shown, so in any language: see names.shownName
+                let newName = names.shownName(prompt_result);
+                if (newName == null) {
+                    that.showMessage(true, "Invalid " + that.genericLabel + " name: no line breaks, control or invisible characters");
                     return;
                 }
                 setTimeout(function(){

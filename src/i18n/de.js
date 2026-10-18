@@ -515,7 +515,7 @@ module.exports = {
     "CALENDAR.ERROR.LOAD.FILE": "Kalenderdatei konnte nicht geladen werden",
     "CALENDAR.NEW.NAME": "Neuer Kalendername",
     "CALENDAR.ENTER.NAME":"Geben Sie einen neuen Namen ein",
-    "CALENDAR.INVALID.NAME":"Ungültiger Kalendername. Bitte verwenden Sie nur alphanumerische Zeichen sowie Leerzeichen, Bindestriche und Unterstriche.",
+    "CALENDAR.INVALID.NAME":"Ungültiger Kalendername: höchstens 64 Zeichen, ohne Zeilenumbrüche, Steuerzeichen oder unsichtbare Zeichen",
     "CALENDAR.ALREADY.IMPORTED": "Kalender: $NAME wurde bereits importiert",
     "CALENDAR.ERROR.SAVE":"Kalender konnte nicht gespeichert werden",
     "CALENDAR.SHARED.CHANGED":"Jemand anderes hat diesen Eintrag geändert, daher wurde er neu geladen statt überschrieben",

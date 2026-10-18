@@ -515,7 +515,7 @@ module.exports = {
     "CALENDAR.ERROR.LOAD.FILE":"캘린더 파일을 로드할 수 없습니다",
     "CALENDAR.NEW.NAME":"새 캘린더 이름",
     "CALENDAR.ENTER.NAME":"새 이름 입력",
-    "CALENDAR.INVALID.NAME":"유효하지 않은 캘린더 이름. 영숫자, 공백, 대시, 밑줄만 사용하세요",
+    "CALENDAR.INVALID.NAME":"유효하지 않은 캘린더 이름: 줄 바꿈, 제어 문자, 보이지 않는 문자 없이 최대 64자까지 사용하세요",
     "CALENDAR.ALREADY.IMPORTED":"캘린더: $NAME이(가) 이미 가져와졌습니다",
     "CALENDAR.ERROR.SAVE":"캘린더를 저장할 수 없습니다",
     "CALENDAR.SHARED.CHANGED":"다른 사람이 이 항목을 변경하여 덮어쓰지 않고 다시 불러왔습니다",

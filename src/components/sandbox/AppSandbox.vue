@@ -175,6 +175,7 @@ const sandboxMixin = require("../../mixins/sandbox/index.js");
 const callbacks = require("../../mixins/callbacks/index.js");
 const sandboxResponses = require("../../mixins/sandbox/responses.js");
 const launcherMixin = require("../../mixins/launcher/index.js");
+const names = require("../../mixins/names/index.js");
 const contactsMixin = require("../../mixins/contacts/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 
@@ -2434,17 +2435,14 @@ module.exports = {
                     callback(null);
                     return;
                 }
-                let newName = prompt_result.trim();
-                if (newName === '') {
+                if (names.blank(prompt_result)) {
                     callback(null);
                     return;
                 }
-                if (newName === '.' || newName === '..') {
-                    callback(null);
-                    return;
-                }
-                if (!newName.match(/^[a-z\d\-_\s]+$/i)) {
-                    that.showError("Invalid folder name. Use only alphanumeric characters plus space, dash and underscore");
+                // shown, never a path - the folder's own is made apart from it - so in any language
+                let newName = names.shownName(prompt_result);
+                if (newName == null) {
+                    that.showError("Invalid folder name: no line breaks, control or invisible characters");
                     callback(null);
                     return;
                 }

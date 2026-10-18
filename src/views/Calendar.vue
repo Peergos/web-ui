@@ -66,6 +66,7 @@ const Share = require("../components/drive/DriveShare.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const transfers = require("../mixins/transfers/index.js");
+const names = require("../mixins/names/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 
@@ -497,15 +498,16 @@ module.exports = {
             }
         }, 100);
 	},
-    // A calendar name becomes a directory name and a wire identifier, so the
-    // same rules apply wherever one is entered. Null means it was refused,
-    // with the reason already on screen.
+    // The same rules wherever a calendar's name is entered. It is only ever shown - its folder
+    // is a random id - so any language will do, up to 64 characters: see names.shownName for
+    // what is refused. Null means it was refused, with the reason on screen unless nothing was
+    // given at all.
     acceptableCalendarName: function(supplied) {
-        let name = supplied.trim();
-        if (name === '' || name === '.' || name === '..') {
+        if (names.blank(supplied)) {
             return null;
         }
-        if (!name.match(/^[a-z\d\-_\s]+$/i)) {
+        let name = names.shownName(supplied);
+        if (name == null || name.length > 64) {
             this.showMessage(true, this.translate('CALENDAR.INVALID.NAME'));
             return null;
         }

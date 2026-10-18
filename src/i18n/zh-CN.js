@@ -492,7 +492,7 @@ module.exports = {
     "CALENDAR.ERROR.LOAD.FILE":"无法加载日历文件",
     "CALENDAR.NEW.NAME":"新日历名称",
     "CALENDAR.ENTER.NAME":"输入新名称",
-    "CALENDAR.INVALID.NAME":"日历名称无效。仅可使用字母数字字符加空格、破折号和下划线",
+    "CALENDAR.INVALID.NAME":"日历名称无效：最多 64 个字符，不能包含换行符、控制字符或不可见字符",
     "CALENDAR.ALREADY.IMPORTED":"日历：$NAME 已导入",
     "CALENDAR.ERROR.SAVE":"无法保存日历",
     "CALENDAR.SHARED.CHANGED":"其他人更改了此条目，因此已重新加载而不是覆盖",

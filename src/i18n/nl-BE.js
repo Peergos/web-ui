@@ -531,7 +531,7 @@ module.exports = {
     "CALENDAR.ERROR.LOAD.FILE":"Kon kalenderbestand niet inladen",
     "CALENDAR.NEW.NAME":"Nieuwes kalendernaam",
     "CALENDAR.ENTER.NAME":"Vul een nieuwe naam in",
-    "CALENDAR.INVALID.NAME":"Ongeldige kalendernaam. Gebruik enkel alfanumerische characters, spatie, streepjes (-) of lage streepjes (_)",
+    "CALENDAR.INVALID.NAME":"Ongeldige kalendernaam: gebruik maximaal 64 tekens, zonder regeleinden, stuurtekens of onzichtbare tekens",
     "CALENDAR.ALREADY.IMPORTED":"Kalender $NAME al geïmporteerd",
     "CALENDAR.ERROR.SAVE":"Kon de kalender niet opslaan",
     "CALENDAR.SHARED.CHANGED":"Iemand anders heeft dit item gewijzigd, dus het werd opnieuw geladen in plaats van overschreven",

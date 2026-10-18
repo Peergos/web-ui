@@ -103,13 +103,17 @@ public class CalendarImportMoreTest {
             // --- a new calendar, named after the file ------------------------------------------------
             String offsite = CalendarImportDialogTest.calendar(ev("offsite-1", "20270901", "Offsite day one"),
                     ev("offsite-2", "20270902", "Offsite day two"));
-            CalendarImportDialogTest.hand(d, List.of(List.of("Team Offsite!.ics", offsite), List.of("more-events.ics", CalendarImportDialogTest.MORE)));
-            awaitQuestion(d, "Team Offsite!.ics (1 of 2)");
+            // a name in any language, kept as it is, punctuation and all
+            String file = "Ομάδα ποδοσφαίρου!.ics", named = "Αγώνες 2027";
+            CalendarImportDialogTest.hand(d, List.of(List.of(file, offsite), List.of("more-events.ics", CalendarImportDialogTest.MORE)));
+            awaitQuestion(d, file + " (1 of 2)");
             CalendarApp.inFrame(d, CalendarImportDialogTest.chooseCalendar("New calendar…") + "return 1;");
             String suggested = String.valueOf(CalendarApp.inFrame(d, "return document.getElementById('import-new-name').value;"));
-            if (! suggested.equals("Team Offsite"))
-                throw new AssertionError("A new calendar should be named after the file, as a calendar name may be: " + suggested);
-            for (String[] bad : new String[][] {{"Bad/Name", "Use only letters, digits, spaces, - and _."},
+            if (! suggested.equals("Ομάδα ποδοσφαίρου!"))
+                throw new AssertionError("A new calendar should be named after the file, as it is: " + suggested);
+            // U+202E shows what follows it backwards: one name could pass for another
+            for (String[] bad : new String[][] {{"Bills\u202Efdp.exe", "A calendar name can't have line breaks, control or invisible characters."},
+                    {"My\u200BCalendar", "A calendar name can't have line breaks, control or invisible characters."},
                     {"My Calendar", "There is already a calendar called My Calendar."}, {"   ", "Give the new calendar a name."}}) {
                 Object said = CalendarApp.inFrame(d, CalendarApp.setField("import-new-name", bad[0])
                         + "let e = document.getElementById('import-new-error');"
@@ -117,21 +121,35 @@ public class CalendarImportMoreTest {
                 if (! (bad[1] + " | disabled").equals(String.valueOf(said)))
                     throw new AssertionError("The name [" + bad[0] + "] should be refused with \"" + bad[1] + "\": " + said);
             }
-            System.out.println("  ok   suggested \"" + suggested + "\"; a slash, a name in use and a blank one are refused, Import disabled");
-            CalendarApp.inFrame(d, CalendarApp.setField("import-new-name", "Offsite 2027") + CalendarApp.click("import-confirm") + "return 1;");
+            System.out.println("  ok   suggested \"" + suggested + "\"; a name turning its text around, one with a zero-width space, one in use and a blank one are refused, Import disabled");
+            CalendarApp.inFrame(d, CalendarApp.setField("import-new-name", named) + CalendarApp.click("import-confirm") + "return 1;");
             awaitQuestion(d, "more-events.ics (2 of 2)");
             String startsOn = String.valueOf(CalendarApp.inFrame(d, "let s = document.getElementById('import-calendar'); return s.options[s.selectedIndex].textContent;"));
-            if (! startsOn.equals("Offsite 2027"))
+            if (! startsOn.equals(named))
                 throw new AssertionError("The next file should start on the calendar the last one was made into: " + startsOn);
             CalendarApp.inFrame(d, CalendarApp.click("import-cancel") + "return 1;");
-            CalendarImportDialogTest.expectSummary(d, "Team Offsite!.ics: Imported 2 events.", "more-events.ics: Not imported.");
-            Object made = d.script("let c = (window.__cal.calendarProperties.calendars || []).find(c => c.name === 'Offsite 2027'); return c ? c.directory : null;");
+            CalendarImportDialogTest.expectSummary(d, file + ": Imported 2 events.", "more-events.ics: Not imported.");
+            Object made = d.script("let c = (window.__cal.calendarProperties.calendars || []).find(c => c.name === arguments[0]); return c ? c.directory : null;", named);
             if (made == null)
-                throw new AssertionError("The host has no calendar called Offsite 2027: " + CalendarApp.hostState(d));
+                throw new AssertionError("The host has no calendar called " + named + ": " + CalendarApp.hostState(d));
             CalendarImportDialogTest.awaitStored(d, made + "/2027/9", "offsite-1.ics", "offsite-2.ics");
             CalendarApp.waitInFrame(d, "the new calendar in the list",
-                    "Array.from(document.querySelectorAll('.calendar-list-item')).some(el => el.textContent.indexOf('Offsite 2027') !== -1)", 30_000);
-            System.out.println("  ok   Offsite 2027 is made, listed and holds both entries; the next file started on it");
+                    "Array.from(document.querySelectorAll('.calendar-list-item')).some(el => el.textContent.indexOf(" + CalendarApp.quote(named) + ") !== -1)", 30_000);
+            System.out.println("  ok   " + named + " is made, listed and holds both entries; the next file started on it");
+
+            // renamed through its own dialog, under the same rules: the host keeps the new name, the list shows it
+            String renamed = "Αγώνες 2027 🗓️";
+            CalendarApp.inFrame(d, "let item = Array.from(document.querySelectorAll('.calendar-list-item')).find(el => el.textContent.indexOf(arguments[0]) !== -1);"
+                    + "item.querySelector('.calendar-menu-button').click();"
+                    + "Array.from(document.querySelectorAll('.calendar-menu.open button')).find(b => b.textContent.trim() === 'Edit').click(); return 1;", named);
+            CalendarApp.waitInFrame(d, "the calendar's dialog", "document.getElementById('calendar-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("calendar-name-input", renamed)
+                    + "document.getElementById('calendar-form').requestSubmit(); return 1;");
+            d.waitUntil("the host to keep the new name", () -> Boolean.TRUE.equals(d.scriptQuiet(
+                    "return (window.__cal.calendarProperties.calendars || []).some(c => c.name === arguments[0] && c.directory === arguments[1]);", renamed, made)) ? Boolean.TRUE : null, 60_000);
+            CalendarApp.waitInFrame(d, "the new name in the list",
+                    "Array.from(document.querySelectorAll('.calendar-list-item')).some(el => el.textContent.indexOf(" + CalendarApp.quote(renamed) + ") !== -1)", 30_000);
+            System.out.println("  ok   renamed to " + renamed + ": kept by the host for the same folder, and listed");
 
             // --- a big import cancelled from the progress bar, the next file waiting for it -----------
             StringBuilder many = new StringBuilder();
