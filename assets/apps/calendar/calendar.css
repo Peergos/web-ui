@@ -1790,6 +1790,18 @@ body {
   color: var(--fc-breezy-muted-foreground);
 }
 
+/* when each kind falls, beside its count */
+.import-dates {
+  font-weight: 400;
+  color: var(--fc-breezy-muted-foreground);
+}
+
+.import-error {
+  margin: 6px 0 0;
+  font-size: .85em;
+  color: var(--danger);
+}
+
 /* a line for each file, each starting with the file's name, which can be one long word */
 #import-summary-message {
   white-space: pre-line;

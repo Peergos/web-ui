@@ -176,15 +176,21 @@
               <legend>What to import</legend>
               <div class="all-day-row">
                 <input type="checkbox" id="import-events"/>
-                <label for="import-events" id="import-events-label">Events</label>
+                <label for="import-events"><span id="import-events-label">Events</span><span id="import-events-dates" class="import-dates"></span></label>
               </div>
               <div class="all-day-row">
                 <input type="checkbox" id="import-tasks"/>
-                <label for="import-tasks" id="import-tasks-label">Tasks</label>
+                <label for="import-tasks"><span id="import-tasks-label">Tasks</span><span id="import-tasks-dates" class="import-dates"></span></label>
               </div>
             </fieldset>
             <label for="import-calendar" class="field-label"><svg class="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M4 11h16"/><path d="M11 15h1"/><path d="M12 15v3"/></svg>Into calendar</label>
             <select id="import-calendar"></select>
+            <div id="import-new-calendar" class="import-new-calendar" hidden>
+              <label for="import-new-name">Name of the new calendar</label>
+              <input type="text" id="import-new-name" maxlength="64" autocomplete="off"/>
+              <p id="import-new-error" class="import-error" role="alert" hidden></p>
+            </div>
+            <p id="import-duplicates" class="import-note" aria-live="polite" hidden></p>
             <p id="import-note" class="import-note" hidden></p>
           </div>
           <div class="modal-foot">
@@ -200,7 +206,7 @@
     <div id="import-summary-modal-backdrop" class="event-modal-backdrop">
       <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="import-summary-heading" tabindex="-1">
         <div class="modal-head">
-          <h2 id="import-summary-heading">Import complete</h2>
+          <h2 id="import-summary-heading">Import summary</h2>
           <button type="button" class="modal-close" data-close-dialog aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
         </div>
         <div class="modal-body">

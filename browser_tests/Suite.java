@@ -130,6 +130,8 @@ public class Suite {
             // an account opening it for the first time (see above).
             if (! engine.startsWith("webkit"))
                 run(failures, "the question an .ics import asks", () -> CalendarImportDialogTest.run(args1));
+            if (! engine.startsWith("webkit"))
+                run(failures, "an import's dates, duplicates, new calendar and Cancel", () -> CalendarImportMoreTest.run(args1));
             if (! failures.isEmpty())
                 serverLog = server.tailLog(120);
         }
