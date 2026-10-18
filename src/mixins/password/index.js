@@ -6,14 +6,15 @@ module.exports = {
 		}
     },
     methods: {
-        generatePassword: function() {
+        generateWords: function() {
             var bytes = nacl.randomBytes(16);
             var wordIndices = [];
             for (var i=0; i < 7; i++)
             wordIndices[i] = bytes[2*i]*8 + (bytes[2*i + 1] & 7);
-            var password = wordIndices.map(j => this.bip39[j]).join("-");
-            // this.passwordFieldType = "text";
-            this.password = password;
+            return wordIndices.map(j => this.bip39[j]).join("-");
+        },
+        generatePassword: function() {
+            this.password = this.generateWords();
         }
     }
 };
