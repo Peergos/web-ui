@@ -112,7 +112,8 @@ App to host:
 | `reminders` | the upcoming reminder list, replacing whatever was scheduled |
 | `refresh` | read the whole store again - another client may have written |
 | `sweep` | walk every stored month of one calendar (`calendarName`) or all of them, for `reason` `search` or `export`; carries a `requestId` |
-| `saveAll` | write every item of one import in a single batched upload, with a progress bar |
+| `saveAll` | write every item of one import in a single batched upload, with a progress bar that can cancel it; with a `requestId`, answered once as `savedAll`: `done`, `cancelled` or `failed`, and how many files were already stored and `kept` |
+| `listCalendarIds` | every entry id stored in one calendar - its months, `recurring` and `tasks`, names only - for the import question to count what is already there; answered once as `calendarIds` |
 | `downloadIcs` | save `item` as `filename` — the host owns this because a blob: URL never reaches the Android app's download listener |
 | `emailEvent` | open the stored `.ics` in the Peergos Email app as an attachment |
 | `deleteCalendar` | delete a calendar directory - the host asks the user first, every time |
@@ -164,7 +165,7 @@ message, so it is never minted behind a single click.
 
 Host to app: `ping`, `setTheme`, `load`, `loadAdditional`, `loadTasks`, `sweepBatch`,
 `sweepDone`, `importICSFile`, `respondAddCalendar`, `respondRenameCalendar`,
-`respondCalendarColorChange`, `respondDeleteCalendar`.
+`respondCalendarColorChange`, `respondDeleteCalendar`, `calendarIds`, `savedAll`.
 
 Two things about this protocol are load-bearing:
 
@@ -268,6 +269,30 @@ An import sends one `saveAll` rather than a `save` per item: a file with
 hundreds of events would otherwise be hundreds of round trips, each its own
 write. The host groups them by directory and uploads once, so tasks and
 events from the same file ride together.
+
+An import asks before it writes, once for each file. The picker takes several
+files at once, and more picked - or an `.ics` opened from the drive - while an
+import is running join its queue. The question counts the file's events and
+its tasks separately and says when they fall (the span of dates, how many
+events repeat, how many tasks have no date); it ticks each kind the file has -
+a kind it has none of is shown, greyed - and offers the calendars that can be
+written to, starting on the default one and then on wherever the previous file
+went, and a new one, named after the file and held to the host's rules for a
+name - asked for with a `requestId`, so that the host answers a refusal or a
+failure too, as `failed`, and the import is not left waiting. It says how many
+of the ticked entries are already here and will be skipped: those the page
+holds, and those the host finds stored in the chosen calendar
+(`listCalendarIds`), months the grid has not loaded included. Import stays
+disabled while nothing is ticked or a new calendar's name will not do.
+Leaving the question any other way - Cancel or Skip, Escape, the close button, a
+tap beside it, Android's back - leaves that file out. The file is parsed once,
+for the question, and the entries imported are those same parsed ones. The
+next question waits for the host's `savedAll`, so two saves never run at once.
+A save cancelled from its progress bar keeps what was written before then; after
+one that did not finish the host reads the store again, and answers once the
+app has been reset for that read, which would otherwise clear the next file's
+entries from the grid. One summary at the end says what happened to each file,
+and none appears when every file was left out.
 
 The app tracks where each event's file currently lives. Changing an event's
 date, calendar, or recurring-ness *moves* its file, so the app sends the move

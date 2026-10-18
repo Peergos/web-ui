@@ -129,6 +129,13 @@ public class Suite {
                 System.out.println("\nSKIP the download tests on " + engine
                         + ": its driver has no download directory capability");
             }
+            // Beside the import above, but without a download, so Safari runs it too. An account
+            // of its own, so not on WebKit, which cannot be relied on to bring the calendar up for
+            // an account opening it for the first time (see above).
+            if (! engine.startsWith("webkit"))
+                run(failures, "the question an .ics import asks", () -> CalendarImportDialogTest.run(args1));
+            if (! engine.startsWith("webkit"))
+                run(failures, "an import's dates, duplicates, new calendar and Cancel", () -> CalendarImportMoreTest.run(args1));
             if (! failures.isEmpty())
                 serverLog = server.tailLog(120);
         }

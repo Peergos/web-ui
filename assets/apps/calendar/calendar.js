@@ -386,6 +386,23 @@ let confirmOkButton = document.getElementById('confirm-ok');
 let importSummaryModalBackdrop = document.getElementById('import-summary-modal-backdrop');
 let importSummaryMessage = document.getElementById('import-summary-message');
 let importSummaryOkButton = document.getElementById('import-summary-ok');
+let importModalBackdrop = document.getElementById('import-modal-backdrop');
+let importForm = document.getElementById('import-form');
+let importFileLine = document.getElementById('import-file');
+let importEventsInput = document.getElementById('import-events');
+let importEventsLabel = document.getElementById('import-events-label');
+let importEventsDates = document.getElementById('import-events-dates');
+let importTasksInput = document.getElementById('import-tasks');
+let importTasksLabel = document.getElementById('import-tasks-label');
+let importTasksDates = document.getElementById('import-tasks-dates');
+let importCalendarSelect = document.getElementById('import-calendar');
+let importNewCalendar = document.getElementById('import-new-calendar');
+let importNewName = document.getElementById('import-new-name');
+let importNewError = document.getElementById('import-new-error');
+let importDuplicatesLine = document.getElementById('import-duplicates');
+let importNote = document.getElementById('import-note');
+let importCancelButton = document.getElementById('import-cancel');
+let importConfirmButton = document.getElementById('import-confirm');
 
 let editingEvent = null;
 let editScope = 'all';
@@ -3000,8 +3017,8 @@ overflowImportButton.addEventListener('click', function () {
 });
 
 
-function formatImportSummary(imported, importedTasks, duplicates, failed, simplified) {
-    if (imported === 0 && importedTasks === 0 && duplicates === 0 && failed === 0)
+function formatImportSummary(imported, importedTasks, duplicates, failed, simplified, leftOut) {
+    if (imported === 0 && importedTasks === 0 && duplicates === 0 && failed === 0 && !leftOut)
         return 'No events or tasks found in this file.';
     let parts = [];
     if (imported > 0 || importedTasks === 0)
@@ -3015,31 +3032,46 @@ function formatImportSummary(imported, importedTasks, duplicates, failed, simpli
     // saying so, since the occurrence dates can then differ from the
     // source file.
     if (simplified > 0) parts.push(simplified === 1 ? '1 event had its recurrence simplified - some repeat options aren\'t supported.' : simplified + ' events had their recurrence simplified - some repeat options aren\'t supported.');
+    if (leftOut) parts.push(leftOut);
     return parts.join(' ');
 }
 
-// Shared by the in-app file picker and by the host handing over an .ics
-// the user opened from their Peergos files.
-function importIcsText(text) {
-    // Otherwise a wrong-file-type pick reads as a misleading "0 events".
-    if (!text || text.indexOf('BEGIN:VCALENDAR') === -1) {
-        openImportSummaryModal("This doesn't look like a valid .ics calendar file.");
-        return [];
-    }
-    let parsed = parseIcsFile(text);
-    let imported = 0;
-    let duplicates = 0;
-    let simplified = 0;
+const NOT_AN_ICS_FILE = "This doesn't look like a valid .ics calendar file.";
+
+function countOf(n, noun) {
+    return n + ' ' + noun + (n === 1 ? '' : 's');
+}
+
+// What one file holds, parsed once: counted for the question, then imported from as the
+// answer says. Null for a file that is not a calendar at all - otherwise a wrong-file-type
+// pick reads as a misleading "0 events".
+function readIcsText(text) {
+    if (!text || text.indexOf('BEGIN:VCALENDAR') === -1) return null;
+    return parseIcsFile(text);
+}
+
+// The parser files every entry under the default calendar; an imported one lands in the
+// calendar it was imported into, and takes that calendar's colour.
+function placeParsedIn(data, calendarId) {
+    data.extendedProps.calendarId = calendarId;
+    data.color = colorForCalendarId(calendarId);
+}
+
+// Writes as much of one parsed file as `choice` asks for: which kinds ({events, tasks}) and
+// which calendar (calendarId). Comes back with the counts the summary reports.
+function importParsed(parsed, choice) {
+    let result = { imported: 0, importedTasks: 0, duplicates: 0, simplified: 0, failed: parsed.failed, added: [], saveRequest: null };
+    // what the host found stored in the chosen calendar, months the grid has not loaded included
+    let stored = choice.existing || new Set();
     // Collected and written in one message rather than one per item: a file
     // with hundreds of events would otherwise be hundreds of round trips to
     // the host, each its own write, with nothing on screen but a spinner.
     let batch = [];
-    let added = [];
-    parsed.events.forEach(function (data) {
+    if (choice.events) parsed.events.forEach(function (data) {
         let wasSimplified = !!data.__recurSimplified;
         delete data.__recurSimplified;
-        if (calendar.getEventById(data.id)) {
-            duplicates++;
+        if (calendar.getEventById(data.id) || stored.has(data.id)) {
+            result.duplicates++;
             return;
         }
         // An entry imported from a file - one exported from a snapshot, say - is the user's
@@ -3047,55 +3079,429 @@ function importIcsText(text) {
         if (data.extendedProps && data.extendedProps.sourceLines) {
             data.extendedProps.sourceLines = withoutSharedPointer(data.extendedProps.sourceLines);
         }
+        placeParsedIn(data, choice.calendarId);
         let ev = calendar.addEvent(data);
         if (!ev) return;
         let placement = placementOf(ev);
         eventPlacements[ev.id] = placement;
         batch.push(eventSavePayload(ev, placement));
-        added.push(ev.id);
-        imported++;
-        if (wasSimplified) simplified++;
+        result.added.push(ev.id);
+        result.imported++;
+        if (wasSimplified) result.simplified++;
     });
-    let importedTasks = 0;
-    parsed.tasks.forEach(function (task) {
-        if (getTaskById(task.id)) {
-            duplicates++;
+    if (choice.tasks) parsed.tasks.forEach(function (task) {
+        if (getTaskById(task.id) || stored.has(task.id)) {
+            result.duplicates++;
             return;
         }
-        let calendarId = defaultCalendarId();
-        if (!calendarId) return;
-        task.calendarId = calendarId;
+        if (!choice.calendarId) return;
+        task.calendarId = choice.calendarId;
         tasks.push(task);
-        taskCalendars[task.id] = calendarId;
+        taskCalendars[task.id] = choice.calendarId;
         batch.push(taskSavePayload(task));
         syncTaskEvent(task);
-        importedTasks++;
+        result.importedTasks++;
     });
-    if (importedTasks > 0) renderTaskList();
-    if (batch.length > 0 && !isGuestSession) hostSend({ type: 'saveAll', items: batch });
-    if (imported > 0 || importedTasks > 0) applyCalendarVisibility();
+    if (result.importedTasks > 0) renderTaskList();
+    // Under an id the host answers with `savedAll` once the save is over, written, cancelled
+    // from its progress bar or failed - importFiles waits for that before it says what happened.
+    if (batch.length > 0 && !isGuestSession) {
+        result.saveRequest = ++importSaveSeq;
+        hostSend({ type: 'saveAll', items: batch, requestId: result.saveRequest });
+    }
+    if (result.imported > 0 || result.importedTasks > 0) applyCalendarVisibility();
+    return result;
+}
+
+// Everything in one file, into the default calendar, without asking. That is what a guest
+// opening a link to an .ics gets - shown on the grid, never written - and what a caller that
+// has already decided gets. Someone importing into their own calendars is asked first: see
+// importFiles.
+function importIcsText(text) {
+    let parsed = readIcsText(text);
+    if (!parsed) {
+        openImportSummaryModal(NOT_AN_ICS_FILE);
+        return [];
+    }
+    let result = importParsed(parsed, { calendarId: defaultCalendarId(), events: true, tasks: true });
     // A guest is reading a link, not importing: nothing was written, and there is no
     // account here for it to have been written to. The entries are simply on the grid,
     // so a summary counting what was "imported" would be telling them about a thing
     // that did not happen.
     if (!isGuestSession)
-        openImportSummaryModal(formatImportSummary(imported, importedTasks, duplicates, parsed.failed, simplified));
-    return added;
+        openImportSummaryModal(formatImportSummary(result.imported, result.importedTasks, result.duplicates, result.failed, result.simplified));
+    return result.added;
+}
+
+function leftOutOf(parsed, choice) {
+    let out = [];
+    if (!choice.events && parsed.events.length > 0) out.push(countOf(parsed.events.length, 'event'));
+    if (!choice.tasks && parsed.tasks.length > 0) out.push(countOf(parsed.tasks.length, 'task'));
+    return out.length === 0 ? '' : 'Left out: ' + out.join(' and ') + '.';
+}
+
+// When each kind in a file falls, for the question: the span of its dates, how many events
+// repeat, and how many tasks have no date at all - a count kept on one line with its word.
+let IMPORT_DATE_FORMAT = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+function importDateSpan(dates) {
+    if (dates.length === 0) return '';
+    let first = dates.reduce(function (a, b) { return a < b ? a : b; });
+    let last = dates.reduce(function (a, b) { return a > b ? a : b; });
+    return IMPORT_DATE_FORMAT.formatRange(first, last);
+}
+
+// A series starts on its own first occurrence; anything else on its start.
+function parsedEventStart(data) {
+    let recur = data.extendedProps && data.extendedProps.recur;
+    if (recur && recur.dtstart) return new Date(recur.dtstart.indexOf('T') === -1 ? recur.dtstart + 'T00:00' : recur.dtstart);
+    return data.start instanceof Date ? data.start : new Date(data.start);
+}
+
+function importDatesOf(parsed) {
+    let starts = parsed.events.map(parsedEventStart).filter(function (d) { return !isNaN(d); });
+    let repeating = parsed.events.filter(function (e) { return e.extendedProps && e.extendedProps.recur; }).length;
+    let events = [importDateSpan(starts)];
+    if (repeating > 0) events.push(repeating + '\u00a0repeating');
+    let dues = parsed.tasks.map(function (t) { return t.due; })
+        .filter(function (d) { return d instanceof Date && !isNaN(d); });
+    let undated = parsed.tasks.length - dues.length;
+    let tasks = [];
+    if (dues.length > 0) tasks.push('due\u00a0' + importDateSpan(dues));
+    if (undated > 0) tasks.push(undated === parsed.tasks.length ? (undated === 1 ? 'no due date' : 'no due dates') : undated + '\u00a0undated');
+    return { events: events.filter(Boolean).join(' · '), tasks: tasks.join(' · ') };
+}
+
+// What happened to one file, once its save is over.
+function describeImport(r, parsed, choice, saved) {
+    if (saved.outcome === 'cancelled') return 'Cancelled while saving: what was saved before then stays.';
+    if (saved.outcome === 'failed') return 'Could not be saved.';
+    let summary = formatImportSummary(r.imported, r.importedTasks, r.duplicates, r.failed, r.simplified, leftOutOf(parsed, choice));
+    // only when the store changed between the question's check and the save
+    if (saved.kept > 0)
+        summary += ' ' + (saved.kept === 1 ? '1 was already stored and was left as it was.' : saved.kept + ' were already stored and were left as they were.');
+    return summary;
+}
+
+let importSaveSeq = 0;
+let pendingImportSaves = Object.create(null);
+
+function awaitImportSave(requestId, done) {
+    if (requestId == null) {
+        done({ outcome: 'done', kept: 0 });
+        return;
+    }
+    pendingImportSaves[requestId] = done;
+}
+
+function handleSavedAll(data) {
+    let done = pendingImportSaves[data.requestId];
+    if (!done) return;
+    delete pendingImportSaves[data.requestId];
+    done({
+        outcome: data.outcome === 'cancelled' || data.outcome === 'failed' ? data.outcome : 'done',
+        kept: Number(data.kept) || 0
+    });
+}
+
+// One import at a time, however its files arrive: several picked at once, more picked while
+// those are still being asked about or saved, an .ics opened from the drive - they join the
+// queue and are asked about in turn. Each file is a question of its own: how many events and
+// how many tasks it holds and when, how many of them are already here, which kinds to bring in,
+// and into which calendar - one there is, or a new one - with the previous file's calendar where
+// the next question starts. Leaving a question any way but Import leaves that file out. Nothing
+// of a file is written before its question is answered, and the next question waits until the
+// host says that file's save is over - so two saves never run at once, and the one summary at
+// the end says what actually happened. There is none when every file was left out on purpose.
+// `files` are {name, read}, read giving a promise of the file's text.
+let importQueue = null;
+
+function importFiles(files) {
+    if (files.length === 0) return;
+    if (importQueue) {
+        Array.prototype.push.apply(importQueue.files, files);
+        return;
+    }
+    if (defaultCalendarId() == null) {
+        openImportSummaryModal("There's no calendar here to import into.");
+        return;
+    }
+    let queue = importQueue = { files: files.slice(), said: [], worthTelling: false, lastCalendarId: null };
+    let say = function (file, text, worthTelling) {
+        queue.said.push({ name: file.name, text: text });
+        if (worthTelling !== false) queue.worthTelling = true;
+    };
+    let step = function (index) {
+        if (index >= queue.files.length) {
+            importQueue = null;
+            if (!queue.worthTelling) return;
+            let several = queue.files.length > 1;
+            openImportSummaryModal(queue.said.map(function (line) {
+                return several ? line.name + ': ' + line.text : line.text;
+            }).join('\n'));
+            return;
+        }
+        let file = queue.files[index];
+        let next = function () { step(index + 1); };
+        file.read().then(function (text) {
+            let parsed = readIcsText(text);
+            if (!parsed) {
+                say(file, NOT_AN_ICS_FILE);
+                next();
+                return;
+            }
+            if (parsed.events.length === 0 && parsed.tasks.length === 0) {
+                say(file, formatImportSummary(0, 0, 0, parsed.failed, 0));
+                next();
+                return;
+            }
+            askWhatToImport(file.name, index, queue.files.length, parsed, queue.lastCalendarId, function (choice) {
+                if (choice == null) {
+                    say(file, 'Not imported.', false);
+                    next();
+                    return;
+                }
+                queue.lastCalendarId = choice.calendarId;
+                let r = importParsed(parsed, choice);
+                awaitImportSave(r.saveRequest, function (saved) {
+                    say(file, describeImport(r, parsed, choice, saved));
+                    next();
+                });
+            });
+        }, function () {
+            say(file, 'Could not read that file.');
+            next();
+        });
+    };
+    step(0);
+}
+
+// --- The import question ---
+
+// No calendar name can hold a '+', so this can never be one.
+const NEW_CALENDAR_CHOICE = '+new';
+
+let importAnswer = null;
+let importAbout = null;
+let importCheck = { requestId: 0, ids: null };
+let importCheckSeq = 0;
+let importCreating = false;
+
+// A kind the file has none of stays in view, unticked and greyed, so the question reads the
+// same whatever the file holds.
+function offerImportKind(input, label, datesEl, count, noun, dates) {
+    input.checked = count > 0;
+    input.disabled = count === 0;
+    label.textContent = countOf(count, noun);
+    datesEl.textContent = dates ? ' · ' + dates : '';
+}
+
+function choosingNewCalendar() {
+    return importCalendarSelect.value === NEW_CALENDAR_CHOICE;
+}
+
+// The rules the host holds a calendar name to, asked here first so the question can say what
+// is wrong before anything is sent.
+function newCalendarNameProblem(name) {
+    let trimmed = name.trim();
+    if (trimmed === '') return 'Give the new calendar a name.';
+    if (!/^[a-z\d\-_\s]+$/i.test(trimmed)) return 'Use only letters, digits, spaces, - and _.';
+    if (calendars.some(function (c) { return c.name === trimmed || c.id === trimmed; }))
+        return 'There is already a calendar called ' + trimmed + '.';
+    return null;
+}
+
+// A calendar made for a file is named after it: its name without the extension, in the
+// characters a calendar name may have, numbered on when that name is taken.
+function suggestedCalendarName(fileName) {
+    let base = fileName.replace(/\.[^.]*$/, '').replace(/[^a-z\d\-_\s]+/gi, ' ')
+        .replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+    if (base === '') base = 'Imported';
+    let name = base;
+    for (let n = 2; newCalendarNameProblem(name) != null; n++) name = base + ' ' + n;
+    return name;
+}
+
+function updateImportConfirm() {
+    let problem = choosingNewCalendar() ? newCalendarNameProblem(importNewName.value) : null;
+    importNewError.textContent = problem || '';
+    importNewError.hidden = !problem;
+    importConfirmButton.disabled = importCreating || !importCalendarSelect.value || !!problem
+        || !(importEventsInput.checked || importTasksInput.checked);
+}
+
+// Which of the ticked entries are already here: those this page holds, in any calendar, and
+// those the host finds stored in the chosen calendar - months the grid has not loaded
+// included. A new calendar holds nothing yet. Asked again whenever the calendar changes, and
+// an answer to an earlier asking is dropped.
+function checkImportDuplicates() {
+    let target = importCalendarSelect.value;
+    importCheck = { requestId: ++importCheckSeq, ids: null };
+    if (!target || target === NEW_CALENDAR_CHOICE) importCheck.ids = new Set();
+    else hostSend({ type: 'listCalendarIds', requestId: importCheck.requestId, calendarName: target });
+    renderImportDuplicates();
+}
+
+function handleCalendarIds(data) {
+    if (data.requestId !== importCheck.requestId) return;
+    importCheck.ids = new Set(Array.isArray(data.ids) ? data.ids.map(String) : []);
+    renderImportDuplicates();
+}
+
+function renderImportDuplicates() {
+    if (importCheck.ids == null) {
+        importDuplicatesLine.hidden = false;
+        importDuplicatesLine.textContent = 'Checking which of these are already here…';
+        return;
+    }
+    let stored = importCheck.ids, n = 0;
+    if (importAbout && importEventsInput.checked)
+        importAbout.events.forEach(function (e) { if (calendar.getEventById(e.id) || stored.has(e.id)) n++; });
+    if (importAbout && importTasksInput.checked)
+        importAbout.tasks.forEach(function (t) { if (getTaskById(t.id) || stored.has(t.id)) n++; });
+    importDuplicatesLine.hidden = n === 0;
+    importDuplicatesLine.textContent = n === 1
+        ? '1 of these is already in your calendars and will be skipped.'
+        : n + ' of these are already in your calendars and will be skipped.';
+}
+
+function askWhatToImport(name, index, total, parsed, preferredCalendarId, answer) {
+    importAnswer = answer;
+    importAbout = parsed;
+    importAbout.fileName = name;
+    importCreating = false;
+    importFileLine.textContent = total > 1 ? name + ' (' + (index + 1) + ' of ' + total + ')' : name;
+    let dates = importDatesOf(parsed);
+    offerImportKind(importEventsInput, importEventsLabel, importEventsDates, parsed.events.length, 'event', dates.events);
+    offerImportKind(importTasksInput, importTasksLabel, importTasksDates, parsed.tasks.length, 'task', dates.tasks);
+    // Calendars that can be written to - a read-only one is not offered, and the previous
+    // file's choice only carries over while it still is one - and a new one, last.
+    let preferred = preferredCalendarId && getCalendarById(preferredCalendarId)
+        && !getCalendarById(preferredCalendarId).readOnly ? preferredCalendarId : null;
+    renderCalendarSelectOptions(preferred, importCalendarSelect);
+    let newOption = document.createElement('option');
+    newOption.value = NEW_CALENDAR_CHOICE;
+    newOption.textContent = 'New calendar…';
+    importCalendarSelect.appendChild(newOption);
+    importNewName.value = '';
+    importNewCalendar.hidden = true;
+    importNote.hidden = parsed.failed === 0;
+    importNote.textContent = parsed.failed === 1
+        ? "1 entry in this file can't be read and will be skipped."
+        : parsed.failed + " entries in this file can't be read and will be skipped.";
+    importCancelButton.textContent = index + 1 < total ? 'Skip' : 'Cancel';
+    importConfirmButton.textContent = 'Import';
+    checkImportDuplicates();
+    updateImportConfirm();
+    openDialog(importModalBackdrop, [importEventsInput, importTasksInput].find(function (box) { return !box.disabled; }));
+}
+
+function answerImport(choice) {
+    let answer = importAnswer;
+    importAnswer = null;
+    importAbout = null;
+    importCreating = false;
+    closeDialog(importModalBackdrop);
+    if (answer) answer(choice);
+}
+
+// Every way out of the question but Import - Cancel or Skip, Escape, the close button, a tap
+// beside it, Android's back - leaves this file out.
+function closeImportModal() {
+    answerImport(null);
+}
+
+let calendarAddSeq = 0;
+let pendingCalendarAdds = Object.create(null);
+
+// The host makes the calendar under its own checks and answers either way: `respondAddCalendar`
+// with the name it made, or with `failed`.
+function createCalendarForImport(name, done) {
+    let requestId = ++calendarAddSeq;
+    pendingCalendarAdds[requestId] = done;
+    hostSend({ type: 'requestAddCalendar', newName: name, newColor: randomCalendarColor(), requestId: requestId });
+}
+
+function handleCalendarAdded(data) {
+    if (!data.failed) respondToCalendarAdd(data.newName, data.newColor);
+    let done = data.requestId != null ? pendingCalendarAdds[data.requestId] : null;
+    if (!done) return;
+    delete pendingCalendarAdds[data.requestId];
+    done(!data.failed && !!data.newName, data.newName);
+}
+
+function onImportKindsChange() {
+    renderImportDuplicates();
+    updateImportConfirm();
+}
+
+importEventsInput.addEventListener('change', onImportKindsChange);
+importTasksInput.addEventListener('change', onImportKindsChange);
+importCalendarSelect.addEventListener('change', function () {
+    let isNew = choosingNewCalendar();
+    importNewCalendar.hidden = !isNew;
+    if (isNew && importNewName.value === '' && importAbout) importNewName.value = suggestedCalendarName(importAbout.fileName);
+    checkImportDuplicates();
+    updateImportConfirm();
+});
+importNewName.addEventListener('input', updateImportConfirm);
+importCancelButton.addEventListener('click', closeImportModal);
+
+importForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    if (importConfirmButton.disabled) return;
+    let choice = {
+        events: importEventsInput.checked,
+        tasks: importTasksInput.checked,
+        existing: importCheck.ids || new Set()
+    };
+    if (!choosingNewCalendar()) {
+        choice.calendarId = importCalendarSelect.value;
+        answerImport(choice);
+        return;
+    }
+    // Made first, then filled. The question stays up meanwhile, and an answer that comes back
+    // after it was left - or after it moved on to another file - is not taken for that one's.
+    let asked = importAnswer;
+    importCreating = true;
+    importConfirmButton.textContent = 'Creating…';
+    updateImportConfirm();
+    createCalendarForImport(importNewName.value.trim(), function (ok, name) {
+        if (importAnswer !== asked) return;
+        importCreating = false;
+        importConfirmButton.textContent = 'Import';
+        if (!ok) {
+            updateImportConfirm();
+            importNewError.textContent = "Couldn't make that calendar.";
+            importNewError.hidden = false;
+            return;
+        }
+        choice.calendarId = name;
+        choice.existing = new Set();
+        answerImport(choice);
+    });
+});
+
+importModalBackdrop.addEventListener('click', function (e) {
+    if (e.target === importModalBackdrop) closeImportModal();
+});
+
+function readFileText(file) {
+    return new Promise(function (resolve, reject) {
+        let reader = new FileReader();
+        reader.onload = function () { resolve(reader.result); };
+        reader.onerror = function () { reject(reader.error); };
+        reader.readAsText(file);
+    });
 }
 
 icsFileInput.addEventListener('change', function () {
-    let file = icsFileInput.files[0];
-    if (!file) return;
-    let reader = new FileReader();
-    reader.onload = function () {
-        icsFileInput.value = '';
-        importIcsText(reader.result);
-    };
-    reader.onerror = function () {
-        icsFileInput.value = '';
-        openImportSummaryModal('Could not read that file.');
-    };
-    reader.readAsText(file);
+    let picked = Array.from(icsFileInput.files || []);
+    // Emptied straight away, so picking the same files again is still a change.
+    icsFileInput.value = '';
+    importFiles(picked.map(function (file) {
+        return { name: file.name, read: function () { return readFileText(file); } };
+    }));
 });
 
 // Always visible, not a click-to-open trigger. Clicking the search
@@ -3241,6 +3647,7 @@ function closeSidebar() {
 function closeTopmostOverlay() {
     if (colorModalBackdrop.classList.contains('open')) closeColorPicker();
     else if (confirmModalBackdrop.classList.contains('open')) closeConfirmModal();
+    else if (importModalBackdrop.classList.contains('open')) closeImportModal();
     else if (importSummaryModalBackdrop.classList.contains('open')) closeImportSummaryModal();
     else if (modalBackdrop.classList.contains('open')) closeModal();
     else if (taskModalBackdrop.classList.contains('open')) closeTaskModal();
@@ -4164,7 +4571,7 @@ function persistDelete(eventId, placement) {
 }
 
 // The `save` payload for one event. Import batches these into a single
-// message instead of sending one write per event - see importIcsText.
+// message instead of sending one write per event - see importParsed.
 function eventSavePayload(ev, placement) {
     placement = placement || placementOf(ev);
     return {
@@ -4445,9 +4852,9 @@ function setPendingLoadBuckets(count) {
     loadProgressEl.dataset.pending = pendingLoadBuckets;
     showLoadProgress(pendingLoadBuckets > 0);
     if (pendingLoadBuckets > 0) return;
-    let contents = pendingLoadImport;
+    let opened = pendingLoadImport;
     pendingLoadImport = null;
-    if (contents) importIcsText(contents);
+    if (opened) importFiles([{ name: opened.name, read: function () { return Promise.resolve(opened.text); } }]);
 }
 
 // Only the messages this load asked for count down; a month the grid asked
@@ -4493,7 +4900,9 @@ function handleHostLoad(data) {
     // importing first would take a second copy of every event this calendar
     // already holds, since none of them are here to be recognised yet.
     let importParams = data.importCalendarEventParams;
-    pendingLoadImport = (importParams && importParams.contents) || null;
+    pendingLoadImport = importParams && importParams.contents
+        ? { name: importParams.filename || 'calendar.ics', text: importParams.contents }
+        : null;
     setPendingLoadBuckets(data.pendingBuckets || 0);
 }
 
@@ -4664,7 +5073,9 @@ let hostHandlers = Object.assign(Object.create(null), {
         // is opened rather than left to be found on a month nobody asked for.
         if (isGuestSession && added.length > 0) openLinkedEntry(added[0]);
     },
-    respondAddCalendar: function (data) { respondToCalendarAdd(data.newName, data.newColor); },
+    respondAddCalendar: handleCalendarAdded,
+    calendarIds: handleCalendarIds,
+    savedAll: handleSavedAll,
     respondRenameCalendar: function (data) { respondToCalendarRename(data.calendar); },
     respondCalendarColorChange: function (data) {
         respondToCalendarColorChange(data.calendarName, data.newColor);

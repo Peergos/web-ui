@@ -1742,6 +1742,72 @@ body {
   }
 }
 
+/* An action with nothing to act on - Import with nothing ticked - greyed out, and no pointer. */
+.event-modal .modal-actions button:disabled,
+.event-modal .modal-actions button:disabled:hover {
+  background: var(--fc-breezy-muted);
+  border-color: var(--fc-breezy-border);
+  color: var(--fc-breezy-muted-foreground);
+  cursor: default;
+}
+
+/* The import question: the file it is about, then a tick box for each kind of entry in it,
+   with how many there are. A kind the file has none of is shown, greyed, rather than left out. */
+.import-file {
+  margin: 4px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* The gap above sits on the group: a legend's own margin is not kept by every engine. */
+.import-kinds {
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.import-kinds legend {
+  margin: 0;
+  padding: 0;
+  font-size: .85em;
+  font-weight: 600;
+}
+
+.import-kinds .all-day-row {
+  margin-top: 8px;
+}
+
+.import-kinds input:disabled,
+.import-kinds input:disabled + label {
+  color: var(--fc-breezy-muted-foreground);
+  cursor: default;
+}
+
+.import-note {
+  margin: 12px 0 0;
+  font-size: .85em;
+  color: var(--fc-breezy-muted-foreground);
+}
+
+/* when each kind falls, beside its count */
+.import-dates {
+  font-weight: 400;
+  color: var(--fc-breezy-muted-foreground);
+}
+
+.import-error {
+  margin: 6px 0 0;
+  font-size: .85em;
+  color: var(--danger);
+}
+
+/* a line for each file, each starting with the file's name, which can be one long word */
+#import-summary-message {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
 /* One ring for every control in the app, matching web-ui's .pg-btn. Fields
    are not here: they show focus as a border and halo instead, further down,
    the way web-ui's .pg-input does. */

@@ -157,6 +157,11 @@ module.exports = {
             choice_options: [],
             isIframeInitialised: false,
             importFile: null,
+            // its name, which the app's import question shows
+            importFilename: null,
+            // numbers each import's progress bar, and names the last one raised - see saveAllEvents
+            bulkImportCount: 0,
+            bulkImportBar: null,
             // The one file a secret link to an entry grants, kept so a writable one can be
             // written back through the capability it arrived with.
             linkedFile: null,
@@ -214,6 +219,7 @@ module.exports = {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
                 if (loadedParameters != null) {
                     that.importFile = loadedParameters.importFile;
+                    that.importFilename = loadedParameters.importFilename || null;
                     that.importCalendarPath = loadedParameters.importCalendarPath;
                     that.owner = loadedParameters.owner;
                     that.hasEmail = loadedParameters.hasEmail;
@@ -312,7 +318,7 @@ module.exports = {
                 that.openedFilePath = path + (path.endsWith("/") ? "" : '/') + filename;
                 that.openedFileStamp = that.sharedStamp(props);
                 that.readFileText(file).thenApply(function(text) {
-                    future.complete({importFile: text, importCalendarPath: null,
+                    future.complete({importFile: text, importFilename: filename, importCalendarPath: null,
                         owner: file.getOwnerName(), hasEmail: hasEmail, isWritable: file.isWritable()});
                     return null;
                 }).exceptionally(function(throwable) {
@@ -442,7 +448,8 @@ module.exports = {
                     return null;
                 });
             },
-            requestAddCalendar: function(data) { that.addCalendarRequest(calendar, data.newColor, data.newName); },
+            requestAddCalendar: function(data) { that.addCalendarRequest(calendar, data.newColor, data.newName, data.requestId); },
+            listCalendarIds: function(data) { that.listCalendarIds(calendar, data); },
             requestRenameCalendar: function(data) { that.renameCalendarRequest(calendar, data.calendar, data.newName); },
             requestCalendarColorChange: function(data) { that.calendarColorChangeRequest(calendar, data.calendarName, data.newColor); },
             openShare: function(data) { that.openShareDialog(data); }
@@ -554,10 +561,25 @@ module.exports = {
             });
         });
     },
-    addCalendarRequest: function(calendar, newColor, suppliedName) {
+    // `requestId` comes with a calendar an import makes to fill, which waits for an answer
+    // either way: so every refusal and failure is answered too, as `failed`.
+    addCalendarRequest: function(calendar, newColor, suppliedName, requestId) {
         let that = this;
+        let refuse = function() {
+            if (typeof requestId === 'number') {
+                that.postMessage({type: 'respondAddCalendar', requestId: requestId, failed: true});
+            }
+        };
         if (!this.isHexColor(newColor)) {
+            refuse();
             return;
+        }
+        if (typeof requestId === 'number') {
+            let checked = suppliedName == null ? null : this.acceptableCalendarName(String(suppliedName));
+            if (checked == null || this.calendarNameTaken(checked)) {
+                refuse();
+                return;
+            }
         }
         this.askForCalendarName("", suppliedName, function(newName) {
             that.displaySpinner();
@@ -568,6 +590,7 @@ module.exports = {
                 that.dropCalendarEntry(entry);
                 that.removeSpinner();
                 that.showMessage(true, that.translate('CALENDAR.ERROR.SAVE'));
+                refuse();
                 return null;
             };
             // Both chains are guarded rather than one: the inner future is
@@ -575,7 +598,7 @@ module.exports = {
             that.createCalendarFile(calendar, dirName, {name: newName, color: newColor}).thenApply(done => {
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
                     that.removeSpinner();
-                    that.postMessage({type: 'respondAddCalendar', newName: newName, newColor: newColor});
+                    that.postMessage({type: 'respondAddCalendar', newName: newName, newColor: newColor, requestId: requestId});
                 }).exceptionally(failed);
             }).exceptionally(failed);
         });
@@ -661,7 +684,7 @@ module.exports = {
             // it, so their later changes can reach it - a copy in a month of our own never
             // hears from them again. Where that cannot be done it is imported as before.
             let asBefore = function() {
-                that.loadCalendars(calendar, year, month, {contents: that.importFile,
+                that.loadCalendars(calendar, year, month, {contents: that.importFile, filename: that.importFilename,
                     isSharedWithUs: true, loadCalendarAsGuest: false,
                     username: that.context.username});
             };
@@ -678,6 +701,7 @@ module.exports = {
             });
         } else {
             let importCalendarEventParams = {contents: that.importFile,
+                filename: that.importFilename,
                 isSharedWithUs: false,
                 loadCalendarAsGuest: that.loadCalendarAsGuest,
                 username: that.context.username };
@@ -786,6 +810,78 @@ module.exports = {
             that.answerSweep(active, 'cancelled');
         }
         queued.forEach(function(job) { that.answerSweep(job, 'cancelled'); });
+    },
+
+    // Every entry id stored in one calendar - its months, `recurring` and `tasks` - for the
+    // import question to say how many of a file's entries are already here, months the grid
+    // has not loaded included. Names only: nothing is read. Answered once, as `calendarIds`; a
+    // directory that cannot be listed counts as empty, as an unknown calendar does - the save
+    // still leaves alone whatever turns out to be stored already.
+    listCalendarIds: function(calendar, data) {
+        let that = this;
+        let requestId = data.requestId;
+        if (typeof requestId !== 'number' || !isFinite(requestId)) {
+            return;
+        }
+        let cal = this.findCalendar(data.calendarName);
+        let reply = function(ids) {
+            that.postMessage({type: 'calendarIds', requestId: requestId, ids: ids});
+        };
+        if (cal == null) {
+            reply([]);
+            return;
+        }
+        let ids = [];
+        let list = function(parts) {
+            let future = peergos.shared.util.Futures.incomplete();
+            let path = peergos.client.PathUtils.directoryToPath(cal.directory.split('/').concat(parts));
+            calendar.dirInternal(path, cal.owner).thenApply(function(names) {
+                future.complete(names.toArray([]).map(function(n) { return String(n); }));
+            }).exceptionally(function(t) {
+                future.complete([]);
+                return null;
+            });
+            return future;
+        };
+        let take = function(names) {
+            names.forEach(function(name) {
+                if (name.endsWith(that.CALENDAR_FILE_EXTENSION)) {
+                    ids.push(name.substring(0, name.length - that.CALENDAR_FILE_EXTENSION.length));
+                }
+            });
+        };
+        // Listed twelve at a time, as many months as a year view asks for at once, rather than
+        // one after another: six years of months a tenth of a second away took 17s one at a
+        // time and under 3s like this, and with no limit at all a calendar decades deep would
+        // send hundreds of requests at once for no gain.
+        let queue = [];
+        let listing = 0;
+        let next = function() {
+            while (listing < 12 && queue.length > 0) {
+                let parts = queue.shift();
+                listing++;
+                list(parts).thenApply(function(names) {
+                    listing--;
+                    if (parts.length == 1 && that.isSweepYear(parts[0])) {
+                        names.filter(that.isSweepMonth).forEach(function(month) { queue.push([parts[0], month]); });
+                    } else {
+                        take(names);
+                    }
+                    if (listing == 0 && queue.length == 0) {
+                        reply(ids);
+                    } else {
+                        next();
+                    }
+                    return null;
+                });
+            }
+        };
+        list([]).thenApply(function(top) {
+            queue.push(['recurring'], ['tasks']);
+            top.filter(that.isSweepYear).forEach(function(year) { queue.push([year]); });
+            next();
+            return null;
+        });
     },
 
     // Directory names are data from the store, so they are matched against
@@ -968,22 +1064,23 @@ module.exports = {
             return null;
         });
     },
-    load: function(calendar, year, month) {
+    // `onReset`, when given, runs once the app has been sent the `load` that resets it.
+    load: function(calendar, year, month, onReset) {
         let that = this;
         that.updateCalendarList(calendar).thenApply(function(modified) {
             if (modified) {
                 that.updatePropertiesFile(calendar, that.calendarProperties).thenApply(res => {
-                    that.loadCalendars(calendar, year, month);
+                    that.loadCalendars(calendar, year, month, undefined, onReset);
                     return null;
                 }).exceptionally(t => {
                     // The list in memory is already right, and the write that failed is of the
                     // record of it. Loading anyway is what keeps a conflict on that one file
                     // from costing the whole view.
-                    that.loadCalendars(calendar, year, month);
+                    that.loadCalendars(calendar, year, month, undefined, onReset);
                     return null;
                 });
             } else {
-                that.loadCalendars(calendar, year, month);
+                that.loadCalendars(calendar, year, month, undefined, onReset);
             }
         });
     },
@@ -992,7 +1089,7 @@ module.exports = {
     // each read lands. The buckets are read at the same time rather than one
     // after another: they are independent directories, and a phone waiting
     // for the slowest of them was waiting for all of them.
-    loadCalendars: function(calendar, year, month, importCalendarEventParams) {
+    loadCalendars: function(calendar, year, month, importCalendarEventParams, onReset) {
         let that = this;
         let token = ++this.loadToken;
         this.lastLoad = {year: year, month: month};
@@ -1003,6 +1100,9 @@ module.exports = {
             // One message per month, plus the recurring folder, the tasks, and the entries
             // other people have shared with us.
             that.postLoadShell(year, month, months.length + 3, importCalendarEventParams);
+            if (onReset) {
+                onReset();
+            }
             months.forEach(function(each) {
                 that.getCalendarEventsForMonth(calendar, each.year, each.month).thenApply(function(events) {
                     if (token === that.loadToken)
@@ -1827,7 +1927,12 @@ module.exports = {
            // commitWatcher lands in its slot and the upload fails on an
            // undefined callback.
            let resume = function() { return peergos.shared.util.Futures.of(true); };
-           let keepWhatIsThere = function() { return peergos.shared.util.Futures.of(false); };
+           let keepWhatIsThere = function() {
+               if (uploadParams.onKept) {
+                   uploadParams.onKept();
+               }
+               return peergos.shared.util.Futures.of(false);
+           };
            this.context.getByPath(uploadParams.directoryPath).thenApply(uploadDir => {
                // Resolved and empty is not the same as failed, and it is what happens when
                // this session has no calendar of its own to import into - opening an entry
@@ -1875,6 +1980,10 @@ module.exports = {
         if (dirPath == null || ! this.isSafeEventId(item.Id)) {
             this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
             return;
+        }
+        // relative to the folder the upload starts from - see saveAllEvents
+        if (uploadParams.within != null) {
+            dirPath = dirPath.substring(uploadParams.within.length + 1);
         }
         let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let encoder = new TextEncoder();
@@ -1934,23 +2043,42 @@ module.exports = {
         const that = this;
         this.removeSpinner();
         let items = (data && data.items) || [];
+        // An import asks about its next file, and says what happened to this one, only once
+        // this answer comes: written, cancelled from the progress bar, or failed - and how many
+        // files were already stored and left as they were.
+        let answer = function(outcome, kept) {
+            if (data && typeof data.requestId === 'number') {
+                that.postMessage({type: 'savedAll', requestId: data.requestId, outcome: outcome, kept: kept || 0});
+            }
+        };
         if (items.length == 0) {
+            answer('done', 0);
             return;
         }
         // One import fills one calendar, written under whoever owns it: a calendar shared
         // with us lives under their name, not ours.
-        let owner = this.findCalendarOwner(items[0].calendarName) || this.context.username;
-        if (items.some(function(each) {
-                return (that.findCalendarOwner(each.calendarName) || that.context.username) !== owner;
-            })) {
+        let calendarName = items[0].calendarName;
+        if (items.some(function(each) { return each.calendarName !== calendarName; })) {
             this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
+            answer('failed', 0);
             return;
         }
-        let name = 'bulkImport';
+        let owner = this.findCalendarOwner(calendarName) || this.context.username;
+        // Uploaded from the calendar's own folder when it is shared with us: that is the folder
+        // the share made writable, and the one above it is its owner's. Ours are uploaded from
+        // the folder above, which is ours too, and which makes the calendar's folder if it is missing.
+        let within = owner === this.context.username ? null : this.findCalendarDirectory(calendarName);
+        // Each import's progress bar under a name of its own: a finished import's bar is closed a
+        // second later by its name, which under a shared one would close the next import's too.
+        let name = 'bulkImport-' + (++this.bulkImportCount);
         let title = this.translate("CALENDAR.IMPORT.MSG").replace("$ITEMS", items.length);
         let progress = {title: title, done: 0, max: items.length, name: name};
+        let kept = 0;
         let uploads = {
-            directoryPath: owner + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/",
+            onKept: function() { kept++; },
+            directoryPath: owner + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/"
+                + (within == null ? "" : within + "/"),
+            within: within,
             uploadPaths: [],
             fileUploadProperties: [],
             progress: progress,
@@ -1960,6 +2088,12 @@ module.exports = {
         // A single file finishes before a progress bar could be read, and
         // one that flashes and vanishes reads as a glitch.
         if (items.length > 1) {
+            // A finished import's bar stays up for a second (below), and the next import can
+            // begin within it: that bar goes now, so the one Cancel on screen is one that works.
+            if (this.bulkImportBar != null) {
+                this.$toast.dismiss(this.bulkImportBar);
+            }
+            this.bulkImportBar = name;
             uploads.transfer = transfers.start(name, 'upload');
             this.$toast({component: ProgressBar, props: progress}, {icon: false, timeout: false, id: name, closeButton: false});
         }
@@ -1976,29 +2110,49 @@ module.exports = {
         upload.thenApply(function(done) {
             that.removeSpinner();
             that.mirrorToDevice();
-            if (done) {
-                that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
+            // Closed here as well as by the count that fills it: a file left as it was never
+            // reports progress, so the count can fall short, and the bar would stay up with a
+            // Cancel that no longer belonged to anything.
+            setTimeout(function() { that.$toast.dismiss(name); }, 1000);
+            if (done && ! transfers.isCancelled(uploads.transfer)) {
+                // An import that waits for the answer says what happened itself, file by file.
+                // A toast of its own as well would only repeat it - and toasts past the third
+                // wait for room, so a few of them in a row held back the next import's
+                // progress bar, and its Cancel, until they timed out.
+                if (typeof data.requestId !== 'number') {
+                    that.showMessage(false, that.translate('CALENDAR.IMPORT.COMPLETE'));
+                }
+                answer('done', kept);
                 return;
             }
             // The bar dismisses itself on the last file; an upload that
             // failed never reaches it and would otherwise stay on screen.
             that.$toast.dismiss(name);
-            // the app already shows every entry it sent, and only some of them were stored
-            if (transfers.isCancelled(uploads.transfer)) {
-                let now = new Date();
-                that.displaySpinner();
-                that.getPropertiesFile(calendar).thenApply(function(props) {
-                    that.calendarProperties = props;
-                    that.load(calendar, now.getFullYear(), now.getMonth() + 1);
-                }).exceptionally(function(t) {
-                    that.removeSpinner();
-                    return null;
-                });
-            }
+            let outcome = transfers.isCancelled(uploads.transfer) ? 'cancelled' : 'failed';
+            that.readStoreAfterImport(calendar, function() { answer(outcome, kept); });
         }).exceptionally(function(throwable) {
             that.$toast.dismiss(name);
             that.removeSpinner();
             that.showMessage(true, that.translate('CALENDAR.ERROR.IMPORT.EVENT'));
+            that.readStoreAfterImport(calendar, function() { answer('failed', kept); });
+            return null;
+        });
+    },
+    // The app shows every entry of an import as soon as it sends them, so a save that did not
+    // finish - cancelled or failed - leaves it showing some that were never stored: the store is
+    // read again, as a refresh reads it. `then` runs once the app has been reset for that read,
+    // or once it cannot be: the answer to the import waits for it, since the reset clears the
+    // grid, and would clear the entries of a next file imported before it arrived.
+    readStoreAfterImport: function(calendar, then) {
+        let that = this;
+        let now = new Date();
+        this.displaySpinner();
+        this.getPropertiesFile(calendar).thenApply(function(props) {
+            that.calendarProperties = props;
+            that.load(calendar, now.getFullYear(), now.getMonth() + 1, then);
+        }).exceptionally(function(t) {
+            that.removeSpinner();
+            then();
             return null;
         });
     },

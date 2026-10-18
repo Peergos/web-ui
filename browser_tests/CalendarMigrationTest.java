@@ -141,6 +141,7 @@ public class CalendarMigrationTest {
             signIn(d, url, arriving);
             CalendarApp.open(d);
             CalendarImportExportTest.handFile(d, file);
+            CalendarImportExportTest.acceptImport(d);
             String summary = CalendarImportExportTest.importSummary(d);
             System.out.println("  arrival said: " + summary);
             CalendarApp.inFrame(d, CalendarApp.click("import-summary-ok") + "return 1;");
@@ -181,6 +182,7 @@ public class CalendarMigrationTest {
                 if (countOf(again, uid) != 1)
                     throw new AssertionError(uid + " arrived " + countOf(again, uid) + " times");
             CalendarImportExportTest.handFile(d, file);
+            CalendarImportExportTest.acceptImport(d);
             String twice = CalendarImportExportTest.importSummary(d);
             System.out.println("  the same file again said: " + twice);
             CalendarApp.inFrame(d, CalendarApp.click("import-summary-ok") + "return 1;");
