@@ -28,7 +28,11 @@
 		</section>
 
 		<section class="login-register" v-if="!isLoggedIn && !isSecretLink">
-			<AppIcon icon="logo-full" class="sprite-test" />
+			<!-- the project's site, in a tab of its own, so the sign-in stays where it is -->
+			<a class="login-register__home" href="https://peergos.org" target="_blank" rel="noopener noreferrer"
+			   aria-label="peergos.org" title="peergos.org">
+				<AppIcon icon="logo-full" class="sprite-test" />
+			</a>
 
 			<!-- the desktop app's server, and a way to change it -->
 			<div class="desktop-server-bar" v-if="isDesktopProxy">
@@ -697,6 +701,23 @@ module.exports = {
 	width: 200px;
 	height: 48px;
 	margin: var(--app-margin) auto;
+}
+
+/* the link is the logo's own size, so only the logo leads away, and it takes the logo's place */
+.login-register__home {
+	display: block;
+	width: fit-content;
+	margin: var(--app-margin) auto;
+	border-radius: var(--radius-field);
+}
+
+.login-register__home .icon.sprite-test {
+	margin: 0;
+}
+
+.login-register__home:focus-visible {
+	outline: 2px solid var(--green-500);
+	outline-offset: 4px;
 }
 
 /* the desktop app's server: a chip above the card, with a way into its settings */
