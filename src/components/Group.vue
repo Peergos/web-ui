@@ -197,7 +197,7 @@ module.exports = {
                 // only ever shown, so in any language: see names.shownName
                 let newName = names.shownName(prompt_result);
                 if (newName == null) {
-                    that.showMessage(true, "Invalid " + that.genericLabel + " name: no line breaks or control characters");
+                    that.showMessage(true, "Invalid " + that.genericLabel + " name: no line breaks, control or invisible characters");
                     return;
                 }
                 setTimeout(function(){

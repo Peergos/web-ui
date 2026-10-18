@@ -2442,7 +2442,7 @@ module.exports = {
                 // shown, never a path - the folder's own is made apart from it - so in any language
                 let newName = names.shownName(prompt_result);
                 if (newName == null) {
-                    that.showError("Invalid folder name: no line breaks or control characters");
+                    that.showError("Invalid folder name: no line breaks, control or invisible characters");
                     callback(null);
                     return;
                 }

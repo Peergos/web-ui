@@ -3280,18 +3280,19 @@ function choosingNewCalendar() {
 
 // The rules the host holds a calendar name to, asked here first so the question can say what
 // is wrong before anything is sent: any language, at most 64 characters, and nothing that does
-// not show as itself - control characters, and those that change the order text shows in.
-const CALENDAR_NAME_REFUSED = /[\p{Cc}\p{Zl}\p{Zp}\u202A-\u202E\u2066-\u2069]/u;
+// not show as itself - control characters, zero-width ones with no place in a name, and those
+// that change the order text shows in. Invisible characters at either end are dropped.
+const CALENDAR_NAME_REFUSED = /[\p{Cc}\p{Zl}\p{Zp}\u200B\u2060-\u2064\uFEFF\u202A-\u202E\u2066-\u2069]/u;
 
 function calendarNameOf(text) {
-    return text.normalize('NFC').trim();
+    return text.normalize('NFC').replace(/^[\s\p{Cf}]+|[\s\p{Cf}]+$/gu, '');
 }
 
 function newCalendarNameProblem(name) {
     let trimmed = calendarNameOf(name);
     if (!/[^\s\p{Cf}]/u.test(trimmed)) return 'Give the new calendar a name.';
     if (trimmed === '.' || trimmed === '..' || trimmed.length > 64 || CALENDAR_NAME_REFUSED.test(trimmed))
-        return "A calendar name can't have line breaks or control characters.";
+        return "A calendar name can't have line breaks, control or invisible characters.";
     if (calendars.some(function (c) { return c.name === trimmed || c.id === trimmed; }))
         return 'There is already a calendar called ' + trimmed + '.';
     return null;

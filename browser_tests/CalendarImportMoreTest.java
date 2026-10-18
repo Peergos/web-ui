@@ -112,7 +112,8 @@ public class CalendarImportMoreTest {
             if (! suggested.equals("Ομάδα ποδοσφαίρου!"))
                 throw new AssertionError("A new calendar should be named after the file, as it is: " + suggested);
             // U+202E shows what follows it backwards: one name could pass for another
-            for (String[] bad : new String[][] {{"Bills\u202Efdp.exe", "A calendar name can't have line breaks or control characters."},
+            for (String[] bad : new String[][] {{"Bills\u202Efdp.exe", "A calendar name can't have line breaks, control or invisible characters."},
+                    {"My\u200BCalendar", "A calendar name can't have line breaks, control or invisible characters."},
                     {"My Calendar", "There is already a calendar called My Calendar."}, {"   ", "Give the new calendar a name."}}) {
                 Object said = CalendarApp.inFrame(d, CalendarApp.setField("import-new-name", bad[0])
                         + "let e = document.getElementById('import-new-error');"
@@ -120,7 +121,7 @@ public class CalendarImportMoreTest {
                 if (! (bad[1] + " | disabled").equals(String.valueOf(said)))
                     throw new AssertionError("The name [" + bad[0] + "] should be refused with \"" + bad[1] + "\": " + said);
             }
-            System.out.println("  ok   suggested \"" + suggested + "\"; a name turning its text around, one in use and a blank one are refused, Import disabled");
+            System.out.println("  ok   suggested \"" + suggested + "\"; a name turning its text around, one with a zero-width space, one in use and a blank one are refused, Import disabled");
             CalendarApp.inFrame(d, CalendarApp.setField("import-new-name", named) + CalendarApp.click("import-confirm") + "return 1;");
             awaitQuestion(d, "more-events.ics (2 of 2)");
             String startsOn = String.valueOf(CalendarApp.inFrame(d, "let s = document.getElementById('import-calendar'); return s.options[s.selectedIndex].textContent;"));
