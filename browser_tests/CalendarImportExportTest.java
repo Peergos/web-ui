@@ -62,6 +62,7 @@ public class CalendarImportExportTest {
 
             // --- in ---------------------------------------------------------------------------
             handFile(d, source);
+            acceptImport(d);
             String summary = importSummary(d);
             System.out.println("  summary: " + summary);
             if (! summary.contains("Imported " + TITLES.length + " events"))
@@ -94,6 +95,7 @@ public class CalendarImportExportTest {
 
             // --- and again ---------------------------------------------------------------------
             handFile(d, source);
+            acceptImport(d);
             String second = importSummary(d);
             System.out.println("  second summary: " + second);
             if (! second.contains("already existed"))
@@ -176,6 +178,14 @@ public class CalendarImportExportTest {
         } finally {
             d.switchToTop();
         }
+    }
+
+    /** Answers the question an import asks as it is put: every kind of entry the file has,
+     *  into the calendar it offers. */
+    static void acceptImport(WebDriver d) {
+        CalendarApp.waitInFrame(d, "the import question",
+                "document.getElementById('import-modal-backdrop').classList.contains('open')", 60_000);
+        CalendarApp.inFrame(d, CalendarApp.click("import-confirm") + "return 1;");
     }
 
     static String importSummary(WebDriver d) {

@@ -155,6 +155,8 @@ module.exports = {
             choice_options: [],
             isIframeInitialised: false,
             importFile: null,
+            // its name, which the app's import question shows
+            importFilename: null,
             // The one file a secret link to an entry grants, kept so a writable one can be
             // written back through the capability it arrived with.
             linkedFile: null,
@@ -212,6 +214,7 @@ module.exports = {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
                 if (loadedParameters != null) {
                     that.importFile = loadedParameters.importFile;
+                    that.importFilename = loadedParameters.importFilename || null;
                     that.importCalendarPath = loadedParameters.importCalendarPath;
                     that.owner = loadedParameters.owner;
                     that.hasEmail = loadedParameters.hasEmail;
@@ -310,7 +313,7 @@ module.exports = {
                 that.openedFilePath = path + (path.endsWith("/") ? "" : '/') + filename;
                 that.openedFileStamp = that.sharedStamp(props);
                 that.readFileText(file).thenApply(function(text) {
-                    future.complete({importFile: text, importCalendarPath: null,
+                    future.complete({importFile: text, importFilename: filename, importCalendarPath: null,
                         owner: file.getOwnerName(), hasEmail: hasEmail, isWritable: file.isWritable()});
                     return null;
                 }).exceptionally(function(throwable) {
@@ -658,7 +661,7 @@ module.exports = {
             // it, so their later changes can reach it - a copy in a month of our own never
             // hears from them again. Where that cannot be done it is imported as before.
             let asBefore = function() {
-                that.loadCalendars(calendar, year, month, {contents: that.importFile,
+                that.loadCalendars(calendar, year, month, {contents: that.importFile, filename: that.importFilename,
                     isSharedWithUs: true, loadCalendarAsGuest: false,
                     username: that.context.username});
             };
@@ -675,6 +678,7 @@ module.exports = {
             });
         } else {
             let importCalendarEventParams = {contents: that.importFile,
+                filename: that.importFilename,
                 isSharedWithUs: false,
                 loadCalendarAsGuest: that.loadCalendarAsGuest,
                 username: that.context.username };

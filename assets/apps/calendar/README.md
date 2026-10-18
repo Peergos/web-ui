@@ -268,6 +268,19 @@ hundreds of events would otherwise be hundreds of round trips, each its own
 write. The host groups them by directory and uploads once, so tasks and
 events from the same file ride together.
 
+An import asks before it writes, once for each file. The picker takes several
+files at once and asks about them in turn: the question counts the file's
+events and its tasks separately and ticks each kind it has - a kind it has
+none of is shown, greyed - and offers the calendars that can be written to,
+starting on the default one and then on wherever the previous file went.
+Import stays disabled while nothing is ticked. Leaving the question any other
+way - Cancel or Skip, Escape, the close button, a tap beside it, Android's
+back - leaves that file out. The file is parsed once, for the counts, and the
+entries imported are those same parsed ones. An `.ics` opened from the user's
+files is asked about the same way, by its name; a guest opening a link to one
+is not, since nothing is written for them. One summary at the end says what
+happened to each file, and none appears when every file was left out.
+
 The app tracks where each event's file currently lives. Changing an event's
 date, calendar, or recurring-ness *moves* its file, so the app sends the move
 as two messages — a `delete` of the old placement, then a `save` of the new
