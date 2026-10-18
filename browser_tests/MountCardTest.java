@@ -28,7 +28,8 @@ public class MountCardTest {
         String url = own != null ? own.url() : given;
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-mountcard-"), headless)) {
             d.setWindowRect(390, 844);
-            d.navigate(url + "/");
+            // opened as the apps open it, or the mount's own settings are refused and show as an error
+            d.navigate(Server.launchUrl(url));
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             Page.gotoView(d, "Mount", "onAddMount", "__mount");

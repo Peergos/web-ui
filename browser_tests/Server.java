@@ -1,6 +1,8 @@
 import peergos.server.Builder;
+import peergos.server.net.LocalApiAuth;
 import peergos.shared.Crypto;
 import peergos.shared.NetworkAccess;
+import peergos.shared.util.Constants;
 
 import java.io.*;
 import java.net.*;
@@ -19,6 +21,9 @@ public class Server implements AutoCloseable {
     public static final String USERNAME = "peergos";
     public static final String PASSWORD = "testpassword";
 
+    // by address, for the tests the suite hands only its server's address
+    private static final Map<String, Server> running = new java.util.concurrent.ConcurrentHashMap<>();
+
     private final Process process;
     private final int port;
     private final Path dataDir;
@@ -29,6 +34,17 @@ public class Server implements AutoCloseable {
         this.port = port;
         this.dataDir = dataDir;
         this.log = log;
+        running.put(url(), this);
+    }
+
+    /** The ui at `url` as the desktop and Android apps open it: with a single use code the page swaps
+     *  for the token the local only apis - the drive, sync - require, asked for with the token a server
+     *  leaves in its data directory for the cli. A server this run didn't start is opened plainly. */
+    public static String launchUrl(String url) throws IOException, InterruptedException {
+        Server server = running.get(url);
+        if (server == null)
+            return url + "/";
+        return LocalApiAuth.post(server.port, server.dataDir, Constants.LOCAL_AUTH + "launch-url").trim();
     }
 
     public int port() {
@@ -212,6 +228,7 @@ public class Server implements AutoCloseable {
 
     @Override
     public void close() {
+        running.remove(url());
         process.destroy();
         try {
             if (! process.waitFor(20, java.util.concurrent.TimeUnit.SECONDS))
