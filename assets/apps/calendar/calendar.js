@@ -366,6 +366,7 @@ let calendarForm = document.getElementById('calendar-form');
 let calendarModalHeading = document.getElementById('calendar-modal-heading');
 let calendarNameInput = document.getElementById('calendar-name-input');
 let calendarDeleteButton = document.getElementById('calendar-delete');
+let calendarEmptyButton = document.getElementById('calendar-empty');
 let calendarColorValue = document.getElementById('calendar-color-value');
 let colorModalBackdrop = document.getElementById('color-modal-backdrop');
 let colorField = document.getElementById('color-field');
@@ -2142,6 +2143,17 @@ function closeAllCalendarMenus() {
     });
 }
 
+// The account's first calendar can't be deleted, so it is the one that can be emptied: every
+// event and task in it goes, and the calendar - its name, colour and sharing - stays. The host
+// asks before it acts, as it does for a delete, and reads the store again once it is done, so
+// nothing is taken off the grid here.
+function emptyCalendar(id) {
+    let cal = getCalendarById(id);
+    if (!cal || !cal.primary || !isOwnCalendar(cal) || !isCalendarWritable(cal.id)) return;
+    let date = calendar.getDate();
+    hostSend({ type: 'emptyCalendar', calendarName: cal.name, year: date.getFullYear(), month: date.getMonth() + 1 });
+}
+
 // Defensive backstop - Delete isn't even rendered for these (see
 // renderCalendarList()).
 // The host owns the confirm dialog and the directory removal; the local
@@ -2246,6 +2258,19 @@ function renderCalendarList() {
                 deleteCalendar(cal.id);
             });
             menu.appendChild(deleteBtn);
+        }
+
+        if (isCalendarWritable(cal.id) && isOwnCalendar(cal) && cal.primary) {
+            let emptyBtn = document.createElement('button');
+            emptyBtn.type = 'button';
+            emptyBtn.className = 'danger';
+            emptyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 20h-10.5l-4.21 -4.3a1 1 0 0 1 0 -1.41l10 -10a1 1 0 0 1 1.41 0l5 5a1 1 0 0 1 0 1.41l-9.2 9.3"/><path d="M18 13.3l-6.3 -6.3"/></svg> Empty';
+            emptyBtn.addEventListener('click', function () {
+                closeAllCalendarMenus();
+                closeSidebar();
+                emptyCalendar(cal.id);
+            });
+            menu.appendChild(emptyBtn);
         }
 
         menuButton.addEventListener('click', function (e) {
@@ -2503,6 +2528,8 @@ function openCalendarModal(mode, cal) {
     // own; either way that is where the picker opens.
     showCalendarColor(editing ? cal.color : randomCalendarColor());
     calendarDeleteButton.style.display = (editing && !cal.primary) ? '' : 'none';
+    // where the first calendar, which has no Delete, offers to be emptied instead
+    calendarEmptyButton.style.display = (editing && cal.primary && isOwnCalendar(cal)) ? '' : 'none';
     // Opened from inside the sidebar, which on mobile is a drawer with a
     // higher z-index than the modal - it would otherwise stay open on top
     // of it. No-op on desktop (never .open).
@@ -3135,6 +3162,13 @@ calendarDeleteButton.addEventListener('click', function () {
     let id = editingCalendarId;
     closeCalendarModal();
     deleteCalendar(id);
+});
+
+calendarEmptyButton.addEventListener('click', function () {
+    if (!editingCalendarId) return;
+    let id = editingCalendarId;
+    closeCalendarModal();
+    emptyCalendar(id);
 });
 
 calendarCancelButton.addEventListener('click', closeCalendarModal);
