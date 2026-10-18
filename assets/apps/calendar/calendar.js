@@ -3230,7 +3230,6 @@ importModalBackdrop.addEventListener('click', function (e) {
 });
 
 function readFileText(file) {
-    if (typeof file.text === 'function') return file.text();
     return new Promise(function (resolve, reject) {
         let reader = new FileReader();
         reader.onload = function () { resolve(reader.result); };
