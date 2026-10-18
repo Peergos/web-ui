@@ -15,6 +15,7 @@ public class CalendarWholeShareTest {
     static final String IN_MAIN = "A meeting of the owner's";
     static final String IN_READ_ONLY = "Another of the owner's";
     static final String READ_ONLY_CALENDAR = "Readable";
+    static final String IMPORTED = "Imported by the reader";
 
     public static void main(String[] args) throws Exception {
         try {
@@ -129,6 +130,18 @@ public class CalendarWholeShareTest {
                         + " it on: " + actions);
             System.out.println("a read-only entry offers: " + actions);
 
+            // --- An import goes into the writable one, and only that one is offered -----------
+            // Written from the shared folder itself: the owner's folder above it is not the reader's.
+            CalendarImportDialogTest.hand(d, java.util.List.of(java.util.List.of("for-the-owner.ics",
+                    CalendarImportDialogTest.calendar(CalendarImportDialogTest.event("imported-for-owner", "20290314", IMPORTED)))));
+            CalendarImportMoreTest.awaitQuestion(d, "for-the-owner.ics");
+            String targets = String.valueOf(CalendarApp.inFrame(d,
+                    "return Array.from(document.getElementById('import-calendar').options).map(o => o.textContent).join(', ');"));
+            if (targets.indexOf(taken) < 0 || targets.indexOf(READ_ONLY_CALENDAR) >= 0)
+                throw new AssertionError("an import should offer the calendar shared writable and not the read-only one: " + targets);
+            CalendarApp.inFrame(d, CalendarImportDialogTest.chooseCalendar(taken) + CalendarApp.click("import-confirm") + "return 1;");
+            CalendarImportDialogTest.expectSummary(d, "Imported 1 event.");
+
             // --- The owner's own file is what the reader wrote to ------------------------------
             CalendarLiveShareTest.signIn(d, url, alice);
             CalendarApp.open(d);
@@ -136,6 +149,8 @@ public class CalendarWholeShareTest {
             String month = mainDir + "/" + today.getYear() + "/" + today.getMonthValue();
             String file = CalendarApp.awaitFileSaying(d, month, "SUMMARY:Written by the reader");
             System.out.println("what " + bob + " made is in " + alice + "'s own calendar: " + file);
+            String imported = CalendarApp.awaitFileSaying(d, mainDir + "/2029/3", "SUMMARY:" + IMPORTED);
+            System.out.println("and what " + bob + " imported is too: " + imported);
         } finally {
             if (own != null) own.close();
         }

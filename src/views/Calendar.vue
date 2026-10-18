@@ -1877,6 +1877,10 @@ module.exports = {
             this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
             return;
         }
+        // relative to the folder the upload starts from - see saveAllEvents
+        if (uploadParams.within != null) {
+            dirPath = dirPath.substring(uploadParams.within.length + 1);
+        }
         let filename = item.Id + this.CALENDAR_FILE_EXTENSION;
         let encoder = new TextEncoder();
         let uint8Array = encoder.encode(item.item);
@@ -1949,14 +1953,17 @@ module.exports = {
         }
         // One import fills one calendar, written under whoever owns it: a calendar shared
         // with us lives under their name, not ours.
-        let owner = this.findCalendarOwner(items[0].calendarName) || this.context.username;
-        if (items.some(function(each) {
-                return (that.findCalendarOwner(each.calendarName) || that.context.username) !== owner;
-            })) {
+        let calendarName = items[0].calendarName;
+        if (items.some(function(each) { return each.calendarName !== calendarName; })) {
             this.showMessage(true, this.translate('CALENDAR.ERROR.IMPORT.EVENT'));
             answer('failed', 0);
             return;
         }
+        let owner = this.findCalendarOwner(calendarName) || this.context.username;
+        // Uploaded from the calendar's own folder when it is shared with us: that is the folder
+        // the share made writable, and the one above it is its owner's. Ours are uploaded from
+        // the folder above, which is ours too, and which makes the calendar's folder if it is missing.
+        let within = owner === this.context.username ? null : this.findCalendarDirectory(calendarName);
         // Each import's progress bar under a name of its own: a finished import's bar is closed a
         // second later by its name, which under a shared one would close the next import's too.
         let name = 'bulkImport-' + (++this.bulkImportCount);
@@ -1965,7 +1972,9 @@ module.exports = {
         let kept = 0;
         let uploads = {
             onKept: function() { kept++; },
-            directoryPath: owner + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/",
+            directoryPath: owner + "/.apps/" + this.CALENDAR_DIR_NAME + "/" + this.DATA_DIR_NAME + "/"
+                + (within == null ? "" : within + "/"),
+            within: within,
             uploadPaths: [],
             fileUploadProperties: [],
             progress: progress,
