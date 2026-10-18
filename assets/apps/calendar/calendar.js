@@ -1138,8 +1138,13 @@ function emailEventAsMailto(ev) {
     window.open(url, '_blank');
 }
 
+// A file name from a calendar's or an entry's name, in any language: what is not a letter, a
+// digit, - or _ becomes one _ - with the marks on it, such as an emoji's variation selector -
+// and none is left at either end.
 function icsFileNameFor(name) {
-    return (name || 'calendar').replace(/[^a-z0-9-_]+/gi, '_') + '.ics';
+    let base = String(name || '').normalize('NFC').replace(/(?:[^\p{L}\p{M}\p{N}\-_]\p{M}*)+/gu, '_')
+        .replace(/^\p{M}+/u, '').replace(/^_+|_+$/g, '');
+    return (base || 'calendar') + '.ics';
 }
 
 // Shared by download/email and by the per-event files written back to
