@@ -78,6 +78,23 @@ public class SocialViewTest {
             d.waitForScript("the verification dialog closed by escape", "!document.querySelector('.qrcode-container')", 10_000);
             System.out.println("  ok   verification opens the fingerprint of that friend, says it is unverified, and closes on escape");
 
+            // Chosen names wrap under the field's text box: the action beside it stays level with
+            // the box and as tall, however many lines they take
+            d.script("window.__social.targetUsernames = arguments[0]; return 1;",
+                    List.of(p.verified, p.friend, p.follower, p.followed, p.pending, p.unfollowed));
+            d.waitForScript("the chosen names under the box", "document.querySelectorAll('.social-send .item-selected').length == 6", 10_000);
+            Object sendRow = d.script("const row = document.querySelector('.social-send .social-invite');"
+                    + " const box = row.querySelector('.social-invite__field input').getBoundingClientRect();"
+                    + " const send = row.querySelector(':scope > .pg-btn').getBoundingClientRect();"
+                    + " return [Math.round(box.top), Math.round(box.height), Math.round(send.top), Math.round(send.height),"
+                    + "   Math.round(row.querySelector('.social-invite__field').getBoundingClientRect().height)];");
+            List<?> m = (List<?>) sendRow;
+            if (! m.get(0).equals(m.get(2)) || ! m.get(1).equals(m.get(3)))
+                throw new AssertionError("Send should stay level with the text box and as tall, not grow with the names chosen:"
+                        + " box top/height " + m.get(0) + "/" + m.get(1) + ", Send " + m.get(2) + "/" + m.get(3) + ", field height " + m.get(4));
+            d.script("window.__social.targetUsernames = []; return 1;");
+            System.out.println("  ok   with six names chosen the field is " + m.get(4) + "px tall and Send stays " + m.get(3) + "px, level with the box");
+
             d.script("const i = document.querySelector('.social-invite input'); i.value = arguments[0];"
                     + " i.dispatchEvent(new Event('input', {bubbles: true}));"
                     + " document.querySelector('.social-invite .pg-btn--primary').click(); return 1;", p.stranger);

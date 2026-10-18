@@ -770,16 +770,27 @@ module.exports = {
    unrelated controls */
 .social-invite {
 	display: flex;
-	/* the action takes the field's height, whatever the field's own line height makes it */
-	align-items: stretch;
+	/* level with the field's text box: stretched, the action - and a group's name beside
+	   it - grew with every line of names chosen under the box */
+	align-items: flex-start;
 	gap: 10px;
 	max-width: 560px;
 }
 
+/* Sized by the room there is, not by the names chosen in it: from its content's width, a
+   few chosen names pushed the field onto a line of its own, and the action under it */
 .social-invite__field {
-	flex: 1 1 auto;
+	flex: 1 1 240px;
 	min-width: 0;
 	margin-bottom: 0;
+}
+
+/* as tall as the text box beside it, as the sign-in form's buttons are; stacked on a phone,
+   it keeps the taller touch target every button has there */
+@media (min-width: 601px) {
+	.social-invite > .pg-btn {
+		min-height: 44px;
+	}
 }
 
 .social-section {
@@ -981,6 +992,13 @@ module.exports = {
 @media (max-width: 600px) {
 	.social-invite {
 		flex-direction: column;
+		/* stacked, each takes the whole width */
+		align-items: stretch;
+	}
+
+	/* stacked, the size given above would be its height: it takes its content's */
+	.social-invite__field {
+		flex-basis: auto;
 	}
 
 	.social-person__actions {
