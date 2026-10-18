@@ -443,9 +443,20 @@ function createWindow() {
 
     // params are in the coordinates of the top level page, and inspectElement
     // resolves them into whichever frame is actually under the pointer - so
-    // this reaches into a sandboxed app frame as well as the Peergos UI.
+    // this reaches into a sandboxed app frame as well as the Peergos UI. The
+    // clipboard items are a browser's: in a field all four, greyed out where the
+    // field refuses (a password is never copied), and Copy over selected text.
     win.webContents.on('context-menu', (event, params) => {
+        const flags = params.editFlags;
+        const edit = params.isEditable
+            ? [{role: 'cut', enabled: flags.canCut},
+               {role: 'copy', enabled: flags.canCopy},
+               {role: 'paste', enabled: flags.canPaste},
+               {role: 'selectAll', enabled: flags.canSelectAll}]
+            : params.selectionText ? [{role: 'copy'}] : [];
         Menu.buildFromTemplate([
+            ...edit,
+            ...(edit.length ? [{type: 'separator'}] : []),
             {label: 'Inspect element', click: () => {
                 openInspector();
                 win.webContents.inspectElement(params.x, params.y);

@@ -9,21 +9,11 @@
 			:consumer_func="consumer_func">
 		</MultiFactorAuth>
 		<template v-if="showSignup()">
-			<input
-				class="pg-input"
-				type="text"
-				autofocus
-				name="username"
-				v-model="username"
-				ref="username"
-				:placeholder="translate('LOGIN.USERNAME')"
-				:aria-label="translate('LOGIN.USERNAME')"
-				@input="(val) => (username = username.toLowerCase())"
-			/>
+			<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username" @keyup.enter="mirror()"/>
 
-			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo />
+			<FormPassword v-model="password" :passwordIsVisible="showPasswords" :placeholder="translate('LOGIN.PASSWORD')" firstOfTwo @keyup.enter="mirror()"/>
 
-			<label class="pg-auth__check">
+			<label class="pg-check">
 				<input type="checkbox" name="tosAccepted" v-model="tosAccepted"/>
 				<span>{{ translate("SIGNUP.ACCEPT") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.TERMS") }}</a> {{ translate("SIGNUP.AND") }} <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{{ translate("SIGNUP.POLICY") }}</a></span>
 			</label>
@@ -34,39 +24,8 @@
 		</template>
 
 		<template v-else-if="showPaidPlans()">
-			<div class="pg-auth__billing" role="radiogroup" aria-label="Billing">
-				<label :class="{ active: ! annual }"><input type="radio" name="billing" value="monthly" :checked="! annual" @change="setMonthly()">Monthly</label>
-				<label :class="{ active: annual }"><input type="radio" name="billing" value="yearly" :checked="annual" @change="setAnnual()">Yearly</label>
-			</div>
-			<ul class="pg-plans">
-				<li class="pg-plan">
-					<h3>Pro Account</h3>
-					<ul>
-						<li>200 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price1() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(200000000000)">Select Pro</button>
-				</li>
-				<li class="pg-plan">
-					<h3>Visionary Account</h3>
-					<ul>
-						<li>1000 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price2() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(1000000000000)">Select Visionary</button>
-				</li>
-				<li class="pg-plan">
-					<h3>Pioneer Account</h3>
-					<ul>
-						<li>3000 GB {{ translate("SIGNUP.HYPER") }}</li>
-						<li>{{ translate("SIGNUP.BUNDLED") }}</li>
-						<li>&#x00A3;{{ price3() }}</li>
-					</ul>
-					<button type="button" class="pg-btn pg-btn--primary" @click="setPlan(3000000000000)">Select Pioneer</button>
-				</li>
-			</ul>
+			<BillingPeriod v-model="annual"/>
+			<PaidPlans :annual="annual" @choose="setPlan"/>
 		</template>
 
 		<template v-else-if="showSignupWarning">
@@ -95,6 +54,9 @@ const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const Bip39 = require('../mixins/password/bip-0039-english.json');
 const BannedUsernames = require('../mixins/password/bannedUsernames.json');
 const FormPassword = require("./form/FormPassword.vue");
+const FormUsername = require("./form/FormUsername.vue");
+const BillingPeriod = require("./form/BillingPeriod.vue");
+const PaidPlans = require("./form/PaidPlans.vue");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
 const sandboxMixin = require("../mixins/sandbox/index.js");
@@ -103,6 +65,9 @@ const Continue = require("Continue.vue");
 module.exports = {
     components: {
 	FormPassword,
+	FormUsername,
+	BillingPeriod,
+	PaidPlans,
         Continue,
 	MultiFactorAuth,
     },
@@ -156,7 +121,6 @@ module.exports = {
         },
     },
     mounted() {
-	this.$refs.username.focus()
 	this.loadSignupAvailability();
     },
 
@@ -179,21 +143,6 @@ module.exports = {
                    that.showSignupWarning = true;
                 console.log("accepting signups - free: " + res.free + ", paid: " + res.paid);
             });
-        },
-        setMonthly() {
-            this.annual = false;
-        },
-        setAnnual() {
-            this.annual = true;
-        },
-        price1() {
-            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price2() {
-            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price3() {
-            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
         },
         showPaidPlans() {
             return this.token.length == 0 && this.acceptingPaidSignups && this.desiredQuota == 0;

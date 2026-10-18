@@ -4,35 +4,32 @@
 			<p>{{ translate("SPACE.CURRENT") }}: {{ quota }}</p>
 			<p v-if="!isPaid" class="pg-note">{{ translate("PAID.AGREE") }} <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>.</p>
 			<p v-if="willCharge()" class="pg-note">Next charge: &#x00A3;{{ nextCharge() }} on {{ getExpiry() }}</p>
-			<div v-if="!showCard" class="pro__billing" data-select="billing">
-				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': !annual}" @click="setMonthly()">Monthly<input type="radio" name="billing" value="monthly" v-bind:checked="!annual"></label>
-				<label class="pro__billing-entry" :class="{'pro__billing-entry--on': annual}" @click="setAnnual()">Yearly<input type="radio" name="billing" value="yearly" v-bind:checked="annual"></label>
-			</div>
-			<div v-if="!showCard" class="pro__plans">
-				<div class="pro__plan">
+			<BillingPeriod v-if="!showCard" v-model="annual"/>
+			<div v-if="!showCard" class="pg-plans pg-plans--side-by-side">
+				<div class="pg-plan">
 					<h4>Pro {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>200 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price1() }}</li>
+						<li>&#x00A3;{{ planPrice(plans[0], annual) }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePro" @click="confirmUpdate(200000000000)">{{proButtonText}}</button>
 				</div>
-				<div class="pro__plan">
+				<div class="pg-plan">
 					<h4>Visionary {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>1000 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price2() }}  {{ prorataTextVisionary }}</li>
+						<li>&#x00A3;{{ planPrice(plans[1], annual) }}  {{ prorataTextVisionary }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disableVisionary" @click="confirmUpdate(1000000000000)">{{visionaryButtonText}}</button>
 				</div>
-				<div class="pro__plan">
+				<div class="pg-plan">
 					<h4>Pioneer {{ translate("PAID.ACCOUNT") }}</h4>
 					<ul>
 						<li>3000 GB {{ translate("PAID.STORAGE") }}</li>
 						<li>{{ translate("PAID.APPS") }}</li>
-						<li>&#x00A3;{{ price3() }}  {{ prorataTextPioneer }}</li>
+						<li>&#x00A3;{{ planPrice(plans[2], annual) }}  {{ prorataTextPioneer }}</li>
 					</ul>
 					<button type="button" class="pg-btn pg-btn--primary" :disabled="disablePioneer" @click="confirmUpdate(3000000000000)">{{pioneerButtonText}}</button>
 				</div>
@@ -59,14 +56,17 @@
 <script>
 const AppModal = require("AppModal.vue");
 const Confirm = require("../confirm/Confirm.vue");
+const BillingPeriod = require("../form/BillingPeriod.vue");
 const i18n = require("../../i18n/index.js");
+const plansMixin = require("../../mixins/plans/index.js");
 
 module.exports = {
 	components: {
 	    AppModal,
+	    BillingPeriod,
             Confirm,
 	},
-        mixins:[i18n],
+        mixins:[i18n, plansMixin],
 	data() {
 		return {
 			unit:"GiB",
@@ -168,10 +168,6 @@ module.exports = {
 			'updateQuota',
 			'updatePayment'
 		]),
-            setMonthly() {
-            this.annual = false;
-        },
-
         willCharge() {
             return this.paymentProperties.getExpiry().isPresent() && this.paymentProperties.desiredMb() > 0;
         },
@@ -182,18 +178,6 @@ module.exports = {
 
         nextCharge() {
             return this.paymentProperties.getNextCharge();
-        },
-        setAnnual() {
-            this.annual = true;
-        },
-        price1() {
-            return (this.annual ? 3 : 4) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price2() {
-            return (this.annual ? 8 : 10) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
-        },
-        price3() {
-            return (this.annual ? 20 : 25) + " / " + this.translate("SIGNUP.MONTH") + ", " + (this.annual ? this.translate("SIGNUP.BILL.YEARLY") : this.translate("SIGNUP.BILL.MONTHLY"));
         },
         startAddCardListener: function(desired) {
                 var that = this;
@@ -272,88 +256,6 @@ module.exports = {
 };
 </script>
 <style>
-/* The plans side by side where there is room and one above the other where there is not,
-   each on the field surface with its price and a way to choose it at the foot. */
-.pro__billing {
-	display: inline-flex;
-	align-self: center;
-	gap: 2px;
-	padding: 3px;
-	border-radius: var(--radius-pill);
-	background-color: var(--pg-surface-2);
-}
-
-.pro__billing-entry {
-	position: relative;
-	display: flex;
-	align-items: center;
-	height: 34px;
-	margin: 0;
-	padding: 0 16px;
-	border-radius: var(--radius-pill);
-	font-size: var(--text-small);
-	font-weight: var(--bold);
-	color: var(--pg-muted);
-	cursor: pointer;
-}
-
-/* the chosen period in the primary button's colours, which keep their contrast in both themes */
-.pro__billing-entry--on {
-	background-color: var(--pg-primary);
-	color: var(--pg-on-primary);
-}
-
-/* out of sight but still in the tab order, so the switch works from the keyboard too */
-.pro__billing input {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	opacity: 0;
-	pointer-events: none;
-}
-.pro__billing-entry:focus-within {
-	outline: 2px solid var(--green-500);
-	outline-offset: 2px;
-}
-
-.pro__plans {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-	gap: 12px;
-}
-
-.pro__plan {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	padding: 16px;
-	border-radius: var(--radius-control);
-	background-color: var(--pg-surface-2);
-}
-
-.pro__plan h4 {
-	margin: 0;
-	font-size: 16px;
-	font-weight: 600;
-}
-
-.pro__plan ul {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-	flex: 1 1 auto;
-	margin: 0;
-	padding: 0;
-	list-style: none;
-}
-
-.pro__plan li {
-	padding-left: 26px;
-	font-size: var(--text-small);
-	background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.5224 6.16169L9.17909 16.505L4.4776 11.8035" stroke="mediumaquamarine" stroke-width="2"/></svg>') left 2px no-repeat;
-	background-size: 18px auto;
-}
-
 /* the payment provider's form keeps its own size where it fits and narrows where it does not */
 .pro__payment {
 	display: flex;
