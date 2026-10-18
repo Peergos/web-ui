@@ -22,6 +22,15 @@
 		<button type="button" class="pg-btn pg-btn--primary" :disabled="isLoggingIn || network == null" @click="login()">
 			{{ translate('LOGIN.BUTTON') }}
 		</button>
+		<button type="button" class="pg-btn pg-btn--quiet" :disabled="isLoggingIn || network == null" @click="showRecover = true">
+			{{ translate('RECOVER.LINK') }}
+		</button>
+		<RecoverAccount
+			v-if="showRecover"
+			:initialUsername="username"
+			v-on:hide-recover="showRecover = false"
+			v-on:recovered="recovered">
+		</RecoverAccount>
 	</div>
 </template>
 
@@ -29,6 +38,7 @@
 const FormPassword = require("./form/FormPassword.vue");
 const FormUsername = require("./form/FormUsername.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
+const RecoverAccount = require("./auth/RecoverAccount.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
 const loopback = require("../mixins/loopback/index.js");
@@ -39,6 +49,7 @@ module.exports = {
 		FormPassword,
 		FormUsername,
 		MultiFactorAuth,
+		RecoverAccount,
 	},
 	data() {
 		return {
@@ -48,6 +59,7 @@ module.exports = {
             isLoggingIn: false,
             autoLoggingIn: true,
             showMultiFactorAuth: false,
+            showRecover: false,
 		};
 	},
 	computed: {
@@ -180,6 +192,10 @@ module.exports = {
 					    that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
 					}
 				});
+		},
+		recovered(creationStart, context) {
+			this.showRecover = false;
+			this.postLogin(creationStart, context);
 		},
 		postLogin(creationStart, context) {
 			const that = this;
