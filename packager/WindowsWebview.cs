@@ -206,6 +206,10 @@ class PeergosWindow : Form
     private const string LAUNCHER = "peergos-app.exe";
 
     private readonly string port;
+    // From the server: where to load the ui, with a single use code the page swaps for the
+    // local api token, and that token for our own calls to the local apis.
+    private static readonly string launchUrl = Environment.GetEnvironmentVariable("PEERGOS_URL");
+    private static readonly string localToken = Environment.GetEnvironmentVariable("PEERGOS_LOCAL_TOKEN");
     private readonly WebView2 webView;
     private readonly NotifyIcon tray;
     private readonly ToolStripMenuItem statusItem;
@@ -397,7 +401,7 @@ class PeergosWindow : Form
             // left alone. Before Navigate, or the first page misses it.
             await webView.CoreWebView2.AddScriptToExecuteOnDocumentCreatedAsync(
                 "window.__peergosDesktop = true;");
-            webView.CoreWebView2.Navigate("http://localhost:" + port);
+            webView.CoreWebView2.Navigate(launchUrl ?? "http://localhost:" + port);
         }
         catch (Exception e)
         {
@@ -656,6 +660,8 @@ class PeergosWindow : Form
         try
         {
             var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/webauthn/host");
+            if (localToken != null)
+                request.Headers["X-Peergos-Local-Token"] = localToken;
             request.Method = "POST";
             request.ContentType = "application/json";
             request.Timeout = 5_000;
@@ -709,6 +715,8 @@ class PeergosWindow : Form
         try
         {
             var request = (HttpWebRequest) WebRequest.Create("http://localhost:" + port + "/peergos/v0/sync/" + api);
+            if (localToken != null)
+                request.Headers["X-Peergos-Local-Token"] = localToken;
             // the localhost API only answers POST - a GET is a 405
             request.Method = "POST";
             request.ContentLength = 0;

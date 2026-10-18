@@ -57,7 +57,11 @@
         if (! options || ! options.publicKey)
             return Promise.reject(new DOMException('Only publicKey credentials are supported here',
                                                    'NotSupportedError'));
-        return fetch('/peergos/v0/webauthn/' + action, {method: 'POST', body: serialise(options)})
+        return window.peergosLocalAuth.headers()
+            .then(function (headers) {
+                return fetch('/peergos/v0/webauthn/' + action,
+                             {method: 'POST', headers: headers, body: serialise(options)});
+            })
             .then(function (response) {
                 if (! response.ok) {
                     // the server puts the reason in a Trailer header, url encoded

@@ -5,6 +5,8 @@ import WebKit
 struct PeergosApp: App {
     static let name = "Peergos"
     static let port = ProcessInfo.processInfo.environment["PEERGOS_PORT"] ?? "7777";
+    // the server's url carries a single use code the page swaps for the local api token
+    static let url = ProcessInfo.processInfo.environment["PEERGOS_URL"] ?? "http://localhost:\(port)";
 
     @NSApplicationDelegateAdaptor private var appDelegate: AppDelegate
 
@@ -32,7 +34,7 @@ struct PeergosWebView: NSViewRepresentable {
         let webView = WKWebView()
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
-        webView.load(URLRequest(url: URL(string: "http://localhost:\(PeergosApp.port)")!))
+        webView.load(URLRequest(url: URL(string: PeergosApp.url)!))
         return webView
     }
 
