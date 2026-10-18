@@ -3274,21 +3274,30 @@ function choosingNewCalendar() {
 }
 
 // The rules the host holds a calendar name to, asked here first so the question can say what
-// is wrong before anything is sent.
+// is wrong before anything is sent: any language, at most 64 characters, and nothing that does
+// not show as itself - control characters, and those that change the order text shows in.
+const CALENDAR_NAME_REFUSED = /[\p{Cc}\p{Zl}\p{Zp}\u202A-\u202E\u2066-\u2069]/u;
+
+function calendarNameOf(text) {
+    return text.normalize('NFC').trim();
+}
+
 function newCalendarNameProblem(name) {
-    let trimmed = name.trim();
-    if (trimmed === '') return 'Give the new calendar a name.';
-    if (!/^[a-z\d\-_\s]+$/i.test(trimmed)) return 'Use only letters, digits, spaces, - and _.';
+    let trimmed = calendarNameOf(name);
+    if (!/[^\s\p{Cf}]/u.test(trimmed)) return 'Give the new calendar a name.';
+    if (trimmed === '.' || trimmed === '..' || trimmed.length > 64 || CALENDAR_NAME_REFUSED.test(trimmed))
+        return "A calendar name can't have line breaks or control characters.";
     if (calendars.some(function (c) { return c.name === trimmed || c.id === trimmed; }))
         return 'There is already a calendar called ' + trimmed + '.';
     return null;
 }
 
-// A calendar made for a file is named after it: its name without the extension, in the
-// characters a calendar name may have, numbered on when that name is taken.
+// A calendar made for a file is named after it: its name without the extension, without what
+// a calendar name can't have, and numbered on when that name is taken. Cut by character, not by
+// UTF-16 unit, so an emoji is never halved.
 function suggestedCalendarName(fileName) {
-    let base = fileName.replace(/\.[^.]*$/, '').replace(/[^a-z\d\-_\s]+/gi, ' ')
-        .replace(/\s+/g, ' ').trim().slice(0, 40).trim();
+    let base = Array.from(calendarNameOf(fileName.replace(/\.[^.]*$/, '')).replace(new RegExp(CALENDAR_NAME_REFUSED.source, 'gu'), ' ')
+        .replace(/\s+/g, ' ').trim()).slice(0, 40).join('').trim();
     if (base === '') base = 'Imported';
     let name = base;
     for (let n = 2; newCalendarNameProblem(name) != null; n++) name = base + ' ' + n;
@@ -3439,7 +3448,7 @@ importForm.addEventListener('submit', function (e) {
     importCreating = true;
     importConfirmButton.textContent = 'Creating…';
     updateImportConfirm();
-    createCalendarForImport(importNewName.value.trim(), function (ok, name) {
+    createCalendarForImport(calendarNameOf(importNewName.value), function (ok, name) {
         if (importAnswer !== asked) return;
         importCreating = false;
         importConfirmButton.textContent = 'Import';

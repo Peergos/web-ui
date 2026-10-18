@@ -14,7 +14,8 @@ public class CalendarWholeShareTest {
     static final String PASSWORD = CalendarLiveShareTest.PASSWORD;
     static final String IN_MAIN = "A meeting of the owner's";
     static final String IN_READ_ONLY = "Another of the owner's";
-    static final String READ_ONLY_CALENDAR = "Readable";
+    // in any language, with an emoji: a name is shown as it is, to its owner and to whoever it is shared with
+    static final String READ_ONLY_CALENDAR = "Μόνο ανάγνωση 📖";
     static final String IMPORTED = "Imported by the reader";
 
     public static void main(String[] args) throws Exception {
