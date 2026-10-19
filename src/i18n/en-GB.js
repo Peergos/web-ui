@@ -764,7 +764,7 @@ module.exports = {
     "MOUNT.USE.CALENDAR.DEVICE":"Sync your calendars",
     "MOUNT.DEVICE.SCOPE":"Your Peergos calendars and contacts sync into a Peergos account of their own on this device, and only that account is synced with Peergos. Calendars and contacts already on this device, whether stored on the device itself or in another account such as Google, aren't read, copied or changed.",
     "MOUNT.DEVICE.MORE":"How syncing works",
-    "MOUNT.DEVICE.BOTH_WAYS":"Changes go both ways: adding, editing or deleting an event or contact in the Peergos account on this device does the same in Peergos, and the other way round. Android syncs them about every 30 minutes, and can wait longer to save battery. To change or delete one occurrence of a repeating event, do it in Peergos.",
+    "MOUNT.DEVICE.BOTH_WAYS":"Changes go both ways: adding, editing or deleting an event or contact in the Peergos account on this device does the same in Peergos, and the other way round. Android syncs them about every 30 minutes, and can wait longer to save battery.",
     "MOUNT.DEVICE.CONFLICT":"If something was changed both here and in Peergos before they synced, the Peergos version is kept and this device's is saved next to it as a copy; a contact's copy is marked \u201c(edited on this device)\u201d. Something deleted on one side and changed on the other is kept.",
     "MOUNT.DEVICE.NEW_CONTACTS":"Contacts you save to the Peergos account on this device go into your first Peergos address book.",
     "MOUNT.DEVICE.TASKS":"Tasks stay in the Peergos calendar and aren't added to this device.",
