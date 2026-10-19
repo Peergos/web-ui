@@ -1331,7 +1331,7 @@ module.exports = {
 			if (this.context == null || this.context.username == null)
 				return;
 			let that = this;
-			this.context.needsRecoveryKey().thenApply(function (needed) {
+			this.context.checkRoutingLog().thenApply(function (needed) {
 				if (needed)
 					that.showRecoveryKey = true;
 			});
