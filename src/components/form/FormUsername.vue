@@ -14,7 +14,8 @@
 
 <script>
 // A Peergos username, as the sign-in, mirror and sign-up forms take it: in lower case however it is typed or
-// pasted, with the focus on it when the form opens.
+// pasted, with the focus on it when the form opens. In a username@peerid only the username is lowered, since a
+// peerid is case sensitive.
 module.exports = {
 	emits: ['update:modelValue'],
 	props: {
@@ -39,7 +40,8 @@ module.exports = {
 		// and with the caret put back where it was: setting the value moves it to the end, so a capital typed in the
 		// middle of a name would send the rest of the typing there.
 		changed(event) {
-			let field = event.target, lower = field.value.toLowerCase();
+			let field = event.target, at = field.value.lastIndexOf('@');
+			let lower = at < 0 ? field.value.toLowerCase() : field.value.substring(0, at).toLowerCase() + field.value.substring(at);
 			if (field.value !== lower) {
 				let start = field.selectionStart, end = field.selectionEnd;
 				field.value = lower;
