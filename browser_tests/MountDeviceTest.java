@@ -65,7 +65,7 @@ public class MountDeviceTest {
             if (! labels.contains("Sync your calendars |") || labels.contains("calendars and tasks"))
                 throw new AssertionError("On Android the calendar switch shouldn't promise tasks: " + labels);
             String points = String.valueOf(d.script("return " + POINTS));
-            for (String says : new String[] {"Changes go both ways", "can wait longer to save battery", "one occurrence of a repeating event, do it in Peergos",
+            for (String says : new String[] {"Changes go both ways", "can wait longer to save battery",
                     "the Peergos version is kept", "a contact's copy is marked", "deleted on one side and changed on the other is kept",
                     "first Peergos address book", "Tasks stay", "Unmounting stops", "sent to Peergos if you turn syncing on again"})
                 if (! points.contains(says))

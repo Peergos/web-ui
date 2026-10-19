@@ -81,7 +81,8 @@ function rruleOptionsFor(recur, allDay) {
         interval: recur.interval, dtstart: toFakeUtc(dtstart) }, recur);
 }
 
-function buildRRuleSet(recur, allDay) {
+// The rule's own options, its end included.
+function ruleOptions(recur, allDay) {
     let options = rruleOptionsFor(recur, allDay);
     if (recur.end === 'until' && recur.until) {
         // 'T00:00' on the date-only form: new Date('2026-01-05') parses as
@@ -92,12 +93,38 @@ function buildRRuleSet(recur, allDay) {
         options.until = toFakeUtc(new Date(allDay ? untilStr + 'T00:00' : untilStr));
     }
     if (recur.end === 'count' && recur.count) options.count = recur.count;
+    return options;
+}
+
+// A series is its rule's dates plus any it adds (RDATE), less those it excludes. One
+// another client lists date by date has no rule at all, and starts on its own start.
+function buildRRuleSet(recur, allDay) {
+    let at = function (s) { return toFakeUtc(allDay ? new Date(s + 'T00:00') : new Date(s)); };
     let set = new rrule.RRuleSet();
-    set.rrule(new rrule.RRule(options));
-    (recur.exdates || []).forEach(function (exStr) {
-        set.exdate(toFakeUtc(allDay ? new Date(exStr + 'T00:00') : new Date(exStr)));
-    });
+    if (recur.freq) set.rrule(new rrule.RRule(ruleOptions(recur, allDay)));
+    else set.rdate(at(recur.dtstart));
+    (recur.rdates || []).forEach(function (s) { set.rdate(at(s)); });
+    (recur.exdates || []).forEach(function (exStr) { set.exdate(at(exStr)); });
     return set;
+}
+
+// FullCalendar's rrule plugin takes added dates only in a rule's text form, so a series
+// with any is handed over that way. Its times carry no zone, which the plugin reads as
+// local, the same as the dtstart of the object form; an all-day series gets midnight,
+// since the plugin's parser takes no bare date, and stays all-day by the event's own flag.
+function rruleStringFor(recur, allDay) {
+    let compact = function (s) { return allDay ? toIcsCompact(s, true) + 'T000000' : toIcsCompact(s, false); };
+    let lines = ['DTSTART:' + compact(recur.dtstart)];
+    if (recur.freq) {
+        let text = new rrule.RRule(ruleOptions(recur, allDay)).toString();
+        let rule = text.split('\n').find(function (l) { return l.indexOf('RRULE:') === 0; });
+        // rrule.js writes the local times it was given as if they were UTC
+        lines.push(rule.replace(/(\d{8}T\d{6})Z/g, '$1'));
+    }
+    let dates = (recur.rdates || []).slice();
+    if (!recur.freq) dates.unshift(recur.dtstart);
+    if (dates.length) lines.push('RDATE:' + dates.map(compact).join(','));
+    return lines.join('\n');
 }
 
 // Nearest occurrence to referenceDate, clamped to count/until/exdates.
@@ -149,6 +176,7 @@ function buildRecurringEventPayload(id, title, allDay, extra, recur, durationMs)
         extendedProps: Object.assign({ recur: recur }, extra)
     };
     if (recur.exdates && recur.exdates.length) data.exdate = recur.exdates.slice();
+    if (!recur.freq || (recur.rdates && recur.rdates.length)) data.rrule = rruleStringFor(recur, allDay);
     return data;
 }
 
@@ -756,7 +784,18 @@ function parseIcsVevent(rawLines, tzResolver) {
 
     let rruleLine = find('RRULE');
     let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver) : null;
+    // Dates a series adds to its rule, or the whole of one another client lists date by
+    // date. Of a PERIOD only the start is kept: an occurrence here lasts as long as the rest.
+    let rdates = [];
+    findAll('RDATE').forEach(function (l) {
+        l.value.split(',').forEach(function (v) {
+            let parsed = parseIcsDateValue(v.trim().split('/')[0], l.params, tzResolver);
+            if (parsed) rdates.push(toLocalInputValue(parsed.date, allDay));
+        });
+    });
+    if (!recur && rdates.length) recur = { freq: null, interval: 1, end: 'never', until: null, count: null, exdates: [] };
     if (recur) {
+        if (rdates.length) recur.rdates = rdates;
         recur.dtstart = toLocalInputValue(start, allDay);
         findAll('EXDATE').forEach(function (l) {
             l.value.split(',').forEach(function (v) {
@@ -927,6 +966,8 @@ let recurFreqLabels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', ye
 let recurIntervalUnits = { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' };
 
 function describeRecur(recur) {
+    let added = (recur.rdates || []).length;
+    if (!recur.freq) return 'On ' + (added + 1) + ' dates';
     let text = recur.interval > 1
         ? 'Every ' + recur.interval + ' ' + recurIntervalUnits[recur.freq]
         : recurFreqLabels[recur.freq];
@@ -937,5 +978,6 @@ function describeRecur(recur) {
     else if (recur.bymonthday) text += ' on day ' + recur.bymonthday;
     if (recur.end === 'until' && recur.until) text += ', until ' + recur.until;
     else if (recur.end === 'count' && recur.count) text += ', ' + recur.count + ' times';
+    if (added) text += ', and on ' + added + (added === 1 ? ' more date' : ' more dates');
     return text;
 }

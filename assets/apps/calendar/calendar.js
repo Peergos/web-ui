@@ -794,6 +794,8 @@ function carryRecurSource(from, to) {
 }
 
 function recurToIcsRRuleLine(recur, allDay, tzid) {
+    // A series of listed dates alone has no rule to write.
+    if (!recur.freq) return null;
     // Exclusions are their own line, so a detached occurrence still leaves the
     // rule itself untouched.
     if (recur.source && sameRecurFields(recur, recur.sourceFields))
@@ -822,6 +824,13 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
         }
     }
     return 'RRULE:' + parts.join(';');
+}
+
+function recurToIcsRdateLine(recur, allDay, tzid) {
+    if (!recur.rdates || !recur.rdates.length) return null;
+    let values = recur.rdates.map(function (s) { return toIcsCompact(s, allDay); });
+    if (allDay) return 'RDATE;VALUE=DATE:' + values.join(',');
+    return 'RDATE;TZID=' + tzid + ':' + values.join(',');
 }
 
 function recurToIcsExdateLine(recur, allDay, tzid) {
@@ -854,7 +863,7 @@ function recurringDurationMs(eventId) {
 // of its own, so it takes this app's id and stops claiming to replace an
 // occurrence of another entry.
 let OWNED_PROPERTIES = ['UID', 'RECURRENCE-ID', 'DTSTART', 'DTEND', 'DUE', 'DURATION', 'SUMMARY',
-    'LOCATION', 'DESCRIPTION', 'STATUS', 'RRULE', 'EXDATE', 'DTSTAMP', 'LAST-MODIFIED',
+    'LOCATION', 'DESCRIPTION', 'STATUS', 'RRULE', 'RDATE', 'EXDATE', 'DTSTAMP', 'LAST-MODIFIED',
     'PERCENT-COMPLETE', 'COMPLETED', 'PRIORITY'];
 
 function icsPropertyName(line) {
@@ -991,7 +1000,10 @@ function eventToIcsLines(ev) {
                 ? ev.duration.milliseconds : recurringDurationMs(ev.id));
         lines.push(icsDtLine('DTSTART', dtstart, ev.allDay, tzid));
         lines.push(icsDtLine('DTEND', new Date(dtstart.getTime() + durationMs), ev.allDay, tzid));
-        lines.push(recurToIcsRRuleLine(recur, ev.allDay, tzid));
+        let rruleLine = recurToIcsRRuleLine(recur, ev.allDay, tzid);
+        if (rruleLine) lines.push(rruleLine);
+        let rdateLine = recurToIcsRdateLine(recur, ev.allDay, tzid);
+        if (rdateLine) lines.push(rdateLine);
         let exdateLine = recurToIcsExdateLine(recur, ev.allDay, tzid);
         if (exdateLine) lines.push(exdateLine);
     } else {
@@ -1457,6 +1469,14 @@ function excludeOccurrenceFromMaster(master) {
 // it outright if the split point is the first occurrence.
 function truncateMasterSeries(master) {
     let masterRecur = Object.assign({}, master.extendedProps.recur);
+    let cut = toLocalInputValue(master.start, master.allDay);
+    // Dates the series adds from here on go with the rest of it; the earlier ones stay.
+    if (masterRecur.rdates) masterRecur.rdates = masterRecur.rdates.filter(function (s) { return s < cut; });
+    if (!masterRecur.freq) {
+        if (masterRecur.dtstart >= cut) removeAndPersist(master);
+        else replaceMasterSeries(master, masterRecur);
+        return;
+    }
     let untilBoundary = previousOccurrenceBoundary(masterRecur, master.allDay, master.start);
     if (!untilBoundary) {
         removeAndPersist(master);
@@ -3809,6 +3829,15 @@ form.addEventListener('submit', function (e) {
     }
     let recur = readRecurFromForm();
     if (recur && editingEvent) carryRecurSource(editingEvent.extendedProps.recur, recur);
+    // The form has no control for dates a series lists one by one, so one with no rule
+    // shows as not repeating there; saving it unchanged must not drop them.
+    let editedRecur = editingEvent && editingEvent.extendedProps.recur;
+    if (!recur && editedRecur && !editedRecur.freq && editScope !== 'this')
+        recur = Object.assign({}, editedRecur);
+    // Dates added after the occurrence a "this and following" edit starts from.
+    let laterDates = editedRecur && editingEvent.start
+        ? (editedRecur.rdates || []).filter(function (s) { return s > toLocalInputValue(editingEvent.start, editingEvent.allDay); })
+        : [];
 
     if (editingEvent && editScope === 'this' && editingEvent.extendedProps.recur) {
         excludeOccurrenceFromMaster(editingEvent);
@@ -3817,6 +3846,7 @@ form.addEventListener('submit', function (e) {
     } else if (editingEvent && editScope === 'following' && editingEvent.extendedProps.recur) {
         truncateMasterSeries(editingEvent);
         if (recur) {
+            recur.rdates = laterDates;
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
             addAndPersist(buildRecurringEventPayload(nextEventId(), titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay)));
         } else {
@@ -3831,6 +3861,7 @@ form.addEventListener('submit', function (e) {
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
             if (editingEvent && editingEvent.extendedProps.recur) {
                 recur.exdates = editingEvent.extendedProps.recur.exdates || [];
+                recur.rdates = editingEvent.extendedProps.recur.rdates || [];
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
