@@ -206,12 +206,19 @@ public class CalendarLegacyTest {
                     "SUMMARY:" + SERIES + " renamed");
             for (String line : new String[]{"ORGANIZER;CN=Someone:mailto:someone@example.com",
                     "ATTENDEE;PARTSTAT=ACCEPTED:mailto:someone.else@example.com",
-                    "CATEGORIES:Work", "X-PEERGOS-LEGACY:kept",
-                    "RDATE;TZID=Europe/London:20260203T090000"}) {
+                    "CATEGORIES:Work", "X-PEERGOS-LEGACY:kept"}) {
                 if (! edited.contains(line))
                     throw new AssertionError("Editing the event dropped " + line + ":\n" + edited);
             }
-            if (! edited.contains("TZID:Europe/London"))
+            // The added date is written in the zone the saved start is, which is the browser's.
+            String start = CalendarApp.property(edited, "DTSTART");
+            String zone = start.substring(start.indexOf("TZID=") + 5, start.indexOf(':'));
+            String added = "RDATE;TZID=" + zone + ":" + ZonedDateTime.of(2026, 2, 3, 9, 0, 0, 0, ZoneId.of("Europe/London"))
+                    .withZoneSameInstant(ZoneId.of(zone))
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss"));
+            if (! edited.contains(added))
+                throw new AssertionError("Editing the event dropped " + added + ":\n" + edited);
+            if (! edited.contains("TZID:" + zone))
                 throw new AssertionError("The kept RDATE names a zone the file no longer defines:\n"
                         + edited);
             System.out.println("  ok   an edit kept the organiser, attendee, categories, X- and RDATE");
