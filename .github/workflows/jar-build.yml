@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '21', '23', '24', '25']
+        java: [ '25', '26', '27' ]
     permissions:
       id-token: write
       contents: read

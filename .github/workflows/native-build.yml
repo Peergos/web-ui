@@ -1,6 +1,7 @@
 name: Native build
 
-on: [push]
+# Off on push; run it by hand from the Actions tab when a native build is wanted.
+on: [workflow_dispatch]
 
 jobs:
   build:
