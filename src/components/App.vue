@@ -91,7 +91,8 @@
 				</div>
 			</div>
 
-			<AppTabs ref="tabs">
+			<Login v-if="isRecoveryPage" recovery @initApp="init()" />
+			<AppTabs v-else ref="tabs">
 				<p class="pg-callout demo-warning" v-if="isDemo">
 					<span><strong>WARNING:</strong> This is a demo server and all data
 					will be cleared periodically. If you want to create a
@@ -146,6 +147,7 @@ const ModalSpace = require("./modal/ModalSpace.vue");
 const ModalPro = require("./modal/ModalPro.vue");
 const ModalCancel = require("./modal/ModalCancel.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
+const ModalRecovery = require("./modal/ModalRecovery.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
 const ModalLanguage = require("./modal/ModalLanguage.vue");
@@ -213,6 +215,7 @@ module.exports = {
 	        ModalPro,
                 ModalCancel,
 		ModalPassword,
+		ModalRecovery,
 		ModalAccount,
 		ModalMigrate,
 		ModalProfile,
@@ -258,7 +261,8 @@ module.exports = {
                     backOnline: false,
                     backOnlineTimer: null,
                     offlineProbeTimer: null,
-                    offlineProbeInFlight: false
+                    offlineProbeInFlight: false,
+                    isRecoveryPage: window.location.pathname == "/recovery"
 		};
 	},
 
@@ -323,7 +327,7 @@ module.exports = {
 		const href = window.location.href;
 		var fragment = window.location.hash.substring(1);
 		var props = this.getSecretLinkProps();
-		if (href.includes("?signup=true")) {
+		if (href.includes("?signup=true") && this.$refs.tabs != null) {
 		    this.$refs.tabs.selectTab(2);
 
 		    if (href.includes("token=")) {
