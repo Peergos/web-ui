@@ -4,7 +4,7 @@
 			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="translate('RECOVERY.TITLE')">
 				<header class="pg-dialog__head">
 					<h3 class="pg-dialog__title">{{ translate("RECOVERY.TITLE") }}</h3>
-					<DialogClose v-if="closable && ! showSpinner" @close="$emit('hide-recovery-key')"/>
+					<DialogClose v-if="! showSpinner" @close="$emit('hide-recovery-key')"/>
 				</header>
 				<Spinner v-if="showSpinner"></Spinner>
 				<div class="pg-dialog__body">
@@ -35,9 +35,6 @@ module.exports = {
     components: {
         DialogClose,
         Spinner,
-    },
-    props: {
-        closable: Boolean,
     },
     data: function() {
         return {

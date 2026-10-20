@@ -1,5 +1,5 @@
 <template>
-	<RecoveryKey v-if="status == 'unset'" closable v-on:hide-recovery-key="close()"/>
+	<RecoveryKey v-if="status == 'unset'" v-on:hide-recovery-key="close()"/>
 	<AppModal v-else :title="translate('RECOVERY.TITLE')">
 		<template #body>
 			<Spinner v-if="status == null"></Spinner>
