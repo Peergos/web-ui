@@ -4,6 +4,7 @@
 			<div class="pg-dialog pg-dialog--prompt" role="dialog" aria-modal="true" :aria-label="translate('RECOVERY.TITLE')">
 				<header class="pg-dialog__head">
 					<h3 class="pg-dialog__title">{{ translate("RECOVERY.TITLE") }}</h3>
+					<DialogClose v-if="closable && ! showSpinner" @close="$emit('hide-recovery-key')"/>
 				</header>
 				<Spinner v-if="showSpinner"></Spinner>
 				<div class="pg-dialog__body">
@@ -13,7 +14,7 @@
 				</div>
 				<footer class="pg-dialog__foot">
 					<div class="pg-dialog__actions">
-						<button type="button" class="pg-btn" @click="copy()">{{ translate("RECOVERY.COPY") }}</button>
+						<button type="button" class="pg-btn" @click="copyRecoveryKey(password)">{{ translate("RECOVERY.COPY") }}</button>
 						<button type="button" class="pg-btn" @click="download()">{{ translate("RECOVERY.DOWNLOAD") }}</button>
 						<span class="pg-dialog__spacer"></span>
 						<button type="button" class="pg-btn pg-btn--primary" :disabled="! downloaded || showSpinner" @click="commit()">{{ translate("RECOVERY.CONTINUE") }}</button>
@@ -24,13 +25,19 @@
 	</transition>
 </template>
 <script>
+const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const i18n = require("../../i18n/index.js");
 const passwordMixin = require("../../mixins/password/index.js");
+const recoveryMixin = require("../../mixins/recovery/index.js");
 
 module.exports = {
     components: {
+        DialogClose,
         Spinner,
+    },
+    props: {
+        closable: Boolean,
     },
     data: function() {
         return {
@@ -44,40 +51,13 @@ module.exports = {
             'context'
         ]),
     },
-    mixins:[i18n, passwordMixin],
+    mixins:[i18n, passwordMixin, recoveryMixin],
     created: function() {
         this.generatePassword();
     },
     methods: {
-        asText: function() {
-            return this.translate("RECOVERY.FILE.HEADER") + " " + this.context.username + "\n\n"
-                + this.password + "\n\n"
-                + this.translate("RECOVERY.BLURB") + "\n";
-        },
-        filename: function() {
-            return 'peergos-recovery-key-' + this.context.username + '.txt';
-        },
-        copy: function() {
-            let that = this;
-            navigator.clipboard.writeText(this.password).then(function() {
-                that.$toast(that.translate("RECOVERY.COPIED"));
-            }, function() {
-                console.error("Unable to write to clipboard.");
-            });
-        },
         download: function() {
-            // a blob: url never reaches the android app's DownloadListener, so hand it the text
-            if (typeof window.Android !== "undefined" && window.Android
-                    && typeof window.Android.saveToDownloads === "function") {
-                window.Android.saveToDownloads(this.filename(), 'text/plain', this.asText());
-            } else {
-                let blob = new Blob([this.asText()], { type: 'octet/stream' });
-                let link = document.getElementById('downloadAnchor');
-                link.href = window.URL.createObjectURL(blob);
-                link.type = 'text/plain';
-                link.download = this.filename();
-                link.click();
-            }
+            this.downloadRecoveryKey(this.context.username, this.password);
             this.downloaded = true;
         },
         commit: function() {

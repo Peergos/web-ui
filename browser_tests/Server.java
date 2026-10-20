@@ -74,6 +74,13 @@ public class Server implements AutoCloseable {
                 "-payment-domain", "localhost:7000"));
     }
 
+    /** A server running the routing log, which recovery keys need. It runs ipfs, on ports of its own, and
+     *  bootstraps from nowhere reachable rather than the public network. */
+    public static Server startWithRoutingLog(Path serverDir) throws IOException {
+        return start(serverDir, 100, List.of("routing-log", "true", "routing-work-bits", "16", "async-bootstrap", "true",
+                "ipfs-config-bootstrap-node-list", "/ip4/127.0.0.1/tcp/9/p2p/QmVdFZgHnEgcedCS2G2ZNiEN59LuVrnRm7z3yXtEBv2XiF"));
+    }
+
     private static Server start(Path serverDir, int maxUsers, List<String> extraArgs) throws IOException {
         // A free port is only free when asked: the server binds it seconds later, once its jvm is
         // up, and any connection made meanwhile can be handed the same one. Losing that race ends
@@ -96,11 +103,12 @@ public class Server implements AutoCloseable {
         // already running on the machine, including a developer's.
         int p2pPort = freePort();
         Path dataDir = Temp.directory("peergos-browser-test-");
+        boolean useIpfs = extraArgs.contains("routing-log");
         List<String> cmd = new ArrayList<>(List.of("java", "-jar", "Peergos.jar", "pki-init",
                 "-port", Integer.toString(port),
                 "-proxy-target", "/ip4/127.0.0.1/tcp/" + p2pPort,
                 "-log-to-console", "false",
-                "-useIPFS", "false",
+                "-useIPFS", Boolean.toString(useIpfs),
                 "-webroot", "webroot",
                 "-webcache", "false",
                 "-max-users", Integer.toString(maxUsers),
@@ -113,6 +121,12 @@ public class Server implements AutoCloseable {
                 // sign-ups are rate limited by proof of work that gets harder as they come faster, and a
                 // run of tests at once signs up accounts far faster than any day of real use
                 "-max-daily-signups", "100000000"));
+        if (useIpfs)
+            cmd.addAll(List.of("-gateway-port", Integer.toString(freePort()),
+                    "-ipfs-api-address", "/ip4/127.0.0.1/tcp/" + freePort(),
+                    "-ipfs-gateway-address", "/ip4/127.0.0.1/tcp/" + freePort(),
+                    "-ipfs-swarm-port", Integer.toString(freePort()),
+                    "-ipfs.metrics.port", Integer.toString(freePort())));
         cmd.addAll(extraArgs);
         Path log = dataDir.resolve("server.log");
         Process p = new ProcessBuilder(cmd)

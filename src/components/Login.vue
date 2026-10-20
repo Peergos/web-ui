@@ -1,5 +1,6 @@
 <template>
-	<div class="app-login pg-auth" v-if="!autoLoggingIn">
+	<RecoverAccount v-if="recovery" v-on:recovered="recovered"/>
+	<div class="app-login pg-auth" v-else-if="!autoLoggingIn">
 		<FormUsername v-model="username" :placeholder="translate('LOGIN.USERNAME')" autocomplete="username" @keyup.enter="login()"/>
 		<MultiFactorAuth
 			v-if="showMultiFactorAuth"
@@ -22,15 +23,7 @@
 		<button type="button" class="pg-btn pg-btn--primary" :disabled="isLoggingIn || network == null" @click="login()">
 			{{ translate(isLoggingIn ? 'LOGIN.SIGNING_IN' : 'LOGIN.BUTTON') }}
 		</button>
-		<button type="button" class="pg-btn pg-btn--quiet" :disabled="isLoggingIn || network == null" @click="showRecover = true">
-			{{ translate('RECOVER.LINK') }}
-		</button>
-		<RecoverAccount
-			v-if="showRecover"
-			:initialUsername="username"
-			v-on:hide-recover="showRecover = false"
-			v-on:recovered="recovered">
-		</RecoverAccount>
+		<a class="pg-btn pg-btn--quiet" href="/recovery">{{ translate('RECOVER.LINK') }}</a>
 	</div>
 </template>
 
@@ -52,6 +45,9 @@ module.exports = {
 		MultiFactorAuth,
 		RecoverAccount,
 	},
+	props: {
+		recovery: Boolean,
+	},
 	data() {
 		return {
 			username: '',
@@ -60,7 +56,6 @@ module.exports = {
             isLoggingIn: false,
             autoLoggingIn: true,
             showMultiFactorAuth: false,
-            showRecover: false,
 		};
 	},
 	computed: {
@@ -96,7 +91,7 @@ module.exports = {
 		]),
 		autoLogin() {
 		    // bypass login on DEV
-			if (this.network == null) {
+			if (this.network == null || this.recovery) {
 				this.autoLoggingIn = false;
 				return;
 			}
@@ -205,7 +200,7 @@ module.exports = {
 				});
 		},
 		recovered(creationStart, context) {
-			this.showRecover = false;
+			window.history.replaceState(null, "", "/");
 			this.postLogin(creationStart, context);
 		},
 		postLogin(creationStart, context) {
@@ -234,7 +229,8 @@ module.exports = {
             console.log("Signing in/up took " + (Date.now()-creationStart)+" mS from function call");
             if (that.stayLoggedIn) {
                 let rootKey = context.rootKey.toByteArray();
-                setRootKeyIntoCacheProm(context.username, rootKey).thenApply(function (isSupported) {
+                // the offline login data is cached under the name signed in with, which may be username@peerid
+                setRootKeyIntoCacheProm(context.loginName, rootKey).thenApply(function (isSupported) {
                     if (isSupported) {
                         console.log("Offline support enabled");
                     } else {
