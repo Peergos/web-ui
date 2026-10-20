@@ -440,12 +440,6 @@
       :messageId="messageId"
     >
     </Error>
-    <RecoveryKey
-      v-if="showRecoveryKey"
-      closable
-      v-on:hide-recovery-key="showRecoveryKey = false"
-    >
-    </RecoveryKey>
     <Confirm
       v-if="showConfirm"
       v-on:hide-confirm="showConfirm = false"
@@ -496,7 +490,6 @@ const Spinner = require("../components/spinner/Spinner.vue");
 const offlineMixin = require("../mixins/offline/index.js");
 const UriDecoder = require("../mixins/uridecoder/index.js");
 const Warning = require('../components/Warning.vue');
-const RecoveryKey = require('../components/auth/RecoveryKey.vue');
 
 const helpers = require("../mixins/storage/index.js");
 const transfers = require("../mixins/transfers/index.js");
@@ -541,7 +534,6 @@ module.exports = {
 		Markup,
 		Hex,
 		Pdf,
-		RecoveryKey,
 		Replace,
 		Spinner,
 		Warning
@@ -646,7 +638,6 @@ module.exports = {
 			errorBody: '',
 			showError: false,
             showConfirm: false,
-            showRecoveryKey: false,
             confirm_message: "",
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
@@ -1329,16 +1320,8 @@ module.exports = {
                 });
 			}
 			this.showPendingServerMessages();
-			this.checkRecoveryKey();
-		},
-		checkRecoveryKey() {
-			if (this.context == null || this.context.username == null)
-				return;
-			let that = this;
-			this.context.checkRoutingLog().thenApply(function (needed) {
-				if (needed)
-					that.showRecoveryKey = true;
-			});
+			if (this.context != null && this.context.username != null)
+				this.context.checkRoutingLog();
 		},
 
         selectAllOrNone() {
