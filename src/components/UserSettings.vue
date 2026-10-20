@@ -67,6 +67,12 @@
 				>
 					{{ translate("SETTINGS.PASS") }}
 				</li>
+				<li
+					v-on:keyup.enter="showRecovery()"
+					@click="showRecovery()"
+				>
+					{{ translate("SETTINGS.RECOVERY") }}
+				</li>
                 <li
                     v-on:keyup.enter="cleanupFailedUploads()"
                     @click="cleanupFailedUploads()"
@@ -376,6 +382,9 @@ module.exports = {
         },
 		showChangePassword() {
 			this.$store.commit("CURRENT_MODAL", "ModalPassword");
+		},
+		showRecovery() {
+			this.$store.commit("CURRENT_MODAL", "ModalRecovery");
 		},
 		showMigrate() {
 			this.$store.commit("CURRENT_MODAL", "ModalMigrate");
