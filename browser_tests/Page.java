@@ -298,7 +298,7 @@ public class Page {
      *  view happens to sit deepest - a DriveTable with no currentDir, no files and none
      *  of the methods a test then calls on it.
      */
-    private static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
+    static boolean awaitComponent(WebDriver d, String methodName, String handle, long millis) {
         long end = System.currentTimeMillis() + millis;
         boolean first = true;
         String find = "(() => {" +

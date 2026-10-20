@@ -442,6 +442,7 @@
     </Error>
     <RecoveryKey
       v-if="showRecoveryKey"
+      closable
       v-on:hide-recovery-key="showRecoveryKey = false"
     >
     </RecoveryKey>

@@ -68,6 +68,7 @@ public class Suite {
             run(failures, "the contacts api an app with MANAGE_CONTACTS gets", () -> ContactsApiTest.run(args1));
             run(failures, "an admin inviting new users", () -> AdminInviteTest.run(args1));
             run(failures, "inviting new users on a paid instance", () -> AdminInvitePaidTest.run(args1));
+            run(failures, "a recovery key set from the menu takes the account back on /recovery", () -> RecoveryTest.run(new String[]{engine}));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
