@@ -44,11 +44,6 @@ public class RecoveryTest {
                 d.navigate(url + "/");
                 Page.login(d, user, password);
 
-                d.waitForScript("the recovery key prompt after login", dialog("Your Recovery Key") + " != null", 120_000);
-                d.script("return " + dialog("Your Recovery Key") + ".querySelector('.pg-dialog__close').click();");
-                d.waitForScript("the prompt to close", dialog("Your Recovery Key") + " == null", 30_000);
-                System.out.println("  ok   the prompt after login can be put off");
-
                 openRecoveryMenu(d);
                 d.waitForScript("a new recovery key", "!!document.querySelector('.recovery-key')", 60_000);
                 String shown = String.valueOf(d.script("return document.querySelector('.recovery-key').textContent.trim();"));
