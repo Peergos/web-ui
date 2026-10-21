@@ -19,6 +19,12 @@
   <url type="vcs-browser">https://github.com/peergos/web-ui</url>
   
   <releases>
+    <release version="1.40.0" date="2026-10-22">
+      <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.40.0</url>
+      <description>
+        <p>See release notes</p>
+      </description>
+    </release>
     <release version="1.39.1" date="2026-10-18">
       <url type="details">https://github.com/Peergos/web-ui/releases/tag/v1.39.0</url>
       <description>
