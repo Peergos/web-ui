@@ -1123,36 +1123,58 @@ module.exports = {
             if (onReset) {
                 onReset();
             }
-            months.forEach(function(each) {
+            let readMonth = function(each) {
                 that.getCalendarEventsForMonth(each.year, each.month).thenApply(function(events) {
                     if (token === that.loadToken)
                         that.postMonthEvents(each.year, each.month, events, true);
+                    return null;
                 });
+            };
+            // The month on screen and the repeating entries first - the two that draw on the
+            // grid in view - and the rest once those two are listed, so their round trips
+            // overlap the reading of the first two: started all together, the six reads shared
+            // one thread, and the month in view was drawn last.
+            let rest = function() {
+                // Nothing of a load another has since replaced is kept, so nothing more of it is read.
+                if (token !== that.loadToken)
+                    return;
+                months.slice(1).forEach(readMonth);
+                that.readFromEachCalendar(['tasks']).thenApply(function(taskItems) {
+                    if (token === that.loadToken)
+                        that.postMessage({type: 'loadTasks', tasks: taskItems, loadBucket: true});
+                });
+                // Drawn from the snapshot alone, with nothing of the owner's read on the way to
+                // the first paint: an entry someone shared has to be there whether or not their
+                // data can be reached right now. Catching up with them happens after.
+                that.readFromEachCalendar([that.SHARED_DIR_NAME]).thenApply(function(sharedEntries) {
+                    if (token !== that.loadToken)
+                        return null;
+                    that.postMessage({type: 'loadShared', shared: sharedEntries, loadBucket: true});
+                    // Moves first: an entry whose owner rescheduled it across a month sits at a
+                    // path this snapshot does not know yet, and reconciling before looking there
+                    // would find nothing and mark it detached for no reason.
+                    that.repointMovedShares(calendar, token, sharedEntries).thenApply(function(updated) {
+                        that.reconcileShared(calendar, token, updated);
+                        return null;
+                    });
+                    return null;
+                });
+            };
+            let waiting = 2;
+            let listed = function() {
+                if (--waiting == 0)
+                    rest();
+            };
+            that.readFromEachCalendar([String(months[0].year), String(months[0].month)], listed).thenApply(function(events) {
+                if (token === that.loadToken)
+                    that.postMonthEvents(months[0].year, months[0].month, events, true);
+                return null;
             });
-            that.readFromEachCalendar(['recurring']).thenApply(function(recurringEvents) {
+            that.readFromEachCalendar(['recurring'], listed).thenApply(function(recurringEvents) {
                 // Recurring entries are stored outside the months and carry
                 // no yearMonth: they are not a month the grid can mark read.
                 if (token === that.loadToken)
                     that.postMessage({type: 'loadAdditional', currentMonth: recurringEvents, loadBucket: true});
-            });
-            that.readFromEachCalendar(['tasks']).thenApply(function(taskItems) {
-                if (token === that.loadToken)
-                    that.postMessage({type: 'loadTasks', tasks: taskItems, loadBucket: true});
-            });
-            // Drawn from the snapshot alone, with nothing of the owner's read on the way to
-            // the first paint: an entry someone shared has to be there whether or not their
-            // data can be reached right now. Catching up with them happens after.
-            that.readFromEachCalendar([that.SHARED_DIR_NAME]).thenApply(function(sharedEntries) {
-                if (token !== that.loadToken)
-                    return null;
-                that.postMessage({type: 'loadShared', shared: sharedEntries, loadBucket: true});
-                // Moves first: an entry whose owner rescheduled it across a month sits at a
-                // path this snapshot does not know yet, and reconciling before looking there
-                // would find nothing and mark it detached for no reason.
-                that.repointMovedShares(calendar, token, sharedEntries).thenApply(function(updated) {
-                    that.reconcileShared(calendar, token, updated);
-                    return null;
-                });
                 return null;
             });
         });
@@ -2188,16 +2210,26 @@ module.exports = {
     // one directory under each calendar's, read the same way; only `parts` differs. A
     // calendar whose listing or read fails (a share revoked while we are open) settles as
     // empty, because a future that never completes strands the load behind a spinner
-    // nothing clears.
-    readFromEachCalendar: function(parts) {
+    // nothing clears. `listed`, when given, is called once every calendar's directory has
+    // been listed and only the reading is left.
+    readFromEachCalendar: function(parts, listed) {
         let that = this;
         let accumulator = [];
         let future = peergos.shared.util.Futures.incomplete();
         let expected = this.calendarProperties.calendars.length;
         if (expected == 0) {
             future.complete(accumulator);
+            if (listed) {
+                listed();
+            }
             return future;
         }
+        let unlisted = expected;
+        let listedOnce = function() {
+            if (--unlisted == 0 && listed) {
+                listed();
+            }
+        };
         let settle = function(events) {
             accumulator.push(events);
             if (accumulator.length == expected) {
@@ -2207,7 +2239,7 @@ module.exports = {
         this.calendarProperties.calendars.forEach(currentCalendar => {
             // One count per calendar, whichever way it ends.
             let settleOnce = that.onceOnly(settle);
-            that.readEntriesIn(currentCalendar.name, that.descend(that.calendarDirectory(currentCalendar), parts))
+            that.readEntriesIn(currentCalendar.name, that.descend(that.calendarDirectory(currentCalendar), parts), listedOnce)
                 .thenApply(res => settleOnce(res))
                 .exceptionally(function(t) { settleOnce([]); });
         });
@@ -2251,20 +2283,25 @@ module.exports = {
     // fetched for it. Reading each file by its path instead resolved the whole path again
     // for every one of them, decrypting this directory's listing each time, which put a few
     // hundred entries at seconds of the main thread. A directory that is not there is
-    // empty; one that cannot be listed is an error.
-    readEntriesIn: function(calendarName, directory) {
+    // empty; one that cannot be listed is an error. `onListed`, when given, is called once
+    // the listing is over, however it ended.
+    readEntriesIn: function(calendarName, directory, onListed) {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
+        let listed = this.onceOnly(onListed || function() {});
         let failed = function(t) {
+            listed();
             future.completeExceptionally(t);
             return null;
         };
         directory.thenApply(function(dirOpt) {
             if (dirOpt == null || ! dirOpt.isPresent()) {
+                listed();
                 future.complete([]);
                 return null;
             }
             dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                listed();
                 that.readEntryFiles(calendarName, children.toArray().filter(function(f) { return ! f.isDirectory(); }), future);
                 return null;
             }).exceptionally(failed);
