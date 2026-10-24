@@ -638,16 +638,17 @@ module.exports = {
 	    this.$store.commit("SET_OFFLINE", true);
 	},
 
-	/* The server, asked for its id: the one call the local server never answers from a
-	   cache, so it says whether the server can be reached again. Asked when the browser
-	   says the connection is back, and every 15 s while we are offline, because the browser
-	   only knows about its own connection, not about a server that is down. */
+	/* The server asked for its id, with origin=true so a local server passes the question
+	   on instead of answering from what it remembers: it says whether the server can be
+	   reached again. Asked when the browser says the connection is back, and every 15 s
+	   while we are offline, because the browser only knows about its own connection, not
+	   about a server that is down. */
 	probeOnline() {
 	    if (this.offlineProbeInFlight)
 		return;
 	    this.offlineProbeInFlight = true;
 	    const that = this;
-	    this.localPost("/api/v0/id", null, "arraybuffer").then(function () {
+	    this.localPost("/api/v0/id?origin=true", null, "arraybuffer").then(function () {
 		that.offlineProbeInFlight = false;
 		if (! that.offline)
 		    return;
