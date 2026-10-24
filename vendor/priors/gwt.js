@@ -1931,64 +1931,69 @@ var tryProofOfWork = function(counter, difficulty, combined, future) {
     });
 }
 
+// A pool of workers started as they are first needed: four pools of up to eight
+// started as the page loads were a few dozen threads, each loading its script, on a
+// phone that was still drawing the sign-in page. Round-robin over the count.
+function lazyWorkerPool(count, start) {
+    var workers = [];
+    return function(index) {
+        var at = index % count;
+        if (workers[at] == null)
+            workers[at] = start();
+        return workers[at];
+    };
+}
+
 // SHA-256 web worker pool — dispatches calls round-robin across N workers.
 var sha256WorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
-var sha256Workers = [];
 var sha256Callbacks = new Map();
 var sha256NextId = 0;
 var sha256NextWorker = 0;
 
-(function() {
-    for (var i = 0; i < sha256WorkerCount; i++) {
-        var w = new Worker('/js/sha256-worker.js');
-        w.onmessage = function(e) {
-            var pending = sha256Callbacks.get(e.data.id);
-            if (pending) {
-                sha256Callbacks.delete(e.data.id);
-                if (e.data.error)
-                    pending.reject(e.data.error);
-                else
-                    pending.resolve(e.data.result);
-            }
-        };
-        sha256Workers.push(w);
-    }
-})();
+var sha256Workers = lazyWorkerPool(sha256WorkerCount, function() {
+    var w = new Worker('/js/sha256-worker.js');
+    w.onmessage = function(e) {
+        var pending = sha256Callbacks.get(e.data.id);
+        if (pending) {
+            sha256Callbacks.delete(e.data.id);
+            if (e.data.error)
+                pending.reject(e.data.error);
+            else
+                pending.resolve(e.data.result);
+        }
+    };
+    return w;
+});
 
 // SHA-256 file worker pool — workers read file slices and hash them directly.
 var sha256FileWorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
-var sha256FileWorkers = [];
 var sha256FileCallbacks = new Map();
 var sha256FileNextId = 0;
 var sha256FileNextWorker = 0;
 
-(function() {
-    for (var i = 0; i < sha256FileWorkerCount; i++) {
-        var w = new Worker('/js/sha256-file-worker.js');
-        w.onmessage = function(e) {
-            var pending = sha256FileCallbacks.get(e.data.id);
-            if (pending) {
-                sha256FileCallbacks.delete(e.data.id);
-                if (e.data.error)
-                    pending.reject(e.data.error);
-                else
-                    pending.resolve(e.data.result);
-            }
-        };
-        sha256FileWorkers.push(w);
-    }
-})();
+var sha256FileWorkers = lazyWorkerPool(sha256FileWorkerCount, function() {
+    var w = new Worker('/js/sha256-file-worker.js');
+    w.onmessage = function(e) {
+        var pending = sha256FileCallbacks.get(e.data.id);
+        if (pending) {
+            sha256FileCallbacks.delete(e.data.id);
+            if (e.data.error)
+                pending.reject(e.data.error);
+            else
+                pending.resolve(e.data.result);
+        }
+    };
+    return w;
+});
 
 // BLAKE3 web worker pools. Module workers, because the implementation ships as ES
 // modules; there is no WebCrypto BLAKE3, so these always do the work themselves.
 var blake3WorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
-var blake3Workers = [];
 var blake3Callbacks = new Map();
 var blake3NextId = 0;
 var blake3NextWorker = 0;
 
 var blake3FileWorkerCount = Math.max(1, Math.min(navigator.hardwareConcurrency || 4, 8));
-var blake3FileWorkers = [];
 var blake3FileCallbacks = new Map();
 var blake3FileNextId = 0;
 var blake3FileNextWorker = 0;
@@ -2007,12 +2012,12 @@ function blake3Dispatch(worker, callbacks) {
     return worker;
 }
 
-(function() {
-    for (var i = 0; i < blake3WorkerCount; i++)
-        blake3Workers.push(blake3Dispatch(new Worker('/js/blake3-worker.js', {type: 'module'}), blake3Callbacks));
-    for (var j = 0; j < blake3FileWorkerCount; j++)
-        blake3FileWorkers.push(blake3Dispatch(new Worker('/js/blake3-file-worker.js', {type: 'module'}), blake3FileCallbacks));
-})();
+var blake3Workers = lazyWorkerPool(blake3WorkerCount, function() {
+    return blake3Dispatch(new Worker('/js/blake3-worker.js', {type: 'module'}), blake3Callbacks);
+});
+var blake3FileWorkers = lazyWorkerPool(blake3FileWorkerCount, function() {
+    return blake3Dispatch(new Worker('/js/blake3-file-worker.js', {type: 'module'}), blake3FileCallbacks);
+});
 
 var scryptJS = {
     NativeScryptJS: function() {
@@ -2040,7 +2045,7 @@ var scryptJS = {
 		}
 	    });
             var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
-            sha256Workers[sha256NextWorker++ % sha256WorkerCount].postMessage({id: id, data: buf}, [buf]);
+            sha256Workers(sha256NextWorker++).postMessage({id: id, data: buf}, [buf]);
 	    return future;
 	}
 
@@ -2102,7 +2107,7 @@ var scryptJS = {
                 resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
                 reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
             });
-            var worker = sha256FileWorkers[sha256FileNextWorker++ % sha256FileWorkerCount];
+            var worker = sha256FileWorkers(sha256FileNextWorker++);
             var file = reader.file;
             if (typeof Blob !== 'undefined' && file instanceof Blob) {
                 worker.postMessage({id: id, file: file, start: start, end: end});
@@ -2139,14 +2144,14 @@ var scryptJS = {
         this.blake3 = function(input) {
             var id = blake3NextId++;
             var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
-            return blake3Post(blake3Workers[blake3NextWorker++ % blake3WorkerCount], blake3Callbacks, id,
+            return blake3Post(blake3Workers(blake3NextWorker++), blake3Callbacks, id,
                 {id: id, data: buf, chainingValue: false}, [buf]);
         }
 
         this.blake3ChainingValue = function(input, startChunkHi, startChunkLo) {
             var id = blake3NextId++;
             var buf = input.buffer.slice(input.byteOffset || 0, (input.byteOffset || 0) + input.length);
-            return blake3Post(blake3Workers[blake3NextWorker++ % blake3WorkerCount], blake3Callbacks, id,
+            return blake3Post(blake3Workers(blake3NextWorker++), blake3Callbacks, id,
                 {id: id, data: buf, chainingValue: true, startChunkHi: startChunkHi, startChunkLo: startChunkLo}, [buf]);
         }
 
@@ -2159,7 +2164,7 @@ var scryptJS = {
                 resolve: function(data) { future.complete(convertToByteArray(data.slice(0, 32))); },
                 reject: function(err) { future.completeExceptionally(java.lang.Throwable.of(new Error(err))); }
             });
-            var worker = blake3FileWorkers[blake3FileNextWorker++ % blake3FileWorkerCount];
+            var worker = blake3FileWorkers(blake3FileNextWorker++);
             var common = {id: id, chainingValue: asChainingValue, startChunkHi: startChunkHi, startChunkLo: startChunkLo};
             var file = reader.file;
             if (typeof Blob !== 'undefined' && file instanceof Blob) {
