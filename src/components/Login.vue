@@ -31,6 +31,7 @@ const FormUsername = require("./form/FormUsername.vue");
 const MultiFactorAuth = require("./auth/MultiFactorAuth.vue");
 const routerMixins = require("../mixins/router/index.js");
 const UriDecoder = require('../mixins/uridecoder/index.js');
+const offlineMixin = require("../mixins/offline/index.js");
 const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
@@ -72,7 +73,7 @@ module.exports = {
 			}
 		},
 	},
-	mixins:[routerMixins, UriDecoder, i18n],
+	mixins:[routerMixins, UriDecoder, i18n, offlineMixin],
 
 	mounted() {
                 setTimeout(() => this.autoLogin(), 0);
@@ -119,6 +120,7 @@ module.exports = {
                                 .exceptionally(function (throwable) {
                                     that.isLoggingIn = false;
                                     that.autoLoggingIn = false;
+                                    that.noteOffline(throwable);
                                     that.$toast.error(that.uriDecode(throwable.getMessage()), {timeout:false, id: 'login'})
                                 });
                             }
@@ -174,6 +176,7 @@ module.exports = {
 				})
 				.exceptionally(function (throwable) {
                     that.isLoggingIn = false;
+                    that.noteOffline(throwable);
                     if (throwable.getMessage().startsWith('Invalid+TOTP+code')) {
                         that.$toast.error('Invalid Multi Factor Authenticator code', {timeout:false, id: 'login'})
                     } else {
