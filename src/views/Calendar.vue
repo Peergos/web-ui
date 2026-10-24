@@ -69,6 +69,7 @@ const transfers = require("../mixins/transfers/index.js");
 const names = require("../mixins/names/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
+const offlineMixin = require("../mixins/offline/index.js");
 
 // Reminders outlive this view: opening the drive should not cancel an alarm
 // the user set in the calendar, and a view is destroyed the moment it is
@@ -212,14 +213,24 @@ module.exports = {
 			this.postMessage({type: 'setTheme', currentTheme: this.currentTheme});
 		}
 	},
-	mixins:[routerMixins, i18n],
+	mixins:[routerMixins, i18n, offlineMixin],
     created() {
         let that = this;
         this.frameSrc = this.frameUrl();
         this.displaySpinner();
+        // The app's folder, or the calendars' properties, could not be read: the spinner
+        // comes down and the reason is said, offline or not, rather than a spinner for good
+        // over an empty grid.
+        let failed = function(t) {
+            that.removeSpinner();
+            that.showMessage(true, that.translate(that.noteOffline(t) ? 'CALENDAR.OFFLINE' : 'CALENDAR.ERROR.LOAD'));
+            return null;
+        };
         this.getInputParameters().thenApply(inputParameters => {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
-                if (loadedParameters != null) {
+                if (loadedParameters == null) {
+                    that.removeSpinner();
+                } else {
                     that.importFile = loadedParameters.importFile;
                     that.importFilename = loadedParameters.importFilename || null;
                     that.importCalendarPath = loadedParameters.importCalendarPath;
@@ -234,11 +245,11 @@ module.exports = {
                             that.getPropertiesFile(calendar).thenApply(props => {
                                 that.calendarProperties = props;
                                 that.startListener(calendar)
-                            })
+                            }).exceptionally(failed);
                         }
-                    });
+                    }).exceptionally(failed);
                 }
-            });
+            }).exceptionally(failed);
         });
     },
 	mounted(){
@@ -305,6 +316,10 @@ module.exports = {
                         future.complete({importFile: null, importCalendarPath: path,
                             owner: dirParts[0], hasEmail: hasEmail, isWritable: dir.isWritable()});
                     }
+                }).exceptionally(function(throwable) {
+                    that.$toast.error(that.translate(that.noteOffline(throwable) ? 'CALENDAR.OFFLINE' : 'CALENDAR.ERROR.LOAD'), {timeout:false});
+                    future.complete(null);
+                    return null;
                 });
             }
       } else {
@@ -328,6 +343,10 @@ module.exports = {
                     future.complete(null);
                     return null;
                 });
+            }).exceptionally(function(throwable) {
+                that.$toast.error(that.translate(that.noteOffline(throwable) ? 'CALENDAR.OFFLINE' : 'CALENDAR.ERROR.LOAD.FILE'), {timeout:false});
+                future.complete(null);
+                return null;
             });
       }
       return future;

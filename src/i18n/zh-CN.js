@@ -93,6 +93,7 @@ module.exports = {
     "DRIVE.CONFIRM.DOWNLOAD.FOLDER.TITLE":"您确定要下载名称为 $NAME 的文件夹吗?",
     "DRIVE.OFFLINE":"您处于离线状态。此操作需要网络连接。",
     "DRIVE.OFFLINE.FOLDER":"此文件夹离线不可用：尚未在此设备上打开过。",
+    "CALENDAR.OFFLINE":"日历离线不可用：尚未在此设备上打开过。",
     "OFFLINE.BANNER":"离线。显示此设备上已保存的内容。",
     "OFFLINE.BACK":"已恢复在线。",
     "DRIVE.UPLOAD.SPACE.ERROR":"文件上传操作超出可用空间\n请释放 $SPACE 并重试",

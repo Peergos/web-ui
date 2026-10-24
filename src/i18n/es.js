@@ -98,6 +98,7 @@ module.exports = {
     "DRIVE.CONFIRM.DOWNLOAD.FOLDER.TITLE": "¿Está seguro de que desea descargar la carpeta: $NAME?",
     "DRIVE.OFFLINE": "No hay conexión. Esto necesita conexión.",
     "DRIVE.OFFLINE.FOLDER": "Esta carpeta no está disponible sin conexión: no se ha abierto en este dispositivo.",
+    "CALENDAR.OFFLINE": "El calendario no está disponible sin conexión: no se ha abierto en este dispositivo.",
     "OFFLINE.BANNER": "Sin conexión. Se muestra lo guardado en este dispositivo.",
     "OFFLINE.BACK": "Conexión restablecida.",
     "DRIVE.UPLOAD.SPACE.ERROR": "La operación de carga de archivos excede el espacio disponible. Libere $SPACE e intente nuevamente",

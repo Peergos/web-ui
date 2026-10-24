@@ -98,6 +98,7 @@ module.exports = {
     "DRIVE.CONFIRM.DOWNLOAD.FOLDER.TITLE":"Sei sicuro di voler scaricare la cartella: $NAME?",
     "DRIVE.OFFLINE":"Sei offline. Questo richiede una connessione.",
     "DRIVE.OFFLINE.FOLDER":"Questa cartella non è disponibile offline: non è stata aperta su questo dispositivo.",
+    "CALENDAR.OFFLINE":"Il calendario non è disponibile offline: non è stato aperto su questo dispositivo.",
     "OFFLINE.BANNER":"Offline. Viene mostrato ciò che è salvato su questo dispositivo.",
     "OFFLINE.BACK":"Di nuovo online.",
     "DRIVE.UPLOAD.SPACE.ERROR":"L'operazione di caricamento file supera lo spazio disponibile\nLibera $SPACE e prova di nuovo",
