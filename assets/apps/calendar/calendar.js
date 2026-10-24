@@ -2114,7 +2114,10 @@ function isCalendarVisible(calendarId) {
 function applyCalendarVisibility() {
     calendar.batchRendering(function () {
         calendar.getEvents().forEach(function (ev) {
-            ev.setProp('display', isCalendarVisible(ev.extendedProps.calendarId) ? 'auto' : 'none');
+            let display = isCalendarVisible(ev.extendedProps.calendarId) ? 'auto' : 'none';
+            // Only what changes: a set is a change to the grid's store even when the value
+            // is the same, and this runs over every event for every bucket a load brings.
+            if (ev.display !== display) ev.setProp('display', display);
         });
     });
     // Putting a calendar away silences it as well as hiding it, so the
@@ -4259,7 +4262,10 @@ function syncTaskEvent(task) {
 }
 
 function syncAllTaskEvents() {
-    tasks.forEach(syncTaskEvent);
+    // One render for all of them, as a bucket of events gets, rather than one per task.
+    calendar.batchRendering(function () {
+        tasks.forEach(syncTaskEvent);
+    });
     applyCalendarVisibility();
 }
 
@@ -4823,6 +4829,9 @@ function addHostEventsFrom(entries) {
                 if (calendar.getEventById(payload.id) || deletedSinceLoad[payload.id]) return;
                 payload.extendedProps.calendarId = entry.calendarName;
                 payload.color = colorForCalendarId(entry.calendarName);
+                // Hidden or shown from the start, so the pass over the whole grid that follows
+                // a bucket finds nothing of this bucket's to change.
+                payload.display = isCalendarVisible(entry.calendarName) ? 'auto' : 'none';
                 let ev = calendar.addEvent(payload);
                 if (!ev) return;
                 eventPlacements[ev.id] = placementOf(ev);
