@@ -487,6 +487,8 @@ const FileDetails = require("../components/FileDetails.vue");
 const Pdf = require("../components/pdf/PDF.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const offlineMixin = require("../mixins/offline/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
@@ -657,7 +659,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin, offlineMixin, UriDecoder],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -1604,14 +1606,7 @@ module.exports = {
                         that.updateSharedFolderSpace();
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
-                        that.$toast.error(throwable.getMessage());
-                        if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
-                            if (path.endsWith("/"))
-                                path = path.substring(0, path.length-1)
-                            let index = path.lastIndexOf("/");
-                            that.changePath(path.substring(0, index));
-                            that.updateCurrentDirectory(selectedFilename, callback);
-                        }
+                        that.folderNotOpened(path, throwable, selectedFilename, callback);
                     });
                 } else {
                     // the path may descend into a zip archive rather than not exist
@@ -1629,8 +1624,28 @@ module.exports = {
                     });
                 }
 		    }).exceptionally(function (throwable) {
-			    console.log(throwable.getMessage());
+			    that.folderNotOpened(path, throwable, selectedFilename, callback);
 		    });
+		},
+
+		/** The folder could not be read. The spinner that was put up for it comes down, the
+		 *  reason is said - offline, that it is not on this device - and the view goes back
+		 *  up to the parent, which was readable, since the path already names the folder. */
+		folderNotOpened(path, throwable, selectedFilename, callback) {
+		    this.showSpinner = false;
+		    let message;
+		    if (this.noteOffline(throwable) || this.$store.state.offline)
+			message = this.translate("DRIVE.OFFLINE.FOLDER");
+		    else
+			message = this.uriDecode(throwable.getMessage());
+		    this.$toast.error(message, {id: 'folder'});
+		    if (!this.isSecretLink && path.startsWith("/" + this.context.username)) {
+			if (path.endsWith("/"))
+			    path = path.substring(0, path.length-1)
+			let index = path.lastIndexOf("/");
+			this.changePath(path.substring(0, index));
+			this.updateCurrentDirectory(selectedFilename, callback);
+		    }
 		},
 
                 buildCapWrapper(cap) {

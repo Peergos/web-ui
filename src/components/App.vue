@@ -1,5 +1,10 @@
 <template>
 	<div class="layout">
+		<!-- the connection, while it is gone and for a moment after it is back -->
+		<div v-if="offline || backOnline" class="pg-offline" :class="{ 'pg-offline--back': ! offline }" role="status" aria-live="polite">
+			{{ translate(offline ? 'OFFLINE.BANNER' : 'OFFLINE.BACK') }}
+		</div>
+
 		<!-- modals -->
 		<component v-if="showModal" :is="currentModal"></component>
 
@@ -130,6 +135,7 @@ const callbacks = require("../mixins/callbacks/index.js");
 const AppIcon = require("AppIcon.vue");
 const Toaster = require("./toast/Toaster.vue");
 const localServer = require("../mixins/localserver/index.js");
+const offlineMixin = require("../mixins/offline/index.js");
 const DialogClose = require("./dialog/DialogClose.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
 const ModalAuthSettings = require("./modal/ModalAuthSettings.vue");
@@ -247,13 +253,18 @@ module.exports = {
                     isDesktopProxy: false,
                     networkRetryTimer: null,
                     networkRetryDelay: NETWORK_RETRY_MIN_MILLIS,
-                    networkAttemptInFlight: false
+                    networkAttemptInFlight: false,
+                    backOnline: false,
+                    backOnlineTimer: null,
+                    offlineProbeTimer: null,
+                    offlineProbeInFlight: false
 		};
 	},
 
 	computed: {
 	    ...Vuex.mapState([
 		"isLoggedIn",
+		"offline",
 		"isDark",
 		"isSidebarOpen",
 		"showModal",
@@ -284,9 +295,21 @@ module.exports = {
             },
 	},
 
-	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n, localServer],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n, localServer, offlineMixin],
 
 	watch: {
+	    offline(isOffline) {
+		clearTimeout(this.offlineProbeTimer);
+		if (! isOffline)
+		    return;
+		const that = this;
+		const again = function () {
+		    that.probeOnline();
+		    if (that.offline)
+			that.offlineProbeTimer = setTimeout(again, 15000);
+		};
+		this.offlineProbeTimer = setTimeout(again, 15000);
+	    },
 	    network(newNetwork) {
 		this.isFirefox =
 		    navigator.userAgent.toLowerCase().indexOf("firefox") > -1;
@@ -321,13 +344,19 @@ module.exports = {
 	this.updateNetwork();
 
 	window.addEventListener("online", this.onOnline);
+	window.addEventListener("offline", this.onOffline);
 	window.addEventListener("hashchange", this.onUrlChange, false);
+	if (navigator.onLine === false)
+	    this.$store.commit("SET_OFFLINE", true);
 	window.addEventListener("resize", this.onWindowResize, { passive: true });
     },
 
     beforeUnmount() {
 	clearTimeout(this.networkRetryTimer);
+	clearTimeout(this.backOnlineTimer);
+	clearTimeout(this.offlineProbeTimer);
 	window.removeEventListener("online", this.onOnline);
+	window.removeEventListener("offline", this.onOffline);
 	window.removeEventListener("hashchange", this.onUrlChange);
 	window.removeEventListener("resize", this.onWindowResize);
 	if (this.coarsePointerQuery)
@@ -602,6 +631,33 @@ module.exports = {
 	onOnline() {
 	    if (this.network == null)
 		this.updateNetwork();
+	    this.probeOnline();
+	},
+
+	onOffline() {
+	    this.$store.commit("SET_OFFLINE", true);
+	},
+
+	/* The server, asked for its id: the one call the local server never answers from a
+	   cache, so it says whether the server can be reached again. Asked when the browser
+	   says the connection is back, and every 15 s while we are offline, because the browser
+	   only knows about its own connection, not about a server that is down. */
+	probeOnline() {
+	    if (this.offlineProbeInFlight)
+		return;
+	    this.offlineProbeInFlight = true;
+	    const that = this;
+	    this.localPost("/api/v0/id", null, "arraybuffer").then(function () {
+		that.offlineProbeInFlight = false;
+		if (! that.offline)
+		    return;
+		that.$store.commit("SET_OFFLINE", false);
+		that.backOnline = true;
+		clearTimeout(that.backOnlineTimer);
+		that.backOnlineTimer = setTimeout(() => { that.backOnline = false; }, 4000);
+	    }).catch(function () {
+		that.offlineProbeInFlight = false;
+	    });
 	},
 
 	checkIfDomainNeedsUnblocking() {
@@ -807,6 +863,24 @@ module.exports = {
 	font-size: var(--text-small);
 	font-weight: var(--bold);
 	color: var(--pg-on-ok);
+}
+
+.pg-offline {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	padding: 8px 16px;
+	text-align: center;
+	font-size: 14px;
+	line-height: 1.4;
+	background: var(--bg-2);
+	color: var(--color);
+	border-bottom: 1px solid var(--border-color);
+}
+.pg-offline--back {
+	background: var(--green, #11695c);
+	color: #fff;
+	border-bottom-color: transparent;
 }
 
 section.login-register {
