@@ -459,13 +459,13 @@ module.exports = {
             this.checkForNewerRelease();
 	    }
 	},
-        // After the next render, which is when the view of the first screen exists.
+        // After the next render, which is when the view of the first screen exists. The drive
+        // keeps a list of what to call when its listing is next refreshed; the other views do not.
         afterFirstListing(then) {
             this.$nextTick(() => {
                 let view = this.$refs.appView;
-                let waits = view != null && view._data != null && Array.isArray(view._data.onUpdateCompletion);
-                if (waits)
-                    view._data.onUpdateCompletion.push(then);
+                if (view != null && Array.isArray(view.onUpdateCompletion))
+                    view.onUpdateCompletion.push(then);
                 else
                     setTimeout(then, 1500);
             });
