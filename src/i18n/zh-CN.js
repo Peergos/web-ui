@@ -2,6 +2,7 @@ module.exports = {
     "APP.LOGIN":"登录",
     "APP.SIGNUP":"注册",
     "LOGIN.BUTTON":"登录",
+    "LOGIN.SIGNING_IN":"正在登录...",
     "LOGIN.USERNAME":"用户名",
     "LOGIN.PASSWORD":"密码",
     "LOGIN.STAY":"保持登录状态",
