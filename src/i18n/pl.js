@@ -99,6 +99,7 @@ module.exports = {
     "DRIVE.OFFLINE": "Jesteś offline. To wymaga połączenia.",
     "DRIVE.OFFLINE.FOLDER": "Ten folder nie jest dostępny offline: nie był otwierany na tym urządzeniu.",
     "CALENDAR.OFFLINE": "Kalendarz nie jest dostępny offline: nie był otwierany na tym urządzeniu.",
+    "APP.OFFLINE": "Ta aplikacja nie jest dostępna offline: nie była otwierana na tym urządzeniu.",
     "OFFLINE.BANNER": "Offline. Wyświetlane jest to, co zapisano na tym urządzeniu.",
     "OFFLINE.BACK": "Znów online.",
     "DRIVE.UPLOAD.SPACE.ERROR": "Operacja przesyłania pliku przekracza dostępne miejsce \nZwolnij $SPACE i spróbuj ponownie",

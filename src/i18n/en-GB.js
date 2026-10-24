@@ -116,6 +116,7 @@ module.exports = {
     "DRIVE.OFFLINE":"You are offline. This needs a connection.",
     "DRIVE.OFFLINE.FOLDER":"This folder is not available offline: it has not been opened on this device.",
     "CALENDAR.OFFLINE":"The calendar is not available offline: it has not been opened on this device.",
+    "APP.OFFLINE":"This app is not available offline: it has not been opened on this device.",
     "OFFLINE.BANNER":"Offline. Showing what is saved on this device.",
     "OFFLINE.BACK":"Back online.",
     "DRIVE.UPLOAD.SPACE.ERROR":"File upload operation exceeds available space\nPlease free up $SPACE and try again",

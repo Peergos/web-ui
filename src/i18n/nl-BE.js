@@ -112,6 +112,7 @@ module.exports = {
     "DRIVE.OFFLINE":"U bent offline. Hiervoor is een verbinding nodig.",
     "DRIVE.OFFLINE.FOLDER":"Deze map is offline niet beschikbaar: ze werd op dit toestel nog niet geopend.",
     "CALENDAR.OFFLINE":"De kalender is offline niet beschikbaar: hij werd op dit toestel nog niet geopend.",
+    "APP.OFFLINE":"Deze app is offline niet beschikbaar: ze werd op dit toestel nog niet geopend.",
     "OFFLINE.BANNER":"Offline. Wat op dit toestel bewaard is, wordt getoond.",
     "OFFLINE.BACK":"Opnieuw online.",
     "DRIVE.UPLOAD.SPACE.ERROR":"File upload operatie overschrijdt de hoeveelheid beschikbare opslag\nMaak alsjeblief nog $SPACE aan ruimte vrij en probeer dan opnieuw",

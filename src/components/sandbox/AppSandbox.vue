@@ -178,9 +178,10 @@ const launcherMixin = require("../../mixins/launcher/index.js");
 const names = require("../../mixins/names/index.js");
 const contactsMixin = require("../../mixins/contacts/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
+const offlineMixin = require("../../mixins/offline/index.js");
 
 module.exports = {
-	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder],
+	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder, offlineMixin],
     components: {
         AddToChat,
         AppInstall,
@@ -418,6 +419,12 @@ module.exports = {
                     that.start();
                 });
             } else {
+                // The app's folder or properties could not be read: said, and the sandbox closed,
+                // rather than an app view that never starts.
+                let failed = function(t) {
+                    that.fatalError(that.noteOffline(t) ? that.translate('APP.OFFLINE') : that.uriDecode(t.getMessage ? t.getMessage() : '' + t));
+                    return null;
+                };
                 this.loadAppProperties().thenApply(props => {
                     if (props == null) {
                         that.fatalError('Application properties not found');
@@ -463,9 +470,9 @@ module.exports = {
                                     that.start();
                                 }
                             });
-                        });
+                        }).exceptionally(failed);
                     }
-                });
+                }).exceptionally(failed);
             }
         }
     },
@@ -587,6 +594,9 @@ module.exports = {
            } else {
                 this.readAppProperties(that.currentAppName, appFolderLocation).thenApply(props => {
                     future.complete(props);
+                }).exceptionally(function(t) {
+                    future.completeExceptionally(t);
+                    return null;
                 });
             }
             return future;

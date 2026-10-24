@@ -99,6 +99,7 @@ module.exports = {
     "DRIVE.OFFLINE": "Vous êtes hors ligne. Ceci nécessite une connexion.",
     "DRIVE.OFFLINE.FOLDER": "Ce dossier n'est pas disponible hors ligne : il n'a pas été ouvert sur cet appareil.",
     "CALENDAR.OFFLINE": "Le calendrier n'est pas disponible hors ligne : il n'a pas été ouvert sur cet appareil.",
+    "APP.OFFLINE": "Cette application n'est pas disponible hors ligne : elle n'a pas été ouverte sur cet appareil.",
     "OFFLINE.BANNER": "Hors ligne. Affichage de ce qui est enregistré sur cet appareil.",
     "OFFLINE.BACK": "De nouveau en ligne.",
     "DRIVE.UPLOAD.SPACE.ERROR": "L'opération de téléchargement de fichier dépasse la capacité disponible espace\nVeuillez libérer $SPACE et réessayer",

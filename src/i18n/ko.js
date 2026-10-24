@@ -101,6 +101,7 @@ module.exports = {
     "DRIVE.OFFLINE":"오프라인입니다. 이 작업에는 연결이 필요합니다.",
     "DRIVE.OFFLINE.FOLDER":"이 폴더는 오프라인에서 사용할 수 없습니다. 이 기기에서 열어 본 적이 없습니다.",
     "CALENDAR.OFFLINE":"캘린더는 오프라인에서 사용할 수 없습니다. 이 기기에서 열어 본 적이 없습니다.",
+    "APP.OFFLINE":"이 앱은 오프라인에서 사용할 수 없습니다. 이 기기에서 열어 본 적이 없습니다.",
     "OFFLINE.BANNER":"오프라인입니다. 이 기기에 저장된 내용을 표시합니다.",
     "OFFLINE.BACK":"다시 온라인입니다.",
     "DRIVE.UPLOAD.SPACE.ERROR":"파일 업로드 용량이 사용 가능한 공간을 초과합니다\n$SPACE을(를) 확보한 후 다시 시도하세요",
