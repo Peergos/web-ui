@@ -175,6 +175,8 @@ const Group = require("../components/Group.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const offlineMixin = require("../mixins/offline/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -274,7 +276,7 @@ module.exports = {
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn, offlineMixin, UriDecoder],
 	watch: {
 		/* the shell loads the shortcuts after the page does, so a view mounted before that
 		   answer arrives - which is what a reload on this view is - read an empty map and
@@ -374,6 +376,11 @@ module.exports = {
             that.launcherApp = launcher;
             that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
             that.loadInstalledApps();
+        }).exceptionally(function(t) {
+            // the launcher's folder could not be read: the spinner comes down and the reason is said
+            that.showSpinner = false;
+            that.$toast.error(that.noteOffline(t) ? that.translate('APP.OFFLINE') : that.uriDecode(t.getMessage ? t.getMessage() : '' + t), {timeout: false});
+            return null;
         });
     },
     methods: {
