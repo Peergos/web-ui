@@ -138,4 +138,8 @@ jobs:
         PEERGOS_TEST_SLOW: ${{ (matrix.os == 'windows-latest' || matrix.os == 'macos-latest' || matrix.engine == 'webkit') && '1' || '0' }}
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
-      run: java -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
+      run: |
+        # ubuntu-latest (26.04) keeps /tmp in RAM, with a quota of a few GB that the suite's
+        # servers, profiles and fixtures exceed; on the runner's disk instead
+        if [ "$RUNNER_OS" = Linux ]; then export TMPDIR="$RUNNER_TEMP"; JAVA_OPTS="-Djava.io.tmpdir=$RUNNER_TEMP"; fi
+        java $JAVA_OPTS -cp ../server/Peergos.jar Suite.java ${{ matrix.engine }}
