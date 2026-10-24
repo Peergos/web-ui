@@ -878,9 +878,9 @@ module.exports = {
 	border-bottom: 1px solid var(--border-color);
 }
 .pg-offline--back {
-	background: var(--green, #11695c);
-	color: #fff;
-	border-bottom-color: transparent;
+	background: var(--pg-tint-ok);
+	color: var(--pg-on-ok);
+	border-bottom-color: var(--pg-on-ok);
 }
 
 section.login-register {
