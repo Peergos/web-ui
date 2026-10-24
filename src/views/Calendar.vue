@@ -109,6 +109,7 @@ module.exports = {
             MAX_SWEEP_MONTHS: 600,
             MAX_SWEEP_EVENTS: 50000,
             MAX_SWEEP_QUEUE: 4,
+            SWEEP_READS_AT_ONCE: 4,
             sweepToken: 0,
             sweepActive: null,
             sweepQueue: [],
@@ -724,7 +725,7 @@ module.exports = {
             return;
         }
         let reason = data.reason == 'export' ? 'export' : 'search';
-        let job = {calendar: calendar, requestId: requestId, reason: reason, targets: [],
+        let job = {calendar: calendar, requestId: requestId, reason: reason, targets: [], dirs: {},
             months: 0, events: 0, failed: 0, capped: false, ended: false};
         let all = this.calendarProperties == null ? [] : this.calendarProperties.calendars;
         if (data.calendarName == null) {
@@ -772,7 +773,7 @@ module.exports = {
         job.token = this.sweepToken;
         this.sweepActive = job;
         this.sweepListCalendar(job, 0, [], function(months) {
-            that.sweepReadMonths(job, months, 0);
+            that.sweepReadMonths(job, months);
         });
     },
 
@@ -910,12 +911,11 @@ module.exports = {
         }
         let cal = job.targets[index];
         let next = function() { that.sweepListCalendar(job, index + 1, months, done); };
-        let path = peergos.client.PathUtils.directoryToPath(cal.directory.split('/'));
-        job.calendar.dirInternal(path, cal.owner).thenApply(function(names) {
+        job.dirs[cal.name] = this.calendarDirectory(cal);
+        this.directoryNames(job.dirs[cal.name]).thenApply(function(names) {
             // Year directories only: `recurring` and `tasks` sit beside them
             // and are already sent in full at startup.
-            let years = names.toArray([]).map(function(n) { return String(n); })
-                .filter(that.isSweepYear)
+            let years = names.filter(that.isSweepYear)
                 .sort(function(a, b) { return parseInt(b, 10) - parseInt(a, 10); });
             // An export is a copy of everything kept, so it reads the folders beside the
             // years too. A search leaves them alone: they are already in the app's memory,
@@ -942,64 +942,82 @@ module.exports = {
         }
         let year = years[index];
         let next = function() { that.sweepListYears(job, cal, years, index + 1, months, done); };
-        let dirStr = cal.directory + "/" + year;
-        let path = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-        job.calendar.dirInternal(path, cal.owner).thenApply(function(names) {
-            names.toArray([]).map(function(n) { return String(n); })
-                .filter(that.isSweepMonth)
+        this.directoryNames(this.descend(job.dirs[cal.name], [year])).thenApply(function(names) {
+            names.filter(that.isSweepMonth)
                 .sort(function(a, b) { return parseInt(b, 10) - parseInt(a, 10); })
                 .forEach(function(month) { months.push({cal: cal, year: year, month: month}); });
             next();
         }).exceptionally(function(t) { job.failed++; next(); });
     },
 
-    sweepReadMonths: function(job, months, index) {
+    // The months read a few at a time, and their batches posted in the order they were
+    // listed: read one after another, every month waited out its own round trips, and a
+    // search over some years of entries took as long as all of them put together.
+    sweepReadMonths: function(job, months) {
         let that = this;
-        if (job.token !== this.sweepToken) {
-            this.endSweep(job, 'cancelled');
-            return;
-        }
-        if (index >= months.length) {
-            this.endSweep(job, null);
-            return;
-        }
-        if (job.months >= this.MAX_SWEEP_MONTHS || job.events >= this.MAX_SWEEP_EVENTS) {
-            job.capped = true;
-            this.endSweep(job, null);
-            return;
-        }
-        let entry = months[index];
-        let dirStr = entry.dir != null ? entry.cal.directory + "/" + entry.dir
-            : entry.cal.directory + "/" + entry.year + "/" + entry.month;
-        let path = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-        let next = function() { that.sweepReadMonths(job, months, index + 1); };
-        job.calendar.dirInternal(path, entry.cal.owner).thenApply(function(filenames) {
-            that.getEventsForMonth(job.calendar, entry.cal.name, entry.cal.owner, dirStr, filenames.toArray([]))
-                .thenApply(function(items) {
-                    if (job.token !== that.sweepToken) {
-                        that.endSweep(job, 'cancelled');
-                        return;
-                    }
-                    job.months++;
-                    job.events += items.length;
-                    // Sent even when empty: an empty month is how the app
-                    // learns that entries another device deleted are gone.
-                    let batch = {type: 'sweepBatch', requestId: job.requestId,
-                        calendarName: entry.cal.name, items: items};
-                    // The folders beside the years belong to no month, and saying they did
-                    // would have the app mark a month read that was never looked at.
-                    if (entry.dir == null) {
-                        batch.yearMonth = parseInt(entry.year, 10) * 12 + (parseInt(entry.month, 10) - 1);
-                    }
-                    that.postMessage(batch);
-                    next();
-                }).exceptionally(function(t) { job.failed++; next(); });
-        }).exceptionally(function(t) { job.failed++; next(); });
+        let next = 0, reading = 0, posted = 0;
+        let read = {};
+        let post = function() {
+            while (posted < months.length && read[posted] !== undefined) {
+                let entry = months[posted];
+                let items = read[posted];
+                delete read[posted];
+                posted++;
+                if (items == null) {
+                    continue;
+                }
+                job.months++;
+                job.events += items.length;
+                // Sent even when empty: an empty month is how the app
+                // learns that entries another device deleted are gone.
+                let batch = {type: 'sweepBatch', requestId: job.requestId,
+                    calendarName: entry.cal.name, items: items};
+                // The folders beside the years belong to no month, and saying they did
+                // would have the app mark a month read that was never looked at.
+                if (entry.dir == null) {
+                    batch.yearMonth = parseInt(entry.year, 10) * 12 + (parseInt(entry.month, 10) - 1);
+                }
+                that.postMessage(batch);
+            }
+        };
+        let more = function() {
+            if (job.token !== that.sweepToken) {
+                that.endSweep(job, 'cancelled');
+                return;
+            }
+            if (posted >= months.length) {
+                that.endSweep(job, null);
+                return;
+            }
+            if (job.months >= that.MAX_SWEEP_MONTHS || job.events >= that.MAX_SWEEP_EVENTS) {
+                job.capped = true;
+                that.endSweep(job, null);
+                return;
+            }
+            while (reading < that.SWEEP_READS_AT_ONCE && next < months.length) {
+                let index = next++;
+                let entry = months[index];
+                let parts = entry.dir != null ? [entry.dir] : [entry.year, entry.month];
+                reading++;
+                let settled = function(items) {
+                    reading--;
+                    read[index] = items;
+                    post();
+                    more();
+                    return null;
+                };
+                that.readEntriesIn(entry.cal.name, that.descend(job.dirs[entry.cal.name], parts))
+                    .thenApply(settled)
+                    // a month that could not be read is counted and passed over
+                    .exceptionally(function(t) { job.failed++; return settled(null); });
+            }
+        };
+        more();
     },
 
     loadAdditional: function(calendar, year, month) {
         let that = this;
-        this.getCalendarEventsForMonth(calendar, year, month).thenApply(function(events) {
+        this.getCalendarEventsForMonth(year, month).thenApply(function(events) {
             that.postMonthEvents(year, month, events, false);
         });
     },
@@ -1106,25 +1124,25 @@ module.exports = {
                 onReset();
             }
             months.forEach(function(each) {
-                that.getCalendarEventsForMonth(calendar, each.year, each.month).thenApply(function(events) {
+                that.getCalendarEventsForMonth(each.year, each.month).thenApply(function(events) {
                     if (token === that.loadToken)
                         that.postMonthEvents(each.year, each.month, events, true);
                 });
             });
-            that.getRecurringCalendarEvents(calendar).thenApply(function(recurringEvents) {
+            that.readFromEachCalendar(['recurring']).thenApply(function(recurringEvents) {
                 // Recurring entries are stored outside the months and carry
                 // no yearMonth: they are not a month the grid can mark read.
                 if (token === that.loadToken)
                     that.postMessage({type: 'loadAdditional', currentMonth: recurringEvents, loadBucket: true});
             });
-            that.getTaskItems(calendar).thenApply(function(taskItems) {
+            that.readFromEachCalendar(['tasks']).thenApply(function(taskItems) {
                 if (token === that.loadToken)
                     that.postMessage({type: 'loadTasks', tasks: taskItems, loadBucket: true});
             });
             // Drawn from the snapshot alone, with nothing of the owner's read on the way to
             // the first paint: an entry someone shared has to be there whether or not their
             // data can be reached right now. Catching up with them happens after.
-            that.getSharedEntries(calendar).thenApply(function(sharedEntries) {
+            that.readFromEachCalendar([that.SHARED_DIR_NAME]).thenApply(function(sharedEntries) {
                 if (token !== that.loadToken)
                     return null;
                 that.postMessage({type: 'loadShared', shared: sharedEntries, loadBucket: true});
@@ -2166,12 +2184,12 @@ module.exports = {
         this.showConfirm = true;
     },
 
-    // Every bucket - a month, the recurring folder, the tasks folder - is one
-    // directory per calendar, read the same way; only the name differs. A
-    // calendar whose listing or read fails (a share revoked while we are
-    // open) settles as empty, because a future that never completes strands
-    // the load behind a spinner nothing clears.
-    readFromEachCalendar: function(calendar, subdirectoryOf) {
+    // Every bucket - a month's [year, month], the recurring folder, the tasks folder - is
+    // one directory under each calendar's, read the same way; only `parts` differs. A
+    // calendar whose listing or read fails (a share revoked while we are open) settles as
+    // empty, because a future that never completes strands the load behind a spinner
+    // nothing clears.
+    readFromEachCalendar: function(parts) {
         let that = this;
         let accumulator = [];
         let future = peergos.shared.util.Futures.incomplete();
@@ -2189,29 +2207,107 @@ module.exports = {
         this.calendarProperties.calendars.forEach(currentCalendar => {
             // One count per calendar, whichever way it ends.
             let settleOnce = that.onceOnly(settle);
-            let dirStr = subdirectoryOf(currentCalendar);
-            let directoryPath = peergos.client.PathUtils.directoryToPath(dirStr.split('/'));
-            calendar.dirInternal(directoryPath, currentCalendar.owner).thenApply(filenames => {
-                that.getEventsForMonth(calendar, currentCalendar.name, currentCalendar.owner, dirStr, filenames.toArray([]))
-                    .thenApply(res => settleOnce(res))
-                    .exceptionally(function(t) { settleOnce([]); });
-            }).exceptionally(function(t) { settleOnce([]); });
+            that.readEntriesIn(currentCalendar.name, that.descend(that.calendarDirectory(currentCalendar), parts))
+                .thenApply(res => settleOnce(res))
+                .exceptionally(function(t) { settleOnce([]); });
         });
         return future;
     },
 
-    getCalendarEventsForMonth: function(calendar, year, month) {
-        return this.readFromEachCalendar(calendar, c => c.directory + "/" + year + "/" + month);
+    // The directory a calendar keeps its entries in, as the store holds it now.
+    calendarDirectory: function(cal) {
+        let root = cal.owner == null ? this.context.username : cal.owner;
+        return this.context.getByPath(root + "/" + this.APPS_DIR_NAME + "/" + this.CALENDAR_DIR_NAME
+            + "/" + this.DATA_DIR_NAME + "/" + cal.directory);
+    },
+    // The directory `parts` levels under one already resolved. Absent at any level is absent.
+    descend: function(directory, parts) {
+        let that = this;
+        return parts.reduce(function(future, name) {
+            return future.thenCompose(function(opt) {
+                if (opt == null || ! opt.isPresent() || ! opt.get().isDirectory()) {
+                    return peergos.shared.util.Futures.of(java.util.Optional.empty());
+                }
+                return opt.get().getChild(name, that.context.crypto.hasher, that.context.network);
+            });
+        }, directory);
+    },
+    // The names of a directory's own directories: the years of a calendar, the months of a year.
+    directoryNames: function(directory) {
+        let that = this;
+        return directory.thenCompose(function(opt) {
+            if (opt == null || ! opt.isPresent()) {
+                return peergos.shared.util.Futures.of([]);
+            }
+            return opt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                return children.toArray().filter(function(f) { return f.isDirectory(); }).map(function(f) { return String(f.getName()); });
+            });
+        });
     },
 
-    getRecurringCalendarEvents: function(calendar) {
-        return this.readFromEachCalendar(calendar, c => c.directory + "/recurring");
+    // Every entry in one directory, read in one pass from its listing: the entries are
+    // listed in one batch, and each file's bytes taken from the listing it came in - an
+    // entry's file is small enough to be stored with its metadata, so nothing more is
+    // fetched for it. Reading each file by its path instead resolved the whole path again
+    // for every one of them, decrypting this directory's listing each time, which put a few
+    // hundred entries at seconds of the main thread. A directory that is not there is
+    // empty; one that cannot be listed is an error.
+    readEntriesIn: function(calendarName, directory) {
+        let that = this;
+        let future = peergos.shared.util.Futures.incomplete();
+        let failed = function(t) {
+            future.completeExceptionally(t);
+            return null;
+        };
+        directory.thenApply(function(dirOpt) {
+            if (dirOpt == null || ! dirOpt.isPresent()) {
+                future.complete([]);
+                return null;
+            }
+            dirOpt.get().getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                that.readEntryFiles(calendarName, children.toArray().filter(function(f) { return ! f.isDirectory(); }), future);
+                return null;
+            }).exceptionally(failed);
+            return null;
+        }).exceptionally(failed);
+        return future;
+    },
+    readEntryFiles: function(calendarName, files, future) {
+        let that = this;
+        let accumulator = [];
+        if (files.length == 0) {
+            future.complete(accumulator);
+            return;
+        }
+        // Counted as each read settles, not as each one succeeds: another
+        // device can delete a file between this listing and this read, and
+        // waiting for a read that will never arrive strands the whole month
+        // - on the load path that means a spinner nothing ever clears.
+        let settled = 0;
+        let settle = function() {
+            settled++;
+            if (settled == files.length) {
+                future.complete(accumulator);
+            }
+        };
+        files.forEach(function(file) {
+            // One count per file, whichever way it ends: a throw after the
+            // read succeeded reaches the handler below as well, and counting
+            // that file twice would complete the month an entry short.
+            let settleOnce = that.onceOnly(settle);
+            that.readFileText(file).thenApply(function(text) {
+                accumulator.push({calendarName: calendarName, data: text});
+                settleOnce();
+                return null;
+            }).exceptionally(function(t) {
+                settleOnce();
+                return null;
+            });
+        });
     },
 
-    // Read whole rather than by month: an open task matters whichever month is
-    // on screen, and an undated one has no month to be found under.
-    getTaskItems: function(calendar) {
-        return this.readFromEachCalendar(calendar, c => c.directory + "/tasks");
+    getCalendarEventsForMonth: function(year, month) {
+        return this.readFromEachCalendar([String(year), String(month)]);
     },
 
     // --- entries someone else owns ----------------------------------------------------
@@ -2683,11 +2779,6 @@ module.exports = {
             detached: detached === true, data: data});
     },
 
-    getSharedEntries: function(calendar) {
-        let that = this;
-        return this.readFromEachCalendar(calendar, c => c.directory + "/" + that.SHARED_DIR_NAME);
-    },
-
     updateCalendarList: function(calendar) {
         let that = this;
         let modified = [false];
@@ -2822,38 +2913,6 @@ module.exports = {
         return [{year: year, month: month},
                 month == 12 ? {year: year + 1, month: 1} : {year: year, month: month + 1},
                 month == 1 ? {year: year - 1, month: 12} : {year: year, month: month - 1}];
-    },
-    getEventsForMonth: function(calendar, calendarName, owner, directory, filenames) {
-        let that = this;
-        let accumulator = [];
-        let future = peergos.shared.util.Futures.incomplete();
-        if (filenames.length == 0) {
-            future.complete(accumulator);
-            return future;
-        }
-        // Counted as each read settles, not as each one succeeds: another
-        // device can delete a file between this listing and this read, and
-        // waiting for a read that will never arrive strands the whole month
-        // - on the load path that means a spinner nothing ever clears.
-        let settled = 0;
-        let settle = function() {
-            settled++;
-            if (settled == filenames.length) {
-                future.complete(accumulator);
-            }
-        };
-        filenames.forEach(eventFilename => {
-            // One count per file, whichever way it ends: a throw after the
-            // read succeeded reaches the handler below as well, and counting
-            // that file twice would complete the month an entry short.
-            let settleOnce = that.onceOnly(settle);
-            let filePath = peergos.client.PathUtils.toPath(directory.split('/'), eventFilename);
-            calendar.readInternal(filePath, owner).thenApply(data => {
-                accumulator.push({calendarName: calendarName, data: new TextDecoder().decode(data)});
-                settleOnce();
-            }).exceptionally(function(t) { settleOnce(); });
-        });
-        return future;
     },
     // --- Sharing driven by the calendar app's own modal ---
     // Read/write access and secret links. The sharing state is keyed by a
