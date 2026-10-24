@@ -2,6 +2,7 @@ module.exports = {
     "APP.LOGIN":"로그인",
     "APP.SIGNUP":"회원가입",
     "LOGIN.BUTTON":"로그인",
+    "LOGIN.SIGNING_IN":"로그인 중...",
     "LOGIN.USERNAME":"사용자 이름",
     "LOGIN.PASSWORD":"비밀번호",
     "LOGIN.STAY":"로그인 상태 유지",
