@@ -556,6 +556,12 @@ module.exports = {
             const that = this;
             const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "AddressBook", "Email", "Launcher", "SharedWith", "Sync", "Mount"]
             const inDrive = this.currentView == "Drive";
+            // Opened once the drive has listed the folder; before sign-in there is no drive yet.
+            const whenListed = function (then) {
+                const view = that.$refs.appView;
+                if (view != null && Array.isArray(view.onUpdateCompletion))
+                    view.onUpdateCompletion.push(then);
+            };
 	    if (app === "Drive") {
                 if (inDrive) {
                     this.$refs.appView.closeApps()
@@ -567,18 +573,12 @@ module.exports = {
                 // Drive sub-apps
                 if (inDrive) {
                     if (differentPath) {
-                        // TODO: find a cleaner way to do this
-                        this.$refs.appView._data.onUpdateCompletion.push(() => {
-		            that.$refs.appView.openInApp(args, app);
-		        });
+                        whenListed(() => that.$refs.appView.openInApp(args, app));
                     } else
                         that.$refs.appView.openInApp(args, app);
                 } else {
 		    this.$store.commit("CURRENT_VIEW", "Drive");
-                    // TODO: find a cleaner way to do this
-                    this.$refs.appView._data.onUpdateCompletion.push(() => {
-		        that.$refs.appView.openInApp(args, app);
-		    });
+                    whenListed(() => that.$refs.appView.openInApp(args, app));
                 }
 	    }
 	},
