@@ -73,7 +73,9 @@ jobs:
       run: |
         sudo apt-get update
         # MiniBrowser has no headless mode, so it needs a virtual display
-        sudo apt-get install -y webkit2gtk-driver xvfb
+        sudo apt-get install -y xvfb
+        # The driver package is webkitgtk-webdriver from Ubuntu 26.04 on, webkit2gtk-driver before
+        sudo apt-get install -y webkitgtk-webdriver || sudo apt-get install -y webkit2gtk-driver
 
     - name: Install brave (linux)
       if: runner.os == 'Linux' && matrix.engine == 'brave'
