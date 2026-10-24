@@ -1619,9 +1619,7 @@ module.exports = {
         shared.forEach(function(c) {
             // One count per calendar, whichever way the probe ends.
             let settleOnce = that.onceOnly(settle);
-            let path = c.owner + "/" + that.APPS_DIR_NAME + "/" + that.CALENDAR_DIR_NAME
-                + "/" + that.DATA_DIR_NAME + "/" + c.directory;
-            that.context.getByPath(path).thenApply(function(dirOpt) {
+            that.calendarDirectory(c).thenApply(function(dirOpt) {
                 c.writable = dirOpt.isPresent() && dirOpt.get().isWritable();
                 settleOnce();
             }).exceptionally(function(t) {
