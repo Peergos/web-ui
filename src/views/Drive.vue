@@ -1628,15 +1628,17 @@ module.exports = {
 		    });
 		},
 
-		/** The folder could not be read. The spinner that was put up for it comes down, the
-		 *  reason is said - offline, that it is not on this device - and the view goes back
-		 *  up to the parent, which was readable, since the path already names the folder. */
+		/** The folder, or its listing, could not be read. The spinner that was put up for it
+		 *  comes down, the reason is said - offline, that it is not on this device - and the
+		 *  view goes back up to the parent, which was readable, since the path already names
+		 *  the folder. */
 		folderNotOpened(path, throwable, selectedFilename, callback) {
 		    this.showSpinner = false;
 		    let message = this.noteOffline(throwable) || this.$store.state.offline ?
 			this.translate("DRIVE.OFFLINE.FOLDER") : this.uriDecode(throwable.getMessage());
 		    this.$toast.error(message, {id: 'folder'});
-		    if (!this.isSecretLink && this.context != null && path.startsWith("/" + this.context.username)) {
+		    // up a level, unless this was the root itself, which has nowhere to go
+		    if (!this.isSecretLink && this.context != null && path.startsWith("/" + this.context.username + "/")) {
 			if (path.endsWith("/"))
 			    path = path.substring(0, path.length-1)
 			let index = path.lastIndexOf("/");
@@ -1773,9 +1775,11 @@ module.exports = {
                                             callback();
                                        }
 			    }).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			    });
-                        });
+                        }).exceptionally(function (throwable) {
+			    that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
+			});
 			
                         current.getChildrenCapabilities(that.context.crypto.hasher, that.context.network).thenApply(function(childCaps) {
                             that.showSpinner = false;
@@ -1830,10 +1834,10 @@ module.exports = {
                                            
                                 }}, that.context.crypto.hasher, that.context.network);
                             }).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			    });
 			}).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			});
 		},
 
