@@ -20,7 +20,7 @@
 			{{ translate(networkRetrying ? 'LOGIN.SERVER.RETRYING' : 'LOGIN.SERVER.CONFIGURE_FIRST') }}
 		</p>
 		<button type="button" class="pg-btn pg-btn--primary" :disabled="isLoggingIn || network == null" @click="login()">
-			{{ translate('LOGIN.BUTTON') }}
+			{{ translate(isLoggingIn ? 'LOGIN.SIGNING_IN' : 'LOGIN.BUTTON') }}
 		</button>
 	</div>
 </template>
@@ -140,6 +140,14 @@ module.exports = {
 			const creationStart = Date.now();
 			const that = this;
             this.isLoggingIn = true;
+            // Said at once: deriving the keys from the password is the first thing signing in
+            // does, and it is seconds of nothing on a phone before the first word from the
+            // library. The frame is given time to show it before that work starts.
+            this.$toast.info(this.translate('LOGIN.SIGNING_IN'), {id: 'login', timeout: false});
+            setTimeout(() => this.signIn(creationStart), 50);
+		},
+		signIn(creationStart) {
+			const that = this;
 
             let handleMfa = function(mfaReq) {
                     let future = peergos.shared.util.Futures.incomplete();
