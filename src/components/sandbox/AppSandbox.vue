@@ -20,6 +20,14 @@
             v-on:hide-profile-view="showProfileViewForm = false"
             :profile="profile">
         </ViewProfile>
+        <Fingerprint
+            v-if="showChatFingerprint"
+            v-on:hide-fingerprint="chatFingerprintHidden"
+            :fingerprint="chatFingerprint"
+            :friendname="chatFingerprintFriend"
+            :initialIsVerified="chatFingerprintVerified"
+            :context="context">
+        </Fingerprint>
         <AddToChat
                 v-if="showInviteFriends"
                 v-on:hide-add-to-chat="inviteFriendsHidden"
@@ -166,6 +174,7 @@ const ProgressBar = require("../drive/ProgressBar.vue");
 const SaveConflict = require("../prompt/SaveConflict.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const ViewProfile = require("../profile/ViewProfile.vue");
+const Fingerprint = require("../fingerprint/Fingerprint.vue");
 
 
 const mixins = require("../../mixins/mixins.js");
@@ -199,11 +208,17 @@ module.exports = {
         SaveConflict,
         Spinner,
         ViewProfile,
+        Fingerprint,
     },
     data: function() {
         return {
             showSpinner: false,
             spinnerMessage: '',
+            showChatFingerprint: false,
+            chatFingerprint: null,
+            chatFingerprintFriend: '',
+            chatFingerprintVerified: false,
+            chatFingerprintResponse: null,
             maxBlockSize: 1024 * 1024 * 5,
             sandboxedApp: null,
             isIframeInitialised: false,
@@ -1715,6 +1730,17 @@ module.exports = {
                 return false;
             }
         },
+        chatFingerprintHidden: function(isVerified) {
+            this.showChatFingerprint = false;
+            if (this.socialData.annotations != null && this.chatFingerprint != null) {
+                this.socialData.annotations[this.chatFingerprintFriend] = new peergos.shared.user.FriendAnnotation(this.chatFingerprintFriend, isVerified, this.chatFingerprint.left);
+            }
+            if (this.chatFingerprintResponse != null) {
+                let data = new TextEncoder().encode(JSON.stringify({member: this.chatFingerprintFriend, verified: isVerified === true}));
+                this.buildResponse(this.chatFingerprintResponse, data, this.GET_SUCCESS);
+                this.chatFingerprintResponse = null;
+            }
+        },
         filterChats: function(allChats) {
             let that = this;
             let filteredChats = [];
@@ -3003,13 +3029,36 @@ module.exports = {
                         console.log(throwable);
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     });
+                } else if (path.endsWith("/verify") || path.endsWith("/verify/")) {
+                    // compare safety numbers with a member of the chat, who must be a friend; answers once the dialog is closed
+                    let verifyChatId = path.substring(0, path.indexOf("/verify"));
+                    let member = params.get("member");
+                    this.messenger.getChat(verifyChatId).thenApply(function(controller) {
+                        let members = controller.getMemberNames().toArray([]);
+                        if (member == null || member == that.context.username || members.indexOf(member) == -1
+                                || that.friendnames.indexOf(member) == -1) {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            return;
+                        }
+                        that.context.generateFingerPrint(member).thenApply(function(fingerprint) {
+                            let annotation = (that.socialData.annotations || {})[member];
+                            that.chatFingerprint = fingerprint;
+                            that.chatFingerprintFriend = member;
+                            that.chatFingerprintVerified = annotation != null && annotation.isVerified();
+                            that.chatFingerprintResponse = headerFunc;
+                            that.showChatFingerprint = true;
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
                 } else if (path.endsWith("/members") || path.endsWith("/members/")) {
                     // whether we have verified the keys of each other member, so the app can warn about ones we haven't
                     let membersChatId = path.substring(0, path.indexOf("/members"));
                     this.messenger.getChat(membersChatId).thenApply(function(controller) {
                         let others = controller.getMemberNames().toArray([]).filter(name => name != that.context.username);
                         let annotations = that.socialData.annotations || {};
-                        let res = others.map(name => ({username: name, verification: "unverified"}));
+                        let res = others.map(name => ({username: name, verification: "unverified", friend: that.friendnames.indexOf(name) > -1}));
                         let pending = others.length;
                         let reply = () => that.buildResponse(headerFunc, new TextEncoder().encode(JSON.stringify(res)), that.GET_SUCCESS);
                         if (pending == 0) {
