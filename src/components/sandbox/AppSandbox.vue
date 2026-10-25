@@ -3034,11 +3034,22 @@ module.exports = {
                     // compare safety numbers with a member of the chat, who must be a friend; answers once the dialog is closed
                     let verifyChatId = path.substring(0, path.indexOf("/verify"));
                     let member = params.get("member");
+                    if (that.showChatFingerprint || that.chatFingerprintResponse != null) {
+                        // one dialog at a time: an app can't stack them up over the drive
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        return;
+                    }
+                    // held from now on, as working out the fingerprint takes a while
+                    that.chatFingerprintResponse = headerFunc;
+                    let refuse = () => {
+                        that.chatFingerprintResponse = null;
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    };
                     this.messenger.getChat(verifyChatId).thenApply(function(controller) {
                         let members = controller.getMemberNames().toArray([]);
                         if (member == null || member == that.context.username || members.indexOf(member) == -1
                                 || that.friendnames.indexOf(member) == -1) {
-                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                            refuse();
                             return;
                         }
                         that.context.generateFingerPrint(member).thenApply(function(fingerprint) {
@@ -3046,12 +3057,14 @@ module.exports = {
                             that.chatFingerprint = fingerprint;
                             that.chatFingerprintFriend = member;
                             that.chatFingerprintVerified = annotation != null && annotation.isVerified();
-                            that.chatFingerprintResponse = headerFunc;
                             that.showChatFingerprint = true;
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            refuse();
                         });
                     }).exceptionally(function(throwable) {
                         console.log(throwable);
-                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        refuse();
                     });
                 } else if (path.endsWith("/members") || path.endsWith("/members/")) {
                     // whether we have verified the keys of each other member, so the app can warn about ones we haven't
