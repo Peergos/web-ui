@@ -2,6 +2,7 @@ module.exports = {
     "APP.LOGIN":"Logowanie",
     "APP.SIGNUP":"Zarejestruj się",
     "LOGIN.BUTTON":"Zaloguj się",
+    "LOGIN.SIGNING_IN":"Logowanie...",
     "LOGIN.USERNAME":"nazwa użytkownika",
     "LOGIN.PASSWORD":"hasło",
     "LOGIN.STAY":"Pozostań zalogowany/a",

@@ -2,6 +2,7 @@ module.exports = {
     "APP.LOGIN":"Σύνδεση",
     "APP.SIGNUP":"Εγγραφή",
     "LOGIN.BUTTON":"Σύνδεση",
+    "LOGIN.SIGNING_IN":"Σύνδεση...",
     "LOGIN.USERNAME":"όνομα χρήστη",
     "LOGIN.PASSWORD":"κωδικός πρόσβασης",
     "LOGIN.STAY":"Παραμονή σε σύνδεση",

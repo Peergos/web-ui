@@ -135,6 +135,7 @@ const callbacks = require("../mixins/callbacks/index.js");
 const AppIcon = require("AppIcon.vue");
 const Toaster = require("./toast/Toaster.vue");
 const localServer = require("../mixins/localserver/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 const offlineMixin = require("../mixins/offline/index.js");
 const DialogClose = require("./dialog/DialogClose.vue");
 const AppNavigation = require("./navigation/AppNavigation.vue");
@@ -295,7 +296,7 @@ module.exports = {
             },
 	},
 
-	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n, localServer, offlineMixin],
+	mixins: [routerMixins, sandboxAppMixins, launcherMixin, i18n, localServer, UriDecoder, offlineMixin],
 
 	watch: {
 	    offline(isOffline) {
@@ -407,6 +408,10 @@ module.exports = {
             }
             if (message == null)
                 message = "";
+            try {
+                // the server's message is url encoded, a + for each space
+                message = this.uriDecode(message);
+            } catch (e) {}
             if (this.isCertificateError(message))
                 return this.translate("LOGIN.SERVER.CERTIFICATE");
             return this.translate("LOGIN.SERVER.NETWORK") + (message.length > 0 ? " " + message : "");
@@ -457,12 +462,20 @@ module.exports = {
 		// App.vue from a secret link
 	    } else {
             this.updateMirrorBatId();
-            // none of these need the launcher, so a launcher that fails to come up at sign-in
-            // leaves the account its usage, plan, admin rights and apps all the same
-            this.updateUsage();
-            this.updateQuota();
-            this.updatePayment();
-            this.updateAdmin();
+            // Nothing on the first screen needs these, and each is a round trip to the server,
+            // so they wait for the drive's first listing (or a moment, if the first view is
+            // something else): fired beside it, they took the server's handlers while the
+            // listing's reads queued. None of them needs the launcher, so a launcher that fails
+            // to come up at sign-in leaves the account its usage, plan, admin rights and apps.
+            this.afterFirstListing(() => {
+                // unless the user has signed out in the meantime
+                if (this.context == null)
+                    return;
+                this.updateUsage();
+                this.updateQuota();
+                this.updatePayment();
+                this.updateAdmin();
+            });
             this.initSandboxedApps();
             peergos.shared.user.App.init(this.context, "launcher").thenApply(launcher => {
                 that.loadShortcutsFile(launcher).thenApply(shortcutsMap => {
@@ -475,6 +488,17 @@ module.exports = {
             this.checkForNewerRelease();
 	    }
 	},
+        // After the next render, which is when the view of the first screen exists. The drive
+        // keeps a list of what to call when its listing is next refreshed; the other views do not.
+        afterFirstListing(then) {
+            this.$nextTick(() => {
+                let view = this.$refs.appView;
+                if (view != null && Array.isArray(view.onUpdateCompletion))
+                    view.onUpdateCompletion.push(then);
+                else
+                    setTimeout(then, 1500);
+            });
+        },
         checkForNewerRelease() {
             const isAndroid = navigator.userAgent.toLowerCase().indexOf("android") > -1;
             if (this.isLocalhost && isAndroid)
@@ -561,6 +585,12 @@ module.exports = {
             const that = this;
             const sidebarApps = ["Drive", "NewsFeed", "Social", "Calendar", "AddressBook", "Email", "Launcher", "SharedWith", "Sync", "Mount"]
             const inDrive = this.currentView == "Drive";
+            // Opened once the drive has listed the folder; before sign-in there is no drive yet.
+            const whenListed = function (then) {
+                const view = that.$refs.appView;
+                if (view != null && Array.isArray(view.onUpdateCompletion))
+                    view.onUpdateCompletion.push(then);
+            };
 	    if (app === "Drive") {
                 if (inDrive) {
                     this.$refs.appView.closeApps()
@@ -572,18 +602,12 @@ module.exports = {
                 // Drive sub-apps
                 if (inDrive) {
                     if (differentPath) {
-                        // TODO: find a cleaner way to do this
-                        this.$refs.appView._data.onUpdateCompletion.push(() => {
-		            that.$refs.appView.openInApp(args, app);
-		        });
+                        whenListed(() => that.$refs.appView.openInApp(args, app));
                     } else
                         that.$refs.appView.openInApp(args, app);
                 } else {
 		    this.$store.commit("CURRENT_VIEW", "Drive");
-                    // TODO: find a cleaner way to do this
-                    this.$refs.appView._data.onUpdateCompletion.push(() => {
-		        that.$refs.appView.openInApp(args, app);
-		    });
+                    whenListed(() => that.$refs.appView.openInApp(args, app));
                 }
 	    }
 	},
