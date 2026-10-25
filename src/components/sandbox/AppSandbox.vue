@@ -3003,6 +3003,49 @@ module.exports = {
                         console.log(throwable);
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     });
+                } else if (path.endsWith("/members") || path.endsWith("/members/")) {
+                    // whether we have verified the keys of each other member, so the app can warn about ones we haven't
+                    let membersChatId = path.substring(0, path.indexOf("/members"));
+                    this.messenger.getChat(membersChatId).thenApply(function(controller) {
+                        let others = controller.getMemberNames().toArray([]).filter(name => name != that.context.username);
+                        let annotations = that.socialData.annotations || {};
+                        let res = others.map(name => ({username: name, verification: "unverified"}));
+                        let pending = others.length;
+                        let reply = () => that.buildResponse(headerFunc, new TextEncoder().encode(JSON.stringify(res)), that.GET_SUCCESS);
+                        if (pending == 0) {
+                            reply();
+                        }
+                        others.forEach((name, i) => {
+                            that.context.verificationStatus(name, annotations[name] != null ? annotations[name] : null).thenApply(status => {
+                                res[i].verification = status;
+                                if (--pending == 0) reply();
+                            }).exceptionally(function(throwable) {
+                                console.log(throwable);
+                                if (--pending == 0) reply();
+                            });
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
+                } else if (path.endsWith("/signals") || path.endsWith("/signals/")) {
+                    // typing, presence and read receipts of the other members, waiting up to "wait" ms for one
+                    let signalsChatId = path.substring(0, path.indexOf("/signals"));
+                    let since = params.get("since") != null && /^[0-9]+$/.test(params.get("since")) ? params.get("since") : "0";
+                    let wait = Math.min(this.parsePositiveInt(params.get("wait") != null ? params.get("wait") : "0"), 25000);
+                    this.messenger.getChat(signalsChatId).thenApply(function(controller) {
+                        that.messenger.pollSignals(controller, since, wait).thenApply(json => {
+                            let res = JSON.parse(json);
+                            res.enabled = that.messenger.hasSignals(controller);
+                            that.buildResponse(headerFunc, new TextEncoder().encode(JSON.stringify(res)), that.GET_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
                 } else if (startIndex != null){
                     let index = this.parsePositiveInt(startIndex);
                     this.messenger.getChat(chatId).thenApply(function(controller) {
@@ -3072,7 +3115,7 @@ module.exports = {
                                             let message = { messageRef: messagePairs[j].messageRef.toString(), author: author, timestamp: timestamp, type: type,
                                                   removeUsername: removeUsername, inviteUsername: inviteUsername, joinUsername: joinUsername,
                                                   editPriorVersion: editPriorVersion, deleteTarget: deleteTarget, replyToParent: replyToParent,
-                                                  text: text, envelope: serialisedEnvelope,
+                                                  text: text, envelope: serialisedEnvelope, utc: messageEnvelope.creationTime.toString(),
                                                   groupState: groupState, attachments : attachments
                                             };
                                             messages.push(message);
@@ -3355,6 +3398,29 @@ module.exports = {
                     let messageRef = new peergos.shared.messaging.MessageRef(contentHash);
                     let deleteMessage = new peergos.shared.messaging.messages.DeleteMessage(messageRef);
                     that.sendMessageAction(headerFunc, chatId, deleteMessage);
+                } else if (json.enableSignals != null) {
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.enableSignals(controller).thenApply(updated => {
+                            that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
+                } else if (json.signal != null) {
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.sendSignal(controller, String(json.signal.type), String(json.signal.value != null ? json.signal.value : "")).thenApply(sent => {
+                            that.buildResponse(headerFunc, null, sent ? that.CREATE_SUCCESS : that.ACTION_FAILED);
+                        }).exceptionally(function(throwable) {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
                 } else {
                     that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                 }
