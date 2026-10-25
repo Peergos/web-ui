@@ -96,6 +96,9 @@
 						<span v-if="isVerified(username)" class="pg-pill pg-tone--ok social-person__verified">
 							<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("VERIFY.VERIFIED") }}
 						</span>
+						<span v-if="verification[username] == 'changed'" class="pg-pill pg-tone--error social-person__verified" :title="translate('VERIFY.CHANGED.HELP')">
+							<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("VERIFY.CHANGED") }}
+						</span>
 					</span>
 					<span class="social-person__actions">
 						<button type="button" class="pg-btn pg-btn--danger" @click="unfollow(username)">{{ translate("SOCIAL.UNFOLLOW") }}</button>
@@ -314,7 +317,8 @@ module.exports = {
             prompt_consumer_func: () => {},
             // the lists are empty until the first load, which says nothing about the account
             loaded: false,
-            expandedGroups: {}
+            expandedGroups: {},
+            verification: {}
         }
     },
     props: [],
@@ -352,6 +356,14 @@ module.exports = {
             return this.socialData.groupUids.filter(uid => ! builtIn.includes(uid));
         }
     },
+	watch: {
+	    'socialData.annotations': {
+	        handler() {
+	            this.loadVerification();
+	        },
+	        immediate: true
+	    }
+	},
 	created() {
 	    let that = this;
         this.showSpinner = true;
@@ -402,15 +414,23 @@ module.exports = {
     // },
 
 	isVerified(username) {
-	    var annotations = this.socialData.annotations[username]
-	    if (annotations == null)
-		return false;
-	    return annotations.isVerified();
+	    return this.verification[username] == "verified";
+	},
+
+	loadVerification() {
+	    let that = this;
+	    let annotations = this.socialData.annotations;
+	    Object.keys(annotations).forEach(username => {
+		that.context.verificationStatus(username, annotations[username]).thenApply(status => {
+		    that.verification = Object.assign({}, that.verification, {[username]: status});
+		});
+	    });
 	},
 
 	hideFingerprint(isVerified) {
 	    this.showFingerprint = false;
 	    this.socialData.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
+	    this.verification = Object.assign({}, this.verification, {[this.friendname]: isVerified ? "verified" : "unverified"});
 	},
 
 	showFingerPrint(friendname) {

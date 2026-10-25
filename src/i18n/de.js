@@ -421,6 +421,8 @@ module.exports = {
     "VERIFY.SUCCESS": "Freund erfolgreich verifiziert!",
     "VERIFY.ERROR.MISMATCH": "Der QR-Code stimmt nicht mit der Identität dieser Person auf Peergos überein. Bist du sicher, dass diese Person die ist, für die sie sich ausgibt?",
     "VERIFY.VERIFIED": "Verifiziert",
+    "VERIFY.CHANGED": "Schlüssel geändert",
+    "VERIFY.CHANGED.HELP": "Der Identitätsschlüssel dieses Freundes hat sich seit deiner Verifizierung geändert. Vergleicht die Sicherheitsnummern erneut, bevor du ihm vertraust.",
     "VERIFY.UNVERIFIED": "Nicht verifiziert",
     "LAUNCHER.CUSTOM": "Benutzerdefinierte Apps",
     "LAUNCHER.UPDATE": "Nach Updates suchen",
