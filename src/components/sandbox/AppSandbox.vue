@@ -687,7 +687,8 @@ module.exports = {
                 console.log('App configured as NOT a FolderAction, but Path is a folder!');
                 return false;
             }
-            if (props.folderAction && !this.isAppPathAFolder) {
+            // launched without a folder, a library app opens the folders the user chose for it (/peergos-api/v0/grants/)
+            if (props.folderAction && !this.isAppPathAFolder && !props.libraryFolders) {
                 console.log('App configured as a FolderAction, but Path is not a folder!');
                 return false;
             }

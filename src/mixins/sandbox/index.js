@@ -139,6 +139,11 @@ module.exports = {
                       if (!(typeof props.folderAction == "boolean")) {
                           errors.push("Invalid folderAction property. Must have boolean value of true or false");
                       }
+                      if (props.libraryFolders != null && !(typeof props.libraryFolders == "boolean")) {
+                          errors.push("Invalid libraryFolders property. Must have boolean value of true or false");
+                      } else if (props.libraryFolders && !(props.folderAction && props.launchable)) {
+                          errors.push("Invalid libraryFolders property. Only a launchable folder action can open the folders the user chose");
+                      }
                       if (props.author.length > 32) {
                           errors.push("Invalid Author property. Length must not exceed 32 characters");
                       }
@@ -315,6 +320,9 @@ module.exports = {
                           }
                           if (props.folderAction == null) {
                               props.folderAction = false;
+                          }
+                          if (props.libraryFolders == null) {
+                              props.libraryFolders = false;
                           }
                           if (props.appIcon == null) {
                               props.appIcon = '';
@@ -557,7 +565,7 @@ module.exports = {
 
             let item = {name: props.name, displayName: props.displayName,
                 createFile: createFile, openFile: openFile, openFileFilters: openFileFilters, launchable: props.launchable,
-                folderAction: props.folderAction, appIcon: props.appIcon, contextMenuText: contextMenuText,
+                folderAction: props.folderAction, libraryFolders: props.libraryFolders, appIcon: props.appIcon, contextMenuText: contextMenuText,
                 source: props.source, version: props.version, createFile: createFile, primaryFileExtension: primaryFileExtension,
                 templateIconBase64: props.templateIconBase64, chatId: props.chatId, template : props.template, newFileExtensions: props.newFileExtensions,
                 tile: props.tile};
