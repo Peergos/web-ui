@@ -175,6 +175,8 @@ const Group = require("../components/Group.vue");
 const NewFilePicker = require("../components/picker/NewFilePicker.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const offlineMixin = require("../mixins/offline/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
@@ -210,6 +212,7 @@ module.exports = {
                 {key: "created", cls: "shortcut-table__date", label: "DRIVE.CREATED"},
             ],
             showSpinner: false,
+            startRetry: false,
             spinnerMessage: '',
             launcherApp: null,
             shortcutList: [],
@@ -274,8 +277,12 @@ module.exports = {
         }
     },
     props: [],
-    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn],
+    mixins:[routerMixins, mixins, launcherMixin, sandboxMixin, i18n, sortColumn, offlineMixin, UriDecoder],
 	watch: {
+	    '$store.state.offline': function(isOffline) {
+		if (! isOffline && this.startRetry)
+		    this.startLauncher();
+	    },
 		/* the shell loads the shortcuts after the page does, so a view mounted before that
 		   answer arrives - which is what a reload on this view is - read an empty map and
 		   never looked again */
@@ -367,16 +374,28 @@ module.exports = {
         },
     },
     created: function() {
-        let that = this;
-        this.showSpinner = true;
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
-        peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
-            that.launcherApp = launcher;
-            that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
-            that.loadInstalledApps();
-        });
+        this.startLauncher();
     },
     methods: {
+        /** The launcher's folder, then its apps. If it cannot be read (offline, say) the spinner
+         *  comes down and the reason is said, and it is tried again when the connection is back. */
+        startLauncher: function() {
+            let that = this;
+            this.startRetry = false;
+            this.showSpinner = true;
+            peergos.shared.user.App.init(that.context, "launcher").thenApply(launcher => {
+                that.launcherApp = launcher;
+                that.$toast.dismiss('launcher-start');
+                that.setShortcutList(new Map(that.shortcuts.shortcutsMap));
+                that.loadInstalledApps();
+            }).exceptionally(function(t) {
+                that.startRetry = true;
+                that.showSpinner = false;
+                that.$toast.error(that.noteOffline(t) ? that.translate('APP.OFFLINE') : that.uriDecode(t.getMessage ? t.getMessage() : '' + t), {timeout: false, id: 'launcher-start'});
+                return null;
+            });
+        },
         extractChatOwner: function(chatUuid) {
             let withoutPrefix = chatUuid.substring(chatUuid.indexOf("$") +1);
             return withoutPrefix.substring(0,withoutPrefix.indexOf("$"));

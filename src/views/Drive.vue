@@ -487,6 +487,8 @@ const FileDetails = require("../components/FileDetails.vue");
 const Pdf = require("../components/pdf/PDF.vue");
 const Replace = require("../components/replace/Replace.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const offlineMixin = require("../mixins/offline/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 const Warning = require('../components/Warning.vue');
 
 const helpers = require("../mixins/storage/index.js");
@@ -657,7 +659,7 @@ module.exports = {
             disallowedFilenames: new Map(),
 		};
 	},
-	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin],
+	mixins:[downloaderMixins, router, zipMixin, archiveMixin, launcherMixin, i18n, sandboxMixin, errorsMixin, offlineMixin, UriDecoder],
         mounted: function() {
                         let grid = localStorage.getItem("isGrid");
                         if (grid != null)
@@ -1605,14 +1607,7 @@ module.exports = {
                         that.updateSharedFolderSpace();
                         that.updateFiles(selectedFilename, callback);
                     }).exceptionally(function (throwable) {
-                        that.$toast.error(throwable.getMessage());
-                        if (!that.isSecretLink && path.startsWith("/" + that.context.username)) {
-                            if (path.endsWith("/"))
-                                path = path.substring(0, path.length-1)
-                            let index = path.lastIndexOf("/");
-                            that.changePath(path.substring(0, index));
-                            that.updateCurrentDirectory(selectedFilename, callback);
-                        }
+                        that.folderNotOpened(path, throwable, selectedFilename, callback);
                     });
                 } else {
                     // the path may descend into a zip archive rather than not exist
@@ -1630,8 +1625,35 @@ module.exports = {
                     });
                 }
 		    }).exceptionally(function (throwable) {
-			    console.log(throwable.getMessage());
+			    that.folderNotOpened(path, throwable, selectedFilename, callback);
 		    });
+		},
+
+		/** The folder, or its listing, could not be read. The spinner that was put up for it
+		 *  comes down, the reason is said - offline, that it is not on this device - and the
+		 *  view goes back up to the parent, which was readable, since the path already names
+		 *  the folder. */
+		folderNotOpened(path, throwable, selectedFilename, callback) {
+		    this.showSpinner = false;
+		    let message = this.noteOffline(throwable) || this.$store.state.offline ?
+			this.translate("DRIVE.OFFLINE.FOLDER") : this.uriDecode(throwable.getMessage());
+		    this.$toast.error(message, {id: 'folder'});
+		    // up a level, unless this was the root itself, which has nowhere to go
+		    if (!this.isSecretLink && this.context != null && path.startsWith("/" + this.context.username + "/")) {
+			if (path.endsWith("/"))
+			    path = path.substring(0, path.length-1)
+			let index = path.lastIndexOf("/");
+			this.changePath(path.substring(0, index));
+			this.updateCurrentDirectory(selectedFilename, callback);
+		    }
+		},
+
+		/** What a failed write or download says: that we are offline, when that is why, or
+		 *  else the server's message, decoded. */
+		failureText(throwable) {
+		    if (this.noteOffline(throwable))
+			return this.translate("DRIVE.OFFLINE");
+		    return this.uriDecode(throwable.getMessage());
 		},
 
                 buildCapWrapper(cap) {
@@ -1754,9 +1776,11 @@ module.exports = {
                                             callback();
                                        }
 			    }).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			    });
-                        });
+                        }).exceptionally(function (throwable) {
+			    that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
+			});
 			
                         current.getChildrenCapabilities(that.context.crypto.hasher, that.context.network).thenApply(function(childCaps) {
                             that.showSpinner = false;
@@ -1811,10 +1835,10 @@ module.exports = {
                                            
                                 }}, that.context.crypto.hasher, that.context.network);
                             }).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			    });
 			}).exceptionally(function (throwable) {
-				console.log(throwable.getMessage());
+				that.folderNotOpened("/" + that.path.join("/"), throwable, selectedFilename, callback);
 			});
 		},
 
@@ -1930,7 +1954,7 @@ module.exports = {
 					that.showSpinner = false;
 				}.bind(this)).exceptionally(function (throwable) {
 					that.showSpinner = false;
-					that.$toast.error(throwable.getMessage(), {timeout:false, id: 'mkdir'})
+					that.$toast.error(that.failureText(throwable), {timeout:false, id: 'mkdir'})
 					that.updateUsage();
 				});
 		},
@@ -2017,7 +2041,7 @@ module.exports = {
                     }
                     that.reduceCollectFilesToZip(index +1, path, files, accumulatorList, futureCollectFiles);
                 }).exceptionally(function (throwable) {
-                    that.$toast.error(throwable.getMessage())
+                    that.$toast.error(that.failureText(throwable))
                     futureCollectFiles.complete(false);
                 })
             } else {
@@ -2100,7 +2124,7 @@ module.exports = {
                             console.log('zip complete');
                             that.selectedFiles = [];
                         }).exceptionally(function (throwable) {
-                            that.$toast.error(throwable.getMessage())
+                            that.$toast.error(that.failureText(throwable))
                         });
                     }
                 });
@@ -2160,10 +2184,10 @@ module.exports = {
                                 that.zipFiles(zipFilename, allFiles.files, progress).thenApply(res => {
                                     console.log('folder download complete');
                                 }).exceptionally(function (throwable) {
-                                    that.$toast.error(throwable.getMessage())
+                                    that.$toast.error(that.failureText(throwable))
                                 });
                             }).exceptionally(function (throwable) {
-                                that.$toast.error(throwable.getMessage())
+                                that.$toast.error(that.failureText(throwable))
                             })
                         },
                         () => {
@@ -2172,7 +2196,7 @@ module.exports = {
                     );
                 }
             }).exceptionally(function (throwable) {
-                that.$toast.error(throwable.getMessage())
+                that.$toast.error(that.failureText(throwable))
             });
 		},
         confirmZipAndDownloadOfFolder(folderName, statistics, continueFunction, cancelFunction) {

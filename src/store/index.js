@@ -27,6 +27,9 @@ module.exports = Vuex.createStore({
 		networkLoading: true,
 		// the last attempt to reach the server failed, and another is scheduled
 		networkRetrying: false,
+		// the server cannot be reached: the browser says there is no connection, or a call
+		// failed to reach it. What is cached on this device still shows; nothing is written.
+		offline: false,
         context: null,
         mirrorBatId: null,
 		download: null,
@@ -158,6 +161,9 @@ module.exports = Vuex.createStore({
 		},
 		SET_NETWORK_LOADING(state, payload) {
 		    state.networkLoading = payload;
+		},
+		SET_OFFLINE(state, payload) {
+		    state.offline = payload;
 		},
 		SET_NETWORK_RETRYING(state, payload) {
 		    state.networkRetrying = payload;
