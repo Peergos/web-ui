@@ -898,12 +898,18 @@ module.exports = {
                     if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
                         that.showError("App attempted to access chat without permission :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else if (!that.isChatPathOfApp(path, apiMethod)) {
+                        that.showError("App attempted to access a chat of another app :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleChatRequestV0(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 }else if (api =='/peergos-api/v1/chat/') {
                     if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
                         that.showError("App attempted to access chat without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else if (!that.isChatPathOfApp(path, apiMethod)) {
+                        that.showError("App attempted to access a chat of another app :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleChatRequestV1(headerFunc(), path, apiMethod, data, hasFormData, params);
@@ -1685,6 +1691,30 @@ module.exports = {
             }
             return arr;
         },
+        // An app only ever reaches its own chats: the chat app those without an app prefix, and any other
+        // app chat-<its name>$... The chat permission alone doesn't say which chats, so check every call.
+        chatBelongsToApp: function(chatId) {
+            if (this.currentAppName == "chat") {
+                return !chatId.startsWith("chat-");
+            }
+            return chatId.startsWith("chat-" + this.currentAppName + "$");
+        },
+        isChatPathOfApp: function(path, apiMethod) {
+            let chatId = path.split('/')[0];
+            if (chatId.length == 0) {
+                return true; // listing or creating, which only ever involves the app's own chats
+            }
+            try {
+                let decoded = decodeURIComponent(chatId);
+                if (decoded.includes('/')) {
+                    // an encoded media path: only deleting an attachment, which checks it is under the app's own chats
+                    return apiMethod == 'DELETE';
+                }
+                return this.chatBelongsToApp(decoded);
+            } catch (e) {
+                return false;
+            }
+        },
         filterChats: function(allChats) {
             let that = this;
             let filteredChats = [];
@@ -1692,14 +1722,14 @@ module.exports = {
             for(var i = 0; i < allChats.length; i++) {
                 let chat = allChats[i];
                 if (this.currentAppName == "chat") {
-                    if(!chat.chatUuid.startsWith("chat-")) { //chat-<appname>
+                    if(this.chatBelongsToApp(chat.chatUuid)) { //chat-<appname>
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
                         recentMessages.push(chat.getRecent().toArray());
                     }
                 } else {
-                    if(chat.chatUuid.startsWith("chat-" + this.currentAppName)) {
+                    if(this.chatBelongsToApp(chat.chatUuid)) {
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
