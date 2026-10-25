@@ -132,6 +132,8 @@ module.exports = {
             // the imports still uploading - see saveAllEvents and afterWritesSettle
             bulkImports: [],
             listenerRetry: null,
+            // the start failed (offline, say) and is to be tried again when the connection is back
+            startRetry: false,
             showSpinner: false,
             // Whether the view is working, apart from whether it is saying so: the spinner
             // waits before appearing and lingers once up, so it answers "is anything on
@@ -209,6 +211,11 @@ module.exports = {
 		},
 	},
 	watch: {
+	    // the start that failed offline is tried again as soon as the connection is back
+	    '$store.state.offline': function(isOffline) {
+		if (! isOffline && this.startRetry)
+		    this.startCalendar();
+	    },
 		isDark() {
 			this.postMessage({type: 'setTheme', currentTheme: this.currentTheme});
 		}
@@ -217,40 +224,14 @@ module.exports = {
     created() {
         let that = this;
         this.frameSrc = this.frameUrl();
-        this.displaySpinner();
-        // The app's folder, or the calendars' properties, could not be read: the spinner
-        // comes down and the reason is said, offline or not, rather than a spinner for good
-        // over an empty grid.
-        let failed = function(t) {
-            that.removeSpinner();
-            that.showMessage(true, that.translate(that.noteOffline(t) ? 'CALENDAR.OFFLINE' : 'CALENDAR.ERROR.LOAD'));
-            return null;
+        // Until the start has succeeded, the frame's refresh is a request to try it again.
+        this.messageListener = function (e) {
+            if (e.origin !== "null" && e.origin !== that.frameDomain()) return;
+            if (that.startRetry && e.data != null && e.data.type === 'refresh')
+                that.startCalendar();
         };
-        this.getInputParameters().thenApply(inputParameters => {
-            that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
-                if (loadedParameters == null) {
-                    that.removeSpinner();
-                } else {
-                    that.importFile = loadedParameters.importFile;
-                    that.importFilename = loadedParameters.importFilename || null;
-                    that.importCalendarPath = loadedParameters.importCalendarPath;
-                    that.owner = loadedParameters.owner;
-                    that.hasEmail = loadedParameters.hasEmail;
-                    that.loadCalendarAsGuest = that.isSecretLink;
-                    that.isCalendarReadOnly = that.isSecretLink && !loadedParameters.isWritable;
-                    peergos.shared.user.App.init(that.context, "calendar").thenApply(calendar => {
-                        if (that.loadCalendarAsGuest) {
-                            that.startListener(calendar);
-                        } else {
-                            that.getPropertiesFile(calendar).thenApply(props => {
-                                that.calendarProperties = props;
-                                that.startListener(calendar)
-                            }).exceptionally(failed);
-                        }
-                    }).exceptionally(failed);
-                }
-            }).exceptionally(failed);
-        });
+        window.addEventListener('message', this.messageListener);
+        this.startCalendar();
     },
 	mounted(){
         document.body.style.overflow = 'hidden';
@@ -269,6 +250,48 @@ module.exports = {
         }
     },
     methods: {
+    /** The app's folder and the calendars' properties, then the listener for the frame. If
+     *  that cannot be read (offline, say) the spinner comes down and the reason is said, and
+     *  it is tried again when the connection is back or the frame asks for a refresh, rather
+     *  than a spinner, or an empty grid, for good. */
+    startCalendar: function() {
+        let that = this;
+        this.startRetry = false;
+        this.displaySpinner();
+        let failed = function(t) {
+            that.startRetry = true;
+            that.removeSpinner();
+            that.$toast.error(that.translate(that.noteOffline(t) ? 'CALENDAR.OFFLINE' : 'CALENDAR.ERROR.LOAD'), {timeout: false, id: 'calendar-start'});
+            return null;
+        };
+        this.getInputParameters().thenApply(inputParameters => {
+            that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
+                if (loadedParameters == null) {
+                    that.removeSpinner();
+                } else {
+                    that.importFile = loadedParameters.importFile;
+                    that.importFilename = loadedParameters.importFilename || null;
+                    that.importCalendarPath = loadedParameters.importCalendarPath;
+                    that.owner = loadedParameters.owner;
+                    that.hasEmail = loadedParameters.hasEmail;
+                    that.loadCalendarAsGuest = that.isSecretLink;
+                    that.isCalendarReadOnly = that.isSecretLink && !loadedParameters.isWritable;
+                    peergos.shared.user.App.init(that.context, "calendar").thenApply(calendar => {
+                        if (that.loadCalendarAsGuest) {
+                            that.$toast.dismiss('calendar-start');
+                            that.startListener(calendar);
+                        } else {
+                            that.getPropertiesFile(calendar).thenApply(props => {
+                                that.calendarProperties = props;
+                                that.$toast.dismiss('calendar-start');
+                                that.startListener(calendar)
+                            }).exceptionally(failed);
+                        }
+                    }).exceptionally(failed);
+                }
+            }).exceptionally(failed);
+        });
+    },
     getInputParameters: function() {
         let that = this;
         let future = peergos.shared.util.Futures.incomplete();
@@ -483,6 +506,8 @@ module.exports = {
         // before use - see isSafeEventId/eventDirPath.
         // Kept so leaving the view can take it back off the window - a view
         // opened twice would otherwise leave the first listener behind.
+        if (this.messageListener != null)
+            window.removeEventListener('message', this.messageListener);
         this.messageListener = function (e) {
             if (e.origin !== "null" && e.origin !== that.frameDomain()) return;
             if (e.source !== iframe.contentWindow) return;
