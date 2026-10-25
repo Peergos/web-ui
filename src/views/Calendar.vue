@@ -267,6 +267,8 @@ module.exports = {
         this.getInputParameters().thenApply(inputParameters => {
             that.loadInputParameters(inputParameters).thenApply(loadedParameters => {
                 if (loadedParameters == null) {
+                    // a shared calendar's path or file that could not be reached is tried again too
+                    that.startRetry = that.$store.state.offline;
                     that.removeSpinner();
                 } else {
                     that.importFile = loadedParameters.importFile;
