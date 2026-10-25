@@ -446,7 +446,12 @@ function appResponse(event, inst) {
             status: 404
         });
     }
-    let filePath = decodeURI(requestedResource.pathname);
+    // decodeURI leaves %23, %3F and the other reserved escapes as they are, so a file whose name holds # or ? could
+    // not be reached, and a lone % made it throw: decode each segment in full, as for a granted folder
+    let filePath = decodeSegments(requestedResource.pathname);
+    if (filePath == null) {
+        return new Response('Bad path', {status: 400});
+    }
     if (event.request.mode === 'navigate' && event.request.method == 'GET' && filePath.startsWith('/peergos/') && !filePath.startsWith('/peergos/recommended-apps/')) {
         respHeaders.push(['Content-type', 'text/html']);
         respHeaders.push(['content-security-policy', csp]);
