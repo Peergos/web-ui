@@ -1,6 +1,6 @@
 <template>
-	<div class="pg-gallery__mask" @click="close">
-		<section class="pg-gallery" role="dialog" aria-modal="true" :aria-label="currentName.length > 0 ? currentName : 'Gallery'" @click.stop>
+	<div :class="['pg-gallery__mask', currentIsAudio ? 'pg-gallery__mask--audio' : '']" @click="close">
+		<section :class="['pg-gallery', currentIsAudio ? 'pg-gallery--audio' : '']" role="dialog" aria-modal="true" :aria-label="currentName.length > 0 ? currentName : 'Gallery'" @click.stop>
 			<header class="pg-gallery__bar">
 				<template v-if="! hideGalleryTitle && currentName.length > 0">
 					<span v-if="showableFiles.length > 1" class="pg-gallery__count">{{ fileIndex + 1 }} / {{ showableFiles.length }}</span>
@@ -311,6 +311,7 @@ module.exports = {
                 let wrapper = document.getElementById("slideshow-wrapper-id");
                 wrapper.innerText = '';
                 wrapper.style.overflow = '';
+                wrapper.classList.remove('slideshow-wrapper--audio');
                 if(that.isVideo(file)) {
                     wrapper.style.backgroundImage = '';
                     let vid = document.createElement('video');
@@ -323,6 +324,8 @@ module.exports = {
                 } else if(that.isAudio(file)) {
                     wrapper.style.backgroundImage = '';
                     let audio = document.createElement('audio');
+                    audio.classList.add('pg-gallery__audio');
+                    wrapper.classList.add('slideshow-wrapper--audio');
                     audio.setAttribute('autoplay','true');
                     audio.setAttribute('controls','true');
                     audio.setAttribute('controlsList','nodownload');
@@ -703,9 +706,8 @@ module.exports = {
   .pg-gallery__arrow--next {
     right: 16px;
   }
-  /* between the arrows, where a thumb reaches them */
   .pg-gallery__audio-modes {
-    bottom: 16px;
+    top: calc(50% + 6px);
   }
 }
 
@@ -716,11 +718,55 @@ module.exports = {
   height:100%;
   z-index: 20;
 }
+/* Music: a player of fixed height in the middle, a note above it and shuffle and repeat below, so
+   nothing lies under the player's own controls, which some browsers draw on top of everything.
+   Unlike a photo, music needs no dark surround, so it takes the colours of the theme. */
+.pg-gallery__mask--audio {
+  background-color: var(--bg);
+}
+.pg-gallery--audio,
+.pg-gallery--audio .pg-gallery__title {
+  color: var(--color);
+}
+.pg-gallery--audio .pg-gallery__count,
+.pg-gallery--audio .pg-dialog__close,
+.pg-gallery--audio .pg-gallery__arrow,
+.pg-gallery--audio .pg-gallery__mode {
+  color: var(--color);
+  background-color: var(--bg-2);
+}
+.pg-gallery--audio .pg-gallery__arrow:disabled {
+  opacity: .35;
+}
+.slideshow-wrapper audio.pg-gallery__audio {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 640px;
+  height: 56px;
+  margin: 0 auto;
+  transform: translateY(-50%);
+}
+.slideshow-wrapper--audio::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 150px);
+  left: 50%;
+  width: 104px;
+  height: 104px;
+  transform: translateX(-50%);
+  background-color: var(--color);
+  opacity: .22;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 /* shuffle and repeat, under the player */
 .pg-gallery__audio-modes {
   position: absolute;
   left: 50%;
-  bottom: 84px;
+  top: calc(50% + 32px);
   z-index: 30;
   display: flex;
   gap: 12px;
@@ -750,6 +796,13 @@ module.exports = {
 .pg-gallery__mode--on {
   color: #ffffff;
   background-color: rgba(255, 255, 255, .3);
+}
+.pg-gallery--audio .pg-gallery__mode {
+  opacity: .55;
+}
+.pg-gallery--audio .pg-gallery__mode--on {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--color);
 }
 .pg-gallery__mode-badge {
   position: absolute;
