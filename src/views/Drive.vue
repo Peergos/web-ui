@@ -1010,7 +1010,8 @@ module.exports = {
 		},
 
 		isNotMe() {
-			if (this.currentDir == null)
+			// the context goes before this view does at sign-out, and it is rendered once more
+			if (this.currentDir == null || this.context == null)
 				return true;
 
 			var owner = this.currentDir.getOwnerName();
