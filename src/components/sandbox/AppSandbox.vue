@@ -412,6 +412,11 @@ module.exports = {
                 that.getAppSubdomain().thenApply(appSubdomain => {
                     that.appSubdomain = appSubdomain;
                     if (that.isFileViewerMode) {
+                        // A secret link has no user, so only permissions scoped to the linked file apply
+                        let fileScoped = [that.PERMISSION_EDIT_CHOSEN_FILE, that.PERMISSION_READ_CHOSEN_FOLDER, that.PERMISSION_CSP_UNSAFE_EVAL];
+                        that.permissionsMap = new Map(that.currentProps.permissions
+                            .filter(p => fileScoped.includes(p))
+                            .map(p => [p, new Date()]));
                         that.appProperties = that.currentProps;
                         that.appRegisteredWithFileAssociation = that.appHasFileAssociation(that.currentProps);
                         that.appRegisteredWithWildcardFileAssociation = that.appHasWildcardFileRegistration(that.currentProps);
