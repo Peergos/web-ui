@@ -1,6 +1,6 @@
 <template>
-	<div class="pg-gallery__mask" @click="close">
-		<section class="pg-gallery" role="dialog" aria-modal="true" :aria-label="currentName.length > 0 ? currentName : 'Gallery'" @click.stop>
+	<div :class="['pg-gallery__mask', currentIsAudio ? 'pg-gallery__mask--audio' : '']" @click="close">
+		<section :class="['pg-gallery', currentIsAudio ? 'pg-gallery--audio' : '']" role="dialog" aria-modal="true" :aria-label="currentName.length > 0 ? currentName : 'Gallery'" @click.stop>
 			<header class="pg-gallery__bar">
 				<template v-if="! hideGalleryTitle && currentName.length > 0">
 					<span v-if="showableFiles.length > 1" class="pg-gallery__count">{{ fileIndex + 1 }} / {{ showableFiles.length }}</span>
@@ -31,6 +31,18 @@
             			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
             		</button>
             	</template>
+            	<!-- playing through a folder of music: shuffle, and repeat all or the one track -->
+            	<div v-if="currentIsAudio" class="pg-gallery__audio-modes">
+            		<button type="button" :class="['pg-gallery__mode', shuffle ? 'pg-gallery__mode--on' : '']" :aria-pressed="shuffle ? 'true' : 'false'"
+            		        :title="translate('GALLERY.SHUFFLE')" :aria-label="translate('GALLERY.SHUFFLE')" @click="toggleShuffle">
+            			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+            		</button>
+            		<button type="button" :class="['pg-gallery__mode', repeat != 'off' ? 'pg-gallery__mode--on' : '']" :aria-pressed="repeat != 'off' ? 'true' : 'false'"
+            		        :title="repeatLabel" :aria-label="repeatLabel" @click="cycleRepeat">
+            			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+            			<span v-if="repeat == 'one'" class="pg-gallery__mode-badge">1</span>
+            		</button>
+            	</div>
             </div>
 		</section>
 	</div>
@@ -41,6 +53,7 @@ const DialogClose = require("../dialog/DialogClose.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const Warning = require('../Warning.vue');
 const downloaderMixins = require("../../mixins/downloader/index.js");
+const i18n = require("../../i18n/index.js");
 
 module.exports = {
 	components: {
@@ -54,6 +67,8 @@ module.exports = {
 		    showSpinner: false,
 		    fileIndex: 0,
 		    pinging: false,
+		    shuffle: false,
+		    repeat: 'off',
             showWarning: false,
 		    warning_message: "",
 		    warning_body: "",
@@ -61,7 +76,7 @@ module.exports = {
 		};
 	},
 	props: ["files", "initialFileName", "hideGalleryTitle"],
-	mixins: [downloaderMixins],
+	mixins: [downloaderMixins, i18n],
 	computed: {
 		...Vuex.mapState([
 			'context',
@@ -76,6 +91,13 @@ module.exports = {
 				return is_image || is_video || is_audio;
 			});
 		},
+        currentIsAudio() {
+            let file = this.showableFiles == null ? null : this.showableFiles[this.fileIndex];
+            return file != null && this.isAudio(file);
+        },
+        repeatLabel() {
+            return this.translate(this.repeat == 'one' ? 'GALLERY.REPEAT.ONE' : this.repeat == 'all' ? 'GALLERY.REPEAT.ALL' : 'GALLERY.REPEAT.OFF');
+        },
         currentName() {
             let showable = this.showableFiles;
             let file = showable == null ? null : showable[this.fileIndex];
@@ -91,6 +113,16 @@ module.exports = {
 		    }
         }
 	    console.log("Set initial gallery index to " + this.fileIndex);
+	    // the tracks shuffle has played; not reactive, it only decides what comes next
+	    this.playedAudio = new Set();
+	    this.currentAudio = null;
+	    try {
+	        let modes = JSON.parse(localStorage.getItem("gallery-audio-modes"));
+	        if (modes != null) {
+	            this.shuffle = modes.shuffle === true;
+	            this.repeat = ['off', 'all', 'one'].includes(modes.repeat) ? modes.repeat : 'off';
+	        }
+	    } catch (e) {}
 	    window.addEventListener("keyup", this.keyup);
 	},
 	mounted() {
@@ -167,6 +199,59 @@ module.exports = {
 			}
 		},
 
+		toggleShuffle() {
+		    this.shuffle = !this.shuffle;
+		    this.playedAudio = new Set();
+		    this.saveAudioModes();
+		},
+		cycleRepeat() {
+		    this.repeat = this.repeat == 'off' ? 'all' : this.repeat == 'all' ? 'one' : 'off';
+		    if (this.currentAudio != null)
+		        this.currentAudio.loop = this.repeat == 'one';
+		    this.saveAudioModes();
+		},
+		saveAudioModes() {
+		    try {
+		        localStorage.setItem("gallery-audio-modes", JSON.stringify({shuffle: this.shuffle, repeat: this.repeat}));
+		    } catch (e) {}
+		},
+		// the next track to play: in order, or one not yet played when shuffling; at the end only when repeating all
+		nextAudio() {
+		    let tracks = [];
+		    this.showableFiles.forEach((f, i) => {
+		        if (this.isAudio(f))
+		            tracks.push(i);
+		    });
+		    if (tracks.length == 0)
+		        return;
+		    var target = -1;
+		    if (this.shuffle) {
+		        this.playedAudio.add(this.fileIndex);
+		        var left = tracks.filter(i => !this.playedAudio.has(i));
+		        if (left.length == 0 && this.repeat == 'all') {
+		            this.playedAudio = new Set([this.fileIndex]);
+		            left = tracks.length > 1 ? tracks.filter(i => i != this.fileIndex) : tracks;
+		        }
+		        if (left.length > 0)
+		            target = left[Math.floor(Math.random() * left.length)];
+		    } else {
+		        let later = tracks.filter(i => i > this.fileIndex);
+		        if (later.length > 0)
+		            target = later[0];
+		        else if (this.repeat == 'all')
+		            target = tracks[0];
+		    }
+		    if (target < 0)
+		        return;
+		    if (target == this.fileIndex && this.currentAudio != null) {
+		        this.currentAudio.currentTime = 0;
+		        this.currentAudio.play();
+		        return;
+		    }
+		    this.fileIndex = target;
+		    this.update();
+		},
+
 		previous() {
 			if (this.fileIndex > 0) {
                 this.fileIndex--;
@@ -212,7 +297,10 @@ module.exports = {
                     that.previous();
                 });
                 navigator.mediaSession.setActionHandler('nexttrack', () => {
-                    that.next();
+                    if (that.isAudio(file))
+                        that.nextAudio();
+                    else
+                        that.next();
                 });
             }
         },
@@ -223,6 +311,7 @@ module.exports = {
                 let wrapper = document.getElementById("slideshow-wrapper-id");
                 wrapper.innerText = '';
                 wrapper.style.overflow = '';
+                wrapper.classList.remove('slideshow-wrapper--audio');
                 if(that.isVideo(file)) {
                     wrapper.style.backgroundImage = '';
                     let vid = document.createElement('video');
@@ -235,10 +324,15 @@ module.exports = {
                 } else if(that.isAudio(file)) {
                     wrapper.style.backgroundImage = '';
                     let audio = document.createElement('audio');
+                    audio.classList.add('pg-gallery__audio');
+                    wrapper.classList.add('slideshow-wrapper--audio');
                     audio.setAttribute('autoplay','true');
                     audio.setAttribute('controls','true');
                     audio.setAttribute('controlsList','nodownload');
                     audio.setAttribute('src', url);
+                    audio.loop = that.repeat == 'one';
+                    audio.addEventListener('ended', () => that.nextAudio());
+                    that.currentAudio = audio;
                     wrapper.appendChild(audio);
                     that.addMediaHandlers(audio, file);
                 } else {
@@ -612,6 +706,9 @@ module.exports = {
   .pg-gallery__arrow--next {
     right: 16px;
   }
+  .pg-gallery__audio-modes {
+    top: calc(50% + 6px);
+  }
 }
 
 .slideshow-wrapper video,
@@ -620,6 +717,100 @@ module.exports = {
   width:100%;
   height:100%;
   z-index: 20;
+}
+/* Music: a player of fixed height in the middle, a note above it and shuffle and repeat below, so
+   nothing lies under the player's own controls, which some browsers draw on top of everything.
+   Unlike a photo, music needs no dark surround, so it takes the colours of the theme. */
+.pg-gallery__mask--audio {
+  background-color: var(--bg);
+}
+.pg-gallery--audio,
+.pg-gallery--audio .pg-gallery__title {
+  color: var(--color);
+}
+.pg-gallery--audio .pg-gallery__count,
+.pg-gallery--audio .pg-dialog__close,
+.pg-gallery--audio .pg-gallery__arrow,
+.pg-gallery--audio .pg-gallery__mode {
+  color: var(--color);
+  background-color: var(--bg-2);
+}
+.pg-gallery--audio .pg-gallery__arrow:disabled {
+  opacity: .35;
+}
+.slideshow-wrapper audio.pg-gallery__audio {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 640px;
+  height: 56px;
+  margin: 0 auto;
+  transform: translateY(-50%);
+}
+.slideshow-wrapper--audio::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 150px);
+  left: 50%;
+  width: 104px;
+  height: 104px;
+  transform: translateX(-50%);
+  background-color: var(--color);
+  opacity: .22;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+/* shuffle and repeat, under the player */
+.pg-gallery__audio-modes {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + 32px);
+  z-index: 30;
+  display: flex;
+  gap: 12px;
+  transform: translateX(-50%);
+}
+.pg-gallery__mode {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, .14);
+  color: rgba(255, 255, 255, .6);
+  cursor: pointer;
+}
+.pg-gallery__mode svg {
+  width: 22px;
+  height: 22px;
+}
+.pg-gallery__mode:hover {
+  background-color: rgba(255, 255, 255, .24);
+}
+.pg-gallery__mode--on {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, .3);
+}
+.pg-gallery--audio .pg-gallery__mode {
+  opacity: .55;
+}
+.pg-gallery--audio .pg-gallery__mode--on {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px var(--color);
+}
+.pg-gallery__mode-badge {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
 }
 .image-display {
   object-fit: contain;

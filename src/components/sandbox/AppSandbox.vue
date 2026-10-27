@@ -20,6 +20,14 @@
             v-on:hide-profile-view="showProfileViewForm = false"
             :profile="profile">
         </ViewProfile>
+        <Fingerprint
+            v-if="showChatFingerprint"
+            v-on:hide-fingerprint="chatFingerprintHidden"
+            :fingerprint="chatFingerprint"
+            :friendname="chatFingerprintFriend"
+            :initialIsVerified="chatFingerprintVerified"
+            :context="context">
+        </Fingerprint>
         <AddToChat
                 v-if="showInviteFriends"
                 v-on:hide-add-to-chat="inviteFriendsHidden"
@@ -166,6 +174,7 @@ const ProgressBar = require("../drive/ProgressBar.vue");
 const SaveConflict = require("../prompt/SaveConflict.vue");
 const Spinner = require("../spinner/Spinner.vue");
 const ViewProfile = require("../profile/ViewProfile.vue");
+const Fingerprint = require("../fingerprint/Fingerprint.vue");
 
 
 const mixins = require("../../mixins/mixins.js");
@@ -199,11 +208,17 @@ module.exports = {
         SaveConflict,
         Spinner,
         ViewProfile,
+        Fingerprint,
     },
     data: function() {
         return {
             showSpinner: false,
             spinnerMessage: '',
+            showChatFingerprint: false,
+            chatFingerprint: null,
+            chatFingerprintFriend: '',
+            chatFingerprintVerified: false,
+            chatFingerprintResponse: null,
             maxBlockSize: 1024 * 1024 * 5,
             sandboxedApp: null,
             isIframeInitialised: false,
@@ -677,7 +692,8 @@ module.exports = {
                 console.log('App configured as NOT a FolderAction, but Path is a folder!');
                 return false;
             }
-            if (props.folderAction && !this.isAppPathAFolder) {
+            // launched without a folder, a library app opens the folders the user chose for it (/peergos-api/v0/grants/)
+            if (props.folderAction && !this.isAppPathAFolder && !props.libraryFolders) {
                 console.log('App configured as a FolderAction, but Path is not a folder!');
                 return false;
             }
@@ -903,12 +919,18 @@ module.exports = {
                     if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
                         that.showError("App attempted to access chat without permission :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else if (!that.isChatPathOfApp(path, apiMethod)) {
+                        that.showError("App attempted to access a chat of another app :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleChatRequestV0(headerFunc(), path, apiMethod, data, hasFormData, params);
                     }
                 }else if (api =='/peergos-api/v1/chat/') {
                     if (!that.permissionsMap.get(that.PERMISSION_EXCHANGE_MESSAGES_WITH_FRIENDS)) {
                         that.showError("App attempted to access chat without permission :" + path);
+                        that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                    } else if (!that.isChatPathOfApp(path, apiMethod)) {
+                        that.showError("App attempted to access a chat of another app :" + path);
                         that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                     } else {
                         that.handleChatRequestV1(headerFunc(), path, apiMethod, data, hasFormData, params);
@@ -1690,6 +1712,41 @@ module.exports = {
             }
             return arr;
         },
+        // An app only ever reaches its own chats: the chat app those without an app prefix, and any other
+        // app chat-<its name>$... The chat permission alone doesn't say which chats, so check every call.
+        chatBelongsToApp: function(chatId) {
+            if (this.currentAppName == "chat") {
+                return !chatId.startsWith("chat-");
+            }
+            return chatId.startsWith("chat-" + this.currentAppName + "$");
+        },
+        isChatPathOfApp: function(path, apiMethod) {
+            let chatId = path.split('/')[0];
+            if (chatId.length == 0) {
+                return true; // listing or creating, which only ever involves the app's own chats
+            }
+            try {
+                let decoded = decodeURIComponent(chatId);
+                if (decoded.includes('/')) {
+                    // an encoded media path: only deleting an attachment, which checks it is under the app's own chats
+                    return apiMethod == 'DELETE';
+                }
+                return this.chatBelongsToApp(decoded);
+            } catch (e) {
+                return false;
+            }
+        },
+        chatFingerprintHidden: function(isVerified) {
+            this.showChatFingerprint = false;
+            if (this.socialData.annotations != null && this.chatFingerprint != null) {
+                this.socialData.annotations[this.chatFingerprintFriend] = new peergos.shared.user.FriendAnnotation(this.chatFingerprintFriend, isVerified, this.chatFingerprint.left);
+            }
+            if (this.chatFingerprintResponse != null) {
+                let data = new TextEncoder().encode(JSON.stringify({member: this.chatFingerprintFriend, verified: isVerified === true}));
+                this.buildResponse(this.chatFingerprintResponse, data, this.GET_SUCCESS);
+                this.chatFingerprintResponse = null;
+            }
+        },
         filterChats: function(allChats) {
             let that = this;
             let filteredChats = [];
@@ -1697,14 +1754,14 @@ module.exports = {
             for(var i = 0; i < allChats.length; i++) {
                 let chat = allChats[i];
                 if (this.currentAppName == "chat") {
-                    if(!chat.chatUuid.startsWith("chat-")) { //chat-<appname>
+                    if(this.chatBelongsToApp(chat.chatUuid)) { //chat-<appname>
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
                         recentMessages.push(chat.getRecent().toArray());
                     }
                 } else {
-                    if(chat.chatUuid.startsWith("chat-" + this.currentAppName)) {
+                    if(this.chatBelongsToApp(chat.chatUuid)) {
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
@@ -2978,6 +3035,85 @@ module.exports = {
                         console.log(throwable);
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     });
+                } else if (path.endsWith("/verify") || path.endsWith("/verify/")) {
+                    // compare safety numbers with a member of the chat, who must be a friend; answers once the dialog is closed
+                    let verifyChatId = path.substring(0, path.indexOf("/verify"));
+                    let member = params.get("member");
+                    if (that.showChatFingerprint || that.chatFingerprintResponse != null) {
+                        // one dialog at a time: an app can't stack them up over the drive
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        return;
+                    }
+                    // held from now on, as working out the fingerprint takes a while
+                    that.chatFingerprintResponse = headerFunc;
+                    let refuse = () => {
+                        that.chatFingerprintResponse = null;
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    };
+                    this.messenger.getChat(verifyChatId).thenApply(function(controller) {
+                        let members = controller.getMemberNames().toArray([]);
+                        if (member == null || member == that.context.username || members.indexOf(member) == -1
+                                || that.friendnames.indexOf(member) == -1) {
+                            refuse();
+                            return;
+                        }
+                        that.context.generateFingerPrint(member).thenApply(function(fingerprint) {
+                            let annotation = (that.socialData.annotations || {})[member];
+                            that.chatFingerprint = fingerprint;
+                            that.chatFingerprintFriend = member;
+                            that.chatFingerprintVerified = annotation != null && annotation.isVerified();
+                            that.showChatFingerprint = true;
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            refuse();
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        refuse();
+                    });
+                } else if (path.endsWith("/members") || path.endsWith("/members/")) {
+                    // whether we have verified the keys of each other member, so the app can warn about ones we haven't
+                    let membersChatId = path.substring(0, path.indexOf("/members"));
+                    this.messenger.getChat(membersChatId).thenApply(function(controller) {
+                        let others = controller.getMemberNames().toArray([]).filter(name => name != that.context.username);
+                        let annotations = that.socialData.annotations || {};
+                        let res = others.map(name => ({username: name, verification: "unverified", friend: that.friendnames.indexOf(name) > -1}));
+                        let pending = others.length;
+                        let reply = () => that.buildResponse(headerFunc, new TextEncoder().encode(JSON.stringify(res)), that.GET_SUCCESS);
+                        if (pending == 0) {
+                            reply();
+                        }
+                        others.forEach((name, i) => {
+                            that.context.verificationStatus(name, annotations[name] != null ? annotations[name] : null).thenApply(status => {
+                                res[i].verification = status;
+                                if (--pending == 0) reply();
+                            }).exceptionally(function(throwable) {
+                                console.log(throwable);
+                                if (--pending == 0) reply();
+                            });
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
+                } else if (path.endsWith("/signals") || path.endsWith("/signals/")) {
+                    // typing, presence and read receipts of the other members, waiting up to "wait" ms for one
+                    let signalsChatId = path.substring(0, path.indexOf("/signals"));
+                    let since = params.get("since") != null && /^[0-9]+$/.test(params.get("since")) ? params.get("since") : "0";
+                    let wait = Math.min(this.parsePositiveInt(params.get("wait") != null ? params.get("wait") : "0"), 25000);
+                    this.messenger.getChat(signalsChatId).thenApply(function(controller) {
+                        that.messenger.pollSignals(controller, since, wait).thenApply(json => {
+                            let res = JSON.parse(json);
+                            res.enabled = that.messenger.hasSignals(controller);
+                            that.buildResponse(headerFunc, new TextEncoder().encode(JSON.stringify(res)), that.GET_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
                 } else if (startIndex != null){
                     let index = this.parsePositiveInt(startIndex);
                     this.messenger.getChat(chatId).thenApply(function(controller) {
@@ -3047,7 +3183,7 @@ module.exports = {
                                             let message = { messageRef: messagePairs[j].messageRef.toString(), author: author, timestamp: timestamp, type: type,
                                                   removeUsername: removeUsername, inviteUsername: inviteUsername, joinUsername: joinUsername,
                                                   editPriorVersion: editPriorVersion, deleteTarget: deleteTarget, replyToParent: replyToParent,
-                                                  text: text, envelope: serialisedEnvelope,
+                                                  text: text, envelope: serialisedEnvelope, utc: messageEnvelope.creationTime.toString(),
                                                   groupState: groupState, attachments : attachments
                                             };
                                             messages.push(message);
@@ -3330,6 +3466,29 @@ module.exports = {
                     let messageRef = new peergos.shared.messaging.MessageRef(contentHash);
                     let deleteMessage = new peergos.shared.messaging.messages.DeleteMessage(messageRef);
                     that.sendMessageAction(headerFunc, chatId, deleteMessage);
+                } else if (json.enableSignals != null) {
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.enableSignals(controller).thenApply(updated => {
+                            that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                        }).exceptionally(function(throwable) {
+                            console.log(throwable);
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
+                } else if (json.signal != null) {
+                    this.messenger.getChat(chatId).thenApply(function(controller) {
+                        that.messenger.sendSignal(controller, String(json.signal.type), String(json.signal.value != null ? json.signal.value : "")).thenApply(sent => {
+                            that.buildResponse(headerFunc, null, sent ? that.CREATE_SUCCESS : that.ACTION_FAILED);
+                        }).exceptionally(function(throwable) {
+                            that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                        });
+                    }).exceptionally(function(throwable) {
+                        console.log(throwable);
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
                 } else {
                     that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                 }

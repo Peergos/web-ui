@@ -93,10 +93,10 @@
 					<span class="social-person__initial" aria-hidden="true">{{ initialOf(username) }}</span>
 					<span class="social-person__name">
 						<button type="button" class="social-person__link" :title="username" @click="displayProfile(username)">{{ username }}</button>
-						<span v-if="isVerified(username)" class="pg-pill pg-tone--ok social-person__verified">
+						<span v-if="isVerified(username) && keysChanged[username] !== true" class="pg-pill pg-tone--ok social-person__verified">
 							<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("VERIFY.VERIFIED") }}
 						</span>
-						<span v-if="verification[username] == 'changed'" class="pg-pill pg-tone--error social-person__verified" :title="translate('VERIFY.CHANGED.HELP')">
+						<span v-if="keysChanged[username] === true" class="pg-pill pg-tone--error social-person__verified" :title="translate('VERIFY.CHANGED.HELP')">
 							<span class="pg-pill__dot" aria-hidden="true"></span>{{ translate("VERIFY.CHANGED") }}
 						</span>
 					</span>
@@ -279,6 +279,7 @@ module.exports = {
 	},
     data() {
         return {
+            keysChanged: {},
             targetUsername: "",
             targetUsernames: [],
             profile: {
@@ -317,8 +318,7 @@ module.exports = {
             prompt_consumer_func: () => {},
             // the lists are empty until the first load, which says nothing about the account
             loaded: false,
-            expandedGroups: {},
-            verification: {}
+            expandedGroups: {}
         }
     },
     props: [],
@@ -356,14 +356,6 @@ module.exports = {
             return this.socialData.groupUids.filter(uid => ! builtIn.includes(uid));
         }
     },
-	watch: {
-	    'socialData.annotations': {
-	        handler() {
-	            this.loadVerification();
-	        },
-	        immediate: true
-	    }
-	},
 	created() {
 	    let that = this;
         this.showSpinner = true;
@@ -371,6 +363,7 @@ module.exports = {
             that.showSpinner = false;
             that.loaded = true;
             that.loadGroupMembers();
+            that.checkVerifiedKeys();
         });
     },
     methods: {
@@ -414,23 +407,29 @@ module.exports = {
     // },
 
 	isVerified(username) {
-	    return this.verification[username] == "verified";
-	},
-
-	loadVerification() {
-	    let that = this;
-	    let annotations = this.socialData.annotations;
-	    Object.keys(annotations).forEach(username => {
-		that.context.verificationStatus(username, annotations[username]).thenApply(status => {
-		    that.verification = Object.assign({}, that.verification, {[username]: status});
-		});
-	    });
+	    var annotations = this.socialData.annotations[username]
+	    if (annotations == null)
+		return false;
+	    return annotations.isVerified();
 	},
 
 	hideFingerprint(isVerified) {
 	    this.showFingerprint = false;
 	    this.socialData.annotations[this.friendname] = new peergos.shared.user.FriendAnnotation(this.friendname, isVerified, this.fingerprint.left)
-	    this.verification = Object.assign({}, this.verification, {[this.friendname]: isVerified ? "verified" : "unverified"});
+	    this.keysChanged = Object.assign({}, this.keysChanged, {[this.friendname]: false});
+	},
+
+	// a friend verified with keys they no longer have must be verified again
+	checkVerifiedKeys() {
+	    let that = this;
+	    this.socialData.friends.forEach(username => {
+		let annotation = that.socialData.annotations[username];
+		if (annotation == null || !annotation.isVerified())
+		    return;
+		that.context.verificationStatus(username, annotation).thenApply(status => {
+		    that.keysChanged = Object.assign({}, that.keysChanged, {[username]: status == "changed"});
+		});
+	    });
 	},
 
 	showFingerPrint(friendname) {
