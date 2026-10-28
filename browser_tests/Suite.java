@@ -57,11 +57,11 @@ public class Suite {
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
             run(failures, "what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
+            run(failures, "an app left open by a view change answers nothing once reopened", () -> AppLeftOpenTest.run(args1));
             run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "an app installed straight from a zip", () -> AppFromZipTest.run(args1));
             run(failures, "choosing between two apps for a file, and always using one", () -> AppChoiceTest.run(args1));
             run(failures, "an app's folder grants: details, rename, move and a suggested folder", () -> AppFolderGrantTest.run(args1));
-            run(failures, "an app left open by a view change answers nothing once reopened", () -> AppLeftOpenTest.run(args1));
             run(failures, "Address Book, in the navigation on its own subdomain", () -> AddressBookTest.run(args1));
             run(failures, "Address Book keeps contacts where they belong when Peergos is slow", () -> AddressBookSafetyTest.run(args1));
             run(failures, "Address Book reads and writes vCards as other apps write them", () -> AddressBookFormatsTest.run(args1));
