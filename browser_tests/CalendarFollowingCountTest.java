@@ -1,6 +1,7 @@
 import java.nio.file.*;
 import java.time.*;
 import java.time.format.*;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /** "Edit -> This and following" on a series that ends after a count.
@@ -37,7 +38,7 @@ public class CalendarFollowingCountTest {
             String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
             String recurring = calendar + "/recurring";
             LocalDate first = LocalDate.now().withDayOfMonth(1).plusMonths(1)
-                    .with(java.time.temporal.TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));
+                    .with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));
             LocalDate fourth = first.plusWeeks(3);
             CalendarApp.write(d, recurring, "class.ics", vevent("class", "Class",
                     "DTSTART:" + first.format(DateTimeFormatter.BASIC_ISO_DATE) + "T120000Z",
