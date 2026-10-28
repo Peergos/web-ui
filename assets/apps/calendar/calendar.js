@@ -4590,8 +4590,16 @@ function placementOf(ev) {
 }
 
 function samePlacement(a, b) {
-    return !!a && !!b && a.calendarName === b.calendarName && a.year === b.year
-        && a.month === b.month && a.isRecurring === b.isRecurring;
+    return !!a && !!b && a.calendarName === b.calendarName && sameFolder(a, b);
+}
+
+// The host files a series in <calendar>/recurring/ whatever its start, so only a
+// single entry's month says which folder it is in. A series whose start moves to
+// another month has not moved: taken for a move, the clean-up deletes the file the
+// save has just written.
+function sameFolder(a, b) {
+    return a.isRecurring === b.isRecurring
+        && (a.isRecurring || (a.year === b.year && a.month === b.month));
 }
 
 // Identifies a stored event to the host: which file, in which calendar
@@ -4716,8 +4724,7 @@ function addAndPersist(payload) {
 function refusedAsAMove(ev) {
     let arrived = eventPlacements[ev.id];
     let now = placementOf(ev);
-    if (!arrived || (arrived.year === now.year && arrived.month === now.month
-            && arrived.isRecurring === now.isRecurring)) {
+    if (!arrived || sameFolder(arrived, now)) {
         return false;
     }
     showToast('This entry can be changed, but not moved to another month');
