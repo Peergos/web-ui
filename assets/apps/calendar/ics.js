@@ -170,8 +170,10 @@ function buildRecurringEventPayload(id, title, allDay, extra, recur, durationMs)
         allDay: allDay,
         rrule: rruleSpec,
         // bare-number duration silently produces end == start on a
-        // recurring event - object form works correctly (see README)
-        duration: { milliseconds: durationMs },
+        // recurring event - object form works correctly (see README). An all-day
+        // length is in days, so that a clock change under one occurrence does not
+        // move its end by an hour.
+        duration: allDay ? { days: Math.round(durationMs / 86400000) } : { milliseconds: durationMs },
         color: color,
         extendedProps: Object.assign({ recur: recur }, extra)
     };
