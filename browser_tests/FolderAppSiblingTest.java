@@ -1,19 +1,21 @@
 import java.nio.file.*;
 import java.util.*;
 
-/** A folder app reads the folder it was opened on, and not a sibling whose name starts the same.
+/** An app opened on a folder reads that folder and not a sibling whose name starts the same; an
+ *  app opened on a file reads that file and nothing else in its folder.
  *
  *  An app with READ_CHOSEN_FOLDER, run from a folder's menu, may read that folder and what is in
  *  it. The sandbox decided that with a plain prefix test on the path, so an app opened on
- *  /alice/photos could also list and read /alice/photos-private. It is checked from inside the
- *  app, with the fetches an app would make, against a control read of its own folder.
+ *  /alice/photos could also list and read /alice/photos-private; and an app opened on one file was
+ *  let at the whole folder around it. Both are checked from inside the app, with the fetches an app
+ *  would make, against a control read of what it was opened on.
  *
  *  Usage: java -cp ../server/Peergos.jar FolderAppSiblingTest.java [engine] [url]
  */
 public class FolderAppSiblingTest {
 
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
-    static final String APP = "foldercheck" + RUN;
+    static final String APP = "foldercheck" + RUN, FILE_APP = "filecheck" + RUN;
     static final String FOLDER = "shots" + RUN, SIBLING = FOLDER + "-private";
     static final String OUTER = "#sandboxId", INNER = "#appSandboxId";
 
@@ -40,6 +42,8 @@ public class FolderAppSiblingTest {
         Files.writeString(granted, "inside the chosen folder");
         Path secret = local.resolve("secret.txt");
         Files.writeString(secret, "in a sibling folder, never chosen");
+        Path beside = local.resolve("beside.txt");
+        Files.writeString(beside, "beside the chosen file, never chosen");
         Path manifest = local.resolve("peergos-app.json");
         Files.writeString(manifest, String.join("\n", "{",
                 "  \"displayName\": \"Folder check\",",
@@ -50,6 +54,18 @@ public class FolderAppSiblingTest {
                 "  \"launchable\": false,",
                 "  \"folderAction\": true,",
                 "  \"permissions\": [\"READ_CHOSEN_FOLDER\"]",
+                "}", ""));
+        Path fileManifest = local.resolve("file-app.json");
+        Files.writeString(fileManifest, String.join("\n", "{",
+                "  \"displayName\": \"File check\",",
+                "  \"name\": \"" + FILE_APP + "\",",
+                "  \"description\": \"opens text files\",",
+                "  \"version\": \"1.0.0\",",
+                "  \"author\": \"peergos\",",
+                "  \"launchable\": false,",
+                "  \"folderAction\": false,",
+                "  \"fileExtensions\": [\"txt\"],",
+                "  \"permissions\": []",
                 "}", ""));
         Path index = local.resolve("index.html");
         Files.writeString(index, String.join("\n",
@@ -63,7 +79,7 @@ public class FolderAppSiblingTest {
                 "};",
                 "</script></body></html>", ""));
         Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
-                "mkdir " + FOLDER, "cd " + FOLDER, "put " + granted.toAbsolutePath());
+                "mkdir " + FOLDER, "cd " + FOLDER, "put " + granted.toAbsolutePath(), "put " + beside.toAbsolutePath());
         Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
                 "mkdir " + SIBLING, "cd " + SIBLING, "put " + secret.toAbsolutePath());
         try {
@@ -74,6 +90,14 @@ public class FolderAppSiblingTest {
         Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
                 "cd .apps", "mkdir " + APP, "cd " + APP,
                 "put " + manifest.toAbsolutePath(), "mkdir assets", "cd assets", "put " + index.toAbsolutePath());
+        // the manifest has to be named peergos-app.json, so it goes up under that name
+        Path fileAppDir = local.resolve(FILE_APP);
+        Files.createDirectories(fileAppDir);
+        Files.copy(fileManifest, fileAppDir.resolve("peergos-app.json"));
+        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+                "cd .apps", "mkdir " + FILE_APP, "cd " + FILE_APP,
+                "put " + fileAppDir.resolve("peergos-app.json").toAbsolutePath(), "mkdir assets", "cd assets",
+                "put " + index.toAbsolutePath());
 
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-folder-app-dl-"), headless)) {
             d.navigate(url + "/");
@@ -103,6 +127,34 @@ public class FolderAppSiblingTest {
                 throw new AssertionError("An app opened on " + FOLDER + " listed " + SIBLING + ": " + listing);
             System.out.println("  ok   it can neither read nor list " + SIBLING + " (" + file.get("status")
                     + ", " + listing.get("status") + ")");
+
+            // and an app opened on one file, from the file's menu
+            // closed through the sandbox itself, which takes its message listener off the window
+            d.script("const queue = [window.__drive];"
+                    + "while (queue.length > 0) { const c = queue.shift();"
+                    + "  if (typeof c.closeSandbox === 'function') { c.closeSandbox(); return 1; }"
+                    + "  queue.push(..." + Page.VUE + ".children(c)); }"
+                    + "throw new Error('no sandbox to close');");
+            d.waitForScript("the folder app to close", "!document.querySelector('" + OUTER + "')", 60_000);
+            Page.openPath(d, home + FOLDER, FOLDER);
+            Page.waitForInDrive(d, "granted.txt", 120_000);
+            d.script("const vm = window.__drive;"
+                    + "vm.selectedFiles = [vm.sortedFiles.find(f => f.getFileProperties().name === 'granted.txt')];"
+                    + "vm.appOpen(arguments[0]); return 1;", FILE_APP);
+            d.waitForScript("the file app's frame", "!!document.querySelector('" + OUTER + "')", 60_000);
+            d.waitUntil("the file app to load", () -> Boolean.TRUE.equals(inAppQuiet(d,
+                    "return !!document.getElementById('ready') && typeof window.read === 'function'")), 120_000);
+            Map<String, Object> opened = read(d, home + FOLDER + "/granted.txt");
+            if (! String.valueOf(opened.get("text")).contains("inside the chosen folder"))
+                throw new AssertionError("The file app could not read the file it was opened on: " + opened);
+            Map<String, Object> next = read(d, home + FOLDER + "/beside.txt");
+            if (String.valueOf(next.get("text")).contains("never chosen"))
+                throw new AssertionError("An app opened on granted.txt read the file beside it: " + next);
+            Map<String, Object> folder = read(d, home + FOLDER);
+            if (String.valueOf(folder.get("text")).contains("beside.txt"))
+                throw new AssertionError("An app opened on granted.txt listed its folder: " + folder);
+            System.out.println("  ok   an app opened on a file reads that file and nothing beside it ("
+                    + next.get("status") + ", " + folder.get("status") + ")");
             System.out.println("PASS");
         } finally {
             if (own != null)
