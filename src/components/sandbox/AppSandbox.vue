@@ -360,8 +360,12 @@ module.exports = {
     },
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor',
             'archiveResolver'],
-    beforeDestroy: function() {
+    // Vue 3's name for the hook: as beforeDestroy it never ran, and a sandbox left by a view
+    // change kept its window listeners, so the next app's requests were answered twice.
+    beforeUnmount: function() {
         this.keepAccessOnClose();
+        window.removeEventListener('message', this.messageHandler);
+        window.removeEventListener("resize", this.resizeHandler);
     },
     created: function() {
         let that = this;
