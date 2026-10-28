@@ -89,6 +89,22 @@ public class CalendarListReadFailureTest {
             if (! reloaded.contains(ADDED))
                 throw new AssertionError("The added calendar is not in the reloaded list: " + reloaded);
             System.out.println("  ok   a reload lists them all: " + reloaded);
+            // The suite's account is shared with the tests after this one, and some of them export
+            // "the first calendar": the one added here goes again, as CalendarStoreTest's does.
+            CalendarApp.inFrame(d, "let row = Array.from(document.querySelectorAll('.calendar-list-item'))"
+                    + "  .find(r => r.textContent.indexOf(" + CalendarApp.quote(ADDED) + ") !== -1);"
+                    + "row.querySelector('.calendar-menu-button').click();"
+                    + "return new Promise(r => setTimeout(() => {"
+                    + "  let edit = Array.from(document.querySelectorAll('.calendar-menu.open button'))"
+                    + "    .find(b => b.textContent.trim() === 'Edit');"
+                    + "  if (!edit) throw new Error('no Edit in the calendar menu');"
+                    + "  edit.click(); r(1); }, 300));");
+            CalendarApp.waitInFrame(d, "the calendar dialog",
+                    "document.getElementById('calendar-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("calendar-delete") + "return 1;");
+            d.waitForScript("the host's delete question", "window.__cal.showConfirm === true", 30_000);
+            d.script("window.__cal.showConfirm = false; window.__cal.confirm_consumer_func();");
+            d.waitUntil("the added calendar to go", () -> ! calendars(d).contains(ADDED), 60_000);
             System.out.println("PASS");
         } finally {
             if (own != null)
