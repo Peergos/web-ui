@@ -1523,6 +1523,7 @@ function moveOccurrence(ev, scope, moved) {
         let shiftMs = moved.start.getTime() - ev.start.getTime();
         let first = new Date((recur.dtstart ? toStoredDate(recur.dtstart) : ev.start).getTime() + shiftMs);
         recur.dtstart = toLocalInputValue(first, moved.allDay);
+        shiftListedDates(recur, shiftMs, moved.allDay);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
         ev.remove();
         addAndPersist(payload);
@@ -3862,8 +3863,13 @@ form.addEventListener('submit', function (e) {
         if (recur) {
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
             if (editingEvent && editingEvent.extendedProps.recur) {
-                recur.exdates = editingEvent.extendedProps.recur.exdates || [];
-                recur.rdates = editingEvent.extendedProps.recur.rdates || [];
+                let was = editingEvent.extendedProps.recur;
+                recur.exdates = was.exdates || [];
+                recur.rdates = was.rdates || [];
+                // moved by as much as the series' start moved, and into the form
+                // of its new start, all-day or timed
+                if (was.dtstart)
+                    shiftListedDates(recur, toStoredDate(recur.dtstart).getTime() - toStoredDate(was.dtstart).getTime(), allDay);
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
@@ -4591,6 +4597,21 @@ function placementOf(ev) {
 function samePlacement(a, b) {
     return !!a && !!b && a.calendarName === b.calendarName && a.year === b.year
         && a.month === b.month && a.isRecurring === b.isRecurring;
+}
+
+// A series' excluded and added dates name occurrences by their start. When the
+// series moves, each moves with it, or the deleted occurrences come back and the
+// added ones land where the series no longer is; and they take the form of the
+// new start, a bare date for an all-day series, or the write has nothing to turn
+// a time into.
+function shiftListedDates(recur, shiftMs, allDay) {
+    let move = function (list) {
+        return (list || []).map(function (s) {
+            return toLocalInputValue(new Date(toStoredDate(s).getTime() + shiftMs), allDay);
+        });
+    };
+    if (recur.exdates) recur.exdates = move(recur.exdates);
+    if (recur.rdates) recur.rdates = move(recur.rdates);
 }
 
 // Identifies a stored event to the host: which file, in which calendar
