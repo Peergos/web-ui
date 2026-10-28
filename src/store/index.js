@@ -311,17 +311,20 @@ module.exports = Vuex.createStore({
 			if (state.isSecretLink)
 				return;
 
-			return state.context.getSpaceUsage(false).thenApply(u => {
-				commit('SET_USAGE', u);
-                if (callback != null) {
-                    callback(u)
-                }
-			}).exceptionally(err => {
-				// the callers go on from here - a refresh, a spinner taken down - whatever the answer
+			let usage = state.context.getSpaceUsage(false);
+			// The callers go on from here - a refresh, a spinner taken down - whatever the answer. Only
+			// the request's failure calls back with nothing: one in a callback is not a second answer.
+			usage.exceptionally(err => {
 				if (callback != null) {
 					callback(null);
 				}
 				return null;
+			});
+			return usage.thenApply(u => {
+				commit('SET_USAGE', u);
+                if (callback != null) {
+                    callback(u)
+                }
 			});
 		},
 
