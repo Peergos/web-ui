@@ -182,6 +182,33 @@ function buildRecurringEventPayload(id, title, allDay, extra, recur, durationMs)
     return data;
 }
 
+// The length a repeating entry's payload carries, as milliseconds.
+function durationSpecMs(spec) {
+    if (!spec) return 0;
+    return (spec.days || 0) * 86400000 + (spec.milliseconds || 0);
+}
+
+// How long an entry is as a clock on the wall sees it: two days, nine hours. Real
+// milliseconds differ from that by an hour across a clock change, and a length taken
+// that way from one occurrence becomes the whole series' length - a weekend-long
+// series shrank to a day, a night shift to seven hours, from the one occurrence
+// that happened to straddle the change.
+function wallClockMs(start, end, allDay) {
+    if (allDay) return Math.round((end.getTime() - start.getTime()) / 86400000) * 86400000;
+    let clock = function (d) {
+        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+    };
+    return clock(end) - clock(start);
+}
+
+// `date` plus a wall-clock length: the same hour and minute later, whatever the
+// zone's offset does in between.
+function plusWallClock(date, ms) {
+    let minutes = Math.round(ms / 60000);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(),
+        date.getMinutes() + minutes, date.getSeconds());
+}
+
 function buildPlainEventPayload(id, title, allDay, start, end, extra) {
     let color = colorForCalendarId(extra.calendarId);
     return {

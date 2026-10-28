@@ -106,6 +106,14 @@ public class CalendarImportExportTest {
                 throw new AssertionError("A second import of the same file left " + afterSecond);
             System.out.println("  ok   importing it twice stores it once");
 
+            // --- a series the grid has not drawn ----------------------------------------------
+            // An all-day series years away is exported from the store, where an all-day length
+            // is kept in days; it has to come out as long as it went in.
+            String weekendUid = "far-away-weekend";
+            CalendarApp.write(d, calendar + "/recurring", weekendUid + ".ics", String.join("\r\n",
+                    "BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "UID:" + weekendUid,
+                    "DTSTAMP:20290704T090000Z", "DTSTART;VALUE=DATE:20290707", "DTEND;VALUE=DATE:20290709",
+                    "RRULE:FREQ=WEEKLY", "SUMMARY:Far-away weekends", "END:VEVENT", "END:VCALENDAR", ""));
             // --- a duplicate the grid cannot see -----------------------------------------------
             // The app skips an entry it already has drawn, but it only has the months around
             // today. An entry years away is not in that memory, so the store is the only thing
@@ -160,11 +168,23 @@ public class CalendarImportExportTest {
                 throw new AssertionError("The export is not one calendar document:\n" + out);
             CalendarApp.assertContains(out, "END:VCALENDAR");
             System.out.println("  ok   one document, " + events + " events, all of them readable");
+            String weekend = veventOf(out, weekendUid);
+            if (! weekend.contains("DTEND;VALUE=DATE:20290709"))
+                throw new AssertionError("The all-day series the grid never drew exported as:\n" + weekend);
+            System.out.println("  ok   a series the grid never drew exports as long as it is");
             System.out.println("PASS");
         } finally {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** The VEVENT block carrying one UID. */
+    static String veventOf(String ics, String uid) {
+        int at = ics.indexOf("UID:" + uid);
+        if (at < 0)
+            throw new AssertionError("No entry " + uid + " in the export:\n" + ics);
+        return ics.substring(ics.lastIndexOf("BEGIN:VEVENT", at), ics.indexOf("END:VEVENT", at));
     }
 
     /** Hands the file picker a path, the way the upload tests do. */

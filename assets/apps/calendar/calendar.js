@@ -94,27 +94,6 @@ function computeDurationMs(start, end, allDay) {
     return wallClockMs(from, to, allDay);
 }
 
-// How long an entry is as a clock on the wall sees it: two days, nine hours. Real
-// milliseconds differ from that by an hour across a clock change, and a length taken
-// that way from one occurrence becomes the whole series' length - a weekend-long
-// series shrank to a day, a night shift to seven hours, from the one occurrence
-// that happened to straddle the change.
-function wallClockMs(start, end, allDay) {
-    if (allDay) return Math.round((end.getTime() - start.getTime()) / 86400000) * 86400000;
-    let clock = function (d) {
-        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
-    };
-    return clock(end) - clock(start);
-}
-
-// `date` plus a wall-clock length: the same hour and minute later, whatever the
-// zone's offset does in between.
-function plusWallClock(date, ms) {
-    let minutes = Math.round(ms / 60000);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(),
-        date.getMinutes() + minutes, date.getSeconds());
-}
-
 let WEEKDAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
 
 function weekdayCodeOf(date) {
@@ -868,7 +847,7 @@ function recurringDurationMs(eventId) {
     let defs = calendar.getCurrentData().eventStore.defs;
     let key = Object.keys(defs).find(function (k) { return defs[k].publicId === eventId; });
     let dur = key && defs[key].recurringDef && defs[key].recurringDef.duration;
-    return dur ? (dur.days || 0) * 86400000 + dur.milliseconds : 0;
+    return dur ? durationSpecMs(dur) : 0;
 }
 
 // --- Keeping what this app does not model ---------------------------------
@@ -1017,8 +996,7 @@ function eventToIcsLines(ev) {
         let tzid = ev.allDay ? null : LOCAL_TZ;
         let dtstart = ev.allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
         let durationMs = ev.start ? wallClockMs(ev.start, ev.end || ev.start, ev.allDay)
-            : (ev.duration && typeof ev.duration.milliseconds === 'number'
-                ? ev.duration.milliseconds : recurringDurationMs(ev.id));
+            : (ev.duration ? durationSpecMs(ev.duration) : recurringDurationMs(ev.id));
         lines.push(icsDtLine('DTSTART', dtstart, ev.allDay, tzid));
         lines.push(icsDtLine('DTEND', plusWallClock(dtstart, durationMs), ev.allDay, tzid));
         let rruleLine = recurToIcsRRuleLine(recur, ev.allDay, tzid);
