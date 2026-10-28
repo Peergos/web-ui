@@ -1704,7 +1704,7 @@ module.exports = {
                         recentMessages.push(chat.getRecent().toArray());
                     }
                 } else {
-                    if(chat.chatUuid.startsWith("chat-" + this.currentAppName)) {
+                    if(this.isOwnChat(chat.chatUuid)) {
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
@@ -1713,6 +1713,20 @@ module.exports = {
                 }
             }
             return {chats: filteredChats, recentMessages: recentMessages};
+        },
+        // Messenger names an app's chats "chat-<app>$<owner>$<uuid>", so the separator is part of
+        // the match: without it app "note" would reach app "notes"' chats. The chat app has the
+        // conversations no app created.
+        isOwnChat: function(chatId) {
+            if (this.currentAppName == "chat")
+                return ! chatId.startsWith("chat-");
+            return this.isOwnChatId(chatId);
+        },
+        // The ids Messenger gives this app's chats, and nothing older: what a delete, of a chat or
+        // of a file in one, takes.
+        isOwnChatId: function(chatId) {
+            let own = this.currentAppName == "chat" ? "chat$" : "chat-" + this.currentAppName + "$";
+            return chatId.startsWith(own);
         },
         addPendingAttachments: function(messagePairs) {
             let refs = [];
@@ -2940,6 +2954,12 @@ module.exports = {
         },
         handleChatRequestV1: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
+            // A chat is named by the path's first segment; a DELETE names a file instead, and
+            // checks that itself.
+            if (apiMethod != 'DELETE' && path.length > 0 && ! this.isOwnChat(path.split('/')[0])) {
+                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                return;
+            }
             if(apiMethod == 'GET') {
                 let startIndex = params.get("startIndex");
                 let chatId = path;
@@ -3087,7 +3107,7 @@ module.exports = {
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
-                if(path.startsWith(that.currentAppName + "$") || path.startsWith("chat-" + that.currentAppName + "$")) {
+                if(this.isOwnChatId(path)) {
                     this.messenger.getChat(chatId).thenApply(function(controller) {
                         that.messenger.deleteChat(controller).thenApply(res => {
                             that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
@@ -3098,9 +3118,8 @@ module.exports = {
                     });
                 } else {
                     let filePath = decodeURIComponent(path);
-                    if (!(filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")
-                        || filePath.startsWith(this.context.username + "/.messaging/chat-" + this.currentAppName + "$")
-                        )) {
+                    let chatDir = filePath.substring(filePath.indexOf("/.messaging/") + "/.messaging/".length);
+                    if (!filePath.startsWith(this.context.username + "/.messaging/") || !this.isOwnChatId(chatDir)) {
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     } else {
                         let parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
@@ -3144,7 +3163,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair.file != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3173,7 +3192,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3196,7 +3215,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3464,6 +3483,10 @@ module.exports = {
         },
         handleChatRequestV0: function(header, path, apiMethod, data, hasFormData, params) {
             let that = this;
+            if (apiMethod != 'POST' && path.length > 0 && ! this.isOwnChat(path)) {
+                that.buildResponse(header, null, that.ACTION_FAILED);
+                return;
+            }
             if(apiMethod == 'GET') {
                 let chatId = path;
                 let messenger = new peergos.shared.messaging.Messenger(this.context);
