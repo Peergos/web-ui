@@ -151,7 +151,7 @@ const loopback = require("../mixins/loopback/index.js");
 const i18n = require("../i18n/index.js");
 
 module.exports = {
-    mixins: [localServer],
+    mixins: [localServer, i18n],
     components: {
         Admin,
         AppButton,
@@ -160,7 +160,6 @@ module.exports = {
         Spinner,
 	    AppIcon,
     },
-    mixins:[i18n],
 	data() {
 		return {
 		    profileImage: "",
