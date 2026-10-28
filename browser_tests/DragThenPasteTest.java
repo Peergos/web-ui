@@ -72,6 +72,27 @@ public class DragThenPasteTest {
                 throw new AssertionError("The file only dragged moved: " + folder + " holds " + beside + ", " + into + " " + inside);
             System.out.println("  ok   the cut file moved, the dragged one stayed: " + inside);
             d.waitForScript("the spinner to come down", "!window.__drive.showSpinner", 30_000);
+
+            // --- dropped on a folder: the drop takes what the drag carried --------------------------
+            // with no dragend after it, as when the move re-renders the card the drag started from
+            Page.openPath(d, folder, FOLDER);
+            Page.waitForInDrive(d, DRAGGED, 60_000);
+            d.script("if (!window.__drive.isGrid) window.__drive.switchView(); return 1;");
+            WebDriver.sleep(1000);
+            Object dropped = d.script("const vm = window.__drive;"
+                    + "const card = n => document.querySelector('figure[draggable][id=\"'"
+                    + "  + vm.sortedFiles.findIndex(f => f.getFileProperties().name === n) + '\"]');"
+                    + "const from = card(arguments[0]), to = card(arguments[1]);"
+                    + "if (!from || !to) return 'no cards';"
+                    + "const dt = new DataTransfer();"
+                    + "from.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}));"
+                    + "to.dispatchEvent(new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt}));"
+                    + "return vm.dragged == null ? 'taken' : 'still carried';", DRAGGED, INTO);
+            if (! "taken".equals(String.valueOf(dropped)))
+                throw new AssertionError("After a drop on a folder, the drag is " + dropped
+                        + ": a later drop of anything else onto a folder would move that file again");
+            d.waitUntil(DRAGGED + " to arrive in " + INTO, () -> namesIn(d, into).contains(DRAGGED), 60_000);
+            System.out.println("  ok   dropped on a folder, it moved there and the drop let go of it");
             System.out.println("PASS");
         } finally {
             if (own != null)

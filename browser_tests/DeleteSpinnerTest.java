@@ -72,6 +72,15 @@ public class DeleteSpinnerTest {
             List<String> left = namesIn(d, folder);
             if (! left.contains(C) || ! left.contains(D))
                 throw new AssertionError("The refused delete still took files: " + left);
+
+            // --- a callback that fails is not answered again as if the request had ------------------
+            d.script("window.__calls = 0; window.__drive.$store.dispatch('updateUsage',"
+                    + " () => { window.__calls++; throw new Error('the callback failed'); }); return 1;");
+            WebDriver.sleep(3000);
+            long calls = ((Number) d.script("return window.__calls;")).longValue();
+            if (calls != 1)
+                throw new AssertionError("A usage callback that threw was called " + calls + " times");
+            System.out.println("  ok   a usage callback that throws is called once");
             System.out.println("PASS");
         } finally {
             if (own != null)
