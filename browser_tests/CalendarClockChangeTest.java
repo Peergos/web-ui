@@ -33,15 +33,17 @@ public class CalendarClockChangeTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
-        try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless)) {
+        // a zone whose clocks change, whatever the runner's
+        try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless, "Europe/Athens")) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             CalendarApp.open(d);
             String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
-            ZoneOffsetTransition change = ZoneId.systemDefault().getRules().nextTransition(Instant.now());
+            ZoneId zone = ZoneId.of(String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;")));
+            ZoneOffsetTransition change = zone.getRules().nextTransition(Instant.now());
             if (change == null || change.getInstant().isAfter(Instant.now().plus(Duration.ofDays(360)))) {
-                System.out.println("  no clock change in the year ahead in " + ZoneId.systemDefault() + ", nothing to check");
+                System.out.println("  no clock change in the year ahead in the browser's " + zone + ", nothing to check");
                 System.out.println("PASS");
                 return;
             }
