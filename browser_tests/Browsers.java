@@ -73,6 +73,23 @@ public class Browsers {
         return d;
     }
 
+    /** As {@link #launch}, with the browser in the given time zone rather than the machine's, for what shows only
+     *  where the clocks change: a runner in UTC never would. A browser that takes its zone from elsewhere, as Safari
+     *  does, keeps its own, so ask it which it has. */
+    public static WebDriver launch(Engine engine, Path downloadDir, boolean headless, String timeZone) {
+        synchronized (Browsers.class) {
+            zone = timeZone;
+            try {
+                return launch(engine, downloadDir, headless);
+            } finally {
+                zone = null;
+            }
+        }
+    }
+
+    /** The TZ the processes started for a launch get, or null for the machine's own. */
+    private static volatile String zone;
+
     private static WebDriver start(Engine engine, Path downloadDir, boolean headless) {
         try {
             Files.createDirectories(downloadDir);
@@ -347,10 +364,12 @@ public class Browsers {
     }
 
     private static Process start(List<String> cmd) throws IOException {
-        return new ProcessBuilder(cmd)
+        ProcessBuilder process = new ProcessBuilder(cmd)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .start();
+                .redirectError(ProcessBuilder.Redirect.DISCARD);
+        if (zone != null)
+            process.environment().put("TZ", zone);
+        return process.start();
     }
 
     private static void awaitDriver(String statusUrl) {
