@@ -79,6 +79,7 @@ public class Suite {
             if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
+                run(failures, "a selection with an empty file in it downloads to the end", () -> EmptyFileDownloadTest.run(args1));
             }
 
             run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
@@ -90,6 +91,9 @@ public class Suite {
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
             run(failures, "a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             run(failures, "hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
+            run(failures, "a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));
+            run(failures, "a copy over the quota is refused and leaves the drive usable", () -> CopyOverQuotaTest.run(args1));
+            run(failures, "a drag that lands nowhere leaves what was cut to paste", () -> DragThenPasteTest.run(args1));
             run(failures, "change password with an authenticator app", () -> ChangePasswordMfaTest.run(args1));
             run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
