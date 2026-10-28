@@ -3105,6 +3105,8 @@ module.exports = {
                 });
             } else if (clipboard.op == "copy") {
                 if (this.quotaBytes.toString() == '0') {
+                    // nothing is copied by this call: a retry puts up a progress toast of its own
+                    that.$toast.dismiss(name);
                     if (retrying == null) {
                         this.updateQuota(quotaBytes => {
                             if (quotaBytes != null) {
@@ -3131,8 +3133,14 @@ module.exports = {
                                     that.showSpinner = false;
                                     clipboard.op = null;
                                     that.selectedFiles = [];
+                                } else {
+                                    // the copy stopped at an item, and the error dialog says which
+                                    that.$toast.dismiss(name);
                                 }
                             });
+                        } else {
+                            // refused before anything was copied, and the refusal says why
+                            that.$toast.dismiss(name);
                         }
                     });
                 }
