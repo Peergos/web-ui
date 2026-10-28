@@ -374,7 +374,8 @@ module.exports = {
               }
               let length = Math.min(blockSize, size - offset)
               reader.readIntoArray(data, offset, length).thenApply(function (read) {
-                readFrom(offset + read)
+                // a boxed java Integer: added as it is, it joins the offset as a string
+                readFrom(offset + read.value_0)
               }).exceptionally(function (throwable) {
                 failNonStreaming(throwable)
               })
