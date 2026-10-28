@@ -294,15 +294,18 @@ module.exports = Vuex.createStore({
 		updateQuota({ commit, state }, callback) {
 			if (state.isSecretLink)
 				return;
-			return state.context.getQuota().thenApply(q => {
-			    commit('SET_QUOTA', q)
-				// return q;
-				if (callback != null) {
-					callback(q)
-				}
-            }).exceptionally(err => {
+			let quota = state.context.getQuota();
+			// as with usage: only the request's failure calls back with nothing
+			quota.exceptionally(err => {
 				if (callback != null) {
 					callback(null);
+				}
+				return null;
+			});
+			return quota.thenApply(q => {
+			    commit('SET_QUOTA', q)
+				if (callback != null) {
+					callback(q)
 				}
             });
 		},
