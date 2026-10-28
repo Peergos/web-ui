@@ -4080,7 +4080,7 @@ module.exports = {
                         that.errorTitle = that.translate("DRIVE.DELETE.ERROR");
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
-                        future.complete(false);
+                        that.showSpinner = false;
                     });
                 }
             });
