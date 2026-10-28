@@ -777,6 +777,14 @@ function sameRecurFields(a, b) {
     return Object.keys(one).every(function (key) { return one[key] === b[key]; });
 }
 
+// As sameRecurFields, leaving out where the series ends.
+function sameRecurFieldsBesidesEnd(a, b) {
+    if (!a || !b) return false;
+    let one = recurFormFields(a);
+    return ['freq', 'interval', 'byday', 'bymonthday', 'bymonth']
+        .every(function (key) { return one[key] === b[key]; });
+}
+
 // Carries the original rule onto a recurrence the form just rebuilt, when the
 // form did not actually change any of it - saving an event after renaming it
 // must not rewrite its repeat.
@@ -800,6 +808,15 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     // rule itself untouched.
     if (recur.source && sameRecurFields(recur, recur.sourceFields))
         return 'RRULE:' + recur.source;
+    // Only its end moved - a series cut short by "this and following", a counted
+    // task completed: the rule keeps every other part as the file had it, the ones
+    // the form cannot show among them, or the series lands on days it never did.
+    if (recur.source && sameRecurFieldsBesidesEnd(recur, recur.sourceFields)) {
+        let kept = recur.source.split(';').filter(function (part) {
+            return !/^(COUNT|UNTIL)=/i.test(part);
+        });
+        return 'RRULE:' + kept.concat(rruleEndParts(recur, allDay, tzid)).join(';');
+    }
     let freqMap = { daily: 'DAILY', weekly: 'WEEKLY', monthly: 'MONTHLY', yearly: 'YEARLY' };
     let parts = ['FREQ=' + freqMap[recur.freq]];
     if (recur.interval > 1) parts.push('INTERVAL=' + recur.interval);
@@ -808,22 +825,20 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     if (recur.bymonth) parts.push('BYMONTH=' + recur.bymonth);
     // Read out of the file and carried back, though nothing here can set one.
     if (recur.bysetpos && recur.bysetpos.length) parts.push('BYSETPOS=' + recur.bysetpos.join(','));
-    if (recur.end === 'count' && recur.count) {
-        parts.push('COUNT=' + recur.count);
-    } else if (recur.end === 'until' && recur.until) {
-        let untilStr = formatUntil(recur.until, recur.dtstart, allDay);
-        if (allDay) {
-            parts.push('UNTIL=' + toIcsCompact(untilStr, true));
-        } else {
-            // UNTIL can't carry a TZID param, and DTSTART has one here -
-            // RFC 5545 (and universal real-world practice) says UNTIL
-            // must then be UTC.
-            let u = new Date(untilStr);
-            let utcMs = localWallClockToUtcMs(tzid, u.getFullYear(), u.getMonth(), u.getDate(), u.getHours(), u.getMinutes(), u.getSeconds());
-            parts.push('UNTIL=' + icsUtcStamp(new Date(utcMs)));
-        }
-    }
-    return 'RRULE:' + parts.join(';');
+    return 'RRULE:' + parts.concat(rruleEndParts(recur, allDay, tzid)).join(';');
+}
+
+function rruleEndParts(recur, allDay, tzid) {
+    if (recur.end === 'count' && recur.count) return ['COUNT=' + recur.count];
+    if (recur.end !== 'until' || !recur.until) return [];
+    let untilStr = formatUntil(recur.until, recur.dtstart, allDay);
+    if (allDay) return ['UNTIL=' + toIcsCompact(untilStr, true)];
+    // UNTIL can't carry a TZID param, and DTSTART has one here -
+    // RFC 5545 (and universal real-world practice) says UNTIL
+    // must then be UTC.
+    let u = new Date(untilStr);
+    let utcMs = localWallClockToUtcMs(tzid, u.getFullYear(), u.getMonth(), u.getDate(), u.getHours(), u.getMinutes(), u.getSeconds());
+    return ['UNTIL=' + icsUtcStamp(new Date(utcMs))];
 }
 
 function recurToIcsRdateLine(recur, allDay, tzid) {
