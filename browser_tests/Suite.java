@@ -79,7 +79,6 @@ public class Suite {
             if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
-                run(failures, "a selection with an empty file in it downloads to the end", () -> EmptyFileDownloadTest.run(args1));
             }
 
             run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
@@ -128,6 +127,7 @@ public class Suite {
                 run(failures, "emptying the first calendar", () -> CalendarEmptyTest.run(args1));
             if (canPlaceDownloads) {
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
+                run(failures, "a selection with an empty file in it downloads to the end", () -> EmptyFileDownloadTest.run(args1));
                 // The export half of this one downloads a file, so it belongs with the group
                 // that can say where downloads land.
                 run(failures, "calendar import and export", () -> CalendarImportExportTest.run(args1));
