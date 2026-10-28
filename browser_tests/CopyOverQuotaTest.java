@@ -61,6 +61,10 @@ public class CopyOverQuotaTest {
             d.script("const vm = window.__drive; vm.multiSelectTargetFolder = vm.currentDir; vm.pasteMultiSelect(); return 1;");
             awaitRefusal(d, "the selection");
             System.out.println("  ok   a selection: refused, and the spinner came down");
+            WebDriver.sleep(2000);
+            if (Page.inFlight(d).contains("Copying"))
+                throw new AssertionError("The refused copy left its progress toast up: " + Page.inFlight(d));
+            System.out.println("  ok   and no progress toast is left for a copy that never started");
 
             List<String> inside = namesIn(d, into);
             if (inside.contains(BIG))
