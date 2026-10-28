@@ -3002,6 +3002,7 @@ module.exports = {
                     if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
                         let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                         that.$toast.error(errMsg, {timeout:false});
+                        that.showSpinner = false;
                         sizeFuture.complete(false);
                     } else {
                         let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
@@ -3204,6 +3205,7 @@ module.exports = {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                                 let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                that.showSpinner = false;
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
