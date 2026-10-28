@@ -557,6 +557,9 @@ module.exports = {
 			// menu, and whether that menu is offered at all - and an undeclared property on
 			// the instance is invisible to Vue, so those answers never refreshed.
 			clipboardMultiSelect: null,
+			// What a drag in progress carries. Not the clipboard: a drag is not a Cut, and one
+			// that lands nowhere must neither leave a Paste behind nor replace what was cut.
+			dragged: null,
 			selectedFiles: [],
 			viewerFile: null,
 			url: null,
@@ -3709,20 +3712,20 @@ module.exports = {
             var owner = treeNode.getOwnerName();
             var me = this.context.username;
             if (owner === me) {
-                console.log("cut");
-                this.clipboard = {
+                this.dragged = {
                     parent: this.currentDir,
                     fileTreeNode: treeNode,
                     op: "cut"
                 };
             } else {
-                console.log("copy");
                 ev.dataTransfer.effectAllowed='copy';
-                this.clipboard = {
+                this.dragged = {
                     fileTreeNode: treeNode,
                     op: "copy"
                 };
             }
+            // over when it ends, dropped or not; a drop has taken what it needs by then
+            ev.target.addEventListener('dragend', () => { this.dragged = null; }, {once: true});
         },
         // DragEvent, FileTreeNode => boolean
         drop: function(ev, target) {
@@ -3742,42 +3745,40 @@ module.exports = {
             var id = ev.currentTarget.id;
             var that = this;
             if(id != moveId && target.isDirectory()) {
-                const clipboard = this.clipboard;
-                if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                const dragged = this.dragged;
+                if (dragged == null)
                     return;
                 that.showSpinner = true;
-                if (clipboard.op == "cut") {
-        		    var name = clipboard.fileTreeNode.getFileProperties().name;
+                if (dragged.op == "cut") {
+        		    var name = dragged.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     let filePath = peergos.client.PathUtils.toPath(that.path, name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context, callbacks.supplier(() => that.confirmMove()))
+                    dragged.fileTreeNode.moveTo(target, dragged.parent, filePath, this.context, callbacks.supplier(() => that.confirmMove()))
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-                            that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = that.translate("DRIVE.MOVE.ERROR")
-                            .replace("$NAME", clipboard.fileTreeNode.getName());
+                            .replace("$NAME", dragged.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
                     });
-                } else if (clipboard.op == "copy") {
+                } else if (dragged.op == "copy") {
                     console.log("drop-copy");
-                    var file = clipboard.fileTreeNode;
+                    var file = dragged.fileTreeNode;
                     var props = file.getFileProperties();
                     file.copyTo(target, this.context)
                     .thenApply(function() {
                         that.currentDirChanged();
                         that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-                            that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = that.translate("DRIVE.COPY.ERROR")
-                            .replace("$NAME", clipboard.fileTreeNode.getName());
+                            .replace("$NAME", dragged.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
