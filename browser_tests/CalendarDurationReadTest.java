@@ -80,9 +80,10 @@ public class CalendarDurationReadTest {
                 "document.getElementById('event-popover').classList.contains('open')", 30_000);
     }
 
-    /** How long the grid has an entry, read off the event itself. */
+    /** How long the grid has an entry, read off the event itself: through a function the page declares, as
+     *  Firefox's driver can't see the page's let and const. */
     static long hoursLong(WebDriver d, String title) {
-        Object hours = CalendarApp.inFrame(d, "let ev = calendar.getEvents().find(e => e.title.indexOf(arguments[0]) !== -1);"
+        Object hours = CalendarApp.inFrame(d, "let ev = allStoredEvents().find(e => e.title.indexOf(arguments[0]) !== -1);"
                 + "if (!ev) throw new Error('no event ' + arguments[0]);"
                 + "return Math.round((ev.end.getTime() - ev.start.getTime()) / 3600000);", title);
         return ((Number) hours).longValue();
