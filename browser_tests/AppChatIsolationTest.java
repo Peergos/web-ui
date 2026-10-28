@@ -101,13 +101,18 @@ public class AppChatIsolationTest {
                     + history.get("status") + ")");
 
             String sent = "posted by " + APP + " " + RUN;
+            call(d, "PUT", "/peergos-api/v1/chat/" + mine,
+                    "{\"createMessage\": {\"text\": \"" + sent + "\", \"attachments\": []}}");
             call(d, "PUT", "/peergos-api/v1/chat/" + foreign,
                     "{\"createMessage\": {\"text\": \"" + sent + "\", \"attachments\": []}}");
             call(d, "PUT", "/peergos-api/v0/chat/" + foreign, "{\"text\": \"" + sent + "\"}");
             WebDriver.sleep(3000);
+            // the read of its own chat is what shows the read below can see a posted message
+            if (! messages(d, mine).contains(sent))
+                throw new AssertionError("The app's post into its own chat is not there: " + messages(d, mine));
             if (messages(d, foreign).contains(sent))
                 throw new AssertionError("App " + APP + " posted into " + OTHER_APP + "'s chat");
-            System.out.println("  ok   it cannot post into the other app's chat");
+            System.out.println("  ok   it posts into its own chat and not into the other app's");
             System.out.println("PASS");
         } finally {
             if (own != null)
