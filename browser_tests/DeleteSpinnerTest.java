@@ -81,6 +81,13 @@ public class DeleteSpinnerTest {
             if (calls != 1)
                 throw new AssertionError("A usage callback that threw was called " + calls + " times");
             System.out.println("  ok   a usage callback that throws is called once");
+            d.script("window.__calls = 0; window.__drive.$store.dispatch('updateQuota',"
+                    + " () => { window.__calls++; throw new Error('the callback failed'); }); return 1;");
+            WebDriver.sleep(3000);
+            calls = ((Number) d.script("return window.__calls;")).longValue();
+            if (calls != 1)
+                throw new AssertionError("A quota callback that threw was called " + calls + " times");
+            System.out.println("  ok   so is a quota callback");
             System.out.println("PASS");
         } finally {
             if (own != null)
