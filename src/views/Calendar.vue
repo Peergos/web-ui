@@ -1607,17 +1607,19 @@ module.exports = {
         calendar.readInternal(filePath).thenApply(data => {
             that.loadCalendarProperties(calendar, JSON.parse(new TextDecoder().decode(data)), future);
             return null;
-        }).exceptionally(function(throwable) {//File not found
+        }).exceptionally(function(throwable) {
             if (throwable.detailMessage.startsWith("File not found")) {
+                // a new account: the default calendar, and the file is written with the first change
                 let props = new Object();
                 props.calendars = [];
                 props.calendars.push({name: 'My Calendar', directory: 'default', color: '#00a9ff'});
                 that.loadCalendarProperties(calendar, props, future);
             } else {
-                that.showMessage(true, that.translate('CALENDAR.ERROR.LOAD.FILE'));
-                let empty = new Object();
-                empty.calendars = [];
-                future.complete(empty);
+                // Any other failure - the server out of reach, a block missing - is the read's,
+                // not the list's. Answered with an empty list it would be taken for the list:
+                // the view shows no calendars, and the next calendar added writes the file with
+                // only itself, dropping My Calendar and every shared one for good.
+                future.completeExceptionally(throwable);
             }
             return null;
         });
