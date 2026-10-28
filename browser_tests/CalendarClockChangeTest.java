@@ -1,6 +1,8 @@
 import java.nio.file.*;
 import java.time.*;
 import java.time.format.*;
+import java.time.temporal.TemporalAdjusters;
+import java.time.zone.ZoneOffsetTransition;
 import java.util.*;
 
 /** A weekend-long series, with the occurrence over a clock change deleted.
@@ -36,14 +38,14 @@ public class CalendarClockChangeTest {
             Page.login(d, Server.USERNAME, Server.PASSWORD);
             CalendarApp.open(d);
             String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
-            java.time.zone.ZoneOffsetTransition change = ZoneId.systemDefault().getRules().nextTransition(Instant.now());
+            ZoneOffsetTransition change = ZoneId.systemDefault().getRules().nextTransition(Instant.now());
             if (change == null || change.getInstant().isAfter(Instant.now().plus(Duration.ofDays(360)))) {
                 System.out.println("  no clock change in the year ahead in " + ZoneId.systemDefault() + ", nothing to check");
                 System.out.println("PASS");
                 return;
             }
             LocalDate changeDay = change.getDateTimeBefore().toLocalDate();
-            LocalDate weekend = changeDay.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.SATURDAY));
+            LocalDate weekend = changeDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.SATURDAY));
             LocalDate first = weekend.minusWeeks(2);
             String recurring = calendar + "/recurring";
             CalendarApp.write(d, recurring, "weekend.ics", vevent("weekend", "Weekend away",
