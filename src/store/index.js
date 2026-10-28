@@ -316,6 +316,12 @@ module.exports = Vuex.createStore({
                 if (callback != null) {
                     callback(u)
                 }
+			}).exceptionally(err => {
+				// the callers go on from here - a refresh, a spinner taken down - whatever the answer
+				if (callback != null) {
+					callback(null);
+				}
+				return null;
 			});
 		},
 
