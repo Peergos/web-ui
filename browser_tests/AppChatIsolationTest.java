@@ -113,6 +113,13 @@ public class AppChatIsolationTest {
             if (messages(d, foreign).contains(sent))
                 throw new AssertionError("App " + APP + " posted into " + OTHER_APP + "'s chat");
             System.out.println("  ok   it posts into its own chat and not into the other app's");
+
+            call(d, "DELETE", "/peergos-api/v1/chat/" + foreign, null);
+            call(d, "DELETE", "/peergos-api/v0/chat/" + foreign, null);
+            WebDriver.sleep(2000);
+            if (! messages(d, foreign).contains(SECRET))
+                throw new AssertionError("App " + APP + " deleted " + OTHER_APP + "'s chat: " + messages(d, foreign));
+            System.out.println("  ok   it cannot delete the other app's chat");
             System.out.println("PASS");
         } finally {
             if (own != null)

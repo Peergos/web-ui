@@ -1720,7 +1720,13 @@ module.exports = {
         isOwnChat: function(chatId) {
             if (this.currentAppName == "chat")
                 return ! chatId.startsWith("chat-");
-            return chatId.startsWith("chat-" + this.currentAppName + "$");
+            return this.isOwnChatId(chatId);
+        },
+        // The ids Messenger gives this app's chats, and nothing older: what a delete, of a chat or
+        // of a file in one, takes.
+        isOwnChatId: function(chatId) {
+            let own = this.currentAppName == "chat" ? "chat$" : "chat-" + this.currentAppName + "$";
+            return chatId.startsWith(own);
         },
         addPendingAttachments: function(messagePairs) {
             let refs = [];
@@ -3101,7 +3107,7 @@ module.exports = {
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
-                if(path.startsWith(that.currentAppName + "$") || path.startsWith("chat-" + that.currentAppName + "$")) {
+                if(this.isOwnChatId(path)) {
                     this.messenger.getChat(chatId).thenApply(function(controller) {
                         that.messenger.deleteChat(controller).thenApply(res => {
                             that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
@@ -3112,9 +3118,8 @@ module.exports = {
                     });
                 } else {
                     let filePath = decodeURIComponent(path);
-                    if (!(filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")
-                        || filePath.startsWith(this.context.username + "/.messaging/chat-" + this.currentAppName + "$")
-                        )) {
+                    let chatDir = filePath.substring(filePath.indexOf("/.messaging/") + "/.messaging/".length);
+                    if (!filePath.startsWith(this.context.username + "/.messaging/") || !this.isOwnChatId(chatDir)) {
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     } else {
                         let parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
