@@ -1518,10 +1518,10 @@ function moveOccurrence(ev, scope, moved) {
     let extra = extraPropsOf(ev);
     if (scope === 'all') {
         // Every occurrence: the series' own start shifts by as much as this one
-        // did within its day, and all of them take the new length.
+        // did, as the clock on the wall sees it, and all of them take the new length.
         let recur = Object.assign({}, ev.extendedProps.recur);
-        let shiftMs = moved.start.getTime() - ev.start.getTime();
-        let first = new Date((recur.dtstart ? toStoredDate(recur.dtstart) : ev.start).getTime() + shiftMs);
+        let shiftMs = wallClockMs(ev.start, moved.start, ev.allDay && moved.allDay);
+        let first = plusWallClock(recur.dtstart ? toStoredDate(recur.dtstart) : ev.start, shiftMs);
         recur.dtstart = toLocalInputValue(first, moved.allDay);
         shiftListedDates(recur, shiftMs, moved.allDay);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
@@ -3869,7 +3869,8 @@ form.addEventListener('submit', function (e) {
                 // moved by as much as the series' start moved, and into the form
                 // of its new start, all-day or timed
                 if (was.dtstart)
-                    shiftListedDates(recur, toStoredDate(recur.dtstart).getTime() - toStoredDate(was.dtstart).getTime(), allDay);
+                    shiftListedDates(recur, wallClockMs(toStoredDate(was.dtstart), toStoredDate(recur.dtstart),
+                        allDay && editingEvent.allDay), allDay);
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
@@ -4603,11 +4604,12 @@ function samePlacement(a, b) {
 // series moves, each moves with it, or the deleted occurrences come back and the
 // added ones land where the series no longer is; and they take the form of the
 // new start, a bare date for an all-day series, or the write has nothing to turn
-// a time into.
+// a time into. The shift is the clock's, not real time's: across a clock change
+// the two differ by an hour, which for a bare date is a day.
 function shiftListedDates(recur, shiftMs, allDay) {
     let move = function (list) {
         return (list || []).map(function (s) {
-            return toLocalInputValue(new Date(toStoredDate(s).getTime() + shiftMs), allDay);
+            return toLocalInputValue(plusWallClock(toStoredDate(s), shiftMs), allDay);
         });
     };
     if (recur.exdates) recur.exdates = move(recur.exdates);
