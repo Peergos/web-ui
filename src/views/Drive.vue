@@ -3748,6 +3748,8 @@ module.exports = {
                 const dragged = this.dragged;
                 if (dragged == null)
                     return;
+                // taken now: a source the move re-renders may never see its dragend
+                this.dragged = null;
                 that.showSpinner = true;
                 if (dragged.op == "cut") {
         		    var name = dragged.fileTreeNode.getFileProperties().name;
