@@ -10,6 +10,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CopyOverQuotaTest.java [engine] [url]
  */
 public class CopyOverQuotaTest {
+    static Fixtures.Account me;
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String FOLDER = "over-quota-" + RUN, INTO = "into";
     static final String BIG = "big-" + RUN + ".bin";
@@ -30,14 +31,15 @@ public class CopyOverQuotaTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
-        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
+        me = Fixtures.account(url);
+        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, me.name(), me.password(),
                 "mkdir " + FOLDER, "cd " + FOLDER, "mkdir " + INTO,
                 "put " + Fixtures.patternFile(BIG, 65536).toAbsolutePath());
-        String folder = "/" + Server.USERNAME + "/" + FOLDER, into = folder + "/" + INTO;
+        String folder = "/" + me.name() + "/" + FOLDER, into = folder + "/" + INTO;
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-over-quota-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             Page.openPath(d, folder, FOLDER);
             Page.waitForInDrive(d, BIG, 120_000);

@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CutIntoItselfTest.java [engine] [url]
  */
 public class CutIntoItselfTest {
+    static Fixtures.Account me;
 
     static final String HOME = "cut-into-itself";
     static final String FOLDER = "moving";
@@ -33,15 +34,16 @@ public class CutIntoItselfTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
-        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
+        me = Fixtures.account(url);
+        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, me.name(), me.password(),
                 "mkdir " + HOME, "cd " + HOME, "mkdir " + FOLDER, "cd " + FOLDER, "mkdir " + SUB, "cd " + SUB,
                 "put " + Fixtures.patternFile("kept.bin", 64).toAbsolutePath());
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-cut-into-itself-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
-            String home = "/" + Server.USERNAME + "/" + HOME;
+            String home = "/" + me.name() + "/" + HOME;
             Page.openPath(d, home, HOME);
             Page.waitForInDrive(d, FOLDER, 120_000);
 
