@@ -13,7 +13,8 @@ import java.util.*;
 public class DeleteSpinnerTest {
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String FOLDER = "del-spinner-" + RUN;
-    static final String A = "a-" + RUN + ".bin", B = "b-" + RUN + ".bin", C = "c-" + RUN + ".bin", D = "d-" + RUN + ".bin";
+    static final String A = "a-" + RUN + ".bin", B = "b-" + RUN + ".bin", C = "c-" + RUN + ".bin", D = "d-" + RUN + ".bin",
+            E = "e-" + RUN + ".bin", F = "f-" + RUN + ".bin";
     /** What the page reads off a failure that came from Java. */
     static final String FAILURE = "{detailMessage: 'refused', getMessage: () => 'refused', toString: () => 'refused'}";
 
@@ -34,7 +35,7 @@ public class DeleteSpinnerTest {
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
         List<String> commands = new ArrayList<>(List.of("mkdir " + FOLDER, "cd " + FOLDER));
-        for (String name : List.of(A, B, C, D))
+        for (String name : List.of(A, B, C, D, E, F))
             commands.add("put " + Fixtures.patternFile(name, 64).toAbsolutePath());
         Fixtures.commands(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
                 commands.toArray(new String[0]));
@@ -69,6 +70,22 @@ public class DeleteSpinnerTest {
             List<String> left = namesIn(d, folder);
             if (! left.contains(C) || ! left.contains(D))
                 throw new AssertionError("The refused delete still took files: " + left);
+
+            // --- a delete picked before the listing has filled in --------------------------------
+            // the listing hands out stand-ins first and fills them in later; a selection made from
+            // those still has to delete the files
+            d.script("const vm = window.__drive;"
+                    + "vm.selectedFiles = arguments[0].split('\\n').map(n => {"
+                    + "  const f = vm.sortedFiles.find(f => f.getFileProperties().name === n);"
+                    + "  return {isWrapper: true, getName: () => f.getName(), isDirectory: () => false, getBase64Thumbnail: () => '',"
+                    + "    getFileProperties: () => ({name: f.getName(), isDirectory: false}),"
+                    + "    getFile: () => peergos.shared.util.Futures.of(f)}; });"
+                    + "vm.deleteFilesMultiSelect(); return 1;", E + "\n" + F);
+            d.waitForScript("the delete question", "window.__drive.showPrompt", 30_000);
+            d.script("window.__drive.prompt_consumer_func(''); return 1;");
+            awaitGone(d, folder, E, F);
+            awaitSpinnerDown(d, "deleting from a listing still filling in");
+            System.out.println("  ok   a delete picked before the listing filled in deletes the files");
 
             // --- a callback that fails is not answered again as if the request had ------------------
             d.script("window.__calls = 0; window.__drive.$store.dispatch('updateUsage',"
