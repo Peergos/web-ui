@@ -52,10 +52,7 @@ public class DeleteSpinnerTest {
                     + "ctx.getSpaceUsage = function() { const f = peergos.shared.util.Futures.incomplete();"
                     + "  f.completeExceptionally(" + FAILURE + "); return f; }; return 1;");
             deleteSelected(d, A, B);
-            d.waitUntil(A + " and " + B + " to be deleted", () -> {
-                List<String> names = namesIn(d, folder);
-                return ! names.contains(A) && ! names.contains(B);
-            }, 60_000);
+            awaitGone(d, folder, A, B);
             awaitSpinnerDown(d, "deleted, with the usage request failing");
             System.out.println("  ok   deleted, and the spinner came down although usage could not be read");
             d.script("const ctx = window.__drive.context; ctx.getSpaceUsage = window.__usage; return 1;");
@@ -99,11 +96,30 @@ public class DeleteSpinnerTest {
      *  While the question is up, a listing arrives and clears the selection, as one does on a
      *  slow machine: the answer still has to delete what the question was about. */
     static void deleteSelected(WebDriver d, String... names) {
-        d.script("const vm = window.__drive;"
+        String picked = String.valueOf(d.script("const vm = window.__drive;"
                 + "vm.selectedFiles = arguments[0].split('\\n').map(n => vm.sortedFiles.find(f => f.getFileProperties().name === n));"
-                + "vm.deleteFilesMultiSelect(); return 1;", String.join("\n", names));
+                + "if (vm.selectedFiles.some(f => !f)) return 'listed: ' + vm.sortedFiles.map(f => f.getFileProperties().name).join(', ');"
+                + "vm.deleteFilesMultiSelect(); return 'picked';", String.join("\n", names)));
+        if (! picked.equals("picked"))
+            throw new IllegalStateException("Not all of " + String.join(", ", names) + " are in the listing; " + picked);
         d.waitForScript("the delete question", "window.__drive.showPrompt", 30_000);
         d.script("window.__drive.selectedFiles = []; window.__drive.prompt_consumer_func(''); return 1;");
+    }
+
+    /** Waits for the names to be gone from the folder; if they are not, says what the drive shows. */
+    static void awaitGone(WebDriver d, String folder, String... names) {
+        try {
+            d.waitUntil(String.join(" and ", names) + " to be deleted", () -> {
+                List<String> left = namesIn(d, folder);
+                return Arrays.stream(names).noneMatch(left::contains);
+            }, 60_000);
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException(e.getMessage() + "; the drive: " + d.scriptQuiet(
+                    "const vm = window.__drive; return JSON.stringify({spinner: vm.showSpinner, prompt: vm.showPrompt,"
+                    + " error: vm.showError ? vm.errorTitle + ' / ' + vm.errorBody : null,"
+                    + " toasts: [...document.querySelectorAll('[class*=toast]')].map(t => t.textContent.trim()).filter(t => t),"
+                    + " listed: vm.files.map(f => f.getName())})") + "; in the folder: " + namesIn(d, folder), e);
+        }
     }
 
     static void awaitSpinnerDown(WebDriver d, String when) {
