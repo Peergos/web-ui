@@ -106,10 +106,7 @@ public class FolderAppSiblingTest {
             Page.gotoDrive(d);
             Page.waitForInDrive(d, FOLDER, 120_000);
             // what the folder's menu does when the app is picked in it
-            d.script("const vm = window.__drive;"
-                    + "vm.selectedFiles = [vm.sortedFiles.find(f => f.getFileProperties().name === arguments[0])];"
-                    + "vm.appOpen(arguments[1]); return 1;", FOLDER, APP);
-            d.waitForScript("the app frame", "!!document.querySelector('" + OUTER + "')", 60_000);
+            openFromDrive(d, FOLDER, APP);
             d.waitUntil("the app to load", () -> Boolean.TRUE.equals(inAppQuiet(d,
                     "return !!document.getElementById('ready') && typeof window.read === 'function'")), 120_000);
 
@@ -138,10 +135,7 @@ public class FolderAppSiblingTest {
             d.waitForScript("the folder app to close", "!document.querySelector('" + OUTER + "')", 60_000);
             Page.openPath(d, home + FOLDER, FOLDER);
             Page.waitForInDrive(d, "granted.txt", 120_000);
-            d.script("const vm = window.__drive;"
-                    + "vm.selectedFiles = [vm.sortedFiles.find(f => f.getFileProperties().name === 'granted.txt')];"
-                    + "vm.appOpen(arguments[0]); return 1;", FILE_APP);
-            d.waitForScript("the file app's frame", "!!document.querySelector('" + OUTER + "')", 60_000);
+            openFromDrive(d, "granted.txt", FILE_APP);
             d.waitUntil("the file app to load", () -> Boolean.TRUE.equals(inAppQuiet(d,
                     "return !!document.getElementById('ready') && typeof window.read === 'function'")), 120_000);
             Map<String, Object> opened = read(d, home + FOLDER + "/granted.txt");
@@ -159,6 +153,33 @@ public class FolderAppSiblingTest {
         } finally {
             if (own != null)
                 own.close();
+        }
+    }
+
+    /** Selects an entry of the listing and opens an app on it, as the entry's menu does, and
+     *  waits for the app's frame. The drive's handle is taken afresh first: a listing that
+     *  reloads while the test waits for it can leave window.__drive on a component that is no
+     *  longer on the page, and an open on that one draws nothing. A frame that never comes says
+     *  what the page holds instead. */
+    static void openFromDrive(WebDriver d, String entry, String app) {
+        d.waitForScript("the drive to settle",
+                "window.__drive.sandboxedApps.appsLoaded && !window.__drive.showSpinner", 120_000);
+        String opened = String.valueOf(d.script("const vm = " + Page.VUE + ".find('downloadFile');"
+                + "if (!vm) return 'no drive on the page';"
+                + "window.__drive = vm;"
+                + "const entry = vm.sortedFiles.find(f => f.getFileProperties().name === arguments[0]);"
+                + "if (!entry) return 'no ' + arguments[0] + ' among ' + vm.sortedFiles.map(f => f.getFileProperties().name).join(', ');"
+                + "vm.selectedFiles = [entry]; vm.appOpen(arguments[1]); return 'opened';", entry, app));
+        if (! opened.equals("opened"))
+            throw new IllegalStateException("Could not open " + app + " on " + entry + ": " + opened);
+        try {
+            d.waitForScript("the app frame", "!!document.querySelector('" + OUTER + "')", 60_000);
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException(e.getMessage() + "; the page: " + d.scriptQuiet(
+                    "const vm = window.__drive; return JSON.stringify({sandbox: vm.showAppSandbox, app: vm.sandboxAppName,"
+                    + " container: !!document.getElementById('sandbox-container'),"
+                    + " frames: document.querySelectorAll('iframe').length,"
+                    + " text: document.body.innerText.replace(/\\n/g, ' | ').substring(0, 400)})"), e);
         }
     }
 
