@@ -557,6 +557,9 @@ module.exports = {
 			// menu, and whether that menu is offered at all - and an undeclared property on
 			// the instance is invisible to Vue, so those answers never refreshed.
 			clipboardMultiSelect: null,
+			// What a drag in progress carries. Not the clipboard: a drag is not a Cut, and one
+			// that lands nowhere must neither leave a Paste behind nor replace what was cut.
+			dragged: null,
 			selectedFiles: [],
 			viewerFile: null,
 			url: null,
@@ -3002,6 +3005,7 @@ module.exports = {
                     if (Number(that.quotaBytes.toString()) < updatedAccumApparentSize) {
                         let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                         that.$toast.error(errMsg, {timeout:false});
+                        that.showSpinner = false;
                         sizeFuture.complete(false);
                     } else {
                         let spaceAfterOperation = that.checkAvailableSpace(updatedAccumApparentSize);
@@ -3091,16 +3095,24 @@ module.exports = {
             }
             if (clipboard.op == "cut") {
                 let future = peergos.shared.util.Futures.incomplete();
-                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, multiSelectParams, future);
+                // where the items were cut from, not the folder they are pasted into: the move's
+                // guard against a folder going into itself, and its shares, are looked up by it
+                let fromPath = clipboard.path.split('/').filter(n => n.length > 0);
+                this.reduceMove(0, fromPath, clipboard.parent, target, clipboard.fileTreeNodes, multiSelectParams, future);
                 future.thenApply(res => {
+                    that.showSpinner = false;
                     if (res) {
-                        that.showSpinner = false;
                         clipboard.op = null;
                         that.selectedFiles = [];
+                    } else {
+                        // the move stopped at an item, and the error dialog says which
+                        that.$toast.dismiss(name);
                     }
                 });
             } else if (clipboard.op == "copy") {
                 if (this.quotaBytes.toString() == '0') {
+                    // nothing is copied by this call: a retry puts up a progress toast of its own
+                    that.$toast.dismiss(name);
                     if (retrying == null) {
                         this.updateQuota(quotaBytes => {
                             if (quotaBytes != null) {
@@ -3127,8 +3139,14 @@ module.exports = {
                                     that.showSpinner = false;
                                     clipboard.op = null;
                                     that.selectedFiles = [];
+                                } else {
+                                    // the copy stopped at an item, and the error dialog says which
+                                    that.$toast.dismiss(name);
                                 }
                             });
+                        } else {
+                            // refused before anything was copied, and the refusal says why
+                            that.$toast.dismiss(name);
                         }
                     });
                 }
@@ -3204,6 +3222,7 @@ module.exports = {
                             if (Number(that.quotaBytes.toString()) < statistics.apparentSize) {
                                 let errMsg = that.translate("DRIVE.COPY.TOTAL.SPACE.ERROR");
                                 that.$toast.error(errMsg, {timeout:false, id: 'upload'})
+                                that.showSpinner = false;
                             } else {
                                 let spaceAfterOperation = that.checkAvailableSpace(statistics.apparentSize);
                                 if (spaceAfterOperation < 0) {
@@ -3707,20 +3726,20 @@ module.exports = {
             var owner = treeNode.getOwnerName();
             var me = this.context.username;
             if (owner === me) {
-                console.log("cut");
-                this.clipboard = {
+                this.dragged = {
                     parent: this.currentDir,
                     fileTreeNode: treeNode,
                     op: "cut"
                 };
             } else {
-                console.log("copy");
                 ev.dataTransfer.effectAllowed='copy';
-                this.clipboard = {
+                this.dragged = {
                     fileTreeNode: treeNode,
                     op: "copy"
                 };
             }
+            // over when it ends, dropped or not; a drop has taken what it needs by then
+            ev.target.addEventListener('dragend', () => { this.dragged = null; }, {once: true});
         },
         // DragEvent, FileTreeNode => boolean
         drop: function(ev, target) {
@@ -3740,42 +3759,42 @@ module.exports = {
             var id = ev.currentTarget.id;
             var that = this;
             if(id != moveId && target.isDirectory()) {
-                const clipboard = this.clipboard;
-                if (typeof(clipboard) ==  undefined || typeof(clipboard.op) == "undefined")
+                const dragged = this.dragged;
+                if (dragged == null)
                     return;
+                // taken now: a source the move re-renders may never see its dragend
+                this.dragged = null;
                 that.showSpinner = true;
-                if (clipboard.op == "cut") {
-        		    var name = clipboard.fileTreeNode.getFileProperties().name;
+                if (dragged.op == "cut") {
+        		    var name = dragged.fileTreeNode.getFileProperties().name;
                     console.log("drop-cut " + name + " -> "+target.getFileProperties().name);
                     let filePath = peergos.client.PathUtils.toPath(that.path, name);
-                    clipboard.fileTreeNode.moveTo(target, clipboard.parent, filePath, this.context, callbacks.supplier(() => that.confirmMove()))
+                    dragged.fileTreeNode.moveTo(target, dragged.parent, filePath, this.context, callbacks.supplier(() => that.confirmMove()))
                     .thenApply(function() {
                         that.currentDirChanged();
 			            that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-                            that.clipboard = null;
 			            });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = that.translate("DRIVE.MOVE.ERROR")
-                            .replace("$NAME", clipboard.fileTreeNode.getName());
+                            .replace("$NAME", dragged.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
                     });
-                } else if (clipboard.op == "copy") {
+                } else if (dragged.op == "copy") {
                     console.log("drop-copy");
-                    var file = clipboard.fileTreeNode;
+                    var file = dragged.fileTreeNode;
                     var props = file.getFileProperties();
                     file.copyTo(target, this.context)
                     .thenApply(function() {
                         that.currentDirChanged();
                         that.onUpdateCompletion.push(function() {
                             that.showSpinner = false;
-                            that.clipboard = null;
                         });
                     }).exceptionally(function(throwable) {
                         that.errorTitle = that.translate("DRIVE.COPY.ERROR")
-                            .replace("$NAME", clipboard.fileTreeNode.getName());
+                            .replace("$NAME", dragged.fileTreeNode.getName());
                         that.errorBody = throwable.getMessage();
                         that.showError = true;
                         that.showSpinner = false;
@@ -4052,38 +4071,55 @@ module.exports = {
 			if (selectedCount == 0)
 				return;
             var that = this;
+            // what the question is about is what goes: a listing that arrives while it is up
+            // clears the selection, and the answer would otherwise delete nothing
+            let selected = this.selectedFiles.slice();
             this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
                 that.showPrompt = false;
                 if (prompt_result != null) {
                     if (that.archive != null) {
-                        let entries = that.selectedFiles.slice();
                         that.selectedFiles = [];
-                        that.deleteFromArchive(entries);
+                        that.deleteFromArchive(selected);
                         return;
                     }
                     that.showSpinner = true;
-                    let parent = that.currentDir;
-                    let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
                     // the files are on their way out, so the count goes with them: left to
                     // the callbacks below it survives a usage call that never answers, and
                     // the bar then counts files that are no longer there
                     that.selectedFiles = [];
-                    let path = that.getPath;
-                    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
-                    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, that.context).thenApply(updatedParent => {
-                        that.updateUsage(usageBytes => {
-                            that.updateCurrentDirectory(null , () => {
-                                that.showSpinner = false;
-                            });
-                        });
-                    }).exceptionally(function (throwable) {
-                        that.errorTitle = that.translate("DRIVE.DELETE.ERROR");
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        future.complete(false);
-                    });
+                    that.deleteSelection(selected);
                 }
             });
+		},
+
+		// The listing hands out stand-ins that fill themselves in later, so a selection made
+		// before that holds some; the delete needs the files themselves.
+		deleteSelection(selected) {
+		    let that = this;
+		    let standIn = selected.find(f => f.isWrapper);
+		    if (standIn != null) {
+		        standIn.getFile().thenApply(file => that.deleteSelection(selected.map(f => f === standIn ? file : f)))
+		            .exceptionally(t => that.deleteFailed(t));
+		        return;
+		    }
+		    let parent = this.currentDir;
+		    let filesToDelete = peergos.client.JsUtil.asList(selected);
+		    let path = this.getPath;
+		    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
+		    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, this.context).thenApply(updatedParent => {
+		        that.updateUsage(usageBytes => {
+		            that.updateCurrentDirectory(null , () => {
+		                that.showSpinner = false;
+		            });
+		        });
+		    }).exceptionally(t => that.deleteFailed(t));
+		},
+
+		deleteFailed(throwable) {
+		    this.errorTitle = this.translate("DRIVE.DELETE.ERROR");
+		    this.errorBody = throwable.getMessage();
+		    this.showError = true;
+		    this.showSpinner = false;
 		},
 
 		confirmDeleteMultiSelect(fileCount, deleteFn) {
@@ -4118,6 +4154,11 @@ module.exports = {
 			this.selectedFiles = this.selectedFiles.filter(f => f !== file);
 			if (file.isArchiveEntry) {
 				this.deleteFromArchive([file]);
+				return;
+			}
+			if (file.isWrapper) {
+				// a stand-in from a listing still filling in: the delete needs the file itself
+				file.getFile().thenApply(real => this.deleteOne(real, parent, context));
 				return;
 			}
 			let name = file.getFileProperties().name;

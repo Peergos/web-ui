@@ -170,14 +170,43 @@ function buildRecurringEventPayload(id, title, allDay, extra, recur, durationMs)
         allDay: allDay,
         rrule: rruleSpec,
         // bare-number duration silently produces end == start on a
-        // recurring event - object form works correctly (see README)
-        duration: { milliseconds: durationMs },
+        // recurring event - object form works correctly (see README). An all-day
+        // length is in days, so that a clock change under one occurrence does not
+        // move its end by an hour.
+        duration: allDay ? { days: Math.round(durationMs / 86400000) } : { milliseconds: durationMs },
         color: color,
         extendedProps: Object.assign({ recur: recur }, extra)
     };
     if (recur.exdates && recur.exdates.length) data.exdate = recur.exdates.slice();
     if (!recur.freq || (recur.rdates && recur.rdates.length)) data.rrule = rruleStringFor(recur, allDay);
     return data;
+}
+
+// The length a repeating entry's payload carries, as milliseconds.
+function durationSpecMs(spec) {
+    if (!spec) return 0;
+    return (spec.days || 0) * 86400000 + (spec.milliseconds || 0);
+}
+
+// How long an entry is as a clock on the wall sees it: two days, nine hours. Real
+// milliseconds differ from that by an hour across a clock change, and a length taken
+// that way from one occurrence becomes the whole series' length - a weekend-long
+// series shrank to a day, a night shift to seven hours, from the one occurrence
+// that happened to straddle the change.
+function wallClockMs(start, end, allDay) {
+    if (allDay) return Math.round((end.getTime() - start.getTime()) / 86400000) * 86400000;
+    let clock = function (d) {
+        return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+    };
+    return clock(end) - clock(start);
+}
+
+// `date` plus a wall-clock length: the same hour and minute later, whatever the
+// zone's offset does in between.
+function plusWallClock(date, ms) {
+    let minutes = Math.round(ms / 60000);
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(),
+        date.getMinutes() + minutes, date.getSeconds());
 }
 
 function buildPlainEventPayload(id, title, allDay, start, end, extra) {
@@ -777,6 +806,16 @@ function parseIcsVevent(rawLines, tzResolver) {
     if (dtendLine) {
         let endParsed = parseIcsDateValue(dtendLine.value, dtendLine.params, tzResolver);
         end = endParsed ? endParsed.date : null;
+    }
+    // The other way RFC 5545 gives a length. Written back as DTEND, which is the
+    // form this app keeps; DURATION is among the properties it owns, so the line goes.
+    let durationLine = find('DURATION');
+    if (!end && durationLine) {
+        let minutes = -(parseIcsTriggerMinutes(durationLine.value) || 0);
+        if (minutes > 0) {
+            end = allDay ? addDays(start, Math.max(1, Math.round(minutes / 1440)))
+                : new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes() + minutes, start.getSeconds());
+        }
     }
     if (!end || end.getTime() <= start.getTime()) {
         end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);

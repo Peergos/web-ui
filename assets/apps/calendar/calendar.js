@@ -89,9 +89,9 @@ function refreshRangeValidity() {
 }
 
 function computeDurationMs(start, end, allDay) {
-    let startMs = allDay ? new Date(start + 'T00:00').getTime() : start.getTime();
-    let endMs = allDay ? new Date(end + 'T00:00').getTime() : end.getTime();
-    return endMs - startMs;
+    let from = allDay ? new Date(start + 'T00:00') : start;
+    let to = allDay ? new Date(end + 'T00:00') : end;
+    return wallClockMs(from, to, allDay);
 }
 
 let WEEKDAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
@@ -599,9 +599,9 @@ function nextTaskOccurrence(task) {
 // whichever occurrence was clicked - otherwise saving would shift the
 // whole series. Real dtstart lives in extendedProps.recur.dtstart.
 function seriesFormRange(ev, recur, allDay) {
-    let occurrenceDurationMs = (ev.end || ev.start).getTime() - ev.start.getTime();
+    let occurrenceDurationMs = wallClockMs(ev.start, ev.end || ev.start, allDay);
     let seriesStart = allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-    let seriesEndExclusive = new Date(seriesStart.getTime() + occurrenceDurationMs);
+    let seriesEndExclusive = plusWallClock(seriesStart, occurrenceDurationMs);
     return { start: seriesStart, end: toFormEnd(seriesEndExclusive, allDay) };
 }
 
@@ -777,6 +777,14 @@ function sameRecurFields(a, b) {
     return Object.keys(one).every(function (key) { return one[key] === b[key]; });
 }
 
+// As sameRecurFields, leaving out where the series ends.
+function sameRecurFieldsBesidesEnd(a, b) {
+    if (!a || !b) return false;
+    let one = recurFormFields(a);
+    return ['freq', 'interval', 'byday', 'bymonthday', 'bymonth']
+        .every(function (key) { return one[key] === b[key]; });
+}
+
 // Carries the original rule onto a recurrence the form just rebuilt, when the
 // form did not actually change any of it - saving an event after renaming it
 // must not rewrite its repeat.
@@ -789,8 +797,13 @@ function carryRecurSource(from, to) {
     to.source = from.source;
     // The fields this rule now reads as, not the ones the file parsed to: for a
     // rule the dialog cannot show whole the two differ, and writing it out asks
-    // this same question again.
-    to.sourceFields = recurFormFields(to);
+    // this same question again. Where the series ends is the exception: the
+    // dialog shows the occurrences left from the one it opened on, so a series
+    // cut there has fewer than its rule names, and the file's own end is kept
+    // here so that the write sees the difference and replaces it.
+    let fields = recurFormFields(to);
+    ['end', 'until', 'count'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
+    to.sourceFields = fields;
 }
 
 function recurToIcsRRuleLine(recur, allDay, tzid) {
@@ -800,6 +813,15 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     // rule itself untouched.
     if (recur.source && sameRecurFields(recur, recur.sourceFields))
         return 'RRULE:' + recur.source;
+    // Only its end moved - a series cut short by "this and following", a counted
+    // task completed: the rule keeps every other part as the file had it, the ones
+    // the form cannot show among them, or the series lands on days it never did.
+    if (recur.source && sameRecurFieldsBesidesEnd(recur, recur.sourceFields)) {
+        let kept = recur.source.split(';').filter(function (part) {
+            return !/^(COUNT|UNTIL)=/i.test(part);
+        });
+        return 'RRULE:' + kept.concat(rruleEndParts(recur, allDay, tzid)).join(';');
+    }
     let freqMap = { daily: 'DAILY', weekly: 'WEEKLY', monthly: 'MONTHLY', yearly: 'YEARLY' };
     let parts = ['FREQ=' + freqMap[recur.freq]];
     if (recur.interval > 1) parts.push('INTERVAL=' + recur.interval);
@@ -808,22 +830,20 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     if (recur.bymonth) parts.push('BYMONTH=' + recur.bymonth);
     // Read out of the file and carried back, though nothing here can set one.
     if (recur.bysetpos && recur.bysetpos.length) parts.push('BYSETPOS=' + recur.bysetpos.join(','));
-    if (recur.end === 'count' && recur.count) {
-        parts.push('COUNT=' + recur.count);
-    } else if (recur.end === 'until' && recur.until) {
-        let untilStr = formatUntil(recur.until, recur.dtstart, allDay);
-        if (allDay) {
-            parts.push('UNTIL=' + toIcsCompact(untilStr, true));
-        } else {
-            // UNTIL can't carry a TZID param, and DTSTART has one here -
-            // RFC 5545 (and universal real-world practice) says UNTIL
-            // must then be UTC.
-            let u = new Date(untilStr);
-            let utcMs = localWallClockToUtcMs(tzid, u.getFullYear(), u.getMonth(), u.getDate(), u.getHours(), u.getMinutes(), u.getSeconds());
-            parts.push('UNTIL=' + icsUtcStamp(new Date(utcMs)));
-        }
-    }
-    return 'RRULE:' + parts.join(';');
+    return 'RRULE:' + parts.concat(rruleEndParts(recur, allDay, tzid)).join(';');
+}
+
+function rruleEndParts(recur, allDay, tzid) {
+    if (recur.end === 'count' && recur.count) return ['COUNT=' + recur.count];
+    if (recur.end !== 'until' || !recur.until) return [];
+    let untilStr = formatUntil(recur.until, recur.dtstart, allDay);
+    if (allDay) return ['UNTIL=' + toIcsCompact(untilStr, true)];
+    // UNTIL can't carry a TZID param, and DTSTART has one here -
+    // RFC 5545 (and universal real-world practice) says UNTIL
+    // must then be UTC.
+    let u = new Date(untilStr);
+    let utcMs = localWallClockToUtcMs(tzid, u.getFullYear(), u.getMonth(), u.getDate(), u.getHours(), u.getMinutes(), u.getSeconds());
+    return ['UNTIL=' + icsUtcStamp(new Date(utcMs))];
 }
 
 function recurToIcsRdateLine(recur, allDay, tzid) {
@@ -847,7 +867,7 @@ function recurringDurationMs(eventId) {
     let defs = calendar.getCurrentData().eventStore.defs;
     let key = Object.keys(defs).find(function (k) { return defs[k].publicId === eventId; });
     let dur = key && defs[key].recurringDef && defs[key].recurringDef.duration;
-    return dur ? dur.milliseconds : 0;
+    return dur ? durationSpecMs(dur) : 0;
 }
 
 // --- Keeping what this app does not model ---------------------------------
@@ -936,6 +956,9 @@ function patchIcsBlock(sourceLines, ownLines) {
     let out = [];
     let pending = null;
     let nested = 0;
+    // The dialog shows one reminder, the first alarm it can show, and that is the
+    // one its alarm replaces. Any other alarm of the same shape is left as it was.
+    let replacedOwnAlarm = false;
     sourceLines.forEach(function (line, index) {
         let name = icsPropertyName(line);
         // The block's own first and last lines: everything between them is what is patched.
@@ -947,7 +970,8 @@ function patchIcsBlock(sourceLines, ownLines) {
             pending.push(line);
             if (name === 'BEGIN') nested++;
             if (name === 'END' && --nested === 0) {
-                if (!isOwnAlarmBlock(pending)) out = out.concat(pending);
+                if (!isOwnAlarmBlock(pending) || replacedOwnAlarm) out = out.concat(pending);
+                else replacedOwnAlarm = true;
                 pending = null;
             }
             return;
@@ -995,11 +1019,10 @@ function eventToIcsLines(ev) {
         // TZID, not UTC - see icsDtLine().
         let tzid = ev.allDay ? null : LOCAL_TZ;
         let dtstart = ev.allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-        let durationMs = ev.start ? (ev.end || ev.start).getTime() - ev.start.getTime()
-            : (ev.duration && typeof ev.duration.milliseconds === 'number'
-                ? ev.duration.milliseconds : recurringDurationMs(ev.id));
+        let durationMs = ev.start ? wallClockMs(ev.start, ev.end || ev.start, ev.allDay)
+            : (ev.duration ? durationSpecMs(ev.duration) : recurringDurationMs(ev.id));
         lines.push(icsDtLine('DTSTART', dtstart, ev.allDay, tzid));
-        lines.push(icsDtLine('DTEND', new Date(dtstart.getTime() + durationMs), ev.allDay, tzid));
+        lines.push(icsDtLine('DTEND', plusWallClock(dtstart, durationMs), ev.allDay, tzid));
         let rruleLine = recurToIcsRRuleLine(recur, ev.allDay, tzid);
         if (rruleLine) lines.push(rruleLine);
         let rdateLine = recurToIcsRdateLine(recur, ev.allDay, tzid);
@@ -1448,7 +1471,7 @@ function reminderToIcsLines(minutes, summary) {
 // rule that has just been changed: the length it was drawn with is the length
 // it keeps, since the occurrences move but the events do not get longer.
 function replaceMasterSeries(master, masterRecur) {
-    let durationMs = (master.end || master.start).getTime() - master.start.getTime();
+    let durationMs = wallClockMs(master.start, master.end || master.start, master.allDay);
     let payload = buildRecurringEventPayload(master.id, master.title, master.allDay,
         extraPropsOf(master), masterRecur, durationMs);
     master.remove();
@@ -1507,7 +1530,7 @@ function handleDragChange(info) {
         persistEvent(ev);
         return;
     }
-    let durationMs = ev.end ? ev.end.getTime() - ev.start.getTime() : recurringDurationMs(ev.id);
+    let durationMs = ev.end ? wallClockMs(ev.start, ev.end, ev.allDay) : recurringDurationMs(ev.id);
     pendingMove = { start: ev.start, end: ev.end, allDay: ev.allDay, durationMs: durationMs };
     info.revert();
     // The occurrence as it was, not the handle that still reads as moved: the
@@ -4590,8 +4613,16 @@ function placementOf(ev) {
 }
 
 function samePlacement(a, b) {
-    return !!a && !!b && a.calendarName === b.calendarName && a.year === b.year
-        && a.month === b.month && a.isRecurring === b.isRecurring;
+    return !!a && !!b && a.calendarName === b.calendarName && sameFolder(a, b);
+}
+
+// The host files a series in <calendar>/recurring/ whatever its start, so only a
+// single entry's month says which folder it is in. A series whose start moves to
+// another month has not moved: taken for a move, the clean-up deletes the file the
+// save has just written.
+function sameFolder(a, b) {
+    return a.isRecurring === b.isRecurring
+        && (a.isRecurring || (a.year === b.year && a.month === b.month));
 }
 
 // Identifies a stored event to the host: which file, in which calendar
@@ -4716,8 +4747,7 @@ function addAndPersist(payload) {
 function refusedAsAMove(ev) {
     let arrived = eventPlacements[ev.id];
     let now = placementOf(ev);
-    if (!arrived || (arrived.year === now.year && arrived.month === now.month
-            && arrived.isRecurring === now.isRecurring)) {
+    if (!arrived || sameFolder(arrived, now)) {
         return false;
     }
     showToast('This entry can be changed, but not moved to another month');

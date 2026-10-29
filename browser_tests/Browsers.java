@@ -73,6 +73,23 @@ public class Browsers {
         return d;
     }
 
+    /** As {@link #launch}, with the browser in the given time zone rather than the machine's, for what shows only
+     *  where the clocks change: a runner in UTC never would. A browser that takes its zone from elsewhere, as Safari
+     *  does, keeps its own, so ask it which it has. */
+    public static WebDriver launch(Engine engine, Path downloadDir, boolean headless, String timeZone) {
+        synchronized (Browsers.class) {
+            zone = timeZone;
+            try {
+                return launch(engine, downloadDir, headless);
+            } finally {
+                zone = null;
+            }
+        }
+    }
+
+    /** The TZ the processes started for a launch get, or null for the machine's own. */
+    private static volatile String zone;
+
     private static WebDriver start(Engine engine, Path downloadDir, boolean headless) {
         try {
             Files.createDirectories(downloadDir);
@@ -358,12 +375,14 @@ public class Browsers {
     }
 
     private static Process start(List<String> cmd) throws IOException {
-        ProcessBuilder builder = new ProcessBuilder(cmd)
+        ProcessBuilder process = new ProcessBuilder(cmd)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .redirectError(ProcessBuilder.Redirect.DISCARD);
+        if (zone != null)
+            process.environment().put("TZ", zone);
         // Firefox 159 and later honour -remote-allow-system-access only with this set as well
-        builder.environment().put("MOZ_REMOTE_ALLOW_SYSTEM_ACCESS", "1");
-        return builder.start();
+        process.environment().put("MOZ_REMOTE_ALLOW_SYSTEM_ACCESS", "1");
+        return process.start();
     }
 
     private static void awaitDriver(String statusUrl) {

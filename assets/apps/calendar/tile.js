@@ -94,7 +94,7 @@ function eventRows(ev) {
     let start, end;
     if (recur) {
         start = nearestRecurOccurrenceDate(recur, ev.allDay, new Date());
-        end = new Date(start.getTime() + ev.duration.milliseconds);
+        end = plusWallClock(start, durationSpecMs(ev.duration));
     } else {
         start = ev.start;
         end = ev.end || ev.start;

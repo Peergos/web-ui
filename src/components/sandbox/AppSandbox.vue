@@ -360,8 +360,12 @@ module.exports = {
     },
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor',
             'archiveResolver'],
-    beforeDestroy: function() {
+    // Vue 3's name for the hook: as beforeDestroy it never ran, and a sandbox left by a view
+    // change kept its window listeners, so the next app's requests were answered twice.
+    beforeUnmount: function() {
         this.keepAccessOnClose();
+        window.removeEventListener('message', this.messageHandler);
+        window.removeEventListener("resize", this.resizeHandler);
     },
     created: function() {
         let that = this;
@@ -865,7 +869,7 @@ module.exports = {
                     return;
                 }
                 var prefix = '';
-                if (!this.browserMode && !streamFilePath.startsWith(this.appPath)) {
+                if (!this.browserMode && this.appPath.length > 0 && !this.isUnderAppPath(streamFilePath)) {
                     if(streamFilePath.startsWith(that.apiRequest + '/data')) {
                         streamFilePath = streamFilePath.substring(that.apiRequest.length);
                     } else {
@@ -958,8 +962,7 @@ module.exports = {
                             }
                         } else {
                             let prefix = !this.browserMode
-                                && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
-                                && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
+                                && !this.isUnderAppPath(path)
                                 && !path.startsWith(that.apiRequest + '/data')
                                 && !(this.isSelectedFolder(path))
                                 && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
@@ -3784,7 +3787,7 @@ module.exports = {
                             if (props.isDirectory) {
                                 let filterResults =  !that.appRegisteredWithWildcardFileAssociation
                                     && (that.appProperties.folderAction
-                                        && expandedFilePath.startsWith(that.appPath)
+                                        && that.isUnderAppPath(expandedFilePath)
                                         && that.appRegisteredWithFileAssociation
                                         );
                                 that.readFolderListing(filterResults, headerFunc("text/plain"), resp, params.get('details') == 'true');
@@ -4345,6 +4348,13 @@ module.exports = {
                 context.stream(seekHi, seekLo, seekLength);
             }
         },
+        // The file the app was opened on, or anything inside the folder it was opened on: an app
+        // opened on a file gets that file, not the rest of its folder. Compared up to a separator,
+        // as the picker's folder stems are: a plain prefix would also take a sibling whose name
+        // starts the same, /alice/photos-private for /alice/photos.
+        isUnderAppPath(path) {
+            return path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath + '/'));
+        },
         isSelectedFolder(folderPath) {
             if (this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER) != null) {
                 if (this.selectedFolders.includes(folderPath)) {
@@ -4365,7 +4375,7 @@ module.exports = {
                 }
             } else if (this.isFileViewerMode && filePath.startsWith("/assets/")) {
                 return this.workspaceName + filePath;
-            } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
+            } else if (this.isUnderAppPath(filePath) || this.isSelectedFolder(filePath)) {
                 return filePath;
             } else if (filePath === this.pickerSelectedFile || this.pickerWritableFileRefs.has(filePath)) {
                 return filePath;
