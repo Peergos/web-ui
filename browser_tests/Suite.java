@@ -107,6 +107,7 @@ public class Suite {
             run(failures, "calendar series with listed dates", () -> CalendarAddedDatesTest.run(args1));
             run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             run(failures, "calendar files read by another parser", () -> CalendarInteropTest.run(args1));
+            run(failures, "a series stays as long as the clock says across a clock change", () -> CalendarClockChangeTest.run(args1));
             run(failures, "calendar drag to move", () -> CalendarDragTest.run(args1));
             run(failures, "calendar shared read-only", () -> CalendarReadOnlyTest.run(args1));
             run(failures, "calendar writable link", () -> CalendarLinkWriteTest.run(args1));

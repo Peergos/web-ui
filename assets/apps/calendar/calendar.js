@@ -89,9 +89,9 @@ function refreshRangeValidity() {
 }
 
 function computeDurationMs(start, end, allDay) {
-    let startMs = allDay ? new Date(start + 'T00:00').getTime() : start.getTime();
-    let endMs = allDay ? new Date(end + 'T00:00').getTime() : end.getTime();
-    return endMs - startMs;
+    let from = allDay ? new Date(start + 'T00:00') : start;
+    let to = allDay ? new Date(end + 'T00:00') : end;
+    return wallClockMs(from, to, allDay);
 }
 
 let WEEKDAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
@@ -599,9 +599,9 @@ function nextTaskOccurrence(task) {
 // whichever occurrence was clicked - otherwise saving would shift the
 // whole series. Real dtstart lives in extendedProps.recur.dtstart.
 function seriesFormRange(ev, recur, allDay) {
-    let occurrenceDurationMs = (ev.end || ev.start).getTime() - ev.start.getTime();
+    let occurrenceDurationMs = wallClockMs(ev.start, ev.end || ev.start, allDay);
     let seriesStart = allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-    let seriesEndExclusive = new Date(seriesStart.getTime() + occurrenceDurationMs);
+    let seriesEndExclusive = plusWallClock(seriesStart, occurrenceDurationMs);
     return { start: seriesStart, end: toFormEnd(seriesEndExclusive, allDay) };
 }
 
@@ -867,7 +867,7 @@ function recurringDurationMs(eventId) {
     let defs = calendar.getCurrentData().eventStore.defs;
     let key = Object.keys(defs).find(function (k) { return defs[k].publicId === eventId; });
     let dur = key && defs[key].recurringDef && defs[key].recurringDef.duration;
-    return dur ? dur.milliseconds : 0;
+    return dur ? durationSpecMs(dur) : 0;
 }
 
 // --- Keeping what this app does not model ---------------------------------
@@ -1019,11 +1019,10 @@ function eventToIcsLines(ev) {
         // TZID, not UTC - see icsDtLine().
         let tzid = ev.allDay ? null : LOCAL_TZ;
         let dtstart = ev.allDay ? new Date(recur.dtstart + 'T00:00') : new Date(recur.dtstart);
-        let durationMs = ev.start ? (ev.end || ev.start).getTime() - ev.start.getTime()
-            : (ev.duration && typeof ev.duration.milliseconds === 'number'
-                ? ev.duration.milliseconds : recurringDurationMs(ev.id));
+        let durationMs = ev.start ? wallClockMs(ev.start, ev.end || ev.start, ev.allDay)
+            : (ev.duration ? durationSpecMs(ev.duration) : recurringDurationMs(ev.id));
         lines.push(icsDtLine('DTSTART', dtstart, ev.allDay, tzid));
-        lines.push(icsDtLine('DTEND', new Date(dtstart.getTime() + durationMs), ev.allDay, tzid));
+        lines.push(icsDtLine('DTEND', plusWallClock(dtstart, durationMs), ev.allDay, tzid));
         let rruleLine = recurToIcsRRuleLine(recur, ev.allDay, tzid);
         if (rruleLine) lines.push(rruleLine);
         let rdateLine = recurToIcsRdateLine(recur, ev.allDay, tzid);
@@ -1472,7 +1471,7 @@ function reminderToIcsLines(minutes, summary) {
 // rule that has just been changed: the length it was drawn with is the length
 // it keeps, since the occurrences move but the events do not get longer.
 function replaceMasterSeries(master, masterRecur) {
-    let durationMs = (master.end || master.start).getTime() - master.start.getTime();
+    let durationMs = wallClockMs(master.start, master.end || master.start, master.allDay);
     let payload = buildRecurringEventPayload(master.id, master.title, master.allDay,
         extraPropsOf(master), masterRecur, durationMs);
     master.remove();
@@ -1531,7 +1530,7 @@ function handleDragChange(info) {
         persistEvent(ev);
         return;
     }
-    let durationMs = ev.end ? ev.end.getTime() - ev.start.getTime() : recurringDurationMs(ev.id);
+    let durationMs = ev.end ? wallClockMs(ev.start, ev.end, ev.allDay) : recurringDurationMs(ev.id);
     pendingMove = { start: ev.start, end: ev.end, allDay: ev.allDay, durationMs: durationMs };
     info.revert();
     // The occurrence as it was, not the handle that still reads as moved: the
