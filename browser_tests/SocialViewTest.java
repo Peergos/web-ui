@@ -184,6 +184,18 @@ public class SocialViewTest {
             u.get(p.pending).sendInitialFollowRequest(p.me).join();
             me.addFriendAnnotation(new FriendAnnotation(p.verified, true, me.generateFingerPrint(p.verified).join().left)).join();
             p.strangerContext = u.get(p.stranger);
+            // what the view will read: a fresh sign-in, as the browser's is, with both friends there
+            Set<String> expected = Set.of(p.verified, p.friend);
+            Set<String> friends = Set.of();
+            for (int i = 0; i < 60 && ! friends.containsAll(expected); i++) {
+                if (i > 0)
+                    Thread.sleep(1000);
+                UserContext fresh = UserContext.signIn(p.me, PASSWORD, mfa -> null,
+                        Builder.buildJavaNetworkAccess(URI.create(url).toURL(), false, Optional.empty(), Optional.empty()).join(), crypto).join();
+                friends = fresh.getSocialState().join().getFriends();
+            }
+            if (! friends.containsAll(expected))
+                throw new IllegalStateException("After seeding, a fresh sign-in as " + p.me + " lists friends " + friends + ", not " + expected);
             return p;
         }
 

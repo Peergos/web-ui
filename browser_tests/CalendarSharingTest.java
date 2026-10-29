@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarSharingTest.java [engine] [url]
  */
 public class CalendarSharingTest {
+    static Fixtures.Account me;
 
     static final String TITLE = "Shared with the host";
 
@@ -32,11 +33,12 @@ public class CalendarSharingTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-share-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             System.out.println("calendar open");
 
@@ -70,7 +72,7 @@ public class CalendarSharingTest {
                             + " item: 'BEGIN:VCALENDAR\\r\\nEND:VCALENDAR\\r\\n'}]}, '*');"
                             + "return 1;");
             WebDriver.sleep(3000);
-            String calendarDir = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendarDir = CalendarApp.directoryOf(d, me.name());
             for (String name : CalendarApp.list(d, calendarDir))
                 if (name.contains("escaped"))
                     throw new AssertionError("A forged batch item was written outside its month: "

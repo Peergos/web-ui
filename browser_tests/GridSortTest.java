@@ -15,6 +15,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar GridSortTest.java [engine] [url]
  */
 public class GridSortTest {
+    static Fixtures.Account me;
 
     static final int DESKTOP_WIDTH = 1280, DESKTOP_HEIGHT = 900;
     static final int PHONE_WIDTH = 390, PHONE_HEIGHT = 844;
@@ -31,11 +32,12 @@ public class GridSortTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-sort-"), headless)) {
             d.setWindowRect(DESKTOP_WIDTH, DESKTOP_HEIGHT);
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             d.scriptQuiet("window.__drive.isGrid = true; return 1;");
 

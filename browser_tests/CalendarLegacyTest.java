@@ -18,6 +18,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarLegacyTest.java [engine] [url]
  */
 public class CalendarLegacyTest {
+    static Fixtures.Account me;
 
     // Deliberately not a prefix of one another: the grid is read by title, and an override whose
     // name starts with the series' would be counted as one of its occurrences.
@@ -30,7 +31,7 @@ public class CalendarLegacyTest {
     static final String BIRTHDAY = "Zero length birthday";
 
     /** An all-day series the old app wrote with DTEND equal to DTSTART - every birthday it made. */
-    static final String ZERO_LENGTH = String.join("\r\n",
+    static String zeroLength() { return String.join("\r\n",
             "BEGIN:VCALENDAR",
             "PRODID:-//peergos.v1",
             "VERSION:2.0",
@@ -39,12 +40,12 @@ public class CalendarLegacyTest {
             "SUMMARY:" + BIRTHDAY,
             "DTSTART;TZID=Europe/London;VALUE=DATE:20210120",
             "DTEND;TZID=Europe/London;VALUE=DATE:20210120",
-            "X-OWNER:" + Server.USERNAME,
+            "X-OWNER:" + me.name(),
             "DTSTAMP:20210104T150641Z",
             "RRULE:FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=20",
             "END:VEVENT",
             "END:VCALENDAR",
-            "");
+            ""); }
 
     static final String SECOND = String.join("\r\n",
             "BEGIN:VCALENDAR",
@@ -134,13 +135,14 @@ public class CalendarLegacyTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-legacy-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             System.out.println("calendar open, files under " + calendar);
 
             // Written where the old app put a series, by the same App handle it used - no import,
@@ -148,12 +150,12 @@ public class CalendarLegacyTest {
             String recurring = calendar + "/recurring";
             CalendarApp.write(d, recurring, "legacy-series.ics", LEGACY);
             CalendarApp.write(d, recurring, "legacy-two.ics", SECOND);
-            CalendarApp.write(d, recurring, "legacy-birthday.ics", ZERO_LENGTH);
+            CalendarApp.write(d, recurring, "legacy-birthday.ics", zeroLength());
             System.out.println("wrote three series into " + recurring + " as the old app would have");
 
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
 
             // January 2026 is behind us, so the grid is asked for the month the series starts in.
@@ -259,7 +261,7 @@ public class CalendarLegacyTest {
             String madeHere = CalendarApp.awaitFileSaying(d, todayDir, "SUMMARY:" + MADE_HERE);
             String madeHereIcs = CalendarApp.read(d, todayDir, madeHere);
             assertUidIsTheFilename(madeHereIcs, madeHere);
-            CalendarApp.assertHas(madeHereIcs, "X-OWNER", Server.USERNAME);
+            CalendarApp.assertHas(madeHereIcs, "X-OWNER", me.name());
             System.out.println("  ok   an entry made here is one the old app can still edit and delete");
 
             // --- deleting an occurrence that has no file of its own yet ------------------------
@@ -282,7 +284,7 @@ public class CalendarLegacyTest {
 
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.gotoMonth(d, "2026-01-14");
             CalendarApp.waitInFrame(d, "the second series back on the grid",

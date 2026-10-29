@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarMigrationTest.java [engine] [url]
  */
 public class CalendarMigrationTest {
+    static Fixtures.Account me;
 
     static final String PASSWORD = "migration-password";
 
@@ -89,15 +90,16 @@ public class CalendarMigrationTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-migration-");
         Path scratch = Temp.directory("peergos-calendar-migration-file-");
         String arriving = "arrival" + (System.currentTimeMillis() % 100000);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
 
             // --- a calendar worth taking with you --------------------------------------------
             for (Map.Entry<String, String> entry : PLANTED.entrySet())
@@ -107,7 +109,7 @@ public class CalendarMigrationTest {
                 CalendarApp.write(d, calendar + "/tasks", task.getKey() + ".ics", document(task.getValue()));
             System.out.println("planted " + wanted().size() + " entries of different shapes");
 
-            String leaving = exportCalendar(d, Server.USERNAME, downloads);
+            String leaving = exportCalendar(d, me.name(), downloads);
             Map<String, List<String>> before = entriesOf(leaving);
             for (String uid : wanted())
                 if (! before.containsKey(uid))

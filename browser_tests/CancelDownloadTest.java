@@ -11,6 +11,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CancelDownloadTest.java [engine] [url]
  */
 public class CancelDownloadTest {
+    static Fixtures.Account me;
 
     // Big and slow enough that a download which ignored the cancel would still be fetching long
     // after the ones already in flight when it was pressed have landed.
@@ -37,12 +38,13 @@ public class CancelDownloadTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String upstream = own != null ? own.url() : given;
+        me = Fixtures.account(upstream);
         Path source = Fixtures.localFile("cancel-dl.bin", SIZE);
-        Fixtures.upload(jar, upstream, Server.USERNAME, Server.PASSWORD, source);
+        Fixtures.upload(jar, upstream, me.name(), me.password(), source);
         String folder = "cancel-zip-" + System.currentTimeMillis();
-        Fixtures.uploadInto(jar, upstream, Server.USERNAME, Server.PASSWORD, folder,
+        Fixtures.uploadInto(jar, upstream, me.name(), me.password(), folder,
                 List.of(Fixtures.localFile("cancel-zip-a.bin", SIZE / 2), Fixtures.localFile("cancel-zip-b.bin", SIZE / 2)));
-        Fixtures.awaitListing(jar, upstream, Server.USERNAME, Server.PASSWORD, folder, 300_000,
+        Fixtures.awaitListing(jar, upstream, me.name(), me.password(), folder, 300_000,
                 "cancel-zip-a.bin", "cancel-zip-b.bin");
 
         Proxy proxy = new Proxy(0, java.net.URI.create(upstream));
@@ -52,9 +54,9 @@ public class CancelDownloadTest {
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
-            String path = "/" + Server.USERNAME + "/cancel-dl.bin";
+            String path = "/" + me.name() + "/cancel-dl.bin";
             Page.resolve(d, path);
             awaitQuiet(proxy);
             proxy.configure(LATENCY_MILLIS, 0, 0);

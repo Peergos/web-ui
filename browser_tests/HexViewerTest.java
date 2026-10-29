@@ -15,6 +15,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar HexViewerTest.java [engine] [url]
  */
 public class HexViewerTest {
+    static Fixtures.Account me;
 
     // a whole number of chunks at either chunk size a file can have (5 MiB, 4 MiB), so the edges
     // below are chunk edges whichever a file is written with
@@ -43,21 +44,22 @@ public class HexViewerTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         long stamp = System.currentTimeMillis();
         // whole chunks, and whole chunks with a short page after them
         Path whole = write("hex-" + stamp + "-whole.bin", WHOLE);
         Path tail = write("hex-" + stamp + "-tail.bin", WHOLE + 300);
         try {
-            Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, whole);
-            Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, tail);
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, null, 120_000,
+            Fixtures.upload(jar, url, me.name(), me.password(), whole);
+            Fixtures.upload(jar, url, me.name(), me.password(), tail);
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), null, 120_000,
                     whole.getFileName().toString(), tail.getFileName().toString());
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-hex-dl-"), headless)) {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, Server.USERNAME, Server.PASSWORD);
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
 
                 long last = WHOLE - 512;

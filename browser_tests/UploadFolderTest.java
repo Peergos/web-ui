@@ -20,6 +20,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar UploadFolderTest.java [engine] [url]
  */
 public class UploadFolderTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -39,6 +40,7 @@ public class UploadFolderTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         String folder = "folder-" + System.currentTimeMillis();
         Path local = Temp.directory("peergos-folder-").resolve(folder);
@@ -51,7 +53,7 @@ public class UploadFolderTest {
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
 
             Object input = d.find("#uploadDirectoriesInput");
@@ -71,16 +73,16 @@ public class UploadFolderTest {
             Page.waitForInDrive(d, folder, 300_000);
             System.out.println("  folder appeared in the drive listing");
 
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder,
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), folder,
                     300_000, "one.txt", "two.bin", "nested");
             System.out.println("  " + folder + " contains "
-                    + Fixtures.listing(jar, url, Server.USERNAME, Server.PASSWORD, folder));
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder + "/nested",
+                    + Fixtures.listing(jar, url, me.name(), me.password(), folder));
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), folder + "/nested",
                     300_000, "three.txt");
             System.out.println("  " + folder + "/nested contains three.txt");
 
             Path roundTripped = downloads.resolve("two.bin");
-            Fixtures.download(jar, url, Server.USERNAME, Server.PASSWORD,
+            Fixtures.download(jar, url, me.name(), me.password(),
                     folder + "/two.bin", roundTripped);
             String got = Downloads.sha256(roundTripped);
             String want = Downloads.sha256(local.resolve("two.bin"));

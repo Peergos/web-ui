@@ -36,6 +36,18 @@ public class Fixtures {
         }
     }
 
+    /** An account of this test's own: a run of the suite can then sign in from several tests at
+     *  once, each in its own home. The admin account stays for what only an admin can do. */
+    public record Account(String name, String password) {}
+
+    private static final java.util.concurrent.atomic.AtomicInteger accounts = new java.util.concurrent.atomic.AtomicInteger();
+
+    public static Account account(String peergosUrl) {
+        String name = "u" + Long.toString(System.currentTimeMillis() % 100_000_000, 36) + "x" + accounts.incrementAndGet();
+        signUp(peergosUrl, name, "testpassword");
+        return new Account(name, "testpassword");
+    }
+
     /** Where the source files a test uploads are kept.
      *
      *  Downloads land in a sibling temp directory, so anything searching the temp tree for a

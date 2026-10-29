@@ -35,12 +35,16 @@ public class MultiLinkCheck {
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
         String url = args.length > 1 ? args[1] : "http://localhost:8080";
+        Fixtures.Account me = Fixtures.account(url);
+        // the links go over folders, and a new account has none
+        Fixtures.commands(Paths.get("..", "server", "Peergos.jar").toAbsolutePath().normalize(), url,
+                me.name(), me.password(), "mkdir alpha", "mkdir beta");
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         {
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("mlc-"), headless)) {
                 d.navigate(url.endsWith("/") ? url : url + "/");
                 d.waitForScript("login", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, "peergos", "testpassword");
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
             // gotoDrive returns once the listing is up, but the shared-with state and the
             // cache the sharing code needs arrive separately. Poking at the app before they
