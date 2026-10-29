@@ -347,10 +347,12 @@ public class Browsers {
     }
 
     private static Process start(List<String> cmd) throws IOException {
-        return new ProcessBuilder(cmd)
+        ProcessBuilder builder = new ProcessBuilder(cmd)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                .redirectError(ProcessBuilder.Redirect.DISCARD)
-                .start();
+                .redirectError(ProcessBuilder.Redirect.DISCARD);
+        // Firefox 159 and later honour -remote-allow-system-access only with this set as well
+        builder.environment().put("MOZ_REMOTE_ALLOW_SYSTEM_ACCESS", "1");
+        return builder.start();
     }
 
     private static void awaitDriver(String statusUrl) {
