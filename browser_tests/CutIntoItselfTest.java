@@ -45,12 +45,12 @@ public class CutIntoItselfTest {
             Page.openPath(d, home, HOME);
             Page.waitForInDrive(d, FOLDER, 120_000);
 
-            // cut with the selection bar: pick it, Cut, and the selection let go
+            // cut with the selection bar: pick it, Cut, and the selection let go. In one script:
+            // a listing that arrives between the pick and the cut clears the selection, and the
+            // cut then takes nothing
             d.script("const vm = window.__drive;"
                     + "const folder = vm.sortedFiles.find(f => f.getFileProperties().name === arguments[0]);"
-                    + "vm.toggleSelection(folder, false); return 1;", FOLDER);
-            WebDriver.sleep(600);
-            d.script("window.__drive.cutMultiSelect(); window.__drive.selectedFiles = []; return 1;");
+                    + "vm.toggleSelection(folder, false); vm.cutMultiSelect(); vm.selectedFiles = []; return 1;", FOLDER);
 
             Page.openPath(d, home + "/" + FOLDER + "/" + SUB, SUB);
             WebDriver.sleep(1200);
