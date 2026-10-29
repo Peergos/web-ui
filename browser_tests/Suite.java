@@ -49,6 +49,7 @@ public class Suite {
             // Picking files out of the grid, which a pointer and a touch screen reach in
             // different ways and which the file menu must not be mistaken for.
             run(failures, "picking files in the grid", () -> GridSelectionTest.run(args1));
+            run(failures, "a folder cut with the selection bar can't be pasted into itself", () -> CutIntoItselfTest.run(args1));
             // Sorting is shared state drawn by two views: the header's menu sets it, the
             // table's headings set it, and both views must follow whichever did.
             run(failures, "sorting a listing from either view", () -> GridSortTest.run(args1));
@@ -57,10 +58,13 @@ public class Suite {
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
             run(failures, "what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
+            run(failures, "an app left open by a view change answers nothing once reopened", () -> AppLeftOpenTest.run(args1));
             run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "an app installed straight from a zip", () -> AppFromZipTest.run(args1));
+            run(failures, "an app reaches only its own chats", () -> AppChatIsolationTest.run(args1));
             run(failures, "choosing between two apps for a file, and always using one", () -> AppChoiceTest.run(args1));
             run(failures, "an app's folder grants: details, rename, move and a suggested folder", () -> AppFolderGrantTest.run(args1));
+            run(failures, "a folder app can't read a sibling whose name starts the same", () -> FolderAppSiblingTest.run(args1));
             run(failures, "Address Book, in the navigation on its own subdomain", () -> AddressBookTest.run(args1));
             run(failures, "Address Book keeps contacts where they belong when Peergos is slow", () -> AddressBookSafetyTest.run(args1));
             run(failures, "Address Book reads and writes vCards as other apps write them", () -> AddressBookFormatsTest.run(args1));
@@ -79,19 +83,24 @@ public class Suite {
             if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
+                run(failures, "a download with no service worker to stream it", () -> DownloadWithoutServiceWorkerTest.run(args1));
             }
 
             run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
             run(failures, "calendar repeat and reminder", () -> CalendarRepeatTest.run(args1));
+            run(failures, "a series cut short keeps the parts of its rule the form can't show", () -> CalendarShortenedRuleTest.run(args1));
             run(failures, "calendar task", () -> CalendarTaskTest.run(args1));
             run(failures, "a link to a calendar entry opens it", () -> CalendarEntryLinkTest.run(args1));
             run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
+            run(failures, "a series cut by this-and-following ends after the occurrences it had left", () -> CalendarFollowingCountTest.run(args1));
             run(failures, "custom sharing groups", () -> CustomGroupsTest.run(args1));
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
+            run(failures, "a failed read of the calendar list keeps the calendars", () -> CalendarListReadFailureTest.run(args1));
             run(failures, "a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             run(failures, "hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
             run(failures, "change password with an authenticator app", () -> ChangePasswordMfaTest.run(args1));
             run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
+            run(failures, "an entry renamed keeps the alarms the dialog does not show", () -> CalendarOtherAlarmsTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
             run(failures, "a series moved to start in another month keeps its file", () -> CalendarSeriesMoveTest.run(args1));
@@ -121,6 +130,7 @@ public class Suite {
                 run(failures, "cancel downloads", () -> CancelDownloadTest.run(args1));
             }
             run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
+            run(failures, "an entry with a DURATION is as long as it says", () -> CalendarDurationReadTest.run(args1));
             // An account of its own, so not on WebKit, which cannot be relied on to bring the
             // calendar up for an account opening it for the first time (see above).
             if (! engine.startsWith("webkit"))

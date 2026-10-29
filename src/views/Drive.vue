@@ -3091,12 +3091,18 @@ module.exports = {
             }
             if (clipboard.op == "cut") {
                 let future = peergos.shared.util.Futures.incomplete();
-                this.reduceMove(0, that.path, clipboard.parent, target, clipboard.fileTreeNodes, multiSelectParams, future);
+                // where the items were cut from, not the folder they are pasted into: the move's
+                // guard against a folder going into itself, and its shares, are looked up by it
+                let fromPath = clipboard.path.split('/').filter(n => n.length > 0);
+                this.reduceMove(0, fromPath, clipboard.parent, target, clipboard.fileTreeNodes, multiSelectParams, future);
                 future.thenApply(res => {
+                    that.showSpinner = false;
                     if (res) {
-                        that.showSpinner = false;
                         clipboard.op = null;
                         that.selectedFiles = [];
+                    } else {
+                        // the move stopped at an item, and the error dialog says which
+                        that.$toast.dismiss(name);
                     }
                 });
             } else if (clipboard.op == "copy") {

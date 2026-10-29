@@ -360,8 +360,12 @@ module.exports = {
     },
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor',
             'archiveResolver'],
-    beforeDestroy: function() {
+    // Vue 3's name for the hook: as beforeDestroy it never ran, and a sandbox left by a view
+    // change kept its window listeners, so the next app's requests were answered twice.
+    beforeUnmount: function() {
         this.keepAccessOnClose();
+        window.removeEventListener('message', this.messageHandler);
+        window.removeEventListener("resize", this.resizeHandler);
     },
     created: function() {
         let that = this;
@@ -865,7 +869,7 @@ module.exports = {
                     return;
                 }
                 var prefix = '';
-                if (!this.browserMode && !streamFilePath.startsWith(this.appPath)) {
+                if (!this.browserMode && this.appPath.length > 0 && !this.isUnderAppPath(streamFilePath)) {
                     if(streamFilePath.startsWith(that.apiRequest + '/data')) {
                         streamFilePath = streamFilePath.substring(that.apiRequest.length);
                     } else {
@@ -958,8 +962,7 @@ module.exports = {
                             }
                         } else {
                             let prefix = !this.browserMode
-                                && !(path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath)))
-                                && !(this.appPath.length > 0 && !this.isAppPathAFolder && path.startsWith(that.getPath))
+                                && !this.isUnderAppPath(path)
                                 && !path.startsWith(that.apiRequest + '/data')
                                 && !(this.isSelectedFolder(path))
                                 && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
@@ -1704,7 +1707,7 @@ module.exports = {
                         recentMessages.push(chat.getRecent().toArray());
                     }
                 } else {
-                    if(chat.chatUuid.startsWith("chat-" + this.currentAppName)) {
+                    if(this.isOwnChat(chat.chatUuid)) {
                         filteredChats.push({chatId: chat.chatUuid, title: chat.getTitle()
                         , members: that.copyArray(chat.getMemberNames().toArray())
                         , admins: that.copyArray(chat.getAdmins().toArray()) });
@@ -1713,6 +1716,20 @@ module.exports = {
                 }
             }
             return {chats: filteredChats, recentMessages: recentMessages};
+        },
+        // Messenger names an app's chats "chat-<app>$<owner>$<uuid>", so the separator is part of
+        // the match: without it app "note" would reach app "notes"' chats. The chat app has the
+        // conversations no app created.
+        isOwnChat: function(chatId) {
+            if (this.currentAppName == "chat")
+                return ! chatId.startsWith("chat-");
+            return this.isOwnChatId(chatId);
+        },
+        // The ids Messenger gives this app's chats, and nothing older: what a delete, of a chat or
+        // of a file in one, takes.
+        isOwnChatId: function(chatId) {
+            let own = this.currentAppName == "chat" ? "chat$" : "chat-" + this.currentAppName + "$";
+            return chatId.startsWith(own);
         },
         addPendingAttachments: function(messagePairs) {
             let refs = [];
@@ -2940,6 +2957,12 @@ module.exports = {
         },
         handleChatRequestV1: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
+            // A chat is named by the path's first segment; a DELETE names a file instead, and
+            // checks that itself.
+            if (apiMethod != 'DELETE' && path.length > 0 && ! this.isOwnChat(path.split('/')[0])) {
+                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                return;
+            }
             if(apiMethod == 'GET') {
                 let startIndex = params.get("startIndex");
                 let chatId = path;
@@ -3087,7 +3110,7 @@ module.exports = {
                 }
             } else if(apiMethod == 'DELETE') {
                 let chatId = path;
-                if(path.startsWith(that.currentAppName + "$") || path.startsWith("chat-" + that.currentAppName + "$")) {
+                if(this.isOwnChatId(path)) {
                     this.messenger.getChat(chatId).thenApply(function(controller) {
                         that.messenger.deleteChat(controller).thenApply(res => {
                             that.buildResponse(headerFunc, null, that.DELETE_SUCCESS);
@@ -3098,9 +3121,8 @@ module.exports = {
                     });
                 } else {
                     let filePath = decodeURIComponent(path);
-                    if (!(filePath.startsWith(this.context.username + "/.messaging/" + this.currentAppName + "$")
-                        || filePath.startsWith(this.context.username + "/.messaging/chat-" + this.currentAppName + "$")
-                        )) {
+                    let chatDir = filePath.substring(filePath.indexOf("/.messaging/") + "/.messaging/".length);
+                    if (!filePath.startsWith(this.context.username + "/.messaging/") || !this.isOwnChatId(chatDir)) {
                         that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                     } else {
                         let parentPath = filePath.substring(0, filePath.lastIndexOf('/'));
@@ -3144,7 +3166,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair.file != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3173,7 +3195,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3196,7 +3218,7 @@ module.exports = {
                         let decoder = new TextDecoder();
                         let fileRefJson = decoder.decode(data);
                         let fileRef = peergos.shared.display.FileRef.fromJson(fileRefJson);
-                        if ((path.startsWith(this.currentAppName) || path.startsWith("chat-" + this.currentAppName)) && fileRef.path.includes(path + '/shared/media/')) {
+                        if (fileRef.path.includes(path + '/shared/media/')) {
                             this.retrieveFileFromFileRef(fileRef).thenApply(filePair => {
                                 if (filePair != null) {
                                     let props = filePair.file.getFileProperties();
@@ -3464,6 +3486,10 @@ module.exports = {
         },
         handleChatRequestV0: function(header, path, apiMethod, data, hasFormData, params) {
             let that = this;
+            if (apiMethod != 'POST' && path.length > 0 && ! this.isOwnChat(path)) {
+                that.buildResponse(header, null, that.ACTION_FAILED);
+                return;
+            }
             if(apiMethod == 'GET') {
                 let chatId = path;
                 let messenger = new peergos.shared.messaging.Messenger(this.context);
@@ -3761,7 +3787,7 @@ module.exports = {
                             if (props.isDirectory) {
                                 let filterResults =  !that.appRegisteredWithWildcardFileAssociation
                                     && (that.appProperties.folderAction
-                                        && expandedFilePath.startsWith(that.appPath)
+                                        && that.isUnderAppPath(expandedFilePath)
                                         && that.appRegisteredWithFileAssociation
                                         );
                                 that.readFolderListing(filterResults, headerFunc("text/plain"), resp, params.get('details') == 'true');
@@ -4322,6 +4348,13 @@ module.exports = {
                 context.stream(seekHi, seekLo, seekLength);
             }
         },
+        // The file the app was opened on, or anything inside the folder it was opened on: an app
+        // opened on a file gets that file, not the rest of its folder. Compared up to a separator,
+        // as the picker's folder stems are: a plain prefix would also take a sibling whose name
+        // starts the same, /alice/photos-private for /alice/photos.
+        isUnderAppPath(path) {
+            return path == this.appPath || (this.isAppPathAFolder && path.startsWith(this.appPath + '/'));
+        },
         isSelectedFolder(folderPath) {
             if (this.permissionsMap.get(this.PERMISSION_READ_CHOSEN_FOLDER) != null) {
                 if (this.selectedFolders.includes(folderPath)) {
@@ -4342,7 +4375,7 @@ module.exports = {
                 }
             } else if (this.isFileViewerMode && filePath.startsWith("/assets/")) {
                 return this.workspaceName + filePath;
-            } else if ( (this.appPath.length > 0 && filePath.startsWith(this.getPath)) || this.isSelectedFolder(filePath)) {
+            } else if (this.isUnderAppPath(filePath) || this.isSelectedFolder(filePath)) {
                 return filePath;
             } else if (filePath === this.pickerSelectedFile || this.pickerWritableFileRefs.has(filePath)) {
                 return filePath;

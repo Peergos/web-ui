@@ -807,6 +807,16 @@ function parseIcsVevent(rawLines, tzResolver) {
         let endParsed = parseIcsDateValue(dtendLine.value, dtendLine.params, tzResolver);
         end = endParsed ? endParsed.date : null;
     }
+    // The other way RFC 5545 gives a length. Written back as DTEND, which is the
+    // form this app keeps; DURATION is among the properties it owns, so the line goes.
+    let durationLine = find('DURATION');
+    if (!end && durationLine) {
+        let minutes = -(parseIcsTriggerMinutes(durationLine.value) || 0);
+        if (minutes > 0) {
+            end = allDay ? addDays(start, Math.max(1, Math.round(minutes / 1440)))
+                : new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes() + minutes, start.getSeconds());
+        }
+    }
     if (!end || end.getTime() <= start.getTime()) {
         end = allDay ? addDays(start, 1) : new Date(start.getTime() + 3600000);
     }
