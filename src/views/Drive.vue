@@ -4077,28 +4077,43 @@ module.exports = {
                         return;
                     }
                     that.showSpinner = true;
-                    let parent = that.currentDir;
-                    let filesToDelete = peergos.client.JsUtil.asList(selected);
                     // the files are on their way out, so the count goes with them: left to
                     // the callbacks below it survives a usage call that never answers, and
                     // the bar then counts files that are no longer there
                     that.selectedFiles = [];
-                    let path = that.getPath;
-                    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
-                    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, that.context).thenApply(updatedParent => {
-                        that.updateUsage(usageBytes => {
-                            that.updateCurrentDirectory(null , () => {
-                                that.showSpinner = false;
-                            });
-                        });
-                    }).exceptionally(function (throwable) {
-                        that.errorTitle = that.translate("DRIVE.DELETE.ERROR");
-                        that.errorBody = throwable.getMessage();
-                        that.showError = true;
-                        that.showSpinner = false;
-                    });
+                    that.deleteSelection(selected);
                 }
             });
+		},
+
+		// The listing hands out stand-ins that fill themselves in later, so a selection made
+		// before that holds some; the delete needs the files themselves.
+		deleteSelection(selected) {
+		    let that = this;
+		    let standIn = selected.find(f => f.isWrapper);
+		    if (standIn != null) {
+		        standIn.getFile().thenApply(file => that.deleteSelection(selected.map(f => f === standIn ? file : f)))
+		            .exceptionally(t => that.deleteFailed(t));
+		        return;
+		    }
+		    let parent = this.currentDir;
+		    let filesToDelete = peergos.client.JsUtil.asList(selected);
+		    let path = this.getPath;
+		    let parentPath = peergos.client.PathUtils.directoryToPath(path.split('/').filter(n => n.length > 0));
+		    peergos.shared.user.fs.FileWrapper.deleteChildren(parent, filesToDelete, parentPath, this.context).thenApply(updatedParent => {
+		        that.updateUsage(usageBytes => {
+		            that.updateCurrentDirectory(null , () => {
+		                that.showSpinner = false;
+		            });
+		        });
+		    }).exceptionally(t => that.deleteFailed(t));
+		},
+
+		deleteFailed(throwable) {
+		    this.errorTitle = this.translate("DRIVE.DELETE.ERROR");
+		    this.errorBody = throwable.getMessage();
+		    this.showError = true;
+		    this.showSpinner = false;
 		},
 
 		confirmDeleteMultiSelect(fileCount, deleteFn) {
@@ -4133,6 +4148,11 @@ module.exports = {
 			this.selectedFiles = this.selectedFiles.filter(f => f !== file);
 			if (file.isArchiveEntry) {
 				this.deleteFromArchive([file]);
+				return;
+			}
+			if (file.isWrapper) {
+				// a stand-in from a listing still filling in: the delete needs the file itself
+				file.getFile().thenApply(real => this.deleteOne(real, parent, context));
 				return;
 			}
 			let name = file.getFileProperties().name;
