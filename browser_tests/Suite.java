@@ -127,6 +127,7 @@ public class Suite {
                 run(failures, "cancel downloads", () -> CancelDownloadTest.run(args1));
             }
             run(failures, "calendar store safety", () -> CalendarStoreTest.run(args1));
+            run(failures, "an entry with a DURATION is as long as it says", () -> CalendarDurationReadTest.run(args1));
             // An account of its own, so not on WebKit, which cannot be relied on to bring the
             // calendar up for an account opening it for the first time (see above).
             if (! engine.startsWith("webkit"))
