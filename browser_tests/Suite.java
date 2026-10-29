@@ -81,6 +81,7 @@ public class Suite {
             if (canPlaceDownloads) {
                 run(failures, "concurrent downloads", () -> ConcurrentDownloadTest.run(args1));
                 run(failures, "download folder as zip", () -> ZipFolderDownloadTest.run(args1));
+                run(failures, "a download with no service worker to stream it", () -> DownloadWithoutServiceWorkerTest.run(args1));
             }
 
             run(failures, "calendar event round trip", () -> CalendarEventTest.run(args1));
