@@ -98,6 +98,9 @@ public class Suite {
             run(failures, "a failed read of the calendar list keeps the calendars", () -> CalendarListReadFailureTest.run(args1));
             run(failures, "a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             run(failures, "hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
+            run(failures, "a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));
+            run(failures, "a copy over the quota is refused and leaves the drive usable", () -> CopyOverQuotaTest.run(args1));
+            run(failures, "a drag that lands nowhere leaves what was cut to paste", () -> DragThenPasteTest.run(args1));
             run(failures, "change password with an authenticator app", () -> ChangePasswordMfaTest.run(args1));
             run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
             run(failures, "an entry renamed keeps the alarms the dialog does not show", () -> CalendarOtherAlarmsTest.run(args1));
@@ -136,6 +139,7 @@ public class Suite {
                 run(failures, "emptying the first calendar", () -> CalendarEmptyTest.run(args1));
             if (canPlaceDownloads) {
                 run(failures, "download calendar event", () -> CalendarEventDownloadTest.run(args1));
+                run(failures, "a selection with an empty file in it downloads to the end", () -> EmptyFileDownloadTest.run(args1));
                 // The export half of this one downloads a file, so it belongs with the group
                 // that can say where downloads land.
                 run(failures, "calendar import and export", () -> CalendarImportExportTest.run(args1));
