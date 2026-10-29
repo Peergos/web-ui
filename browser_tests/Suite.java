@@ -58,6 +58,7 @@ public class Suite {
             run(failures, "what the mount page shows once mounted", () -> MountCardTest.run(args1));
             run(failures, "what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));
             run(failures, "the launcher's apps and shortcuts", () -> LauncherViewTest.run(args1));
+            run(failures, "an app left open by a view change answers nothing once reopened", () -> AppLeftOpenTest.run(args1));
             run(failures, "signing in with no apps installed yet", () -> NoAppsYetTest.run(args1));
             run(failures, "an app installed straight from a zip", () -> AppFromZipTest.run(args1));
             run(failures, "an app reaches only its own chats", () -> AppChatIsolationTest.run(args1));
