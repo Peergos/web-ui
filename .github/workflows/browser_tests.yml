@@ -123,9 +123,9 @@ jobs:
 
     - name: Run browser tests
       working-directory: browser_tests
-      # windows is several times slower on the sqlite backed server, and WebKitGTK's run, at 42-46 minutes,
-      # has no room left under the 45 the others get
-      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || (matrix.engine == 'webkit' && 60 || 45) }}
+      # windows is several times slower on the sqlite backed server, and WebKitGTK's run, at 51-54 minutes,
+      # has no room left under 60
+      timeout-minutes: ${{ matrix.os == 'windows-latest' && 90 || (matrix.engine == 'webkit' && 75 || 45) }}
       shell: bash
       env:
         # safari has no headless mode, and the macos runner has a ui session for it to use
