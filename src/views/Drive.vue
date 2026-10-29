@@ -4065,18 +4065,20 @@ module.exports = {
 			if (selectedCount == 0)
 				return;
             var that = this;
+            // what the question is about is what goes: a listing that arrives while it is up
+            // clears the selection, and the answer would otherwise delete nothing
+            let selected = this.selectedFiles.slice();
             this.confirmDeleteMultiSelect(selectedCount, (prompt_result) => {
                 that.showPrompt = false;
                 if (prompt_result != null) {
                     if (that.archive != null) {
-                        let entries = that.selectedFiles.slice();
                         that.selectedFiles = [];
-                        that.deleteFromArchive(entries);
+                        that.deleteFromArchive(selected);
                         return;
                     }
                     that.showSpinner = true;
                     let parent = that.currentDir;
-                    let filesToDelete = peergos.client.JsUtil.asList(that.selectedFiles.slice());
+                    let filesToDelete = peergos.client.JsUtil.asList(selected);
                     // the files are on their way out, so the count goes with them: left to
                     // the callbacks below it survives a usage call that never answers, and
                     // the bar then counts files that are no longer there
