@@ -956,6 +956,9 @@ function patchIcsBlock(sourceLines, ownLines) {
     let out = [];
     let pending = null;
     let nested = 0;
+    // The dialog shows one reminder, the first alarm it can show, and that is the
+    // one its alarm replaces. Any other alarm of the same shape is left as it was.
+    let replacedOwnAlarm = false;
     sourceLines.forEach(function (line, index) {
         let name = icsPropertyName(line);
         // The block's own first and last lines: everything between them is what is patched.
@@ -967,7 +970,8 @@ function patchIcsBlock(sourceLines, ownLines) {
             pending.push(line);
             if (name === 'BEGIN') nested++;
             if (name === 'END' && --nested === 0) {
-                if (!isOwnAlarmBlock(pending)) out = out.concat(pending);
+                if (!isOwnAlarmBlock(pending) || replacedOwnAlarm) out = out.concat(pending);
+                else replacedOwnAlarm = true;
                 pending = null;
             }
             return;

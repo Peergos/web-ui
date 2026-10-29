@@ -100,6 +100,7 @@ public class Suite {
             run(failures, "hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
             run(failures, "change password with an authenticator app", () -> ChangePasswordMfaTest.run(args1));
             run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
+            run(failures, "an entry renamed keeps the alarms the dialog does not show", () -> CalendarOtherAlarmsTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
             run(failures, "a series moved to start in another month keeps its file", () -> CalendarSeriesMoveTest.run(args1));
