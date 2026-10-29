@@ -89,9 +89,20 @@ public class Browsers {
         }
     }
 
+    private static final java.util.Set<Integer> handedOut = new java.util.HashSet<>();
+
+    /** A port nothing listens on, and that no browser launched by another thread of this run is
+     *  about to take: the socket that found it is closed again before the browser binds it. */
     private static int freePort() throws IOException {
-        try (ServerSocket s = new ServerSocket(0)) {
-            return s.getLocalPort();
+        synchronized (handedOut) {
+            for (int attempt = 0; attempt < 50; attempt++) {
+                try (ServerSocket s = new ServerSocket(0)) {
+                    int port = s.getLocalPort();
+                    if (handedOut.add(port))
+                        return port;
+                }
+            }
+            throw new IOException("No free port the other browsers are not already starting on");
         }
     }
 
