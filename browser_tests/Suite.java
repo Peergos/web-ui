@@ -92,6 +92,7 @@ public class Suite {
             run(failures, "calendar task", () -> CalendarTaskTest.run(args1));
             run(failures, "a link to a calendar entry opens it", () -> CalendarEntryLinkTest.run(args1));
             run(failures, "calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
+            run(failures, "a series cut by this-and-following ends after the occurrences it had left", () -> CalendarFollowingCountTest.run(args1));
             run(failures, "custom sharing groups", () -> CustomGroupsTest.run(args1));
             run(failures, "the social view and what it does", () -> SocialViewTest.run(args1));
             run(failures, "a failed read of the calendar list keeps the calendars", () -> CalendarListReadFailureTest.run(args1));
