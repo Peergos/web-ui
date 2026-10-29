@@ -97,6 +97,7 @@ public class Suite {
             run(failures, "friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
             run(failures, "calendar repeat shapes", () -> CalendarRecurrenceTest.run(args1));
             run(failures, "calendar series edits", () -> CalendarSeriesTest.run(args1));
+            run(failures, "a series moved to start in another month keeps its file", () -> CalendarSeriesMoveTest.run(args1));
             run(failures, "calendar series with listed dates", () -> CalendarAddedDatesTest.run(args1));
             run(failures, "calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             run(failures, "calendar files read by another parser", () -> CalendarInteropTest.run(args1));
