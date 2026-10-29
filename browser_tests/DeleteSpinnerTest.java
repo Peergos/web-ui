@@ -95,13 +95,15 @@ public class DeleteSpinnerTest {
         }
     }
 
-    /** Deletes a selection the way the selection bar does, answering its question with OK. */
+    /** Deletes a selection the way the selection bar does, answering its question with OK.
+     *  While the question is up, a listing arrives and clears the selection, as one does on a
+     *  slow machine: the answer still has to delete what the question was about. */
     static void deleteSelected(WebDriver d, String... names) {
         d.script("const vm = window.__drive;"
                 + "vm.selectedFiles = arguments[0].split('\\n').map(n => vm.sortedFiles.find(f => f.getFileProperties().name === n));"
                 + "vm.deleteFilesMultiSelect(); return 1;", String.join("\n", names));
         d.waitForScript("the delete question", "window.__drive.showPrompt", 30_000);
-        d.script("window.__drive.prompt_consumer_func(''); return 1;");
+        d.script("window.__drive.selectedFiles = []; window.__drive.prompt_consumer_func(''); return 1;");
     }
 
     static void awaitSpinnerDown(WebDriver d, String when) {
