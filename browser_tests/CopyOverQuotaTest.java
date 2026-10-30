@@ -43,7 +43,11 @@ public class CopyOverQuotaTest {
             Page.gotoDrive(d);
             Page.openPath(d, folder, FOLDER);
             Page.waitForInDrive(d, BIG, 120_000);
-            d.script("window.__drive.$store.commit('SET_QUOTA', 1); return 1;");
+            // Sign-in's own quota requests can still be in flight under load, and their answer would
+            // put the real quota back, so the context answers a single byte from here on too.
+            d.script("const vm = window.__drive;"
+                    + "vm.context.getQuota = () => peergos.shared.util.Futures.of(1);"
+                    + "vm.$store.commit('SET_QUOTA', 1); return 1;");
 
             // --- one file: Copy, then Paste in the folder beside it ------------------------------
             Page.select(d, BIG);

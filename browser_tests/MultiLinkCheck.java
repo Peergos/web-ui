@@ -82,11 +82,10 @@ public class MultiLinkCheck {
                 // the create waits for it, as a person would, rather than racing sign-in.
                 d.waitForScript("sign-in's social read", "window.__drive.$store.state.socialData.groupUids.length > 0", 60_000);
 
-                // The suite shares one account, so this write can lose a compare-and-set against
-                // one the app is making at the same moment. A create that fails that way writes
-                // nothing, so it is safe to take again - but only once that is checked, since a
-                // create taken again after it did land makes a second link and spoils every test
-                // after this one. The count before and after the failed attempt is that check.
+                // This write can lose a compare-and-set against one the app is making at the same
+                // moment. A create that fails that way writes nothing, so it is safe to take again -
+                // but only once that is checked, since a create taken again after it did land makes
+                // a second link. The count before and after the failed attempt is that check.
                 long before = linkCount(d);
                 Object r = null;
                 for (int attempt = 1; attempt <= 3; attempt++) {
