@@ -79,6 +79,9 @@ public class CalendarListReadFailureTest {
                     "!document.getElementById('calendar-modal-backdrop').classList.contains('open')", 30_000);
             d.waitUntil("the new calendar to be listed", () -> calendars(d).contains(ADDED), 60_000);
             d.waitForScript("the host to finish writing", "Object.keys(window.__cal.pendingWrites).length === 0", 60_000);
+            // The host lists it before the list file is saved, and the next open reads that file: leaving
+            // sooner reads the list from before the add.
+            d.waitUntil("the list to be saved with " + ADDED, () -> stored(d).contains(ADDED), 60_000);
 
             // and the list read back from the store, as the next open would
             Page.gotoView(d, "Drive", "downloadFile", "__drive");
@@ -89,7 +92,8 @@ public class CalendarListReadFailureTest {
                     throw new AssertionError("After adding " + ADDED + ", a reload lists " + reloaded
                             + ": " + name + " was dropped from the stored list");
             if (! reloaded.contains(ADDED))
-                throw new AssertionError("The added calendar is not in the reloaded list: " + reloaded);
+                throw new AssertionError("The added calendar is not in the reloaded list: " + reloaded
+                        + ", the stored list is " + stored(d));
             System.out.println("  ok   a reload lists them all: " + reloaded);
             // The suite's account is shared with the tests after this one, and some of them export
             // "the first calendar": the one added here goes again, as CalendarStoreTest's does.
@@ -112,6 +116,17 @@ public class CalendarListReadFailureTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** The list file as the store has it now, read afresh. */
+    static String stored(WebDriver d) {
+        d.script("window.__st = null;"
+                + "peergos.shared.user.App.init(window.__cal.context, 'calendar')"
+                + "  .thenCompose(app => app.readInternal(peergos.client.PathUtils.directoryToPath(['App.config'])))"
+                + "  .thenApply(data => { window.__st = new TextDecoder().decode(new Uint8Array(data)); return true; })"
+                + "  .exceptionally(t => { window.__st = 'error: ' + t; return null; }); return 1;");
+        d.waitForScript("a read of the list file", "window.__st !== null", 60_000);
+        return String.valueOf(d.script("return window.__st"));
     }
 
     /** The calendars the host currently holds, by display name. */
