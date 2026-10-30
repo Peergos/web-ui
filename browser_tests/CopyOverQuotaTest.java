@@ -84,7 +84,17 @@ public class CopyOverQuotaTest {
 
     /** The quota toast, and then the page usable again. */
     static void awaitRefusal(WebDriver d, String what) {
-        d.waitUntil("the quota refusal for " + what, () -> Page.inFlight(d).contains("exceeds total space"), 60_000);
+        try {
+            d.waitUntil("the quota refusal for " + what, () -> Page.inFlight(d).contains("exceeds total space"), 60_000);
+        } catch (IllegalStateException e) {
+            System.out.println("  in flight: " + Page.inFlight(d));
+            System.out.println("  page: " + d.scriptQuiet("const vm = window.__drive; return JSON.stringify({"
+                    + "quota: String(vm.quotaBytes), pinned: String(vm.context.getQuota).indexOf('Futures') !== -1,"
+                    + "clipboard: vm.clipboard == null ? null : {op: vm.clipboard.op,"
+                    + "  name: vm.clipboard.fileTreeNode == null ? null : String(vm.clipboard.fileTreeNode.getFileProperties().name)},"
+                    + "spinner: vm.showSpinner, path: vm.getPath})"));
+            throw e;
+        }
         long end = System.currentTimeMillis() + 30_000;
         while (System.currentTimeMillis() < end) {
             if (Boolean.FALSE.equals(d.scriptQuiet("return !!window.__drive.showSpinner")))
