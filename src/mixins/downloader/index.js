@@ -162,7 +162,7 @@ module.exports = {
           that.$toast.dismiss(toastId)
           if (! transfer.cancelled) {
             that.errorTitle = 'Error downloading file: ' + filename
-            that.errorBody = throwable.getMessage()
+            that.errorBody = throwable.getMessage() || ('' + throwable)
             that.showError = true
           }
           result.complete(false);
@@ -358,7 +358,7 @@ module.exports = {
                     }
                   }).exceptionally(t => {
                       console.log(t);
-                      fail(t.getMessage());
+                      fail(t.getMessage() || ('' + t));
                   })
               }
             }
