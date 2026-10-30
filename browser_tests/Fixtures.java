@@ -44,8 +44,8 @@ public class Fixtures {
 
     public static Account account(String peergosUrl) {
         String name = "u" + Long.toString(System.currentTimeMillis() % 100_000_000, 36) + "x" + accounts.incrementAndGet();
-        signUp(peergosUrl, name, "testpassword");
-        return new Account(name, "testpassword");
+        signUp(peergosUrl, name, Server.PASSWORD);
+        return new Account(name, Server.PASSWORD);
     }
 
     /** Where the source files a test uploads are kept.
