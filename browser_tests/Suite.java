@@ -156,7 +156,7 @@ public class Suite {
                 t("the question an .ics import asks", () -> CalendarImportDialogTest.run(args1));
             if (! engine.startsWith("webkit"))
                 t("an import's dates, duplicates, new calendar and Cancel", () -> CalendarImportMoreTest.run(args1));
-            runAll(failures);
+            runAll(failures, engine);
             if (! failures.isEmpty())
                 serverLog = server.tailLog(120);
         }
@@ -200,8 +200,10 @@ public class Suite {
      *  each against the one server; the serial ones first, alone. With one worker everything runs
      *  as it did, in order, printing as it goes. With more, a test's output is held back and
      *  printed in one block when it ends, so the log still reads test by test. */
-    private static void runAll(List<String> failures) throws InterruptedException {
-        int workers = Math.max(1, Integer.parseInt(System.getenv().getOrDefault("PEERGOS_TEST_WORKERS", "1")));
+    private static void runAll(List<String> failures, String engine) throws InterruptedException {
+        // safaridriver drives the one Safari, which pairs with one session at a time
+        int workers = engine.equals("safari") ? 1
+                : Math.max(1, Integer.parseInt(System.getenv().getOrDefault("PEERGOS_TEST_WORKERS", "1")));
         for (Case c : cases)
             if (c.serial())
                 run(failures, c.name(), c.test(), false);

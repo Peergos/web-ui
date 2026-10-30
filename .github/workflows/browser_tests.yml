@@ -139,7 +139,8 @@ jobs:
         # only linux ships the browser under this name; elsewhere chromedriver finds it itself
         CHROMIUM: ${{ runner.os == 'Linux' && '/usr/bin/google-chrome' || '' }}
         # tests at once, each with its own browser and account on the one server: the linux
-        # runners have 4 cores, the macos ones 3, and windows is held back by its server
+        # runners have 4 cores, the macos ones 3, and windows is held back by its server. Safari
+        # runs one at a time whatever this says: its driver pairs with one session only.
         PEERGOS_TEST_WORKERS: ${{ runner.os == 'Linux' && '3' || '2' }}
       run: |
         # ubuntu-latest (26.04) keeps /tmp in RAM, with a quota of a few GB that the suite's
