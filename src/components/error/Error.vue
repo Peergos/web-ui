@@ -30,6 +30,9 @@ module.exports = {
     },
     methods: {
         decodeError: function(errorBody) {
+            // a Java exception without a message arrives as null or undefined
+            if (errorBody == null)
+                return 'Unknown error';
             let jsErrorBody = errorBody.split("\\+").join("%20")
                             .split("\\%21").join("!")
                             .split("\\%27").join("'")
