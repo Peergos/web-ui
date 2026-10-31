@@ -209,7 +209,7 @@ module.exports = {
 	    return {
                 isLinkWritable: false,
                 // whoever opens the link sees only the items, not the folders they're in
-                hideLocation: false,
+                hideLocation: true,
                 hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
@@ -270,7 +270,7 @@ module.exports = {
             this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen || (this.currentProps != null && this.currentProps.autoOpen());
             this.members = this.initialMembers();
-            this.hideLocation = this.members.length > 0 && this.members.every(m => m.hidden);
+            this.hideLocation = this.currentProps == null || (this.members.length > 0 && this.members.every(m => m.hidden));
             this.refreshMembersFromLink();
             if (this.currentProps != null) {
                 Vue.nextTick(function() {

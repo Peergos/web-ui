@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * A secret link that hides where its items are, made and opened as a person would.
  *
- * The owner turns on "Hide where these are" in the link editor, and whoever opens the link sees the
+ * "Hide where these are" is on by default in the link editor, and whoever opens the link sees the
  * item under its own name, with neither the owner's username nor the folders above it anywhere on
  * the page. A writable folder link then makes a folder and uploads a file from the browser, whose
  * keys the compiled javascript seals to the folder, and the owner reads them back in java.
@@ -91,22 +91,21 @@ public class HiddenLinkCheck {
             Page.waitForInDrive(d, "photo.txt", 60_000);
             d.waitForScript("sharing state", "window.__drive.sharedWithState && window.__drive.sharedWithState.get('photo.txt') != null", 60_000);
 
-            // the link editor, with the location hidden
+            // the link editor, which hides the location by default
             String btn = "document.querySelector(\"[aria-label='Create Secret Link']\")";
             d.waitForScript("share modal", "(function(){ var dr = window.__drive; if (" + btn + ") return true;"
                     + " if (! dr.showShare) { dr.selectedFiles = dr.files.filter(f => f.getName() == 'photo.txt'); dr.showShareWith(); }"
                     + " return false; })()", 120_000);
             d.script("return " + btn + ".click()");
             d.waitForScript("link editor", "document.querySelector('.link-members')", 30_000);
-            Object toggled = d.script("""
+            Object hiding = d.script("""
                 const label = Array.from(document.querySelectorAll('.secret-link__options .pg-switch'))
                     .find(l => l.textContent.includes('Hide where these are'));
                 if (! label) return 'no switch';
-                label.querySelector('input').click();
                 return label.querySelector('input').checked;
                 """);
-            if (! Boolean.TRUE.equals(toggled))
-                throw new IllegalStateException("couldn't turn on hiding: " + toggled);
+            if (! Boolean.TRUE.equals(hiding))
+                throw new IllegalStateException("hiding should be on by default: " + hiding);
             if (pageText(d).contains("sees your username"))
                 throw new IllegalStateException("the editor still says the username is visible");
             shot(d, "hidden-link-editor");
