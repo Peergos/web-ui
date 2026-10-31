@@ -1829,7 +1829,9 @@ module.exports = {
                                             that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                                             that.openFile();
                                         } else {
-                                            that.selectedFiles = [];
+                                            // A pick made on this listing while its entries were loading stands, or the
+                                            // Copy or Cut that follows it does nothing; one from an earlier listing goes.
+                                            that.selectedFiles = that.selectedFiles.filter(f => that.files.indexOf(f) >= 0);
                                         }
                                         if (callback != null) {
                                             callback();
