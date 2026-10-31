@@ -45,21 +45,12 @@ public class DragThenPasteTest {
             Page.openPath(d, folder, FOLDER);
             Page.waitForInDrive(d, DRAGGED, 120_000);
             d.script("if (!window.__drive.isGrid) window.__drive.switchView(); return 1;");
-            // A listing arriving between the pick and the cut, as one does under load, replaces the
-            // selection, and a cut with nothing selected is a cut of nothing: check the clipboard
-            // holds the file, and pick again if not.
-            for (int attempt = 1; ; attempt++) {
-                Page.select(d, CUT);
-                Object held = d.script("const vm = window.__drive; vm.cut(); vm.selectedFiles = [];"
-                        + "return vm.clipboard && vm.clipboard.op === 'cut' && vm.clipboard.fileTreeNode"
-                        + "  ? String(vm.clipboard.fileTreeNode.getFileProperties().name) : null;");
-                if (CUT.equals(held))
-                    break;
-                if (attempt == 3)
-                    throw new AssertionError("The cut never took: the clipboard holds " + held + " with " + state(d));
-                System.out.println("  the cut took nothing (clipboard " + held + "), picking again");
-                WebDriver.sleep(1000);
-            }
+            Page.select(d, CUT);
+            Object held = d.script("const vm = window.__drive; vm.cut(); vm.selectedFiles = [];"
+                    + "return vm.clipboard && vm.clipboard.op === 'cut' && vm.clipboard.fileTreeNode"
+                    + "  ? String(vm.clipboard.fileTreeNode.getFileProperties().name) : null;");
+            if (! CUT.equals(held))
+                throw new AssertionError("The cut took nothing: the clipboard holds " + held + " with " + state(d));
             // picked up and let go over nothing: a drag start and its end, with no drop between
             Object dragged = d.script("const vm = window.__drive;"
                     + "const i = vm.sortedFiles.findIndex(f => f.getFileProperties().name === arguments[0]);"
