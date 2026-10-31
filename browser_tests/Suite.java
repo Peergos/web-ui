@@ -103,6 +103,7 @@ public class Suite {
             t("a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));
             t("a copy over the quota is refused and leaves the drive usable", () -> CopyOverQuotaTest.run(args1));
             t("a drag that lands nowhere leaves what was cut to paste", () -> DragThenPasteTest.run(args1));
+            t("a file picked while its folder loads stays picked", () -> PickDuringLoadTest.run(args1));
             t("change password with an authenticator app", () -> ChangePasswordMfaTest.run(args1));
             t("friends again after blocking and unblocking", () -> BlockRefriendTest.run(args1));
             t("an entry renamed keeps the alarms the dialog does not show", () -> CalendarOtherAlarmsTest.run(args1));

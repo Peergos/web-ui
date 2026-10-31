@@ -1608,7 +1608,7 @@ module.exports = {
                         that.leaveArchive();
                         that.currentDir = updated;
                         that.updateSharedFolderSpace();
-                        that.updateFiles(selectedFilename, callback);
+                        that.updateFiles(selectedFilename, callback, path);
                     }).exceptionally(function (throwable) {
                         that.folderNotOpened(path, throwable, selectedFilename, callback);
                     });
@@ -1659,9 +1659,10 @@ module.exports = {
 		    return this.uriDecode(throwable.getMessage());
 		},
 
-                buildCapWrapper(cap) {
+                buildCapWrapper(cap, listedPath) {
                 const that = this;
                     const name = cap.name();
+                    const filePath = listedPath + "/" + name;
                     const isDir = cap.isDir();
                     const mimeType = cap.mimeType();
                     const created = cap.created();
@@ -1701,14 +1702,14 @@ module.exports = {
                             }
                         },
                         getInputStream: function(net, crypto, sizeHigh, sizeLow, progress) {
-                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), progress);});
+                            return that.context.getByPath(filePath).thenCompose(function(file){return file.get().getInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), progress);});
                         },
                         getBufferedInputStream: function(net, crypto, sizeHigh, sizeLow, nChunks, progress) {
-                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().getBufferedInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), nChunks, progress);});
+                            return that.context.getByPath(filePath).thenCompose(function(file){return file.get().getBufferedInputStream(net, crypto, file.get().getFileProperties().sizeHigh(), file.get().getFileProperties().sizeLow(), nChunks, progress);});
                         },
                         getFile: function() {
                             const wrapper = this;
-                            return that.context.getByPath(that.getPath + "/" + name).thenApply(function(file){
+                            return that.context.getByPath(filePath).thenApply(function(file){
                                 for (field in file.get()) {
                                     wrapper[field] = file.get()[field];
                                 }
@@ -1722,7 +1723,7 @@ module.exports = {
                             });
                         },
                         rename: function(newName, parent, ourPath, context) {
-                            return that.context.getByPath(that.getPath + "/" + name).thenCompose(function(file){return file.get().rename(newName, parent, ourPath, context);});
+                            return that.context.getByPath(filePath).thenCompose(function(file){return file.get().rename(newName, parent, ourPath, context);});
                         },
                         isWritable: function() {
                             return writable;
@@ -1744,11 +1745,15 @@ module.exports = {
                     });
                 },
 
-		updateFiles(selectedFilename, callback) {
+		updateFiles(selectedFilename, callback, listedPath) {
 			var current = this.currentDir;
 			if (current == null)
 				return Promise.resolve([]);
 			let that = this;
+			// the folder being listed, where its stand-ins look their files up: the path that was read, when
+			// the caller has it, as the drive may have moved on since
+			if (listedPath == null)
+				listedPath = this.getPath;
 			// let context = this.getContext();
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
@@ -1798,7 +1803,7 @@ module.exports = {
                             if (arr.length != allowedFiles.length && that.path.length != 1) {
                                 console.log('Folder contains files with disallowed filenames!');
                             }
-                            that.files = allowedFiles.map(cap => that.buildCapWrapper(cap));
+                            that.files = allowedFiles.map(cap => that.buildCapWrapper(cap, listedPath));
                             // the reactive copies, so filling them in below re-renders their rows
                             const byName = {};
                             that.files.forEach(w => byName[w.getName()] = w);
@@ -1829,7 +1834,9 @@ module.exports = {
                                             that.selectedFiles = that.files.filter(f => f.getName() == selectedFilename);
                                             that.openFile();
                                         } else {
-                                            that.selectedFiles = [];
+                                            // A pick made on this listing while its entries were loading stands, or the
+                                            // Copy or Cut that follows it does nothing; one from an earlier listing goes.
+                                            that.selectedFiles = that.selectedFiles.filter(f => that.files.indexOf(f) >= 0);
                                         }
                                         if (callback != null) {
                                             callback();
@@ -3055,8 +3062,8 @@ module.exports = {
                 this.pasteMultiSelect(e);
             }
         },
-		pasteMultiSelect(e, retrying) {
-			var target = this.multiSelectTargetFolder;
+		pasteMultiSelect(e, retrying, pasteTarget) {
+			var target = pasteTarget || this.multiSelectTargetFolder;
             if (target == null) {
                 return;
             }
@@ -3067,6 +3074,14 @@ module.exports = {
             let clipboard = this.clipboardMultiSelect;
             if (typeof (clipboard) == undefined || typeof (clipboard.op) == "undefined")
                 return;
+            let standIn = clipboard.fileTreeNodes.find(f => f.isWrapper);
+            if (standIn != null) {
+                standIn.getFile().thenApply(file => {
+                    clipboard.fileTreeNodes = clipboard.fileTreeNodes.map(f => f === standIn ? file : f);
+                    that.pasteMultiSelect(e, retrying, target);
+                }).exceptionally(t => that.$toast.error(that.failureText(t), {timeout: false}));
+                return;
+            }
             for(var i=0; i < clipboard.fileTreeNodes.length; i++) {
                 let fileTreeNode = clipboard.fileTreeNodes[i];
                 if (fileTreeNode.samePointer(target)) {
@@ -3152,14 +3167,16 @@ module.exports = {
                 }
             }
 		},
-		paste(e, retrying) {
-			if (this.archive != null) {
+		paste(e, retrying, pasteTarget) {
+			// the target a paste was given before a stand-in on the clipboard was resolved, not wherever the
+			// drive is once it has been
+			if (pasteTarget == null && this.archive != null) {
 				this.pasteIntoArchive();
 				return;
 			}
-			if (this.selectedFiles.length > 1)
+			if (pasteTarget == null && this.selectedFiles.length > 1)
 				return;
-			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+			var target = pasteTarget || (this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir);
 			var that = this;
 			this.closeMenu();
 			if (target.isDirectory()) {
@@ -3169,6 +3186,15 @@ module.exports = {
 
 				if (clipboard.archiveCopy != null) {
 					this.pasteFromArchive(target, clipboard);
+					return;
+				}
+				// a cut or copy made while the folder was loading holds a stand-in, and the paste
+				// needs the file itself, as a delete does
+				if (clipboard.fileTreeNode.isWrapper) {
+					clipboard.fileTreeNode.getFile().thenApply(file => {
+						clipboard.fileTreeNode = file;
+						that.paste(e, retrying, target);
+					}).exceptionally(t => that.$toast.error(that.failureText(t), {timeout: false}));
 					return;
 				}
 
