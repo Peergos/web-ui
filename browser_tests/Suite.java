@@ -99,6 +99,7 @@ public class Suite {
             t("the social view and what it does", () -> SocialViewTest.run(args1));
             t("a failed read of the calendar list keeps the calendars", () -> CalendarListReadFailureTest.run(args1));
             t("the deleted dates of a series move with it", () -> CalendarMovedSeriesDatesTest.run(args1));
+            t("a series split from an occurrence takes its later dates", () -> CalendarFollowingDatesTest.run(args1));
             t("a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             t("hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
             t("a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));

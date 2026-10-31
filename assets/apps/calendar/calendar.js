@@ -1556,8 +1556,10 @@ function moveOccurrence(ev, scope, moved) {
     if (scope === 'following') {
         let recur = adjustRecurForFollowing(ev, ev.extendedProps.recur, moved.allDay);
         recur.dtstart = toLocalInputValue(moved.start, moved.allDay);
-        truncateMasterSeries(ev);
+        takeListedDatesFrom(ev, recur, moved.allDay);
+        // the rest of the series is written before the series is cut short, so a write that fails loses neither
         addAndPersist(buildRecurringEventPayload(nextEventId(), ev.title, moved.allDay, extra, recur, moved.durationMs));
+        truncateMasterSeries(ev);
         return;
     }
     excludeOccurrenceFromMaster(ev);
@@ -3861,24 +3863,20 @@ form.addEventListener('submit', function (e) {
     let editedRecur = editingEvent && editingEvent.extendedProps.recur;
     if (!recur && editedRecur && !editedRecur.freq && editScope !== 'this')
         recur = Object.assign({}, editedRecur);
-    // Dates added after the occurrence a "this and following" edit starts from.
-    let laterDates = editedRecur && editingEvent.start
-        ? (editedRecur.rdates || []).filter(function (s) { return s > toLocalInputValue(editingEvent.start, editingEvent.allDay); })
-        : [];
-
     if (editingEvent && editScope === 'this' && editingEvent.extendedProps.recur) {
         excludeOccurrenceFromMaster(editingEvent);
         addAndPersist(buildPlainEventPayload(nextEventId(), titleInput.value, allDay, start, end, extra));
 
     } else if (editingEvent && editScope === 'following' && editingEvent.extendedProps.recur) {
-        truncateMasterSeries(editingEvent);
+        // as a drag does: the rest of the series is written before the series is cut short
         if (recur) {
-            recur.rdates = laterDates;
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
+            takeListedDatesFrom(editingEvent, recur, allDay);
             addAndPersist(buildRecurringEventPayload(nextEventId(), titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay)));
         } else {
             addAndPersist(buildPlainEventPayload(nextEventId(), titleInput.value, allDay, start, end, extra));
         }
+        truncateMasterSeries(editingEvent);
 
     } else {
         // scope 'all', a plain (non-recurring) event, or a brand-new event
@@ -4646,6 +4644,20 @@ function shiftListedDates(recur, shiftMs, allDay) {
     };
     if (recur.exdates) recur.exdates = move(recur.exdates);
     if (recur.rdates) recur.rdates = move(recur.rdates);
+}
+
+// "This and following": the series from the occurrence the change started at, whose start is
+// recur.dtstart now, takes the excluded and added dates after that occurrence - the earlier ones
+// stay with the series it is cut from - and moves them as shiftListedDates moves a whole series'.
+function takeListedDatesFrom(occurrence, recur, allDay) {
+    let was = occurrence.extendedProps.recur;
+    let cut = toLocalInputValue(occurrence.start, occurrence.allDay);
+    let later = function (list) {
+        return (list || []).filter(function (s) { return s > cut; });
+    };
+    recur.exdates = later(was.exdates);
+    recur.rdates = later(was.rdates);
+    shiftListedDates(recur, wallClockMs(occurrence.start, toStoredDate(recur.dtstart), occurrence.allDay && allDay), allDay);
 }
 
 // Identifies a stored event to the host: which file, in which calendar
