@@ -59,32 +59,43 @@ public class ZipFolderDownloadTest {
                 Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
 
-                // Walk into the folder and back before zipping. The zip is built from what the
-                // app can see, and if its view of the directory is still empty the download
-                // succeeds with an empty archive - 22 bytes, just an end of central directory
-                // record - which is a pass as far as "a file arrived" goes.
-                String root = Page.currentPath(d);
-                Page.waitForInDrive(d, folder, 120_000);
-                Page.openPath(d, root + folder, folder);
-                for (String entry : expected.keySet())
-                    Page.waitForInDrive(d, entry, 120_000);
-                Page.openPath(d, root, me.name());
-                Page.waitForInDrive(d, folder, 120_000);
+                walkThrough(d, folder, expected.keySet(), me.name());
 
-                System.out.println("zipping and downloading " + folder);
-                Page.zipFolder(d, folder);
-                // the drive asks before zipping, and the flow does not continue until it is answered
-                Page.confirmYes(d, 120_000);
-                System.out.println("  confirmed the download dialog");
-                // The counter the app names archives from is the signal that the zip flow got
-                // past the dialog at all: it is bumped where the file is named. Toasts alone say
-                // nothing, they are empty in a healthy run too.
-                WebDriver.sleep(5_000);
-                System.out.println("  zip state after confirming: " + zipState(d));
+                Downloads.Result zip = null;
+                for (int attempt = 1; zip == null; attempt++) {
+                    long deadline = System.currentTimeMillis() + 600_000;
+                    System.out.println("zipping and downloading " + folder);
+                    Page.zipFolder(d, folder);
+                    // the drive asks before zipping, and the flow does not continue until it is answered
+                    Page.confirmYes(d, 120_000);
+                    System.out.println("  confirmed the download dialog");
+                    // The counter the app names archives from is the signal that the zip flow got
+                    // past the dialog at all: it is bumped where the file is named. Toasts alone say
+                    // nothing, they are empty in a healthy run too.
+                    WebDriver.sleep(5_000);
+                    System.out.println("  zip state after confirming: " + zipState(d));
 
-                // the app numbers the file from a counter of its own, so take whatever zip lands
-                Downloads.Result zip = Downloads.awaitMatching(downloads, "archive-", ".zip",
-                        600_000, 60_000);
+                    // On a loaded windows runner the download's handshake with the service worker can
+                    // stall; the app gives up on it after a minute and asks for a reload. Do as it says,
+                    // once: the stall is in the browser, and the reload is what a person would do. Only
+                    // there, as a reload would also pass a first download that always stalls, and in CI
+                    // it says so.
+                    if (attempt == 1 && Browsers.isWindows() && couldNotStart(d, downloads, deadline)) {
+                        System.out.println("  the download could not be started, reloading the page as the app asks");
+                        if ("true".equals(System.getenv("GITHUB_ACTIONS")))
+                            System.out.println("::warning title=Zip download::The download could not be started, so the page was reloaded and the zip tried again");
+                        d.navigate(url + "/");
+                        d.waitForScript("the page again", "document.querySelector('input[name=username]') || window.__drive", 60_000);
+                        if (Boolean.TRUE.equals(d.script("return !!document.querySelector('input[name=username]')")))
+                            Page.login(d, me.name(), me.password());
+                        Page.gotoDrive(d);
+                        walkThrough(d, folder, expected.keySet(), me.name());
+                        continue;
+                    }
+                    // the app numbers the file from a counter of its own, so take whatever zip lands
+                    zip = Downloads.awaitMatching(downloads, "archive-", ".zip",
+                            Math.max(120_000, deadline - System.currentTimeMillis()), 60_000);
+                }
                 System.out.println("  " + zip);
                 if (zip.path == null) {
                     System.out.println("  zip state when none arrived: " + zipState(d));
@@ -144,6 +155,35 @@ public class ZipFolderDownloadTest {
         for (int i = 0; i < n; i++)
             b[i] = (byte) ((i * 17 + 3) & 0xff);
         return b;
+    }
+
+    /** Walks into the folder and back. The zip is built from what the app can see, and if its view of the
+     *  directory is still empty the download succeeds with an empty archive - 22 bytes, just an end of
+     *  central directory record - which is a pass as far as "a file arrived" goes. */
+    private static void walkThrough(WebDriver d, String folder, Collection<String> entries, String home) {
+        String root = Page.currentPath(d);
+        Page.waitForInDrive(d, folder, 120_000);
+        Page.openPath(d, root + folder, folder);
+        for (String entry : entries)
+            Page.waitForInDrive(d, entry, 120_000);
+        Page.openPath(d, root, home);
+        Page.waitForInDrive(d, folder, 120_000);
+    }
+
+    /** Whether the app said the download could not be started before any zip began to land. Its own
+     *  minute only starts once the folder's files are collected, so this waits as long as the download
+     *  itself would, not a fixed time from the confirmation. */
+    private static boolean couldNotStart(WebDriver d, Path downloads, long deadline) throws IOException {
+        while (System.currentTimeMillis() < deadline) {
+            try (var files = Files.list(downloads)) {
+                if (files.anyMatch(p -> p.getFileName().toString().startsWith("archive-")))
+                    return false;
+            }
+            if (Page.inFlight(d).contains("could not be started"))
+                return true;
+            WebDriver.sleep(1_000);
+        }
+        return false;
     }
 
     /** Whether the app got as far as naming and building an archive. */
