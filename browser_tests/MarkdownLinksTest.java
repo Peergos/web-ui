@@ -15,6 +15,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar MarkdownLinksTest.java [engine] [url]
  */
 public class MarkdownLinksTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -34,6 +35,7 @@ public class MarkdownLinksTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         String folder = "mdtest-" + System.currentTimeMillis();
         Path dir = Temp.directory("peergos-md-");
@@ -58,7 +60,7 @@ public class MarkdownLinksTest {
 
         Path downloads = Temp.directory("peergos-md-dl-");
         try {
-            Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+            Fixtures.commands(jar, url, me.name(), me.password(),
                     "mkdir " + folder,
                     "cd " + folder,
                     "put " + index.toAbsolutePath(),
@@ -66,15 +68,15 @@ public class MarkdownLinksTest {
                     "mkdir sub",
                     "cd sub",
                     "put " + child.toAbsolutePath());
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder,
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), folder,
                     120_000, "index.md", "sibling.md", "sub");
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder + "/sub",
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), folder + "/sub",
                     120_000, "child.md");
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, Server.USERNAME, Server.PASSWORD);
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
 
                 // changePath takes a whole path, and the store's path starts with the username,

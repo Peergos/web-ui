@@ -14,6 +14,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarStoreTest.java [engine] [url]
  */
 public class CalendarStoreTest {
+    static Fixtures.Account me;
 
     static final String FIRST = "Quick one";
     static final String SECOND = "Quick two";
@@ -37,14 +38,15 @@ public class CalendarStoreTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-store-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             java.time.LocalDate today = java.time.LocalDate.now();
             String month = calendar + "/" + today.getYear() + "/" + today.getMonthValue();
             System.out.println("calendar open, this month under " + month);

@@ -11,6 +11,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarLinkWriteTest.java [engine] [url]
  */
 public class CalendarLinkWriteTest {
+    static Fixtures.Account me;
 
     static final String TITLE = "Writable there";
     static final String CHANGED = "Changed by the reader";
@@ -32,14 +33,15 @@ public class CalendarLinkWriteTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-linkwrite-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             java.time.LocalDate today = java.time.LocalDate.now();
             String month = calendar + "/" + today.getYear() + "/" + today.getMonthValue();
 
@@ -49,7 +51,7 @@ public class CalendarLinkWriteTest {
             String stored = CalendarApp.awaitFileSaying(d, month, "SUMMARY:" + TITLE);
             System.out.println("owner's entry stored as " + month + "/" + stored);
 
-            String entryPath = "/" + Server.USERNAME + "/.apps/calendar/data/" + month + "/" + stored;
+            String entryPath = "/" + me.name() + "/.apps/calendar/data/" + month + "/" + stored;
             d.script("window.__w = null; window.__wErr = null;"
                     + "let ctx = " + Page.VUE + ".root().$store.state.context;"
                     + "ctx.createSecretLink(arguments[0], true, java.util.Optional.empty(), '', '', true)"
@@ -102,7 +104,7 @@ public class CalendarLinkWriteTest {
             // --- the owner again, to say what is in their own store --------------------------
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             d.waitUntil("the owner's file to carry the reader's change", () ->
                     CalendarApp.read(d, month, stored).contains("SUMMARY:" + CHANGED) ? true : null, 120_000);

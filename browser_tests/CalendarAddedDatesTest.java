@@ -13,6 +13,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarAddedDatesTest.java [engine] [url]
  */
 public class CalendarAddedDatesTest {
+    static Fixtures.Account me;
 
     static final String ADDED = "Weekly with an extra day";
     static final String LISTED = "Listed days";
@@ -56,20 +57,21 @@ public class CalendarAddedDatesTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-added-dates-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
-            String recurring = CalendarApp.directoryOf(d, Server.USERNAME) + "/recurring";
+            String recurring = CalendarApp.directoryOf(d, me.name()) + "/recurring";
             CalendarApp.write(d, recurring, "added-dates.ics", ADDED_ICS);
             CalendarApp.write(d, recurring, "listed-dates.ics", LISTED_ICS);
             CalendarApp.write(d, recurring, "listed-days.ics", ALL_DAY_ICS);
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
             CalendarApp.gotoMonth(d, "2027-01-04");

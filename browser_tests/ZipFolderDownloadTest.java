@@ -12,6 +12,7 @@ import java.util.zip.*;
  *  Usage: java -cp ../server/Peergos.jar ZipFolderDownloadTest.java [engine] [url]
  */
 public class ZipFolderDownloadTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -31,6 +32,7 @@ public class ZipFolderDownloadTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         // unique per run: the suite shares one server across tests
         String folder = "tozip-" + System.currentTimeMillis();
@@ -47,14 +49,14 @@ public class ZipFolderDownloadTest {
 
         Path downloads = Temp.directory("peergos-zip-dl-");
         try {
-            Fixtures.uploadInto(jar, url, Server.USERNAME, Server.PASSWORD, folder, locals);
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, folder,
+            Fixtures.uploadInto(jar, url, me.name(), me.password(), folder, locals);
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), folder,
                     300_000, expected.keySet().toArray(new String[0]));
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, Server.USERNAME, Server.PASSWORD);
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
 
                 // Walk into the folder and back before zipping. The zip is built from what the
@@ -66,7 +68,7 @@ public class ZipFolderDownloadTest {
                 Page.openPath(d, root + folder, folder);
                 for (String entry : expected.keySet())
                     Page.waitForInDrive(d, entry, 120_000);
-                Page.openPath(d, root, "peergos");
+                Page.openPath(d, root, me.name());
                 Page.waitForInDrive(d, folder, 120_000);
 
                 System.out.println("zipping and downloading " + folder);

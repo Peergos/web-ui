@@ -110,7 +110,9 @@ public class Server implements AutoCloseable {
                 "default-quota", Long.toString(4L * 1024 * 1024 * 1024),
                 "PEERGOS_PATH", dataDir.toString(),
                 "-admin-usernames", USERNAME,
-                "-max-daily-signups", "10000"));
+                // sign-ups are rate limited by proof of work that gets harder as they come faster, and a
+                // run of tests at once signs up accounts far faster than any day of real use
+                "-max-daily-signups", "100000000"));
         cmd.addAll(extraArgs);
         Path log = dataDir.resolve("server.log");
         Process p = new ProcessBuilder(cmd)

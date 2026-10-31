@@ -10,6 +10,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar EmptyFileDownloadTest.java [engine] [url]
  */
 public class EmptyFileDownloadTest {
+    static Fixtures.Account me;
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String FOLDER = "empty-dl-" + RUN;
     static final String EMPTY = "empty-" + RUN + ".txt", AFTER = "after-" + RUN + ".bin";
@@ -31,17 +32,18 @@ public class EmptyFileDownloadTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path empty = Fixtures.patternFile(EMPTY, 0);
         Path after = Fixtures.patternFile(AFTER, AFTER_SIZE);
-        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, me.name(), me.password(),
                 "mkdir " + FOLDER, "cd " + FOLDER, "put " + empty.toAbsolutePath(), "put " + after.toAbsolutePath());
         Path downloads = Temp.directory("peergos-empty-dl-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
-            Page.openPath(d, "/" + Server.USERNAME + "/" + FOLDER, FOLDER);
+            Page.openPath(d, "/" + me.name() + "/" + FOLDER, FOLDER);
             Page.waitForInDrive(d, AFTER, 120_000);
             // the empty one first: a selection is downloaded in the order it was picked
             d.script("const vm = window.__drive;"

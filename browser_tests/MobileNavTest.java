@@ -9,6 +9,7 @@ import java.nio.file.*;
  *  Usage: java -cp ../server/Peergos.jar MobileNavTest.java [engine] [url]
  */
 public class MobileNavTest {
+    static Fixtures.Account me;
 
     /** Anything under the app's own mobile threshold; every engine here can reach it. */
     static final int PHONE_WIDTH = 390, PHONE_HEIGHT = 844;
@@ -25,10 +26,11 @@ public class MobileNavTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-mobile-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
 
             // --- the desktop's rail, and the preference it keeps --------------------------------

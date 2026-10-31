@@ -35,12 +35,16 @@ public class MultiLinkCheck {
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
         String url = args.length > 1 ? args[1] : "http://localhost:8080";
+        Fixtures.Account me = Fixtures.account(url);
+        // the links go over folders, and a new account has none
+        Fixtures.commands(Paths.get("..", "server", "Peergos.jar").toAbsolutePath().normalize(), url,
+                me.name(), me.password(), "mkdir alpha", "mkdir beta");
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         {
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("mlc-"), headless)) {
                 d.navigate(url.endsWith("/") ? url : url + "/");
                 d.waitForScript("login", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, "peergos", "testpassword");
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
             // gotoDrive returns once the listing is up, but the shared-with state and the
             // cache the sharing code needs arrive separately. Poking at the app before they
@@ -78,11 +82,10 @@ public class MultiLinkCheck {
                 // the create waits for it, as a person would, rather than racing sign-in.
                 d.waitForScript("sign-in's social read", "window.__drive.$store.state.socialData.groupUids.length > 0", 60_000);
 
-                // The suite shares one account, so this write can lose a compare-and-set against
-                // one the app is making at the same moment. A create that fails that way writes
-                // nothing, so it is safe to take again - but only once that is checked, since a
-                // create taken again after it did land makes a second link and spoils every test
-                // after this one. The count before and after the failed attempt is that check.
+                // This write can lose a compare-and-set against one the app is making at the same
+                // moment. A create that fails that way writes nothing, so it is safe to take again -
+                // but only once that is checked, since a create taken again after it did land makes
+                // a second link. The count before and after the failed attempt is that check.
                 long before = linkCount(d);
                 Object r = null;
                 for (int attempt = 1; attempt <= 3; attempt++) {

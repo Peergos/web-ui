@@ -11,6 +11,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar DeleteSpinnerTest.java [engine] [url]
  */
 public class DeleteSpinnerTest {
+    static Fixtures.Account me;
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String FOLDER = "del-spinner-" + RUN;
     static final String A = "a-" + RUN + ".bin", B = "b-" + RUN + ".bin", C = "c-" + RUN + ".bin", D = "d-" + RUN + ".bin",
@@ -34,16 +35,17 @@ public class DeleteSpinnerTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         List<String> commands = new ArrayList<>(List.of("mkdir " + FOLDER, "cd " + FOLDER));
         for (String name : List.of(A, B, C, D, E, F))
             commands.add("put " + Fixtures.patternFile(name, 64).toAbsolutePath());
-        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(serverDir.resolve("Peergos.jar"), url, me.name(), me.password(),
                 commands.toArray(new String[0]));
-        String folder = "/" + Server.USERNAME + "/" + FOLDER;
+        String folder = "/" + me.name() + "/" + FOLDER;
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-del-spinner-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             Page.openPath(d, folder, FOLDER);
             Page.waitForInDrive(d, D, 120_000);

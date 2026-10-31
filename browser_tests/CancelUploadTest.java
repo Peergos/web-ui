@@ -11,6 +11,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CancelUploadTest.java [engine] [url]
  */
 public class CancelUploadTest {
+    static Fixtures.Account me;
 
     static final int SIZE = Integer.getInteger("upload.size", 120 * 1024 * 1024);
     static final int LATENCY_MILLIS = Integer.getInteger("latency.ms", 150);
@@ -35,6 +36,7 @@ public class CancelUploadTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String upstream = own != null ? own.url() : given;
+        me = Fixtures.account(upstream);
         Proxy proxy = new Proxy(0, java.net.URI.create(upstream));
         proxy.start();
         String url = "http://localhost:" + proxy.port();
@@ -45,11 +47,11 @@ public class CancelUploadTest {
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             long initialUsage = usage(d);
             // the suite shares a server, so only what this upload leaves behind counts
-            List<String> openBefore = Fixtures.listing(jar, upstream, Server.USERNAME, Server.PASSWORD, ".transactions");
+            List<String> openBefore = Fixtures.listing(jar, upstream, me.name(), me.password(), ".transactions");
             System.out.println("usage before " + initialUsage + ", open upload transactions " + openBefore);
 
             // slow enough that there is an upload in flight to cancel
@@ -78,11 +80,11 @@ public class CancelUploadTest {
             if (Page.errorShown(d))
                 throw new AssertionError("A cancel was reported as an error: " + Page.errorText(d));
             System.out.println("  ok   no error dialog");
-            List<String> root = Fixtures.listing(jar, upstream, Server.USERNAME, Server.PASSWORD);
+            List<String> root = Fixtures.listing(jar, upstream, me.name(), me.password());
             if (root.contains(name))
                 throw new AssertionError("The cancelled file is in the drive: " + root);
             System.out.println("  ok   the file is not in the drive");
-            List<String> open = new ArrayList<>(Fixtures.listing(jar, upstream, Server.USERNAME, Server.PASSWORD, ".transactions"));
+            List<String> open = new ArrayList<>(Fixtures.listing(jar, upstream, me.name(), me.password(), ".transactions"));
             open.removeAll(openBefore);
             if (! open.isEmpty())
                 throw new AssertionError("Upload transactions left open: " + open);
@@ -101,7 +103,7 @@ public class CancelUploadTest {
             Path nextSource = Fixtures.patternFile(next, 6 * 1024 * 1024);
             upload(d, engine, nextSource, next, 6 * 1024 * 1024);
             Page.waitForInDrive(d, next, 300_000);
-            Fixtures.awaitListing(jar, upstream, Server.USERNAME, Server.PASSWORD, null, 120_000, next);
+            Fixtures.awaitListing(jar, upstream, me.name(), me.password(), null, 120_000, next);
             System.out.println("  ok   a later upload lands");
             System.out.println("PASS");
         } finally {

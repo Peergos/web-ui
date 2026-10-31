@@ -15,6 +15,7 @@ import java.nio.file.*;
  *  Usage: java -cp ../server/Peergos.jar MountCardTest.java [engine] [url]
  */
 public class MountCardTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         run(args);
@@ -26,12 +27,13 @@ public class MountCardTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-mountcard-"), headless)) {
             d.setWindowRect(390, 844);
             // opened as the apps open it, or the mount's own settings are refused and show as an error
             d.navigate(Server.launchUrl(url));
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoView(d, "Mount", "onAddMount", "__mount");
             WebDriver.sleep(1500);
 

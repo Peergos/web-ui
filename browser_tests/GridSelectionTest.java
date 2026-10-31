@@ -16,6 +16,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar GridSelectionTest.java [engine] [url]
  */
 public class GridSelectionTest {
+    static Fixtures.Account me;
 
     static final int PHONE_WIDTH = 390, PHONE_HEIGHT = 844;
     static final int DESKTOP_WIDTH = 1280, DESKTOP_HEIGHT = 900;
@@ -33,14 +34,15 @@ public class GridSelectionTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         // A folder to paste into, made before the browser opens so the first listing has it -
         // this is how files are moved where dragging one onto a folder is not offered.
-        Fixtures.uploadInto(serverDir.resolve("Peergos.jar"), url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.uploadInto(serverDir.resolve("Peergos.jar"), url, me.name(), me.password(),
                 FOLDER, List.of(Fixtures.patternFile("inside.bin", 64)));
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-pick-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             d.scriptQuiet("window.__drive.isGrid = true; return 1;");
 
@@ -382,7 +384,7 @@ public class GridSelectionTest {
                         && ! Page.driveListing(d).contains(PREFIX + "2.bin"), 120_000);
         System.out.println("  ok   the cut files left the folder they came from");
 
-        Page.openPath(d, "/" + Server.USERNAME + "/" + FOLDER, FOLDER);
+        Page.openPath(d, "/" + me.name() + "/" + FOLDER, FOLDER);
         WebDriver.sleep(1200);
         List<String> inside = Page.driveListing(d);
         if (! inside.contains(PREFIX + "1.bin") || ! inside.contains(PREFIX + "2.bin"))

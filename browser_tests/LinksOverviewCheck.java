@@ -21,19 +21,28 @@ public class LinksOverviewCheck {
     public static void run(String[] args) throws Exception {
         String engine = args.length > 0 ? args[0] : "firefox";
         String url = args.length > 1 ? args[1] : "http://localhost:8080";
+        Fixtures.Account me = Fixtures.account(url);
+        // the links go over folders, and a new account has none
+        Fixtures.commands(Paths.get("..", "server", "Peergos.jar").toAbsolutePath().normalize(), url,
+                me.name(), me.password(), "mkdir alpha", "mkdir beta");
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("loc-"), headless)) {
             d.navigate(url.endsWith("/") ? url : url + "/");
             d.waitForScript("login", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, "peergos", "testpassword");
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             // gotoDrive returns once the listing is up, but the shared-with state and the
             // cache the sharing code needs arrive separately. Poking at the app before they
             // do is what "Cannot read properties of null" in CI was.
             d.waitForScript("drive ready", "window.__drive && window.__drive.sharedWithState && window.__drive.context && (window.__drive.files||[]).length > 0", 60_000);
 
-            // two links over one item each, then the overview should show exactly two
-            d.script("""
+            // A link created while a new account's sign-in is still writing loses the race, as in
+            // MultiLinkCheck, so wait for its social read as a person would.
+            d.waitForScript("sign-in's social read", "window.__drive.$store.state.socialData.groupUids.length > 0", 60_000);
+
+            // two links over one item each; only the folders no link holds yet, so a create that
+            // lost a compare-and-set can be taken again without making a second link
+            String create = """
                 window.__o = null;
                 const ctx = window.__drive.context;
                 const u = ctx.username;
@@ -42,7 +51,9 @@ public class LinksOverviewCheck {
                 window.__dirs = dirs;
                 const one = p => ctx.createSecretLinkTo(peergos.client.JsUtil.asList([p]),
                         peergos.client.JsUtil.asList([]), java.util.Optional.empty(), '', '', false);
-                one(dirs[0]).thenCompose(() => one(dirs[1]))
+                ctx.getAllSecretLinks()
+                  .thenCompose(ls => dirs.filter(p => ! ls.toArray([]).some(l => l.contains(p)))
+                      .reduce((f, p) => f.thenCompose(() => one(p)), peergos.shared.util.Futures.of(true)))
                   .thenCompose(() => ctx.getAllSecretLinks())
                   .thenApply(ls => {
                       const arr = ls.toArray([]);
@@ -51,9 +62,21 @@ public class LinksOverviewCheck {
                                     paths: arr.map(l => l.paths().join('|'))};
                       return true;
                   }).exceptionally(t => { window.__o = {error: '' + t}; return null; });
-                """);
-            d.waitForScript("links listed", "window.__o", 120_000);
-            System.out.println("overview: " + d.script("return window.__o"));
+                """;
+            Object overview = null;
+            for (int attempt = 1; attempt <= 3; attempt++) {
+                d.script(create);
+                d.waitForScript("links listed", "window.__o", 120_000);
+                overview = d.script("return window.__o");
+                String err = String.valueOf(overview).replace('+', ' ');
+                if (! err.contains("Champ root not present") && ! err.contains("CasException"))
+                    break;
+                System.out.println("  a create lost a race with another write, taking it again");
+                Thread.sleep(2000);
+            }
+            System.out.println("overview: " + overview);
+            if (overview.toString().contains("error"))
+                throw new IllegalStateException("creating the links failed: " + overview);
 
             // now append the second folder to the first link, and list again
             d.script("""
