@@ -77,9 +77,10 @@ public class ZipFolderDownloadTest {
 
                     // On a loaded windows runner the download's handshake with the service worker can
                     // stall; the app gives up on it after a minute and asks for a reload. Do as it says,
-                    // once: the stall is in the browser, and the reload is what a person would do.
-                    // A reload would also pass a first download that always stalls, so in CI it says so.
-                    if (attempt == 1 && couldNotStart(d, downloads, deadline)) {
+                    // once: the stall is in the browser, and the reload is what a person would do. Only
+                    // there, as a reload would also pass a first download that always stalls, and in CI
+                    // it says so.
+                    if (attempt == 1 && Browsers.isWindows() && couldNotStart(d, downloads, deadline)) {
                         System.out.println("  the download could not be started, reloading the page as the app asks");
                         if ("true".equals(System.getenv("GITHUB_ACTIONS")))
                             System.out.println("::warning title=Zip download::The download could not be started, so the page was reloaded and the zip tried again");
@@ -172,7 +173,7 @@ public class ZipFolderDownloadTest {
     /** Whether the app said the download could not be started before any zip began to land. Its own
      *  minute only starts once the folder's files are collected, so this waits as long as the download
      *  itself would, not a fixed time from the confirmation. */
-    static boolean couldNotStart(WebDriver d, Path downloads, long deadline) throws IOException {
+    private static boolean couldNotStart(WebDriver d, Path downloads, long deadline) throws IOException {
         while (System.currentTimeMillis() < deadline) {
             try (var files = Files.list(downloads)) {
                 if (files.anyMatch(p -> p.getFileName().toString().startsWith("archive-")))
