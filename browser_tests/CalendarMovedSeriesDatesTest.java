@@ -29,12 +29,13 @@ public class CalendarMovedSeriesDatesTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        Fixtures.Account me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             String recurring = calendar + "/recurring";
             LocalDate first = LocalDate.now().withDayOfMonth(1).plusMonths(1).withDayOfMonth(2);
             LocalDate deleted = first.plusWeeks(1);
