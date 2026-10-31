@@ -13,6 +13,7 @@ import java.nio.file.*;
  *  Usage: java -cp ../server/Peergos.jar NetworkRetryTest.java [engine] [url]
  */
 public class NetworkRetryTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -29,6 +30,7 @@ public class NetworkRetryTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-netretry-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
@@ -71,7 +73,7 @@ public class NetworkRetryTest {
                 throw new AssertionError("Once connected Sign in should be enabled");
             System.out.println("  ok   once the server is back it connects without a reload, and the error goes");
 
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             System.out.println("  ok   and signing in works");
             System.out.println("PASS");
         } finally {

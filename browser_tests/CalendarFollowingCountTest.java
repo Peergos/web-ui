@@ -13,6 +13,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarFollowingCountTest.java [engine] [url]
  */
 public class CalendarFollowingCountTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -30,12 +31,13 @@ public class CalendarFollowingCountTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             String recurring = calendar + "/recurring";
             LocalDate first = LocalDate.now().withDayOfMonth(1).plusMonths(1)
                     .with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));

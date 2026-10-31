@@ -162,7 +162,7 @@ module.exports = {
           that.$toast.dismiss(toastId)
           if (! transfer.cancelled) {
             that.errorTitle = 'Error downloading file: ' + filename
-            that.errorBody = throwable.getMessage()
+            that.errorBody = throwable.getMessage() || ('' + throwable)
             that.showError = true
           }
           result.complete(false);
@@ -206,6 +206,8 @@ module.exports = {
             var size = that.getFileSize(props)
             var maxBlockSize = 1024 * 1024 * 5
             var blockSize = size > maxBlockSize ? maxBlockSize : size
+            // nothing to read, so no read finishes it: the pump's first turn is its last
+            let empty = size == 0
 
             console.log('saving data of length ' + size + ' to ' + filename)
             let disposeFrame = null
@@ -323,6 +325,11 @@ module.exports = {
               if (failed)
                 return
               if (blockSize == 0) {
+                if (empty) {
+                  transfers.finish(transfer)
+                  that.$toast.dismiss(toastId)
+                  result.complete(true)
+                }
                 // The frame is not disposed here. Closing the writer only says the last byte has
                 // been handed to the service worker, and pulling the frame out from under a
                 // transfer the browser has not finished aborts it - the frame goes when the
@@ -351,7 +358,7 @@ module.exports = {
                     }
                   }).exceptionally(t => {
                       console.log(t);
-                      fail(t.getMessage());
+                      fail(t.getMessage() || ('' + t));
                   })
               }
             }
@@ -368,6 +375,8 @@ module.exports = {
               }
               if (offset >= size) {
                 transfers.finish(transfer)
+                // an empty file reports no progress, which is what takes the toast down otherwise
+                that.$toast.dismiss(toastId)
                 that.openItem(filename, data, props.mimeType)
                 result.complete(true)
                 return

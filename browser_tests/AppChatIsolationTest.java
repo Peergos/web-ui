@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar AppChatIsolationTest.java [engine] [url]
  */
 public class AppChatIsolationTest {
+    static Fixtures.Account me;
 
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String APP = "note" + RUN, OTHER_APP = APP + "s";
@@ -35,6 +36,7 @@ public class AppChatIsolationTest {
         Path jar = serverDir.resolve("Peergos.jar");
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         Path local = Temp.directory("peergos-chat-isolation-");
         Path manifest = local.resolve("peergos-app.json");
@@ -60,18 +62,18 @@ public class AppChatIsolationTest {
                 "};",
                 "</script></body></html>", ""));
         try {
-            Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD, "mkdir .apps");
+            Fixtures.commands(jar, url, me.name(), me.password(), "mkdir .apps");
         } catch (IllegalStateException alreadyThere) {
             // a test before this one in the suite signed in, which makes it
         }
-        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(jar, url, me.name(), me.password(),
                 "cd .apps", "mkdir " + APP, "cd " + APP,
                 "put " + manifest.toAbsolutePath(), "mkdir assets", "cd assets", "put " + index.toAbsolutePath());
 
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-chat-isolation-dl-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             String foreign = createChat(d, OTHER_APP, SECRET);
             String mine = createChat(d, APP, "ours");

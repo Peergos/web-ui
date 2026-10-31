@@ -12,6 +12,7 @@ import java.time.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarEntryLinkTest.java [engine] [url]
  */
 public class CalendarEntryLinkTest {
+    static Fixtures.Account me;
 
     static final String EVENT = "Entry link appointment";
     static final String SERIES = "Entry link weekly series";
@@ -31,13 +32,14 @@ public class CalendarEntryLinkTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-link-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
 
             // months away from today, so the grid has to move to find it
             ZonedDateTime eventStart = LocalDate.now(ZoneOffset.UTC).plusMonths(3).withDayOfMonth(12)
@@ -72,7 +74,7 @@ public class CalendarEntryLinkTest {
             d.navigate("about:blank");
             d.navigate(url + "/#" + fragment("entry-link-one", eventStart));
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             awaitPopover(d, EVENT);
             System.out.println("  ok   from a cold start: signing in lands on the entry, not on Drive");
 

@@ -16,6 +16,7 @@ import java.nio.file.*;
  *  Usage: java -cp ../server/Peergos.jar MountDeviceTest.java [engine] [url]
  */
 public class MountDeviceTest {
+    static Fixtures.Account me;
 
     static final String POINTS = "[...document.querySelectorAll('.mount-device__more li')].map(l => l.textContent.trim()).join(' / ')";
 
@@ -34,11 +35,12 @@ public class MountDeviceTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-mountdevice-"), headless)) {
             d.setWindowRect(1280, 900);
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoView(d, "Mount", "onAddMount", "__mount");
             WebDriver.sleep(1500);
 

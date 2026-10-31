@@ -18,6 +18,7 @@ import peergos.server.webdav.caldav.ICal;
  *  Usage: java -cp ../server/Peergos.jar CalendarInteropTest.java [engine] [url]
  */
 public class CalendarInteropTest {
+    static Fixtures.Account me;
 
     static final String EVENT = "Interop event";
     static final String TASK = "Interop task";
@@ -55,13 +56,14 @@ public class CalendarInteropTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-interop-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             System.out.println("calendar open, files under " + calendar);
 
             // --- an event, read back by the server's parser ------------------------------------
@@ -120,7 +122,7 @@ public class CalendarInteropTest {
             CalendarApp.write(d, calendar + "/2026/1", "not-an-event.ics", UNREADABLE);
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.gotoMonth(d, "2026-01-05");
             WebDriver.sleep(4000);

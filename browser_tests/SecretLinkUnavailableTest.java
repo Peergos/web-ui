@@ -30,13 +30,14 @@ public class SecretLinkUnavailableTest {
         boolean headless = ! "0".equals(System.getenv("HEADLESS"));
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        Fixtures.Account me = Fixtures.account(url);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-link-unavailable-"), headless)) {
             Crypto crypto = Builder.initCrypto();
             NetworkAccess network = Builder.buildJavaNetworkAccess(URI.create(url).toURL(), false, Optional.empty(), Optional.empty()).join();
-            UserContext owner = UserContext.signIn(Server.USERNAME, Server.PASSWORD, mfa -> null, network, crypto).join();
+            UserContext owner = UserContext.signIn(me.name(), me.password(), mfa -> null, network, crypto).join();
             String folder = "link-limits-" + System.currentTimeMillis();
-            owner.getByPath("/" + Server.USERNAME).join().get().mkdir(folder, network, false, Optional.empty(), crypto).join();
-            String path = Server.USERNAME + "/" + folder;
+            owner.getByPath("/" + me.name()).join().get().mkdir(folder, network, false, Optional.empty(), crypto).join();
+            String path = me.name() + "/" + folder;
 
             LinkProperties once = owner.createSecretLink(path, false, Optional.empty(), Optional.of(1), "", false).join();
             LinkProperties expired = owner.createSecretLink(path, false, Optional.of(LocalDateTime.now().minusMinutes(1)), Optional.empty(), "", false).join();

@@ -13,6 +13,7 @@ import java.time.format.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarEventTest.java [engine] [url]
  */
 public class CalendarEventTest {
+    static Fixtures.Account me;
 
     static final String TITLE = "Quarterly review";
     static final String WHERE = "Room 2, upstairs";
@@ -39,11 +40,12 @@ public class CalendarEventTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             System.out.println("calendar open");
 
@@ -58,7 +60,7 @@ public class CalendarEventTest {
                             + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
 
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             String month = calendar + "/" + day.getYear() + "/" + day.getMonthValue();
             String filename = CalendarApp.awaitFileSaying(d, month, "SUMMARY:" + TITLE);
             System.out.println("stored as " + month + "/" + filename);
@@ -77,7 +79,7 @@ public class CalendarEventTest {
             // Everything above could still be a page that never let go of its own state.
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.waitInFrame(d, "the event to come back from the store",
                     "Array.from(document.querySelectorAll('[data-search-event-id]'))"

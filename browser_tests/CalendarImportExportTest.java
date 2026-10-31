@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarImportExportTest.java [engine] [url]
  */
 public class CalendarImportExportTest {
+    static Fixtures.Account me;
 
     static final String[] TITLES = {"Imported standup", "Imported review", "Imported retro"};
 
@@ -47,6 +48,7 @@ public class CalendarImportExportTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-io-");
         // Kept out of the download directory, so the only .ics that appears there is the export.
         Path source = Temp.directory("peergos-calendar-src-").resolve("browser-test.ics");
@@ -55,9 +57,9 @@ public class CalendarImportExportTest {
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
             System.out.println("calendar open, files under " + calendar);
 
             // --- in ---------------------------------------------------------------------------

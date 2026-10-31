@@ -17,6 +17,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar AuthFormsTest.java [engine] [url]
  */
 public class AuthFormsTest {
+    static Fixtures.Account me;
     static final String RELEASE = "\uE000", ENTER = "\uE007", LEFT = "\uE012";
     // what goes with a, c and v for select all, copy and paste: Command on a Mac, Control elsewhere
     static final String MOD = System.getProperty("os.name", "").toLowerCase().contains("mac") ? "\uE03D" : "\uE009";
@@ -41,6 +42,7 @@ public class AuthFormsTest {
         boolean keys = ! "safari".equals(engine);
         Server own = given == null ? Server.start(Paths.get("..", "server").toAbsolutePath().normalize()) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         String user = "forms" + new Random().nextInt(1_000_000), password = "authformstestpassword";
         Fixtures.signUp(url, user, password);
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-auth-forms-"), headless)) {

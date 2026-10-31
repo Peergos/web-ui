@@ -13,6 +13,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar FolderAppSiblingTest.java [engine] [url]
  */
 public class FolderAppSiblingTest {
+    static Fixtures.Account me;
 
     static final String RUN = Long.toString(System.currentTimeMillis() % 1_000_000);
     static final String APP = "foldercheck" + RUN, FILE_APP = "filecheck" + RUN;
@@ -36,6 +37,7 @@ public class FolderAppSiblingTest {
         Path jar = serverDir.resolve("Peergos.jar");
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         Path local = Temp.directory("peergos-folder-app-");
         Path granted = local.resolve("granted.txt");
@@ -78,23 +80,23 @@ public class FolderAppSiblingTest {
                 "  .catch(e => window.__r[key] = {status: -1, text: '' + e});",
                 "};",
                 "</script></body></html>", ""));
-        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(jar, url, me.name(), me.password(),
                 "mkdir " + FOLDER, "cd " + FOLDER, "put " + granted.toAbsolutePath(), "put " + beside.toAbsolutePath());
-        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(jar, url, me.name(), me.password(),
                 "mkdir " + SIBLING, "cd " + SIBLING, "put " + secret.toAbsolutePath());
         try {
-            Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD, "mkdir .apps");
+            Fixtures.commands(jar, url, me.name(), me.password(), "mkdir .apps");
         } catch (IllegalStateException alreadyThere) {
             // a test before this one in the suite signed in, which makes it
         }
-        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(jar, url, me.name(), me.password(),
                 "cd .apps", "mkdir " + APP, "cd " + APP,
                 "put " + manifest.toAbsolutePath(), "mkdir assets", "cd assets", "put " + index.toAbsolutePath());
         // the manifest has to be named peergos-app.json, so it goes up under that name
         Path fileAppDir = local.resolve(FILE_APP);
         Files.createDirectories(fileAppDir);
         Files.copy(fileManifest, fileAppDir.resolve("peergos-app.json"));
-        Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD,
+        Fixtures.commands(jar, url, me.name(), me.password(),
                 "cd .apps", "mkdir " + FILE_APP, "cd " + FILE_APP,
                 "put " + fileAppDir.resolve("peergos-app.json").toAbsolutePath(), "mkdir assets", "cd assets",
                 "put " + index.toAbsolutePath());
@@ -102,7 +104,7 @@ public class FolderAppSiblingTest {
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-folder-app-dl-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             Page.gotoDrive(d);
             Page.waitForInDrive(d, FOLDER, 120_000);
             // what the folder's menu does when the app is picked in it
@@ -110,7 +112,7 @@ public class FolderAppSiblingTest {
             d.waitUntil("the app to load", () -> Boolean.TRUE.equals(inAppQuiet(d,
                     "return !!document.getElementById('ready') && typeof window.read === 'function'")), 120_000);
 
-            String home = "/" + Server.USERNAME + "/";
+            String home = "/" + me.name() + "/";
             Map<String, Object> mine = read(d, home + FOLDER + "/granted.txt");
             if (((Number) mine.get("status")).intValue() != 200 || ! String.valueOf(mine.get("text")).contains("inside the chosen folder"))
                 throw new AssertionError("The app could not read its own folder, so the rest proves nothing: " + mine);

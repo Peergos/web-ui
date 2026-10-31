@@ -12,6 +12,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar PathExpandTest.java [engine] [url]
  */
 public class PathExpandTest {
+    static Fixtures.Account me;
 
     static final int DESKTOP_WIDTH = 1280, DESKTOP_HEIGHT = 900;
     static final int PHONE_WIDTH = 390, PHONE_HEIGHT = 844;
@@ -32,6 +33,7 @@ public class PathExpandTest {
         Path serverDir = Paths.get("..", "server").toAbsolutePath().normalize();
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         try {
             Path jar = serverDir.resolve("Peergos.jar");
             List<String> cmds = new ArrayList<>();
@@ -39,17 +41,17 @@ public class PathExpandTest {
                 cmds.add("mkdir " + dir);
                 cmds.add("cd " + dir);
             }
-            Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD, cmds.toArray(new String[0]));
-            Fixtures.commands(jar, url, Server.USERNAME, Server.PASSWORD, "mkdir " + HUGE, "cd " + HUGE, "mkdir inner-" + HUGE);
-            String deepPath = "/" + Server.USERNAME + "/" + String.join("/", DEEP);
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD,
+            Fixtures.commands(jar, url, me.name(), me.password(), cmds.toArray(new String[0]));
+            Fixtures.commands(jar, url, me.name(), me.password(), "mkdir " + HUGE, "cd " + HUGE, "mkdir inner-" + HUGE);
+            String deepPath = "/" + me.name() + "/" + String.join("/", DEEP);
+            Fixtures.awaitListing(jar, url, me.name(), me.password(),
                     String.join("/", Arrays.copyOf(DEEP, DEEP.length - 1)), 120_000, DEEP[DEEP.length - 1]);
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-path-"), headless)) {
                 d.setWindowRect(DESKTOP_WIDTH, DESKTOP_HEIGHT);
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, Server.USERNAME, Server.PASSWORD);
+                Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
 
                 // a short trail on a wide window fits, so nothing is folded away
@@ -120,7 +122,7 @@ public class PathExpandTest {
                 if (! String.valueOf(globe).isEmpty())
                     throw new AssertionError("At the top the globe should be solid and alone: " + globe);
                 // with nothing folded away, the current folder has nothing to toggle
-                open(d, "/" + Server.USERNAME, Server.USERNAME);
+                open(d, "/" + me.name(), me.name());
                 WebDriver.sleep(600);
                 d.script("document.querySelector('.breadcrumb__item--current').click()");
                 WebDriver.sleep(600);
@@ -128,7 +130,7 @@ public class PathExpandTest {
                     throw new AssertionError("A trail that fits has nothing to open, but tapping the current folder expanded it");
 
                 // one enormous word: cut with an ellipsis, inside the page, nothing drawn over anything
-                for (String p : List.of("/" + Server.USERNAME + "/" + HUGE, "/" + Server.USERNAME + "/" + HUGE + "/inner-" + HUGE)) {
+                for (String p : List.of("/" + me.name() + "/" + HUGE, "/" + me.name() + "/" + HUGE + "/inner-" + HUGE)) {
                     open(d, p, p.substring(p.lastIndexOf('/') + 1));
                     WebDriver.sleep(600);
                     Object bad = d.script("const nav = document.querySelector('.drive-breadcrumb').getBoundingClientRect();"

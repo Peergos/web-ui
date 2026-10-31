@@ -14,6 +14,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar PdfRenderTest.java [engine] [url]
  */
 public class PdfRenderTest {
+    static Fixtures.Account me;
 
     public static void main(String[] args) throws Exception {
         try {
@@ -33,6 +34,7 @@ public class PdfRenderTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
 
         String name = "render-" + System.currentTimeMillis() + ".pdf";
         Path pdf = Temp.directory("peergos-pdf-").resolve(name);
@@ -40,13 +42,13 @@ public class PdfRenderTest {
 
         Path downloads = Temp.directory("peergos-pdf-dl-");
         try {
-            Fixtures.upload(jar, url, Server.USERNAME, Server.PASSWORD, pdf);
-            Fixtures.awaitListing(jar, url, Server.USERNAME, Server.PASSWORD, null, 120_000, name);
+            Fixtures.upload(jar, url, me.name(), me.password(), pdf);
+            Fixtures.awaitListing(jar, url, me.name(), me.password(), null, 120_000, name);
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-                Page.login(d, Server.USERNAME, Server.PASSWORD);
+                Page.login(d, me.name(), me.password());
                 // Retried once: if the browsing context is discarded mid test the app comes back
                 // without the viewer open, and the frame the assertions live in is genuinely
                 // gone. A viewer that never opens at all wants the same second go - the drive

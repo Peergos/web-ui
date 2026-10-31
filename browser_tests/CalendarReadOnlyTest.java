@@ -17,6 +17,7 @@ import java.util.*;
  *  Usage: java -cp ../server/Peergos.jar CalendarReadOnlyTest.java [engine] [url]
  */
 public class CalendarReadOnlyTest {
+    static Fixtures.Account me;
 
     static final String TITLE = "Read only there";
 
@@ -52,14 +53,15 @@ public class CalendarReadOnlyTest {
 
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
+        me = Fixtures.account(url);
         Path downloads = Temp.directory("peergos-calendar-readonly-");
         try (WebDriver d = Browsers.launch(Browsers.engine(engine), downloads, headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             CalendarApp.monthView(d);
-            String calendar = CalendarApp.directoryOf(d, Server.USERNAME);
+            String calendar = CalendarApp.directoryOf(d, me.name());
 
             CalendarApp.newEntry(d, "add-menu-event", "event-modal-backdrop");
             CalendarApp.inFrame(d, CalendarApp.setField("event-title", TITLE) + "return 1;");
@@ -71,7 +73,7 @@ public class CalendarReadOnlyTest {
             System.out.println("owner's entry stored under " + month);
 
             // --- a read-only link to the calendar's directory, as the share dialog makes it ----
-            String shared = "/" + Server.USERNAME + "/.apps/calendar/data/" + calendar;
+            String shared = "/" + me.name() + "/.apps/calendar/data/" + calendar;
             d.script("window.__link = null; window.__linkErr = null;"
                     + "let context = " + Page.VUE + ".root().$store.state.context;"
                     + "context.createSecretLink(arguments[0] + '/', false, java.util.Optional.empty(), '', '', true)"
@@ -142,7 +144,7 @@ public class CalendarReadOnlyTest {
             // --- the owner again, to say what their own directory holds ----------------------
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
-            Page.login(d, Server.USERNAME, Server.PASSWORD);
+            Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             List<String> after = CalendarApp.list(d, month);
             if (after.contains("forged-by-reader.ics") || ! new HashSet<>(after).equals(new HashSet<>(before)))
@@ -153,7 +155,7 @@ public class CalendarReadOnlyTest {
             // --- and a link to one entry rather than the whole calendar ----------------------
             // The share dialog offers this too, and it opens the entry rather than the drive it
             // sits in. There is no account in a link, so it is shown and nothing is imported.
-            String entryPath = "/" + Server.USERNAME + "/.apps/calendar/data/" + month + "/" + stored;
+            String entryPath = "/" + me.name() + "/.apps/calendar/data/" + month + "/" + stored;
             d.script("window.__one = null; window.__oneErr = null;"
                     + "let ctx = " + Page.VUE + ".root().$store.state.context;"
                     + "ctx.createSecretLink(arguments[0], false, java.util.Optional.empty(), '', '', true)"
