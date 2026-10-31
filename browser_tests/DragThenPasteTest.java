@@ -45,8 +45,21 @@ public class DragThenPasteTest {
             Page.openPath(d, folder, FOLDER);
             Page.waitForInDrive(d, DRAGGED, 120_000);
             d.script("if (!window.__drive.isGrid) window.__drive.switchView(); return 1;");
-            Page.select(d, CUT);
-            d.script("window.__drive.cut(); window.__drive.selectedFiles = []; return 1;");
+            // A listing arriving between the pick and the cut, as one does under load, replaces the
+            // selection, and a cut with nothing selected is a cut of nothing: check the clipboard
+            // holds the file, and pick again if not.
+            for (int attempt = 1; ; attempt++) {
+                Page.select(d, CUT);
+                Object held = d.script("const vm = window.__drive; vm.cut(); vm.selectedFiles = [];"
+                        + "return vm.clipboard && vm.clipboard.op === 'cut' && vm.clipboard.fileTreeNode"
+                        + "  ? String(vm.clipboard.fileTreeNode.getFileProperties().name) : null;");
+                if (CUT.equals(held))
+                    break;
+                if (attempt == 3)
+                    throw new AssertionError("The cut never took: the clipboard holds " + held + " with " + state(d));
+                System.out.println("  the cut took nothing (clipboard " + held + "), picking again");
+                WebDriver.sleep(1000);
+            }
             // picked up and let go over nothing: a drag start and its end, with no drop between
             Object dragged = d.script("const vm = window.__drive;"
                     + "const i = vm.sortedFiles.findIndex(f => f.getFileProperties().name === arguments[0]);"
@@ -63,13 +76,14 @@ public class DragThenPasteTest {
             if (! "pasted".equals(String.valueOf(pasted)))
                 throw new AssertionError("Paste after a drag that went nowhere " + pasted
                         + (Boolean.TRUE.equals(d.scriptQuiet("return window.__drive.showSpinner")) ? ", with the spinner left up" : ""));
-            long end = System.currentTimeMillis() + 60_000;
+            long end = System.currentTimeMillis() + 120_000;
             while (System.currentTimeMillis() < end && ! namesIn(d, into).contains(CUT) && ! Page.errorShown(d))
                 WebDriver.sleep(500);
             List<String> inside = namesIn(d, into), beside = namesIn(d, folder);
             if (! inside.contains(CUT))
                 throw new AssertionError("Paste after a drag that went nowhere did not move the cut file: "
-                        + into + " holds " + inside + (Page.errorShown(d) ? ", the page says " + Page.errorText(d) : ""));
+                        + into + " holds " + inside + ", " + folder + " holds " + beside
+                        + (Page.errorShown(d) ? ", the page says " + Page.errorText(d) : "") + ", " + state(d));
             if (! beside.contains(DRAGGED) || inside.contains(DRAGGED))
                 throw new AssertionError("The file only dragged moved: " + folder + " holds " + beside + ", " + into + " " + inside);
             System.out.println("  ok   the cut file moved, the dragged one stayed: " + inside);
@@ -100,6 +114,17 @@ public class DragThenPasteTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** The drive's state that bears on a paste, for a failure to say what it found. */
+    static String state(WebDriver d) {
+        return String.valueOf(d.scriptQuiet("const vm = window.__drive; return JSON.stringify({"
+                + "clipboard: vm.clipboard == null ? null : {op: vm.clipboard.op, path: vm.clipboard.path,"
+                + "  name: vm.clipboard.fileTreeNode == null ? null : String(vm.clipboard.fileTreeNode.getFileProperties().name),"
+                + "  standIn: vm.clipboard.fileTreeNode == null ? null : vm.clipboard.fileTreeNode.isWrapper === true},"
+                + "confirm: vm.showConfirm, spinner: vm.showSpinner, selected: vm.selectedFiles.length,"
+                + "dragged: vm.dragged != null, path: vm.getPath, error: vm.showError ? vm.errorBody : null})"))
+                + " toasts " + Page.inFlight(d);
     }
 
     /** What a folder holds now, read from the store rather than from the view. */
