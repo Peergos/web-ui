@@ -53,7 +53,7 @@ public class CalendarMovedSeriesDatesTest {
 
             CalendarApp.gotoMonth(d, deleted.toString());
             CalendarApp.waitInFrame(d, "the series on the grid", CalendarSeriesTest.drawn("Shifted standup"), 30_000);
-            openOn(d, "Shifted standup", deleted);
+            CalendarClockChangeTest.openOn(d, "Shifted standup", deleted);
             CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
             CalendarApp.chooseScope(d, "this");
             String excluded = CalendarApp.awaitStored(d, recurring, file, "EXDATE");
@@ -68,12 +68,13 @@ public class CalendarMovedSeriesDatesTest {
             CalendarApp.inFrame(d, CalendarApp.setField("event-start-time", "11:00")
                     + CalendarApp.setField("event-end-time", "11:30") + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
-            String moved = CalendarApp.awaitStored(d, recurring, file, "T1100");
+            // the series' own start: a time stamp written in the 11:00 minute carries T1100 as well
+            String moved = CalendarApp.awaitStored(d, recurring, file, first.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000");
             String exdate = CalendarApp.property(moved, "EXDATE");
-            if (exdate == null || ! exdate.contains("T1100"))
+            if (exdate == null || ! exdate.contains(deleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000"))
                 throw new AssertionError("The series moved to 11:00 but its deleted occurrence did not: " + exdate);
             System.out.println("  ok   the deleted occurrence moved with the series: " + exdate);
-            reload(d, deleted);
+            CalendarClockChangeTest.reload(d, deleted);
             CalendarApp.waitInFrame(d, "the series after a reload", CalendarSeriesTest.drawn("Shifted standup"), 30_000);
             List<String> drawn = CalendarApp.occurrenceDates(d, "Shifted standup");
             if (drawn.contains(deleted.toString()))
@@ -84,29 +85,5 @@ public class CalendarMovedSeriesDatesTest {
             if (own != null)
                 own.close();
         }
-    }
-
-    /** Opens the popover of the occurrence drawn on one day. */
-    static void openOn(WebDriver d, String title, LocalDate day) {
-        CalendarApp.inFrame(d, "let chip = Array.from(document.querySelectorAll('[data-search-event-id]'))"
-                + "  .filter(el => el.textContent.indexOf(arguments[0]) !== -1)"
-                + "  .find(el => { let cell = el.closest('[data-date]');"
-                + "    return cell && cell.getAttribute('data-date') === arguments[1]; });"
-                + "if (!chip) throw new Error('no chip on ' + arguments[1]);"
-                + "chip.click(); return 1;", title, day.toString());
-        CalendarApp.waitInFrame(d, "the event popover",
-                "document.getElementById('event-popover').classList.contains('open')", 30_000);
-    }
-
-    static void reload(WebDriver d, LocalDate month) {
-        Page.gotoView(d, "Drive", "downloadFile", "__drive");
-        CalendarApp.open(d);
-        CalendarApp.gotoMonth(d, month.toString());
-    }
-
-    static String vevent(String uid, String summary, String... lines) {
-        return String.join("\r\n", "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//test//test//EN", "BEGIN:VEVENT",
-                "UID:" + uid, "DTSTAMP:20260101T000000Z", "SUMMARY:" + summary)
-                + "\r\n" + String.join("\r\n", lines) + "\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
     }
 }

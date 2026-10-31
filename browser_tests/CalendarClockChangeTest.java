@@ -71,9 +71,9 @@ public class CalendarClockChangeTest {
             System.out.println("  ok   the series is still two days long: " + end);
             // --- and moved across it ---------------------------------------------------------
             // A second occurrence deleted, the one after the change; then the series starts
-            // three weeks on, over the change. Each deleted occurrence moves by three weeks of
-            // the calendar, not of the clock: measured by the clock, a shift that crosses the
-            // change is an hour short, which for a bare date is a day.
+            // three weeks on, over the change. Each deleted occurrence moves by three weeks as
+            // the calendar counts them, not as time passes: three weeks of elapsed time that
+            // cross the change are an hour short, which for a bare date is a day.
             LocalDate after = weekend.plusWeeks(1);
             CalendarApp.gotoMonth(d, after.toString());
             CalendarApp.waitInFrame(d, "the series the week after", CalendarSeriesTest.drawn("Weekend away"), 30_000);
