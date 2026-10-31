@@ -1608,7 +1608,7 @@ module.exports = {
                         that.leaveArchive();
                         that.currentDir = updated;
                         that.updateSharedFolderSpace();
-                        that.updateFiles(selectedFilename, callback);
+                        that.updateFiles(selectedFilename, callback, path);
                     }).exceptionally(function (throwable) {
                         that.folderNotOpened(path, throwable, selectedFilename, callback);
                     });
@@ -1745,13 +1745,15 @@ module.exports = {
                     });
                 },
 
-		updateFiles(selectedFilename, callback) {
+		updateFiles(selectedFilename, callback, listedPath) {
 			var current = this.currentDir;
 			if (current == null)
 				return Promise.resolve([]);
 			let that = this;
-			// the folder being listed: its stand-ins look their files up here, wherever the drive is by then
-			let listedPath = this.getPath;
+			// the folder being listed, where its stand-ins look their files up: the path that was read, when
+			// the caller has it, as the drive may have moved on since
+			if (listedPath == null)
+				listedPath = this.getPath;
 			// let context = this.getContext();
 			let path = that.path.length == 0 ? ["/"] : that.path;
 			let directoryPath = peergos.client.PathUtils.directoryToPath(path);
@@ -3060,8 +3062,8 @@ module.exports = {
                 this.pasteMultiSelect(e);
             }
         },
-		pasteMultiSelect(e, retrying) {
-			var target = this.multiSelectTargetFolder;
+		pasteMultiSelect(e, retrying, pasteTarget) {
+			var target = pasteTarget || this.multiSelectTargetFolder;
             if (target == null) {
                 return;
             }
@@ -3076,7 +3078,7 @@ module.exports = {
             if (standIn != null) {
                 standIn.getFile().thenApply(file => {
                     clipboard.fileTreeNodes = clipboard.fileTreeNodes.map(f => f === standIn ? file : f);
-                    that.pasteMultiSelect(e, retrying);
+                    that.pasteMultiSelect(e, retrying, target);
                 }).exceptionally(t => that.$toast.error(that.failureText(t), {timeout: false}));
                 return;
             }
@@ -3165,14 +3167,16 @@ module.exports = {
                 }
             }
 		},
-		paste(e, retrying) {
-			if (this.archive != null) {
+		paste(e, retrying, pasteTarget) {
+			// the target a paste was given before a stand-in on the clipboard was resolved, not wherever the
+			// drive is once it has been
+			if (pasteTarget == null && this.archive != null) {
 				this.pasteIntoArchive();
 				return;
 			}
-			if (this.selectedFiles.length > 1)
+			if (pasteTarget == null && this.selectedFiles.length > 1)
 				return;
-			var target = this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir;
+			var target = pasteTarget || (this.selectedFiles.length == 1 ? this.selectedFiles[0] : this.currentDir);
 			var that = this;
 			this.closeMenu();
 			if (target.isDirectory()) {
@@ -3189,7 +3193,7 @@ module.exports = {
 				if (clipboard.fileTreeNode.isWrapper) {
 					clipboard.fileTreeNode.getFile().thenApply(file => {
 						clipboard.fileTreeNode = file;
-						that.paste(e, retrying);
+						that.paste(e, retrying, target);
 					}).exceptionally(t => that.$toast.error(that.failureText(t), {timeout: false}));
 					return;
 				}
