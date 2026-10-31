@@ -71,20 +71,35 @@ public class ZipFolderDownloadTest {
                 Page.openPath(d, root, me.name());
                 Page.waitForInDrive(d, folder, 120_000);
 
-                System.out.println("zipping and downloading " + folder);
-                Page.zipFolder(d, folder);
-                // the drive asks before zipping, and the flow does not continue until it is answered
-                Page.confirmYes(d, 120_000);
-                System.out.println("  confirmed the download dialog");
-                // The counter the app names archives from is the signal that the zip flow got
-                // past the dialog at all: it is bumped where the file is named. Toasts alone say
-                // nothing, they are empty in a healthy run too.
-                WebDriver.sleep(5_000);
-                System.out.println("  zip state after confirming: " + zipState(d));
+                Downloads.Result zip = null;
+                for (int attempt = 1; zip == null; attempt++) {
+                    System.out.println("zipping and downloading " + folder);
+                    Page.zipFolder(d, folder);
+                    // the drive asks before zipping, and the flow does not continue until it is answered
+                    Page.confirmYes(d, 120_000);
+                    System.out.println("  confirmed the download dialog");
+                    // The counter the app names archives from is the signal that the zip flow got
+                    // past the dialog at all: it is bumped where the file is named. Toasts alone say
+                    // nothing, they are empty in a healthy run too.
+                    WebDriver.sleep(5_000);
+                    System.out.println("  zip state after confirming: " + zipState(d));
 
-                // the app numbers the file from a counter of its own, so take whatever zip lands
-                Downloads.Result zip = Downloads.awaitMatching(downloads, "archive-", ".zip",
-                        600_000, 60_000);
+                    // On a loaded windows runner the download's handshake with the service worker can
+                    // stall; the app gives up on it after a minute and asks for a reload. Do as it says,
+                    // once: the stall is in the browser, and the reload is what a person would do.
+                    if (attempt == 1 && couldNotStart(d, downloads)) {
+                        System.out.println("  the download could not be started, reloading the page as the app asks");
+                        d.navigate(url + "/");
+                        d.waitForScript("the page again", "document.querySelector('input[name=username]') || window.__drive", 60_000);
+                        if (Boolean.TRUE.equals(d.script("return !!document.querySelector('input[name=username]')")))
+                            Page.login(d, me.name(), me.password());
+                        Page.gotoDrive(d);
+                        Page.waitForInDrive(d, folder, 120_000);
+                        continue;
+                    }
+                    // the app numbers the file from a counter of its own, so take whatever zip lands
+                    zip = Downloads.awaitMatching(downloads, "archive-", ".zip", 600_000, 60_000);
+                }
                 System.out.println("  " + zip);
                 if (zip.path == null) {
                     System.out.println("  zip state when none arrived: " + zipState(d));
@@ -144,6 +159,21 @@ public class ZipFolderDownloadTest {
         for (int i = 0; i < n; i++)
             b[i] = (byte) ((i * 17 + 3) & 0xff);
         return b;
+    }
+
+    /** Whether the app said the download could not be started before any zip began to land. */
+    static boolean couldNotStart(WebDriver d, Path downloads) throws IOException {
+        long end = System.currentTimeMillis() + 90_000;
+        while (System.currentTimeMillis() < end) {
+            try (var files = Files.list(downloads)) {
+                if (files.anyMatch(p -> p.getFileName().toString().startsWith("archive-")))
+                    return false;
+            }
+            if (Page.inFlight(d).contains("could not be started"))
+                return true;
+            WebDriver.sleep(1_000);
+        }
+        return false;
     }
 
     /** Whether the app got as far as naming and building an archive. */
