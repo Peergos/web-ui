@@ -3,11 +3,13 @@ import java.time.*;
 import java.time.format.*;
 import java.util.*;
 
-/** A series with a deleted occurrence, then moved to another time through Edit -> All events.
+/** A series with a deleted occurrence, then moved to another time and to another start day
+ *  through Edit -> All events.
  *
- *  A deleted occurrence is an EXDATE naming its start. Moving the series moves every start,
- *  so the EXDATE has to move with it, or it names a time the series no longer has and the
- *  deleted occurrence comes back.
+ *  A deleted occurrence is an EXDATE naming its start. Moving the series to another time moves
+ *  every start, so the EXDATE has to take the new time, or it names a time the series no longer
+ *  has and the deleted occurrence comes back. Moving its start to another day does not move the
+ *  rule's days - the dialog keeps the weekday - so there the EXDATE keeps its day.
  *
  *  Usage: java -cp ../server/Peergos.jar CalendarMovedSeriesDatesTest.java [engine] [url]
  */
@@ -68,7 +70,7 @@ public class CalendarMovedSeriesDatesTest {
             CalendarApp.inFrame(d, CalendarApp.setField("event-start-time", "11:00")
                     + CalendarApp.setField("event-end-time", "11:30") + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
-            // the series' own start: a time stamp written in the 11:00 minute carries T1100 as well
+            // waits for the series' own start, as T1100 alone also matches a time stamp written in the 11:00 minute
             String moved = CalendarApp.awaitStored(d, recurring, file, first.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000");
             String exdate = CalendarApp.property(moved, "EXDATE");
             if (exdate == null || ! exdate.contains(deleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000"))
@@ -80,6 +82,26 @@ public class CalendarMovedSeriesDatesTest {
             if (drawn.contains(deleted.toString()))
                 throw new AssertionError("The deleted occurrence is back on " + deleted + ": " + drawn);
             System.out.println("  ok   and it stays deleted: " + drawn);
+
+            LocalDate later = first.plusDays(1);
+            CalendarApp.openPopover(d, "Shifted standup");
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-date", later.toString())
+                    + CalendarApp.setField("event-end-date", later.toString()) + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String restarted = CalendarApp.awaitStored(d, recurring, file, later.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000");
+            String kept = CalendarApp.property(restarted, "EXDATE");
+            if (kept == null || ! kept.contains(deleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T110000"))
+                throw new AssertionError("The series' start moved a day, on the same weekdays, and its deleted occurrence moved off its day: " + kept);
+            CalendarClockChangeTest.reload(d, deleted);
+            CalendarApp.waitInFrame(d, "the series after the start moved", CalendarSeriesTest.drawn("Shifted standup"), 30_000);
+            List<String> after = CalendarApp.occurrenceDates(d, "Shifted standup");
+            if (after.contains(deleted.toString()))
+                throw new AssertionError("The deleted occurrence is back on " + deleted + " once the start moved: " + after);
+            System.out.println("  ok   a start moved a day keeps the deleted occurrence on its day: " + kept);
             System.out.println("PASS");
         } finally {
             if (own != null)

@@ -4,7 +4,6 @@ import java.time.format.*;
 import java.time.temporal.TemporalAdjusters;
 import java.time.zone.ZoneOffsetTransition;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /** A weekend-long series, with the occurrence over a clock change deleted.
  *
@@ -69,43 +68,6 @@ public class CalendarClockChangeTest {
                 throw new AssertionError("Deleting the weekend of " + weekend + " (clocks change on " + changeDay
                         + ") rewrote the series to end " + end + ", not " + expected + ":\n" + rewritten);
             System.out.println("  ok   the series is still two days long: " + end);
-            // --- and moved across it ---------------------------------------------------------
-            // A second occurrence deleted, the one after the change; then the series starts
-            // three weeks on, over the change. Each deleted occurrence moves by three weeks as
-            // the calendar counts them, not as time passes: three weeks of elapsed time that
-            // cross the change are an hour short, which for a bare date is a day.
-            LocalDate after = weekend.plusWeeks(1);
-            CalendarApp.gotoMonth(d, after.toString());
-            CalendarApp.waitInFrame(d, "the series the week after", CalendarSeriesTest.drawn("Weekend away"), 30_000);
-            openOn(d, "Weekend away", after);
-            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
-            CalendarApp.chooseScope(d, "this");
-            CalendarApp.awaitStored(d, recurring, "weekend.ics", after.format(DateTimeFormatter.BASIC_ISO_DATE));
-            LocalDate newStart = first.plusWeeks(3);
-            CalendarApp.waitInFrame(d, "the series still on the grid", CalendarSeriesTest.drawn("Weekend away"), 30_000);
-            CalendarApp.openPopover(d, "Weekend away");
-            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
-            CalendarApp.chooseScope(d, "all");
-            CalendarApp.waitInFrame(d, "the event dialog",
-                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
-            CalendarApp.inFrame(d, CalendarApp.setField("event-start-date", newStart.toString())
-                    + CalendarApp.setField("event-end-date", newStart.plusDays(1).toString()) + "return 1;");
-            CalendarApp.save(d, "event-save", "event-modal-backdrop");
-            String moved = CalendarApp.awaitStored(d, recurring, "weekend.ics",
-                    "DTSTART;VALUE=DATE:" + newStart.format(DateTimeFormatter.BASIC_ISO_DATE));
-            String exdates = Arrays.stream(moved.split("\r?\n")).filter(l -> l.startsWith("EXDATE"))
-                    .collect(Collectors.joining(" "));
-            for (LocalDate deleted : List.of(weekend, after)) {
-                String expectedExdate = deleted.plusWeeks(3).format(DateTimeFormatter.BASIC_ISO_DATE);
-                if (! exdates.contains(expectedExdate))
-                    throw new AssertionError("Moved three weeks on, the occurrence deleted on " + deleted
-                            + " should be excluded on " + expectedExdate + ", but the file excludes " + exdates + ":\n" + moved);
-            }
-            String movedEnd = CalendarApp.property(moved, "DTEND");
-            String expectedEnd = newStart.plusDays(2).format(DateTimeFormatter.BASIC_ISO_DATE);
-            if (movedEnd == null || ! movedEnd.endsWith(expectedEnd))
-                throw new AssertionError("Moved three weeks on, the series ends " + movedEnd + ", not " + expectedEnd + ":\n" + moved);
-            System.out.println("  ok   its deleted occurrences moved with it: " + exdates);
             System.out.println("PASS");
         } finally {
             if (own != null)

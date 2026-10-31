@@ -1557,7 +1557,7 @@ function moveOccurrence(ev, scope, moved) {
         let recur = adjustRecurForFollowing(ev, ev.extendedProps.recur, moved.allDay);
         recur.dtstart = toLocalInputValue(moved.start, moved.allDay);
         takeListedDatesFrom(ev, recur, moved.allDay);
-        // the rest of the series is written before the series is cut short, so a write that fails loses neither
+        // built and sent before the series is cut short: one that cannot be written out leaves the series whole
         addAndPersist(buildRecurringEventPayload(nextEventId(), ev.title, moved.allDay, extra, recur, moved.durationMs));
         truncateMasterSeries(ev);
         return;
@@ -3868,7 +3868,7 @@ form.addEventListener('submit', function (e) {
         addAndPersist(buildPlainEventPayload(nextEventId(), titleInput.value, allDay, start, end, extra));
 
     } else if (editingEvent && editScope === 'following' && editingEvent.extendedProps.recur) {
-        // as a drag does: the rest of the series is written before the series is cut short
+        // as a drag does: the rest of the series is built and sent before the series is cut short
         if (recur) {
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
             takeListedDatesFrom(editingEvent, recur, allDay);
@@ -3888,10 +3888,9 @@ form.addEventListener('submit', function (e) {
                 let was = editingEvent.extendedProps.recur;
                 recur.exdates = was.exdates || [];
                 recur.rdates = was.rdates || [];
-                // moved by as much as the series' start moved, and into the form
-                // of its new start, all-day or timed
+                // to the series' new time of day, and into the form of its new start, all-day or timed
                 if (was.dtstart)
-                    shiftListedDates(recur, wallClockMs(toStoredDate(was.dtstart), toStoredDate(recur.dtstart),
+                    shiftListedDates(recur, timeOfDayShiftMs(toStoredDate(was.dtstart), toStoredDate(recur.dtstart),
                         allDay && editingEvent.allDay), allDay);
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
@@ -4631,11 +4630,11 @@ function sameFolder(a, b) {
 }
 
 // A series' excluded and added dates name occurrences by their start. When the
-// series moves, each moves with it, or the deleted occurrences come back and the
-// added ones land where the series no longer is; and they take the form of the
-// new start, a bare date for an all-day series, or the write has nothing to turn
-// a time into. The shift is the clock's, not real time's: across a clock change
-// the two differ by an hour, which for a bare date is a day.
+// series' time of day changes, each takes the new time, or the deleted occurrences
+// come back and the added ones land where the series no longer is; and they take
+// the form of the new start, a bare date for an all-day series, or the write has
+// nothing to turn a time into. The shift is the clock's, not real time's: across a
+// clock change the two differ by an hour.
 function shiftListedDates(recur, shiftMs, allDay) {
     let move = function (list) {
         return (list || []).map(function (s) {
@@ -4646,18 +4645,31 @@ function shiftListedDates(recur, shiftMs, allDay) {
     if (recur.rdates) recur.rdates = move(recur.rdates);
 }
 
+// How far a series' time of day moved, leaving out any change of day. A date the
+// series lists names a day its rule chose, and the rule's days don't move with its
+// start - the dialog keeps the weekday and the day of the month it had - so a deleted
+// Monday stays deleted when the start moves to a Tuesday, or a week on.
+function timeOfDayShiftMs(from, to, bothAllDay) {
+    if (bothAllDay) return 0;
+    let sameDay = new Date(from.getFullYear(), from.getMonth(), from.getDate(),
+        to.getHours(), to.getMinutes(), to.getSeconds());
+    return wallClockMs(from, sameDay, false);
+}
+
 // "This and following": the series from the occurrence the change started at, whose start is
-// recur.dtstart now, takes the excluded and added dates after that occurrence - the earlier ones
-// stay with the series it is cut from - and moves them as shiftListedDates moves a whole series'.
+// recur.dtstart now, takes the excluded and added dates from that occurrence on, at its new time
+// of day; the earlier ones stay with the series it is cut from.
+// An occurrence that is an added date, not one of the rule's, has to go as one, or neither
+// series has it.
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = toLocalInputValue(occurrence.start, occurrence.allDay);
-    let later = function (list) {
-        return (list || []).filter(function (s) { return s > cut; });
+    let fromCut = function (list) {
+        return (list || []).filter(function (s) { return s >= cut; });
     };
-    recur.exdates = later(was.exdates);
-    recur.rdates = later(was.rdates);
-    shiftListedDates(recur, wallClockMs(occurrence.start, toStoredDate(recur.dtstart), occurrence.allDay && allDay), allDay);
+    recur.exdates = fromCut(was.exdates);
+    recur.rdates = fromCut(was.rdates);
+    shiftListedDates(recur, timeOfDayShiftMs(occurrence.start, toStoredDate(recur.dtstart), occurrence.allDay && allDay), allDay);
 }
 
 // Identifies a stored event to the host: which file, in which calendar

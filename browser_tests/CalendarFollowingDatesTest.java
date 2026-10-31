@@ -5,11 +5,12 @@ import java.time.temporal.*;
 import java.util.*;
 
 /** "This and following" splits a series at an occurrence, and the part from there on is a series of
- *  its own. It takes the series' deleted (EXDATE) and added (RDATE) dates after that occurrence,
- *  moved as far as it moved: left behind, the deleted occurrences come back and the added ones are
+ *  its own. It takes the series' deleted (EXDATE) and added (RDATE) dates from that occurrence on,
+ *  at its new time of day: left behind, the deleted occurrences come back and the added ones are
  *  drawn where the series no longer is. The earlier ones stay with the part before, or they are
- *  drawn twice. Both ways in: a drag to another time, and the dialog turning an all-day series into
- *  a timed one, whose dates have to change form as well - a bare date could not be written as a time.
+ *  drawn twice, and an occurrence that is itself an added date goes with the new part. Both ways
+ *  in: a drag to another time, and the dialog turning an all-day series into a timed one, whose
+ *  dates have to change form as well - a bare date could not be written as a time.
  *
  *  Usage: java -cp ../server/Peergos.jar CalendarFollowingDatesTest.java [engine] [url]
  */
@@ -54,7 +55,7 @@ public class CalendarFollowingDatesTest {
             CalendarApp.write(d, recurring, "dragged.ics", CalendarClockChangeTest.vevent("dragged", dragged,
                     "DTSTART;TZID=" + ZONE + ":" + first.format(BASIC) + "T090000",
                     "DTEND;TZID=" + ZONE + ":" + first.format(BASIC) + "T093000",
-                    "RRULE:FREQ=WEEKLY",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
                     "EXDATE;TZID=" + ZONE + ":" + deleted.format(BASIC) + "T090000",
                     "RDATE;TZID=" + ZONE + ":" + earlyAdded.format(BASIC) + "T090000," + lateAdded.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, split);
@@ -66,13 +67,23 @@ public class CalendarFollowingDatesTest {
             CalendarApp.waitInFrame(d, "the occurrence in its week", CalendarDragTest.inColumn(split.toString(), dragged), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(dragged, split.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
-            String fresh = CalendarApp.read(d, recurring, newSeries(d, recurring, "dragged.ics", dragged));
+            String freshFile = newSeries(d, recurring, Set.of("dragged.ics"), dragged);
+            String fresh = CalendarApp.read(d, recurring, freshFile);
             assertListed(fresh, "EXDATE", deleted, "T110000", "the deleted Monday after the split");
             assertListed(fresh, "RDATE", lateAdded, "T110000", "the Wednesday added after the split");
             assertNotListed(fresh, "RDATE", earlyAdded, "the Wednesday added before the split");
             String cut = CalendarApp.awaitStored(d, recurring, "dragged.ics", "UNTIL=");
             assertListed(cut, "RDATE", earlyAdded, "T090000", "the Wednesday added before the split");
             System.out.println("  ok   dragged: the dates after the split moved to 11:00 with it, the earlier one stayed");
+            // split again at the added Wednesday, which is no day of the rule's: it goes as an added date
+            CalendarDragTest.weekShowing(d, lateAdded.toString());
+            CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(lateAdded.toString(), dragged), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(dragged, lateAdded.toString(),
+                    CalendarDragTest.slotDistance("11:00:00", "13:00:00"), false), "following");
+            String fromAdded = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("dragged.ics", freshFile), dragged));
+            assertListed(fromAdded, "RDATE", lateAdded, "T130000", "the added Wednesday the split started from");
+            CalendarApp.waitInFrame(d, "the added Wednesday still drawn", CalendarDragTest.inColumn(lateAdded.toString(), dragged), 30_000);
+            System.out.println("  ok   split at an added date: it went with the new part, at 13:00");
 
             // --- from all day to a time, in the dialog ----------------------------------------------
             String edited = "Edited split";
@@ -96,7 +107,7 @@ public class CalendarFollowingDatesTest {
                     + CalendarApp.setField("event-end-date", split.toString())
                     + CalendarApp.setField("event-end-time", "10:30") + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
-            String timed = CalendarApp.read(d, recurring, newSeries(d, recurring, "edited.ics", edited));
+            String timed = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("edited.ics"), edited));
             CalendarApp.assertTimeIs(timed, "DTSTART", split.atTime(10, 0));
             assertListed(timed, "EXDATE", deleted, "T100000", "the deleted Monday after the split");
             assertListed(timed, "RDATE", lateAdded, "T100000", "the Wednesday added after the split");
@@ -134,11 +145,11 @@ public class CalendarFollowingDatesTest {
         CalendarDragTest.weekShowing(d, day.toString());
     }
 
-    /** The series file the split wrote, beside the one it cut short */
-    static String newSeries(WebDriver d, String recurring, String original, String title) {
-        return d.waitUntil("a second series file for " + title, () -> {
+    /** The series file the split wrote, beside the ones there already */
+    static String newSeries(WebDriver d, String recurring, Set<String> known, String title) {
+        return d.waitUntil("another series file for " + title, () -> {
             for (String name : CalendarApp.list(d, recurring)) {
-                if (name.equals(original))
+                if (known.contains(name))
                     continue;
                 String ics = CalendarApp.read(d, recurring, name);
                 if (ics.contains("SUMMARY:" + title) && CalendarApp.property(ics, "RRULE") != null)
