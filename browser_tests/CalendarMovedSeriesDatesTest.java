@@ -237,7 +237,7 @@ public class CalendarMovedSeriesDatesTest {
             // and the deleted Monday stays deleted
             LocalDate lateDeleted = monday.plusWeeks(1);
             LocalDate addedWed = monday.plusDays(2);
-            CalendarApp.write(d, recurring, "late.ics", CalendarClockChangeTest.vevent("late", "Late series",
+            CalendarApp.write(d, recurring, "midnight.ics", CalendarClockChangeTest.vevent("midnight", "Late series",
                     "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T220000",
                     "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T223000",
                     "RRULE:FREQ=WEEKLY;BYDAY=MO",
@@ -252,7 +252,7 @@ public class CalendarMovedSeriesDatesTest {
             CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(addedWed.toString(), "Late series"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Late series", addedWed.toString(),
                     CalendarDragTest.slotDistance("08:00:00", "10:00:00"), false), "all");
-            String late = CalendarApp.awaitStored(d, recurring, "late.ics",
+            String late = CalendarApp.awaitStored(d, recurring, "midnight.ics",
                     addedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T100000");
             CalendarApp.assertTimeIs(late, "DTSTART", monday.atTime(0, 0));
             CalendarClockChangeTest.reload(d, lateDeleted);
@@ -263,6 +263,31 @@ public class CalendarMovedSeriesDatesTest {
                 throw new AssertionError("Moved past midnight, the series should keep " + monday + " and not bring back the deleted "
                         + lateDeleted + ", but draws " + lateDays + ":\n" + late);
             System.out.println("  ok   dragged from an added date past midnight for the rule, its Mondays stayed Mondays: " + lateDays);
+
+            // --- every date of a series of listed dates dragged ---------------------------------------------------
+            // Monday 23:00, Wednesday 08:00 and Friday 23:00, and no rule: the Wednesday dragged to 10:00 takes them
+            // all two hours on, into the next day where that is where it takes them
+            LocalDate listedWed = monday.plusDays(2);
+            CalendarApp.write(d, recurring, "listed.ics", CalendarClockChangeTest.vevent("listed", "Listed late",
+                    "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T230000",
+                    "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T233000",
+                    "RDATE;TZID=" + zone + ":" + listedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000,"
+                            + monday.plusDays(4).format(DateTimeFormatter.BASIC_ISO_DATE) + "T230000"));
+            CalendarClockChangeTest.reload(d, listedWed);
+            CalendarApp.waitInFrame(d, "the listed dates", CalendarSeriesTest.drawn("Listed late"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            CalendarFollowingDatesTest.weekShowing(d, listedWed);
+            CalendarApp.waitInFrame(d, "the Wednesday in its week", CalendarDragTest.inColumn(listedWed.toString(), "Listed late"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed late", listedWed.toString(),
+                    CalendarDragTest.slotDistance("08:00:00", "10:00:00"), false), "all");
+            String listed = CalendarApp.awaitStored(d, recurring, "listed.ics",
+                    listedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T100000");
+            CalendarApp.assertTimeIs(listed, "DTSTART", monday.plusDays(1).atTime(1, 0));
+            if (! CalendarApp.property(listed, "RDATE").contains(monday.plusDays(5).format(DateTimeFormatter.BASIC_ISO_DATE) + "T010000"))
+                throw new AssertionError("Two hours on, Friday's 23:00 should be Saturday's 01:00:\n" + listed);
+            System.out.println("  ok   dragged, every listed date went two hours on: " + CalendarApp.property(listed, "RDATE"));
             System.out.println("PASS");
         } finally {
             if (own != null)

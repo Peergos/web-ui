@@ -361,9 +361,10 @@ The rules are those of the previous calendar:
   day, and every occurrence takes the new length). Deleted (EXDATE) and added (RDATE) dates
   move as far as the occurrences they name: the rule's dates with the series' time of day,
   on their own day, and an added date as far as the moved occurrence, into the next or
-  previous day if it has to. They are worked on their stored text, so a time the clocks skip
-  stays as written; the edit dialog moves them the same way. The exclusion and the cut-off
-  are computed from the occurrence as it was (`info.oldEvent`), not from the dragged handle;
+  previous day if it has to. They are worked on their stored text, so a move doesn't turn a
+  time the clocks skip into the hour after; the edit dialog moves them the same way. The
+  exclusion and the cut-off are computed from the occurrence as it was (`info.oldEvent`), not
+  from the dragged handle;
 - tasks, read-only calendars and guest sessions cannot drag.
 
 ## Entries written elsewhere

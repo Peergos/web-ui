@@ -1041,8 +1041,11 @@ let recurIntervalUnits = { daily: 'days', weekly: 'weeks', monthly: 'months', ye
 
 function describeRecur(recur) {
     let added = (recur.rdates || []).length;
-    // a list of dates may name its own start among them, which is one date
-    if (!recur.freq) return 'On ' + (added + ((recur.rdates || []).indexOf(recur.dtstart) < 0 ? 1 : 0)) + ' dates';
+    if (!recur.freq) {
+        // a list of dates may name its own start among them, which is one date
+        let dates = added + ((recur.rdates || []).indexOf(recur.dtstart) < 0 ? 1 : 0);
+        return 'On ' + dates + (dates === 1 ? ' date' : ' dates');
+    }
     let text = recur.interval > 1
         ? 'Every ' + recur.interval + ' ' + recurIntervalUnits[recur.freq]
         : recurFreqLabels[recur.freq];

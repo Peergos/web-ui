@@ -364,6 +364,42 @@ public class CalendarFollowingDatesTest {
                 throw new AssertionError("Cut at a date added after its rule had ended, the series should keep its three days "
                         + threeDays + ", but draws " + endedDays + ":\n" + ended);
             System.out.println("  ok   a cut after the rule had ended left the rule's own days: " + endedDays);
+
+            // --- a series of listed dates, split at its last ---------------------------------------------------
+            // Monday, Wednesday and Friday at 09:00, and no rule. Friday dragged to 11:00 for it and those after:
+            // the new part is that one date, which its file lists, or it reads back as a plain event and can't
+            // be deleted where it is
+            LocalDate listedFri = first.plusDays(4);
+            Set<String> before = new HashSet<>(CalendarApp.list(d, recurring));
+            before.add("listed.ics");
+            CalendarApp.write(d, recurring, "listed.ics", CalendarClockChangeTest.vevent("listed", "Listed dates",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T090000," + listedFri.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, listedFri);
+            CalendarApp.waitInFrame(d, "the listed dates", CalendarSeriesTest.drawn("Listed dates"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            weekShowing(d, listedFri);
+            CalendarApp.waitInFrame(d, "the Friday in its week", CalendarDragTest.inColumn(listedFri.toString(), "Listed dates"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed dates", listedFri.toString(),
+                    CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
+            String lastPart = d.waitUntil("the new part's file", () -> {
+                for (String name : CalendarApp.list(d, recurring))
+                    if (! before.contains(name) && CalendarApp.read(d, recurring, name).contains("SUMMARY:Listed dates"))
+                        return name;
+                return null;
+            }, 60_000);
+            assertListed(CalendarApp.read(d, recurring, lastPart), "RDATE", listedFri, "T110000", "the one date of the new part");
+            CalendarClockChangeTest.reload(d, listedFri);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the parts", CalendarSeriesTest.drawn("Listed dates"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Listed dates", listedFri);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            d.waitUntil("the new part to be deleted", () -> CalendarApp.list(d, recurring).contains(lastPart) ? null : true, 60_000);
+            System.out.println("  ok   split at the last of its listed dates, the new part is a series that can be deleted");
             System.out.println("PASS");
         } finally {
             if (own != null)

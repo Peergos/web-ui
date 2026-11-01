@@ -1503,8 +1503,9 @@ function excludeOccurrenceFromMaster(master) {
 // its rule's dates left before it, the dates it adds may still be, and
 // those stay, as a series of listed dates; so does a rule-less series'
 // own start. A start off its rule is no occurrence here (RFC 5545 leaves
-// that undefined, and this app never draws one). With nothing left the
-// series is removed outright.
+// that undefined, and this app never draws one). With no date of either
+// kind left the series is removed outright; a rule whose dates before the
+// cut are all excluded still ends there, and draws nothing.
 function truncateMasterSeries(master) {
     let masterRecur = Object.assign({}, master.extendedProps.recur);
     let cut = toLocalInputValue(master.start, master.allDay);
@@ -1570,9 +1571,11 @@ function moveOccurrence(ev, scope, moved) {
         let minutes = storedMinutes(toLocalInputValue(moved.start, moved.allDay)) - storedMinutes(toLocalInputValue(ev.start, ev.allDay));
         // Dragged from an added date at a time of its own, the series' time of day can go past midnight. The
         // rule's dates keep their days (its weekdays and days of the month don't move), so that time wraps
-        // within the day; the added dates go as far as the dragged one did.
+        // within the day; the added dates go as far as the dragged one did. A series of listed dates alone has
+        // no rule, and all its dates go as far.
         let seriesMinutes = storedMinutes(recur.dtstart);
-        let ruleMinutes = (((seriesMinutes + minutes) % 1440) + 1440) % 1440 - seriesMinutes;
+        let ruleMinutes = !recur.freq ? minutes
+            : (((seriesMinutes + minutes) % 1440) + 1440) % 1440 - seriesMinutes;
         recur.dtstart = shiftStored(recur.dtstart, ruleMinutes, moved.allDay);
         shiftListedDates(recur, ruleMinutes, minutes, moved.allDay, ev.extendedProps.recur.dtstart);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
@@ -4727,12 +4730,13 @@ function storedStartOf(occurrence, recur) {
 // "This and following": the series from the occurrence the change started at, whose
 // start is recur.dtstart now, takes the excluded and added dates after it; the
 // earlier ones stay with the series it is cut from. An added date moves as far as
-// that occurrence did, as does an exclusion of one. Any other exclusion is of one of
-// the rule's dates, and the rule falls at its new start's time of day, so it moves
-// as far as the rule's time did - the same, unless the split is at an added date at
-// a time of its own. That occurrence is the new start, and listed as well where the
-// new part has a rule: this app draws a start only where the rule falls, and RFC 5545
-// counts the two as one.
+// that occurrence did; one excluded as well is no occurrence and goes nowhere. Any
+// other exclusion is of one of the rule's dates, and the rule falls at its new
+// start's time of day, so it moves as far as the rule's time did - the same, unless
+// the split is at an added date at a time of its own. That occurrence is the new
+// start, and listed as well where the new part has a rule (this app draws a start
+// only where the rule falls, and RFC 5545 counts the two as one) or none (a file
+// with neither RRULE nor RDATE reads back as a plain event).
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
@@ -4761,7 +4765,7 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     recur.exdates = exdates.map(shift);
     recur.rdates = movedAdded;
     keepAddedDays(recur, { exdates: exdates, rdates: rdates, dtstart: was.dtstart }, allDay);
-    if (recur.freq && added.indexOf(cut) >= 0)
+    if (!recur.freq || added.indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }
 
