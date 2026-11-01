@@ -613,7 +613,6 @@ function adjustRecurForFollowing(ev, masterRecur, allDay) {
         let consumed = countOccurrencesBefore(masterRecur, allDay, ev.start);
         recur.count = Math.max(1, masterRecur.count - consumed);
     }
-    recur.exdates = [];
     return recur;
 }
 
