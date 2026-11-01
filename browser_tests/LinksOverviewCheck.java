@@ -50,7 +50,7 @@ public class LinksOverviewCheck {
                     .map(f => u + '/' + f.getName()).slice(0, 2);
                 window.__dirs = dirs;
                 const one = p => ctx.createSecretLinkTo(peergos.client.JsUtil.asList([p]),
-                        peergos.client.JsUtil.asList([]), java.util.Optional.empty(), '', '', false);
+                        peergos.client.JsUtil.asList([]), peergos.client.JsUtil.asList([]), java.util.Optional.empty(), '', '', false);
                 ctx.getAllSecretLinks()
                   .thenCompose(ls => dirs.filter(p => ! ls.toArray([]).some(l => l.contains(p)))
                       .reduce((f, p) => f.thenCompose(() => one(p)), peergos.shared.util.Futures.of(true)))
@@ -95,7 +95,7 @@ public class LinksOverviewCheck {
                         window.__a = {error: 'every link already holds both folders'};
                         return peergos.shared.util.Futures.of(true);
                     }
-                    return ctx.addToSecretLink(first, other, false)
+                    return ctx.addToSecretLink(first, other, false, false)
                         .thenCompose(() => ctx.getAllSecretLinks())
                         .thenApply(after => {
                             const arr = after.toArray([]);

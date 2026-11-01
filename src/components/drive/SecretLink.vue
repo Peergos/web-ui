@@ -85,11 +85,17 @@
                             </span>
                         </div>
                         <p v-if="currentProps != null" class="pg-note">{{ translate("DRIVE.LINK.MEMBERS.SAME.URL") }}</p>
-                        <p v-if="spansDirectories" class="pg-note">{{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}</p>
+                        <p v-if="spansDirectories && !hideLocation" class="pg-note">{{ translate("DRIVE.LINK.MEMBERS.PATHS.VISIBLE") }}</p>
                     </section>
 
                     <section class="secret-link__section secret-link__options">
                         <h3 class="secret-link__heading">{{ translate("DRIVE.LINK.OPTIONS") }}</h3>
+                        <label class="pg-switch">
+                            <input type="checkbox" v-model="hideLocation" @change="onChange()"/>
+                            <span class="pg-switch__track" aria-hidden="true"></span>
+                            <span>{{ translate("DRIVE.LINK.HIDE.LOCATION") }}</span>
+                        </label>
+                        <p class="pg-note">{{ translate(hideLocation ? "DRIVE.LINK.HIDE.LOCATION.ON" : "DRIVE.LINK.HIDE.LOCATION.OFF") }}</p>
                         <label v-if="link.isFile || members.length > 1" class="pg-switch">
                             <input type="checkbox" v-model="autoOpen" @change="onChange()"/>
                             <span class="pg-switch__track" aria-hidden="true"></span>
@@ -202,6 +208,8 @@ module.exports = {
 	data() {
 	    return {
                 isLinkWritable: false,
+                // whoever opens the link sees only the items, not the folders they're in
+                hideLocation: true,
                 hasExpiry: false,
                 expireDateString: "",
                 expireTimeString: "",
@@ -262,6 +270,7 @@ module.exports = {
             this.currentProps = this.existingProps;
             this.autoOpen = this.link.autoOpen || (this.currentProps != null && this.currentProps.autoOpen());
             this.members = this.initialMembers();
+            this.hideLocation = this.currentProps == null || (this.members.length > 0 && this.members.every(m => m.hidden));
             this.refreshMembersFromLink();
             if (this.currentProps != null) {
                 Vue.nextTick(function() {
@@ -296,14 +305,14 @@ module.exports = {
             initialMembers: function() {
                 if (this.currentProps != null && this.currentProps.memberCount() > 0) {
                     // a gwt List is not indexable from js; toArray is how the rest of the app reads one
-                    return this.currentProps.getMembers().toArray().map(m => this.member(m.getPath(), m.isWritable()));
+                    return this.currentProps.getMembers().toArray().map(m => this.member(m.getPath(), m.isWritable(), m.isHidden()));
                 }
                 if (this.link.paths != null)
-                    return this.link.paths.map(p => this.member(p, false));
-                return [this.member(this.getLinkPath(), this.currentProps != null && this.currentProps.isLinkWritable)];
+                    return this.link.paths.map(p => this.member(p, false, false));
+                return [this.member(this.getLinkPath(), this.currentProps != null && this.currentProps.isLinkWritable, false)];
             },
-            member: function(path, writable) {
-                return {path: path, writable: writable, canBeWritable: true, writableReason: "",
+            member: function(path, writable, hidden) {
+                return {path: path, writable: writable, hidden: hidden, canBeWritable: true, writableReason: "",
                         limitAmount: "", limitUnit: "MB", quota: null};
             },
             /**
@@ -316,7 +325,7 @@ module.exports = {
                     return;
                 let that = this;
                 this.context.getSecretLinkMembers(this.currentProps).thenApply(members => {
-                    that.members = members.toArray().map(m => that.member(m.getPath(), m.isWritable()));
+                    that.members = members.toArray().map(m => that.member(m.getPath(), m.isWritable(), m.isHidden()));
                     that.loadLimits();
                     return true;
                 }).exceptionally(t => { console.log(t); return null; });
@@ -333,7 +342,7 @@ module.exports = {
                     this.$toast.error(this.translate("DRIVE.LINK.MEMBER.TOO.MANY"));
                     return;
                 }
-                this.members.push(this.member(path, openForEditing === true));
+                this.members.push(this.member(path, openForEditing === true, this.hideLocation));
                 this.onChange();
             },
             removeMember: function(i) {
@@ -363,12 +372,16 @@ module.exports = {
             writableMemberPaths: function() {
                 return peergos.client.JsUtil.asList(this.members.filter(m => m.writable).map(m => m.path));
             },
+            hiddenMemberPaths: function() {
+                return peergos.client.JsUtil.asList(this.hideLocation ? this.members.map(m => m.path) : []);
+            },
             buildHref: function (link, autoOpenOverride) {
                 let args = "";
                 if (autoOpenOverride || this.autoOpen) {
                     args = "?open=true";
                     if (link.shareFolderWithFile) {
-                        args += "&path=" + link.path;
+                        // a hidden folder is mounted under its own name, with nothing above it
+                        args += "&path=" + (this.hideLocation ? "/" + link.path.split('/').filter(s => s.length > 0).pop() : link.path);
                         args += "&args=%7B%22filename%22:%22" + link.filename + "%22%7D";
                     } 
                 }
@@ -392,7 +405,7 @@ module.exports = {
                 this.showSpinner = true;
                 let maxRetrievalsStr = this.maxRetrievals == "0" ? "" : "" + this.maxRetrievals;
                 if (create) {
-                    this.context.createSecretLinkTo(this.memberPaths(), this.writableMemberPaths(), this.getExpiry(),
+                    this.context.createSecretLinkTo(this.memberPaths(), this.writableMemberPaths(), this.hiddenMemberPaths(), this.getExpiry(),
                         maxRetrievalsStr, this.hasPassword ? this.userPassword : "", this.autoOpen).thenApply(props => {
                           that.currentProps = props;
                           that.justCreated = true;
@@ -406,7 +419,7 @@ module.exports = {
                     });
                 } else {
                     let newLinkProps = this.currentProps.with(this.hasPassword ? this.userPassword : "", maxRetrievalsStr, this.getExpiry(), this.autoOpen);
-                    this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), newLinkProps).thenApply(props => {
+                    this.context.setSecretLinkMembers(this.memberPaths(), this.writableMemberPaths(), this.hiddenMemberPaths(), newLinkProps).thenApply(props => {
                         that.currentProps = props;
                         that.members = that.initialMembers();
                         that.updateHref();
