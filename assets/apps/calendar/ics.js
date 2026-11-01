@@ -122,7 +122,7 @@ function rruleStringFor(recur, allDay) {
         lines.push(rule.replace(/(\d{8}T\d{6})Z/g, '$1'));
     }
     let dates = (recur.rdates || []).slice();
-    if (!recur.freq) dates.unshift(recur.dtstart);
+    if (!recur.freq && dates.indexOf(recur.dtstart) < 0) dates.unshift(recur.dtstart);
     if (dates.length) lines.push('RDATE:' + dates.map(compact).join(','));
     return lines.join('\n');
 }
@@ -448,11 +448,6 @@ function parseIcsVtodo(rawLines, tzResolver) {
     let dueLine = find('DUE');
     let due = null;
     let dueAllDay = true;
-    // A repeating task: the rule counts from the due date, so a task without
-    // one cannot carry it however the file was written.
-    let rruleLine = find('RRULE');
-    let recur = (dueLine && rruleLine)
-        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver) : null;
     if (dueLine) {
         let parsed = parseIcsDateValue(dueLine.value, dueLine.params, tzResolver);
         if (parsed) {
@@ -460,6 +455,15 @@ function parseIcsVtodo(rawLines, tzResolver) {
             dueAllDay = parsed.allDay;
         }
     }
+    // A repeating task: the rule counts from the due date, so a task without
+    // one cannot carry it however the file was written.
+    let rruleLine = find('RRULE');
+    // this app keeps a task's due time, and repeats it, as a time on the wall clock here, whatever its DUE names
+    let dueOn = due && !dueAllDay ? function (y, mo, d) {
+        return new Date(y, mo, d, due.getHours(), due.getMinutes(), due.getSeconds()).getTime();
+    } : null;
+    let recur = (dueLine && rruleLine) ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, dueOn) : null;
+    if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
     let percentLine = find('PERCENT-COMPLETE');
@@ -658,7 +662,20 @@ function makeTzResolver(fileVTimeZones) {
     };
 }
 
-function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
+// The series' start on a day of its own calendar, as an instant, in the frame DTSTART was written in: UTC, its TZID,
+// or floating - the frame its UNTIL is measured in. Null for a date, which has no time of day.
+function startOnDayIn(value, tzid, tzResolver) {
+    let w = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?/.exec(value);
+    if (!w) return null;
+    return function (y, mo, d) {
+        if (w[7]) return Date.UTC(y, mo, d, +w[4], +w[5], +w[6]);
+        let ms = tzid && tzResolver ? tzResolver(tzid, y, mo, d, +w[4], +w[5], +w[6]) : null;
+        return ms !== null ? ms : new Date(y, mo, d, +w[4], +w[5], +w[6]).getTime();
+    };
+}
+
+// startOn: what startOnDayIn gives for the series, or null when it has no time of day
+function parseIcsRRuleValue(value, dtstartTzid, tzResolver, startOn) {
     let freqMap = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
     let props = {};
     value.split(';').forEach(function (p) {
@@ -755,7 +772,21 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
         let parsed = parseIcsDateValue(props.UNTIL, dtstartTzid ? { TZID: dtstartTzid } : {}, tzResolver);
         if (parsed) {
             recur.end = 'until';
-            recur.until = toDateInputValue(parsed.date);
+            let last = parsed.date;
+            // UNTIL bounds the starts (RFC 5545 3.3.10), so the last day it lets in is the latest whose start is
+            // not after it
+            if (startOn && !parsed.allDay) {
+                // a day of any frame's calendar is within two of UNTIL's day in UTC
+                for (let k = 1; k >= -2; k--) {
+                    let day = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + k));
+                    let ms = startOn(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+                    if (ms <= parsed.date.getTime()) {
+                        last = new Date(ms);
+                        break;
+                    }
+                }
+            }
+            recur.until = toDateInputValue(last);
         }
     }
     recur.sourceFields = recurFormFields(recur);
@@ -822,7 +853,8 @@ function parseIcsVevent(rawLines, tzResolver) {
     }
 
     let rruleLine = find('RRULE');
-    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver) : null;
+    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver,
+        allDay ? null : startOnDayIn(dtstartLine.value, dtstartLine.params.TZID, tzResolver)) : null;
     // Dates a series adds to its rule, or the whole of one another client lists date by
     // date. Of a PERIOD only the start is kept: an occurrence here lasts as long as the rest.
     let rdates = [];
@@ -836,6 +868,9 @@ function parseIcsVevent(rawLines, tzResolver) {
     if (recur) {
         if (rdates.length) recur.rdates = rdates;
         recur.dtstart = toLocalInputValue(start, allDay);
+        // The time of day the rule was written for, '' for a date: its UNTIL names a
+        // start at that time (recurToIcsRRuleLine).
+        if (recur.sourceFields) recur.sourceFields.startTime = recur.dtstart.slice(10);
         findAll('EXDATE').forEach(function (l) {
             l.value.split(',').forEach(function (v) {
                 let parsed = parseIcsDateValue(v.trim(), l.params, tzResolver);
@@ -1006,7 +1041,11 @@ let recurIntervalUnits = { daily: 'days', weekly: 'weeks', monthly: 'months', ye
 
 function describeRecur(recur) {
     let added = (recur.rdates || []).length;
-    if (!recur.freq) return 'On ' + (added + 1) + ' dates';
+    if (!recur.freq) {
+        // a list of dates may name its own start among them, which is one date
+        let dates = added + ((recur.rdates || []).indexOf(recur.dtstart) < 0 ? 1 : 0);
+        return 'On ' + dates + (dates === 1 ? ' date' : ' dates');
+    }
     let text = recur.interval > 1
         ? 'Every ' + recur.interval + ' ' + recurIntervalUnits[recur.freq]
         : recurFreqLabels[recur.freq];

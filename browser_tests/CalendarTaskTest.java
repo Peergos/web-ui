@@ -75,6 +75,31 @@ public class CalendarTaskTest {
             // Clients disagree on which of these means done, so all three are written.
             CalendarApp.assertHas(done, "PERCENT-COMPLETE", "100");
             CalendarApp.assertHas(done, "COMPLETED", "T");
+
+            // A repeating task turned from all-day to a time: its due time is written in UTC, so the rule's
+            // UNTIL, which RFC 5545 has take that type, becomes the last due date at that time in UTC.
+            String zone = String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;"));
+            LocalDate until = due.plusWeeks(3);
+            CalendarApp.write(d, tasks, "repeat.ics", String.join("\r\n", "BEGIN:VCALENDAR", "VERSION:2.0",
+                    "PRODID:-//test//test//EN", "BEGIN:VTODO", "UID:repeat", "DTSTAMP:20260101T000000Z",
+                    "SUMMARY:Water the plants", "DUE;VALUE=DATE:" + due.format(DateTimeFormatter.BASIC_ISO_DATE),
+                    "RRULE:FREQ=WEEKLY;UNTIL=" + until.format(DateTimeFormatter.BASIC_ISO_DATE),
+                    "STATUS:NEEDS-ACTION", "END:VTODO", "END:VCALENDAR", ""));
+            CalendarClockChangeTest.reload(d, due);
+            CalendarApp.waitInFrame(d, "the repeating task in the sidebar",
+                    "Array.from(document.querySelectorAll('.task-open')).find(b => b.textContent.indexOf('Water the plants') !== -1)", 30_000);
+            CalendarApp.inFrame(d, "Array.from(document.querySelectorAll('.task-open'))"
+                    + "  .find(b => b.textContent.indexOf('Water the plants') !== -1).click(); return 1;");
+            CalendarApp.waitInFrame(d, "the task dialog",
+                    "document.getElementById('task-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("task-due-all-day")
+                    + CalendarApp.setField("task-due-time", "09:00") + "return 1;");
+            CalendarApp.save(d, "task-save", "task-modal-backdrop");
+            String timed = CalendarApp.awaitStored(d, tasks, "repeat.ics", "DUE:");
+            String untilUtc = until.atTime(9, 0).atZone(ZoneId.of(zone)).withZoneSameInstant(ZoneOffset.UTC)
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
+            CalendarApp.assertHas(timed, "RRULE", "UNTIL=" + untilUtc);
+            System.out.println("  ok   turned to 09:00, the repeating task ends at " + untilUtc);
             System.out.println("PASS");
         } finally {
             if (own != null)

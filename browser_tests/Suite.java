@@ -98,6 +98,8 @@ public class Suite {
             t("custom sharing groups", () -> CustomGroupsTest.run(args1));
             t("the social view and what it does", () -> SocialViewTest.run(args1));
             t("a failed read of the calendar list keeps the calendars", () -> CalendarListReadFailureTest.run(args1));
+            t("the deleted dates of a series move with it", () -> CalendarMovedSeriesDatesTest.run(args1));
+            t("a series split from an occurrence takes its later dates", () -> CalendarFollowingDatesTest.run(args1));
             t("a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             t("hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
             t("a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));
@@ -114,6 +116,7 @@ public class Suite {
             t("calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             t("calendar files read by another parser", () -> CalendarInteropTest.run(args1));
             t("a series stays as long as the clock says across a clock change", () -> CalendarClockChangeTest.run(args1));
+            t("a series turned timed from a day the clocks skip midnight keeps its deleted dates", () -> CalendarMidnightClockChangeTest.run(args1));
             t("calendar drag to move", () -> CalendarDragTest.run(args1));
             t("calendar shared read-only", () -> CalendarReadOnlyTest.run(args1));
             t("calendar writable link", () -> CalendarLinkWriteTest.run(args1));
