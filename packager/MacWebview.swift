@@ -83,6 +83,14 @@ struct PeergosWebView: NSViewRepresentable {
 
         // MARK: - WKUIDelegate
 
+        // window.open and target=_blank: with no handler WebKit does nothing, so hand them to the browser
+        func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if let url = navigationAction.request.url, ["http", "https", "mailto"].contains(url.scheme?.lowercased() ?? "") {
+                NSWorkspace.shared.open(url)
+            }
+            return nil
+        }
+
         // Present the native file picker for <input type="file">
         func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
             let openPanel = NSOpenPanel()

@@ -142,7 +142,11 @@ module.exports = {
 			this.timer = setTimeout(this.close, Math.max(0, this.remaining));
 		},
 		onClick() {
-			if (this.toast.closeOnClick && ! this.dragged)
+			if (this.dragged)
+				return;
+			if (typeof this.toast.onClick === "function")
+				this.toast.onClick(this.close);
+			if (this.toast.closeOnClick)
 				this.close();
 		},
 		dragStart(e) {
