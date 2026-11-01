@@ -1323,8 +1323,10 @@ module.exports = {
                 });
 			}
 			this.showPendingServerMessages();
-			if (this.context != null && this.context.username != null)
+			if (this.context != null && this.context.username != null) {
 				this.context.checkRoutingLog();
+				this.context.offerBackChannels();
+			}
 		},
 
         selectAllOrNone() {

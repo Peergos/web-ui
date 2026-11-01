@@ -75,6 +75,7 @@ public class Suite {
             t("an admin inviting new users", () -> AdminInviteTest.run(args1));
             t("inviting new users on a paid instance", () -> AdminInvitePaidTest.run(args1));
             t("a recovery key set from the menu takes the account back on /recovery", () -> RecoveryTest.run(new String[]{engine}));
+            t("friends through a friend link made, pasted, allowed and revoked in the page", () -> FriendLinkTest.run(args1));
 
             // Neither WebKitWebDriver nor safaridriver can be told where downloads go, so
             // everything that asserts on a downloaded file runs on the engines that can. WebKit
