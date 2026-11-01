@@ -6,9 +6,9 @@ import java.util.*;
 
 /** "This and following" splits a series at an occurrence, and the part from there on is a series of
  *  its own. It takes the series' deleted (EXDATE) and added (RDATE) dates from that occurrence on,
- *  at its new time of day: left behind, the deleted occurrences come back and the added ones are
- *  drawn where the series no longer is. The earlier ones stay with the part before, or they are
- *  drawn twice, and an occurrence that is itself an added date goes with the new part. Both ways
+ *  moved as the occurrences they name were: left behind, the deleted occurrences come back and the
+ *  added ones are drawn where the series no longer is. The earlier ones stay with the part before,
+ *  or they are drawn twice, and an occurrence that is itself an added date goes with the new part. Both ways
  *  in: a drag to another time, and the dialog turning an all-day series into a timed one, whose
  *  dates have to change form as well - a bare date could not be written as a time.
  *
@@ -156,16 +156,18 @@ public class CalendarFollowingDatesTest {
             System.out.println("  ok   an added date moved to " + moveTo + " in the dialog went there: " + movedDrawn);
 
             // --- from an added date at a time of its own, dragged an hour on ----------------------
-            // the new part's rule falls at its start's time, 15:00, so the deleted Monday goes there too
+            // the new part's rule falls at its start's time, 15:00, so the deleted Monday goes there too; the date
+            // added later that week at 23:30 moves an hour as the dragged one did, into the next day
             String ownTime = "Own time";
             LocalDate wed = first.plusDays(2);
+            LocalDate fri = first.plusDays(4);
             LocalDate gone = first.plusWeeks(2);
             CalendarApp.write(d, recurring, "own-time.ics", CalendarClockChangeTest.vevent("own-time", ownTime,
                     "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
                     "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
                     "RRULE:FREQ=WEEKLY;BYDAY=MO",
                     "EXDATE;TZID=" + zone + ":" + gone.format(BASIC) + "T090000",
-                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000"));
+                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000," + fri.format(BASIC) + "T233000"));
             CalendarClockChangeTest.reload(d, wed);
             CalendarApp.waitInFrame(d, "the series with an added date at 14:00", CalendarSeriesTest.drawn(ownTime), 30_000);
             CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
@@ -177,12 +179,13 @@ public class CalendarFollowingDatesTest {
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
             String ownPart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("own-time.ics"), ownTime));
             assertListed(ownPart, "EXDATE", gone, "T150000", "the deleted Monday, where the new part's rule now falls");
+            assertListed(ownPart, "RDATE", fri.plusDays(1), "T003000", "the date added at 23:30 on " + fri + ", an hour on");
             CalendarClockChangeTest.reload(d, gone);
             CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the split series", CalendarSeriesTest.drawn(ownTime), 30_000);
             if (CalendarApp.occurrenceDates(d, ownTime).contains(gone.toString()))
                 throw new AssertionError("The deleted " + gone + " is back after the split: " + CalendarApp.occurrenceDates(d, ownTime));
-            System.out.println("  ok   split at an added date at its own time: the deleted Monday moved with the rule");
+            System.out.println("  ok   split at an added date at its own time: the deleted Monday moved with the rule, the later added date an hour");
             System.out.println("PASS");
         } finally {
             if (own != null)

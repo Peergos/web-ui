@@ -331,8 +331,10 @@ Two rules keep what is written stable:
   was actually changed - what the controls read back when the dialog filled
   itself in is the baseline that decides, since a rule the form cannot show
   whole does not come back out of them unaltered. So renaming such an event,
-  moving it, or excluding one occurrence leaves its rule alone. An import says
-  how many entries it could only show simplified.
+  moving it, or excluding one occurrence leaves its rule alone - all but its
+  `UNTIL`, which names the last start in the start's own type (RFC 5545), and so
+  is written anew once the series moves to another time of day or turns all-day
+  or timed. An import says how many entries it could only show simplified.
 
 Every date the app computes for itself - a reminder's occurrences, the boundary
 of a "this and following" split, a repeating task's next due date - goes through
@@ -354,10 +356,12 @@ The rules are those of the previous calendar:
   time), this and following (the master is cut off with UNTIL and a new series starts at the
   new time, taking the deleted and added dates after it) or all of them (the series' own
   start shifts by the same amount and every occurrence takes the new length). Deleted
-  (EXDATE) and added (RDATE) dates move as far as the series' time of day, each staying on
-  its own day, and are worked on their stored text so a time the clocks skip stays as
-  written; the edit dialog moves them the same way. The exclusion and the cut-off are
-  computed from the occurrence as it was (`info.oldEvent`), not from the dragged handle;
+  (EXDATE) and added (RDATE) dates move as far as the occurrences they name: the rule's
+  dates with the series' time of day, on their own day, and an added date as far as the
+  moved occurrence, into the next or previous day if it has to. They are worked on their
+  stored text, so a time the clocks skip stays as written; the edit dialog moves them the
+  same way. The exclusion and the cut-off are computed from the occurrence as it was
+  (`info.oldEvent`), not from the dragged handle;
 - tasks, read-only calendars and guest sessions cannot drag.
 
 ## Entries written elsewhere

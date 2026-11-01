@@ -460,6 +460,7 @@ function parseIcsVtodo(rawLines, tzResolver) {
             dueAllDay = parsed.allDay;
         }
     }
+    if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
     let percentLine = find('PERCENT-COMPLETE');
@@ -836,6 +837,9 @@ function parseIcsVevent(rawLines, tzResolver) {
     if (recur) {
         if (rdates.length) recur.rdates = rdates;
         recur.dtstart = toLocalInputValue(start, allDay);
+        // The time of day the rule was written for, '' for a date: its UNTIL names a
+        // start at that time (recurToIcsRRuleLine).
+        if (recur.sourceFields) recur.sourceFields.startTime = recur.dtstart.slice(10);
         findAll('EXDATE').forEach(function (l) {
             l.value.split(',').forEach(function (v) {
                 let parsed = parseIcsDateValue(v.trim(), l.params, tzResolver);

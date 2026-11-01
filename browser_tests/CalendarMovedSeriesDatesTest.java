@@ -4,7 +4,7 @@ import java.time.format.*;
 import java.util.*;
 
 /** A series with a deleted occurrence, then moved to another time and to another start day
- *  through Edit -> All events.
+ *  through Edit -> All events; then the dates a series adds and its rule's end, as a series moves.
  *
  *  A deleted occurrence is an EXDATE naming its start. Moving the series to another time moves
  *  every start, so the EXDATE has to take the new time, or it names a time the series no longer
@@ -131,10 +131,67 @@ public class CalendarMovedSeriesDatesTest {
             if (rule == null || ! rule.matches(".*UNTIL=\\d{8}(;.*)?"))
                 throw new AssertionError("Turned all-day, the rule's UNTIL should be a date like its start, but it says " + rule + ":\n" + allDay);
             System.out.println("  ok   an added date at 08:00 kept its day when the series turned all-day: " + rdate);
+
+            // --- moved an hour on, with an UNTIL and a date added late in the day -------------------
+            // the rule's UNTIL names its last start, so it takes the new time; the added date moves the hour too,
+            // into the next day
+            LocalDate last = monday.plusWeeks(3);
+            LocalDate friday = monday.plusDays(4);
+            CalendarApp.write(d, recurring, "late.ics", CalendarClockChangeTest.vevent("late", "Late added",
+                    "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=" + utc(last, 9, zone),
+                    "RDATE;TZID=" + zone + ":" + friday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T233000"));
+            CalendarClockChangeTest.reload(d, monday);
+            CalendarApp.waitInFrame(d, "the series with a late added date", CalendarSeriesTest.drawn("Late added"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Late added", monday);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-time", "10:00")
+                    + CalendarApp.setField("event-end-time", "10:30") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String later10 = CalendarApp.awaitStored(d, recurring, "late.ics", monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T100000");
+            String lateRdate = CalendarApp.property(later10, "RDATE");
+            String saturday = friday.plusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE) + "T003000";
+            if (lateRdate == null || ! lateRdate.contains(saturday))
+                throw new AssertionError("Moved an hour on, the date added at 23:30 on " + friday + " should be listed as " + saturday
+                        + ", but the file lists " + lateRdate + ":\n" + later10);
+            String lateRule = CalendarApp.property(later10, "RRULE");
+            if (lateRule == null || ! lateRule.contains("UNTIL=" + utc(last, 10, zone)))
+                throw new AssertionError("Moved to 10:00, the rule should end at " + last + " 10:00 (UNTIL=" + utc(last, 10, zone)
+                        + "), but it says " + lateRule + ":\n" + later10);
+            System.out.println("  ok   moved an hour on, the late added date went into the next day and the end took the new time: "
+                    + lateRdate + ", " + lateRule);
+
+            // --- an all-day series whose file gives its UNTIL a time --------------------------------
+            // RFC 5545 would have a date there, but nothing here turned the series all-day or timed, so deleting
+            // an occurrence leaves the rule as the file wrote it
+            String keptRule = "RRULE:FREQ=WEEKLY;UNTIL=" + last.format(DateTimeFormatter.BASIC_ISO_DATE) + "T235959Z";
+            CalendarApp.write(d, recurring, "kept.ics", CalendarClockChangeTest.vevent("kept", "Kept end",
+                    "DTSTART;VALUE=DATE:" + monday.format(DateTimeFormatter.BASIC_ISO_DATE),
+                    "DTEND;VALUE=DATE:" + monday.plusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE),
+                    keptRule));
+            CalendarClockChangeTest.reload(d, monday);
+            CalendarApp.waitInFrame(d, "the all-day series", CalendarSeriesTest.drawn("Kept end"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Kept end", monday.plusWeeks(1));
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "this");
+            String keptFile = CalendarApp.awaitStored(d, recurring, "kept.ics", "EXDATE");
+            if (! keptRule.equals(CalendarApp.property(keptFile, "RRULE")))
+                throw new AssertionError("Deleting one occurrence rewrote the rule " + keptRule + ":\n" + keptFile);
+            System.out.println("  ok   deleting an occurrence left the file's own rule alone: " + keptRule);
             System.out.println("PASS");
         } finally {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** A wall-clock time in the browser's zone as an RFC 5545 UTC stamp, as an UNTIL is written */
+    static String utc(LocalDate day, int hour, String zone) {
+        return day.atTime(hour, 0).atZone(ZoneId.of(zone)).withZoneSameInstant(ZoneOffset.UTC)
+                .format(DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'"));
     }
 }

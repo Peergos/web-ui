@@ -799,9 +799,10 @@ function carryRecurSource(from, to) {
     // this same question again. Where the series ends is the exception: the
     // dialog shows the occurrences left from the one it opened on, so a series
     // cut there has fewer than its rule names, and the file's own end is kept
-    // here so that the write sees the difference and replaces it.
+    // here so that the write sees the difference and replaces it - with the time
+    // of day that end was written for.
     let fields = recurFormFields(to);
-    ['end', 'until', 'count'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
+    ['end', 'until', 'count', 'startTime'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
     to.sourceFields = fields;
 }
 
@@ -810,7 +811,7 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     if (!recur.freq) return null;
     // Exclusions are their own line, so a detached occurrence still leaves the
     // rule itself untouched.
-    if (recur.source && sameRecurFields(recur, recur.sourceFields) && untilFitsStart(recur.source, allDay))
+    if (recur.source && sameRecurFields(recur, recur.sourceFields) && untilFitsStart(recur))
         return 'RRULE:' + recur.source;
     // Only its end moved - a series cut short by "this and following", a counted
     // task completed: the rule keeps every other part as the file had it, the ones
@@ -832,12 +833,12 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     return 'RRULE:' + parts.concat(rruleEndParts(recur, allDay, tzid)).join(';');
 }
 
-// RFC 5545 has an UNTIL take DTSTART's type, a date for an all-day series and a time
-// otherwise, so a rule kept as the file had it is written with a new end once the
-// series has turned all-day or timed.
-function untilFitsStart(source, allDay) {
-    let until = /(?:^|;)UNTIL=(\d{8})(T\d{6}Z?)?/i.exec(source);
-    return !until || allDay === !until[2];
+// RFC 5545 has an UNTIL name the last start, of DTSTART's type: a date for an all-day
+// series, a time otherwise. So a rule kept as the file had it is written with a new end
+// once the series has moved to another time of day or turned all-day or timed; one that
+// did neither keeps the file's own.
+function untilFitsStart(recur) {
+    return recur.end !== 'until' || String(recur.dtstart).slice(10) === recur.sourceFields.startTime;
 }
 
 function rruleEndParts(recur, allDay, tzid) {
@@ -845,10 +846,12 @@ function rruleEndParts(recur, allDay, tzid) {
     if (recur.end !== 'until' || !recur.until) return [];
     let untilStr = formatUntil(recur.until, recur.dtstart, allDay);
     if (allDay) return ['UNTIL=' + toIcsCompact(untilStr, true)];
+    let u = new Date(untilStr);
+    // A task's due time is written in UTC from the browser's own clock, and so is its end.
+    if (!tzid) return ['UNTIL=' + icsUtcStamp(u)];
     // UNTIL can't carry a TZID param, and DTSTART has one here -
     // RFC 5545 (and universal real-world practice) says UNTIL
     // must then be UTC.
-    let u = new Date(untilStr);
     let utcMs = localWallClockToUtcMs(tzid, u.getFullYear(), u.getMonth(), u.getDate(), u.getHours(), u.getMinutes(), u.getSeconds());
     return ['UNTIL=' + icsUtcStamp(new Date(utcMs))];
 }
@@ -4635,11 +4638,11 @@ function sameFolder(a, b) {
 }
 
 // A series' excluded and added dates name occurrences by their start. When the
-// series' time of day changes, each moves with it, or the deleted occurrences come
-// back and the added ones land where the series no longer is. Each keeps its day:
-// the days are the rule's, and the dialog leaves the weekday and the day of the
-// month it names alone. (A rule that names none, as an imported bare FREQ=WEEKLY,
-// moves with its start and leaves them behind.)
+// series' time of day changes, each moves as far, or the deleted occurrences come
+// back and the added ones land where the series no longer is. The days are the
+// rule's, and the dialog leaves the weekday and the day of the month it names
+// alone, so a date at the series' time keeps its day; one at a time of its own goes
+// on into the next or the previous day where the move takes it.
 function shiftListedDates(recur, minutes, allDay) {
     let move = function (list) {
         return (list || []).map(function (s) { return shiftStored(s, minutes, allDay); });
@@ -4655,15 +4658,17 @@ function storedMinutes(value) {
     return text.length === 10 ? 0 : minutesOfDay(text.slice(11, 16));
 }
 
-// A stored value at a time of day so many minutes on, on its own day, in the form of
-// an all-day or timed series. Worked on the text: a Date would turn a time the clocks
-// skip into the hour after, which no longer names the occurrence. Into the all-day
-// form only the date is left, as a DATE has no time of day.
+// A stored value so many minutes on, in the form of an all-day or timed series. Worked
+// on the text: a Date would turn a time the clocks skip into the hour after, which no
+// longer names the occurrence. Into the all-day form only the date is left, as a DATE
+// has no time of day.
 function shiftStored(value, minutes, allDay) {
     let date = String(value).slice(0, 10);
     if (allDay) return date;
-    let time = ((storedMinutes(value) + minutes) % 1440 + 1440) % 1440;
-    return date + 'T' + minutesToTimeValue(time);
+    let total = storedMinutes(value) + minutes;
+    let days = Math.floor(total / 1440);
+    if (days) date = toDateInputValue(addDays(dateFromInputValue(date), days));
+    return date + 'T' + minutesToTimeValue(total - days * 1440);
 }
 
 // The stored start an occurrence stands for: an added date as it is listed, or else
@@ -4671,26 +4676,32 @@ function shiftStored(value, minutes, allDay) {
 // except on a day the clocks skip that time.
 function storedStartOf(occurrence, recur) {
     let drawn = toLocalInputValue(occurrence.start, occurrence.allDay);
-    if (!recur.dtstart || (recur.rdates || []).indexOf(drawn) >= 0) return drawn;
+    if ((recur.rdates || []).indexOf(drawn) >= 0) return drawn;
     return drawn.slice(0, 10) + String(recur.dtstart).slice(10);
 }
 
 // "This and following": the series from the occurrence the change started at, whose
 // start is recur.dtstart now, takes the excluded and added dates after it; the
-// earlier ones stay with the series it is cut from. Its rule falls at its new start's
-// time of day, so they move as far as the rule's time did. An occurrence that is an
-// added date is the new start, and listed as well: this app draws a start only where
-// the rule falls, and RFC 5545 counts the two as one.
+// earlier ones stay with the series it is cut from. An added date moves as far as
+// that occurrence did, as does an exclusion of one. Any other exclusion is of one of
+// the rule's dates, and the rule falls at its new start's time of day, so it moves
+// as far as the rule's time did - the same, unless the split is at an added date at
+// a time of its own. That occurrence is the new start, and listed as well: this app
+// draws a start only where the rule falls, and RFC 5545 counts the two as one.
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
-    let after = function (list) {
-        return (list || []).filter(function (s) { return s > cut; });
+    let added = was.rdates || [];
+    let ownMove = storedMinutes(recur.dtstart) - storedMinutes(cut);
+    let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
+    let take = function (list) {
+        return (list || []).filter(function (s) { return s > cut; }).map(function (s) {
+            return shiftStored(s, added.indexOf(s) >= 0 ? ownMove : ruleMove, allDay);
+        });
     };
-    recur.exdates = after(was.exdates);
-    recur.rdates = after(was.rdates);
-    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(was.dtstart || cut), allDay);
-    if ((was.rdates || []).indexOf(cut) >= 0)
+    recur.exdates = take(was.exdates);
+    recur.rdates = take(was.rdates);
+    if (added.indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }
 
