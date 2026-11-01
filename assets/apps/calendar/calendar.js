@@ -1499,9 +1499,11 @@ function excludeOccurrenceFromMaster(master) {
 
 // Shared by "delete this and following" and "edit this and following".
 // Ends the series at the occurrence before the split point. With none of
-// its rule's dates left before it, its start and the dates it adds may
-// still be, which RFC 5545 counts as occurrences too: those stay, as a
-// series of listed dates. With nothing left it is removed outright.
+// its rule's dates left before it, the dates it adds may still be, and
+// those stay, as a series of listed dates; so does a rule-less series'
+// own start. A start off its rule is no occurrence here (RFC 5545 leaves
+// that undefined, and this app never draws one). With nothing left the
+// series is removed outright.
 function truncateMasterSeries(master) {
     let masterRecur = Object.assign({}, master.extendedProps.recur);
     let cut = toLocalInputValue(master.start, master.allDay);
@@ -1516,7 +1518,7 @@ function truncateMasterSeries(master) {
         return;
     }
     let excluded = masterRecur.exdates || [];
-    let left = (masterRecur.rdates || []).concat(masterRecur.dtstart < cut ? [masterRecur.dtstart] : [])
+    let left = (masterRecur.rdates || []).concat(!masterRecur.freq && masterRecur.dtstart < cut ? [masterRecur.dtstart] : [])
         .filter(function (s, i, all) { return all.indexOf(s) === i && excluded.indexOf(s) < 0; }).sort();
     if (!left.length) {
         removeAndPersist(master);
@@ -3904,8 +3906,14 @@ form.addEventListener('submit', function (e) {
                 recur.exdates = was.exdates || [];
                 recur.rdates = was.rdates || [];
                 // to the series' new time of day, and into the form of its new start, all-day or timed
-                if (was.dtstart)
-                    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(was.dtstart), allDay, was.dtstart);
+                if (was.dtstart) {
+                    let minutes = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
+                    shiftListedDates(recur, minutes, allDay, was.dtstart);
+                    // a start listed as an added date as well (as a split at one lists it) goes where the start goes
+                    let listedStart = recur.rdates.indexOf(shiftStored(was.dtstart, minutes, allDay));
+                    if ((was.rdates || []).indexOf(was.dtstart) >= 0 && listedStart >= 0)
+                        recur.rdates[listedStart] = recur.dtstart;
+                }
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
@@ -4659,20 +4667,19 @@ function shiftListedDates(recur, minutes, allDay, wasDtstart) {
     keepAddedDays(recur, was, allDay);
 }
 
-// Into the all-day form a day is one date, and an exclusion of it wins over anything else
-// on it (RFC 5545). So an added date that was itself excluded is no occurrence and leaves
-// both lists, and an exclusion stays only where it took out one of the rule's own, at the
-// series' time of day, on a day no surviving added date falls on. `was` holds the values
-// the lists were made from, one for one.
+// Turned from timed into all-day, a day is one date, and an exclusion of it wins over
+// anything else on it (RFC 5545). So an added date that was itself excluded is no
+// occurrence and leaves the added ones, and an exclusion stays only where it took out one
+// of the rule's own, at the series' time of day, on a day no surviving added date falls
+// on. `was` holds the timed values the lists were made from, one for one.
 function keepAddedDays(recur, was, allDay) {
-    if (!allDay) return;
+    if (!allDay || String(was.dtstart).length === 10) return;
     let wasEx = was.exdates || [], wasAdded = was.rdates || [];
     let excludedAddition = function (s) { return wasAdded.indexOf(s) >= 0 && wasEx.indexOf(s) >= 0; };
     let seriesTime = storedMinutes(was.dtstart);
     let rdates = (recur.rdates || []).filter(function (d, i) { return !excludedAddition(wasAdded[i]); });
     if (recur.exdates) recur.exdates = recur.exdates.filter(function (d, i) {
-        let s = wasEx[i];
-        return !excludedAddition(s) && (s.length === 10 || storedMinutes(s) === seriesTime) && rdates.indexOf(d) < 0;
+        return storedMinutes(wasEx[i]) === seriesTime && rdates.indexOf(d) < 0;
     });
     if (recur.rdates) recur.rdates = rdates;
 }
@@ -4712,8 +4719,9 @@ function storedStartOf(occurrence, recur) {
 // that occurrence did, as does an exclusion of one. Any other exclusion is of one of
 // the rule's dates, and the rule falls at its new start's time of day, so it moves
 // as far as the rule's time did - the same, unless the split is at an added date at
-// a time of its own. That occurrence is the new start, and listed as well: this app
-// draws a start only where the rule falls, and RFC 5545 counts the two as one.
+// a time of its own. That occurrence is the new start, and listed as well where the
+// new part has a rule: this app draws a start only where the rule falls, and RFC 5545
+// counts the two as one.
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
@@ -4723,10 +4731,18 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     let after = function (list) { return (list || []).filter(function (s) { return s > cut; }); };
     let shift = function (s) { return shiftStored(s, added.indexOf(s) >= 0 ? ownMove : ruleMove, allDay); };
     let exdates = after(was.exdates), rdates = after(was.rdates);
+    let movedAdded = rdates.map(shift);
+    // an exclusion of one of the rule's dates, moved with the rule, can land on the new start or on an added
+    // date, which are occurrences of their own and stay
+    let lands = exdates.map(function (s) {
+        let d = shift(s);
+        return added.indexOf(s) < 0 && (d === recur.dtstart || movedAdded.indexOf(d) >= 0);
+    });
+    exdates = exdates.filter(function (s, i) { return !lands[i]; });
     recur.exdates = exdates.map(shift);
-    recur.rdates = rdates.map(shift);
+    recur.rdates = movedAdded;
     keepAddedDays(recur, { exdates: exdates, rdates: rdates, dtstart: was.dtstart }, allDay);
-    if (added.indexOf(cut) >= 0)
+    if (recur.freq && added.indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }
 

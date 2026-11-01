@@ -224,6 +224,54 @@ public class CalendarFollowingDatesTest {
                 if (! chained.contains(day.toString()))
                     throw new AssertionError("After splitting twice, nothing is drawn on " + day + ": " + chained);
             System.out.println("  ok   split again at the next Monday: the added dates before it stayed: " + chained);
+
+            // --- a start off its own rule, cut at the first date the rule draws -------------------------------
+            // a weekly Monday series whose file starts on a Tuesday: that start is no occurrence here, so deleting
+            // from the first Monday on leaves nothing, not a one-off on the Tuesday
+            LocalDate tuesday = first.plusDays(1);
+            CalendarApp.write(d, recurring, "off-rule.ics", CalendarClockChangeTest.vevent("off-rule", "Off rule",
+                    "DTSTART;TZID=" + zone + ":" + tuesday.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + tuesday.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO"));
+            CalendarClockChangeTest.reload(d, tuesday);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the off-rule series", CalendarSeriesTest.drawn("Off rule"), 30_000);
+            LocalDate firstDrawn = first.plusWeeks(1);
+            CalendarClockChangeTest.openOn(d, "Off rule", firstDrawn);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            d.waitUntil("the off-rule series to be removed", () -> CalendarApp.list(d, recurring).contains("off-rule.ics") ? null : true, 60_000);
+            System.out.println("  ok   deleted from its first drawn Monday, a series starting off its rule is gone");
+
+            // --- a split at an added time on a day whose rule time is deleted -------------------------------
+            // the rule's 15:00 is deleted that day and 09:00 added; split there, the deleted 15:00 moves with the rule to
+            // 09:00, where the new part's own start is, and must not take it out
+            LocalDate swapDay = first.plusDays(3);
+            CalendarApp.write(d, recurring, "swap.ics", CalendarClockChangeTest.vevent("swap", "Swapped day",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T150000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T153000",
+                    "RRULE:FREQ=DAILY;COUNT=10",
+                    "EXDATE;TZID=" + zone + ":" + swapDay.format(BASIC) + "T150000",
+                    "RDATE;TZID=" + zone + ":" + swapDay.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, swapDay);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the swapped series", CalendarSeriesTest.drawn("Swapped day"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Swapped day", swapDay);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-title", "Swapped later") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String later = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("swap.ics"), "Swapped later"));
+            String laterEx = CalendarApp.property(later, "EXDATE");
+            if (laterEx != null && laterEx.contains(swapDay.format(BASIC) + "T090000"))
+                throw new AssertionError("The new part's own start on " + swapDay + " is excluded:\n" + later);
+            CalendarClockChangeTest.reload(d, swapDay);
+            CalendarApp.waitInFrame(d, "the later part", CalendarSeriesTest.drawn("Swapped later"), 30_000);
+            if (! CalendarApp.occurrenceDates(d, "Swapped later").contains(swapDay.toString()))
+                throw new AssertionError("Split at its 09:00, nothing of the new part is drawn on " + swapDay + ":\n" + later);
+            System.out.println("  ok   split at an added time where the rule's was deleted: the new start is drawn");
             System.out.println("PASS");
         } finally {
             if (own != null)

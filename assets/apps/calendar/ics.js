@@ -458,8 +458,11 @@ function parseIcsVtodo(rawLines, tzResolver) {
     // A repeating task: the rule counts from the due date, so a task without
     // one cannot carry it however the file was written.
     let rruleLine = find('RRULE');
-    let recur = (dueLine && rruleLine)
-        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, due && !dueAllDay ? dueLine.value : null) : null;
+    // this app keeps a task's due time, and repeats it, as a time on the wall clock here, whatever its DUE names
+    let dueOn = due && !dueAllDay ? function (y, mo, d) {
+        return new Date(y, mo, d, due.getHours(), due.getMinutes(), due.getSeconds()).getTime();
+    } : null;
+    let recur = (dueLine && rruleLine) ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, dueOn) : null;
     if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
@@ -659,8 +662,20 @@ function makeTzResolver(fileVTimeZones) {
     };
 }
 
-// startValue: DTSTART's (a task's DUE's) value as written if it has a time of day, the frame its UNTIL is measured in
-function parseIcsRRuleValue(value, dtstartTzid, tzResolver, startValue) {
+// The series' start on a day of its own calendar, as an instant, in the frame DTSTART was written in: UTC, its TZID,
+// or floating - the frame its UNTIL is measured in. Null for a date, which has no time of day.
+function startOnDayIn(value, tzid, tzResolver) {
+    let w = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?/.exec(value);
+    if (!w) return null;
+    return function (y, mo, d) {
+        if (w[7]) return Date.UTC(y, mo, d, +w[4], +w[5], +w[6]);
+        let ms = tzid && tzResolver ? tzResolver(tzid, y, mo, d, +w[4], +w[5], +w[6]) : null;
+        return ms !== null ? ms : new Date(y, mo, d, +w[4], +w[5], +w[6]).getTime();
+    };
+}
+
+// startOn: what startOnDayIn gives for the series, or null when it has no time of day
+function parseIcsRRuleValue(value, dtstartTzid, tzResolver, startOn) {
     let freqMap = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
     let props = {};
     value.split(';').forEach(function (p) {
@@ -758,15 +773,9 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver, startValue) {
         if (parsed) {
             recur.end = 'until';
             let last = parsed.date;
-            // UNTIL bounds the starts (RFC 5545 3.3.10), so the last day it lets in is the latest whose start, at
-            // the series' time of day in DTSTART's own frame (UTC, its TZID, or floating), is not after it
-            let w = startValue && !parsed.allDay && /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?/.exec(startValue);
-            if (w) {
-                let startOn = function (y, mo, d) {
-                    if (w[7]) return Date.UTC(y, mo, d, +w[4], +w[5], +w[6]);
-                    let ms = dtstartTzid && tzResolver ? tzResolver(dtstartTzid, y, mo, d, +w[4], +w[5], +w[6]) : null;
-                    return ms !== null ? ms : new Date(y, mo, d, +w[4], +w[5], +w[6]).getTime();
-                };
+            // UNTIL bounds the starts (RFC 5545 3.3.10), so the last day it lets in is the latest whose start is
+            // not after it
+            if (startOn && !parsed.allDay) {
                 // a day of any frame's calendar is within two of UNTIL's day in UTC
                 for (let k = 1; k >= -2; k--) {
                     let day = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + k));
@@ -844,7 +853,8 @@ function parseIcsVevent(rawLines, tzResolver) {
     }
 
     let rruleLine = find('RRULE');
-    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver, allDay ? null : dtstartLine.value) : null;
+    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver,
+        allDay ? null : startOnDayIn(dtstartLine.value, dtstartLine.params.TZID, tzResolver)) : null;
     // Dates a series adds to its rule, or the whole of one another client lists date by
     // date. Of a PERIOD only the start is kept: an occurrence here lasts as long as the rest.
     let rdates = [];
