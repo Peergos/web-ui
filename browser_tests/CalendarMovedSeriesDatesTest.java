@@ -230,6 +230,39 @@ public class CalendarMovedSeriesDatesTest {
             if (! keptRule.equals(CalendarApp.property(keptFile, "RRULE")))
                 throw new AssertionError("Deleting one occurrence rewrote the rule " + keptRule + ":\n" + keptFile);
             System.out.println("  ok   deleting an occurrence left the file's own rule alone: " + keptRule);
+
+            // --- every occurrence dragged from an added date, past midnight for the rule ------------------------
+            // Mondays at 22:00, one of them deleted, and a Wednesday added at 08:00 that is dragged to 10:00. The
+            // rule's days stay Mondays, so its 22:00 wraps to 00:00 that day, not into Tuesday off its own weekday,
+            // and the deleted Monday stays deleted
+            LocalDate lateDeleted = monday.plusWeeks(1);
+            LocalDate addedWed = monday.plusDays(2);
+            CalendarApp.write(d, recurring, "late.ics", CalendarClockChangeTest.vevent("late", "Late series",
+                    "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T220000",
+                    "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T223000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "EXDATE;TZID=" + zone + ":" + lateDeleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T220000",
+                    "RDATE;TZID=" + zone + ":" + addedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000"));
+            CalendarClockChangeTest.reload(d, addedWed);
+            CalendarApp.waitInFrame(d, "the late series", CalendarSeriesTest.drawn("Late series"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            CalendarFollowingDatesTest.weekShowing(d, addedWed);
+            CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(addedWed.toString(), "Late series"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Late series", addedWed.toString(),
+                    CalendarDragTest.slotDistance("08:00:00", "10:00:00"), false), "all");
+            String late = CalendarApp.awaitStored(d, recurring, "late.ics",
+                    addedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T100000");
+            CalendarApp.assertTimeIs(late, "DTSTART", monday.atTime(0, 0));
+            CalendarClockChangeTest.reload(d, lateDeleted);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the moved series", CalendarSeriesTest.drawn("Late series"), 30_000);
+            List<String> lateDays = CalendarApp.occurrenceDates(d, "Late series");
+            if (! lateDays.contains(monday.toString()) || lateDays.contains(lateDeleted.toString()))
+                throw new AssertionError("Moved past midnight, the series should keep " + monday + " and not bring back the deleted "
+                        + lateDeleted + ", but draws " + lateDays + ":\n" + late);
+            System.out.println("  ok   dragged from an added date past midnight for the rule, its Mondays stayed Mondays: " + lateDays);
             System.out.println("PASS");
         } finally {
             if (own != null)

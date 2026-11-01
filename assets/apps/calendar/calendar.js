@@ -108,11 +108,12 @@ function nthWeekdayOfMonth(date) {
     return (day + 7 > daysInMonth) ? -1 : Math.ceil(day / 7);
 }
 
-// Occurrence immediately before `date`, ignoring count/until/exdates -
-// the truncation boundary for "this and following" splits. Null if
-// `date` is the series' first occurrence.
+// The rule's last occurrence before `date`, within its own count or until
+// and ignoring exdates - the truncation boundary for "this and following"
+// splits. A cut after the rule has ended, at a date it adds, ends it where
+// it ended, not later. Null if the rule has no occurrence before `date`.
 function previousOccurrenceBoundary(recur, allDay, date) {
-    let rr = new rrule.RRule(rruleOptionsFor(recur, allDay));
+    let rr = new rrule.RRule(ruleOptions(recur, allDay));
     let result = rr.before(toFakeUtc(date), false);
     return result ? fromFakeUtc(result) : null;
 }
@@ -1567,8 +1568,13 @@ function moveOccurrence(ev, scope, moved) {
         // new length.
         let recur = Object.assign({}, ev.extendedProps.recur);
         let minutes = storedMinutes(toLocalInputValue(moved.start, moved.allDay)) - storedMinutes(toLocalInputValue(ev.start, ev.allDay));
-        recur.dtstart = shiftStored(recur.dtstart || toLocalInputValue(ev.start, ev.allDay), minutes, moved.allDay);
-        shiftListedDates(recur, minutes, moved.allDay, ev.extendedProps.recur.dtstart);
+        // Dragged from an added date at a time of its own, the series' time of day can go past midnight. The
+        // rule's dates keep their days (its weekdays and days of the month don't move), so that time wraps
+        // within the day; the added dates go as far as the dragged one did.
+        let seriesMinutes = storedMinutes(recur.dtstart);
+        let ruleMinutes = (((seriesMinutes + minutes) % 1440) + 1440) % 1440 - seriesMinutes;
+        recur.dtstart = shiftStored(recur.dtstart, ruleMinutes, moved.allDay);
+        shiftListedDates(recur, ruleMinutes, minutes, moved.allDay, ev.extendedProps.recur.dtstart);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
         ev.remove();
         addAndPersist(payload);
@@ -3910,7 +3916,7 @@ form.addEventListener('submit', function (e) {
                 // to the series' new time of day, and into the form of its new start, all-day or timed
                 if (was.dtstart) {
                     let minutes = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
-                    shiftListedDates(recur, minutes, allDay, was.dtstart);
+                    shiftListedDates(recur, minutes, minutes, allDay, was.dtstart);
                     // a start listed as an added date as well (as a split at one lists it) goes where the start goes
                     let listedStart = recur.rdates.indexOf(shiftStored(was.dtstart, minutes, allDay));
                     if ((was.rdates || []).indexOf(was.dtstart) >= 0 && listedStart >= 0)
@@ -4654,18 +4660,21 @@ function sameFolder(a, b) {
 }
 
 // A series' excluded and added dates name occurrences by their start. When the
-// series' time of day changes, each moves as far, or the deleted occurrences come
-// back and the added ones land where the series no longer is. The days are the
-// rule's, and the dialog leaves the weekday and the day of the month it names
-// alone, so a date at the series' time keeps its day; one at a time of its own goes
-// on into the next or the previous day where the move takes it.
-function shiftListedDates(recur, minutes, allDay, wasDtstart) {
+// series moves, each moves with what it names, or the deleted occurrences come back
+// and the added ones land where the series no longer is: an exclusion of one of the
+// rule's dates as far as the rule's time of day (ruleMinutes), which stays within
+// the day, as the rule's weekdays and days of the month don't move; an added date,
+// or an exclusion of one, as far as the moved occurrence (addedMinutes), on into the
+// next or the previous day if that is where it takes it. A start that is listed as
+// an added date too is the start, and goes with the rule.
+function shiftListedDates(recur, ruleMinutes, addedMinutes, allDay, wasDtstart) {
     let was = { exdates: recur.exdates, rdates: recur.rdates, dtstart: wasDtstart };
-    let move = function (list) {
-        return (list || []).map(function (s) { return shiftStored(s, minutes, allDay); });
+    let added = recur.rdates || [];
+    let move = function (s) {
+        return shiftStored(s, s !== wasDtstart && added.indexOf(s) >= 0 ? addedMinutes : ruleMinutes, allDay);
     };
-    if (recur.exdates) recur.exdates = move(recur.exdates);
-    if (recur.rdates) recur.rdates = move(recur.rdates);
+    if (recur.exdates) recur.exdates = recur.exdates.map(move);
+    if (recur.rdates) recur.rdates = recur.rdates.map(move);
     keepAddedDays(recur, was, allDay);
 }
 

@@ -324,6 +324,8 @@ public class CalendarFollowingDatesTest {
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Undone", wed.toString(),
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
             String undonePart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("undone.ics"), "Undone"));
+            // the part before is cut short too, or after the reload it still draws that Monday itself
+            CalendarApp.awaitStored(d, recurring, "undone.ics", "UNTIL=");
             String undoneEx = CalendarApp.property(undonePart, "EXDATE");
             if (undoneEx != null && undoneEx.contains(undone.format(BASIC)))
                 throw new AssertionError("The deleted added date on " + undone + " went with the split and takes out the new part's Monday:\n" + undonePart);
@@ -333,6 +335,35 @@ public class CalendarFollowingDatesTest {
             if (! CalendarApp.occurrenceDates(d, "Undone").contains(undone.toString()))
                 throw new AssertionError("After the split nothing is drawn on " + undone + ":\n" + undonePart);
             System.out.println("  ok   a deleted added date stayed behind at a split, and the new part's Monday is drawn");
+
+            // --- a cut at a date added after the rule has ended --------------------------------------------------
+            // three days, and a date added a week after the last: deleted from that date on, the rule ends where it
+            // did, and isn't stretched to the day before the cut
+            LocalDate addedLater = first.plusDays(10);
+            CalendarApp.write(d, recurring, "ended.ics", CalendarClockChangeTest.vevent("ended", "Ended rule",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=DAILY;COUNT=3",
+                    "RDATE;TZID=" + zone + ":" + addedLater.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, addedLater);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series that ended", CalendarSeriesTest.drawn("Ended rule"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Ended rule", addedLater);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            String ended = d.waitUntil("the date added later to go", () -> {
+                String now = CalendarApp.read(d, recurring, "ended.ics");
+                return CalendarApp.property(now, "RDATE") == null ? now : null;
+            }, 60_000);
+            CalendarClockChangeTest.reload(d, first);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series left", CalendarSeriesTest.drawn("Ended rule"), 30_000);
+            Set<String> endedDays = new TreeSet<>(CalendarApp.occurrenceDates(d, "Ended rule"));
+            Set<String> threeDays = new TreeSet<>(List.of(first.toString(), first.plusDays(1).toString(), first.plusDays(2).toString()));
+            if (! endedDays.equals(threeDays))
+                throw new AssertionError("Cut at a date added after its rule had ended, the series should keep its three days "
+                        + threeDays + ", but draws " + endedDays + ":\n" + ended);
+            System.out.println("  ok   a cut after the rule had ended left the rule's own days: " + endedDays);
             System.out.println("PASS");
         } finally {
             if (own != null)

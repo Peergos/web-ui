@@ -357,13 +357,13 @@ The rules are those of the previous calendar:
   time), this and following (the master is cut off with UNTIL and a new series starts at the
   new time, taking the deleted and added dates after it; a master with none of its rule's dates
   left before the cut keeps its earlier added dates as a series of listed dates) or all of
-  them (the series' own start moves as far as the occurrence's time of day did and every
-  occurrence takes the new length). Deleted (EXDATE) and added (RDATE) dates move as far as the
-  occurrences they name: the rule's dates with the series' time of day, on their own day,
-  and an added date as far as the moved occurrence, into the next or previous day if it has
-  to. They are worked on their stored text, so a time the clocks skip stays as written; the
-  edit dialog moves them the same way. The exclusion and the cut-off are computed from the
-  occurrence as it was (`info.oldEvent`), not from the dragged handle;
+  them (the series' own start moves as far as the occurrence's time of day did, within its own
+  day, and every occurrence takes the new length). Deleted (EXDATE) and added (RDATE) dates
+  move as far as the occurrences they name: the rule's dates with the series' time of day,
+  on their own day, and an added date as far as the moved occurrence, into the next or
+  previous day if it has to. They are worked on their stored text, so a time the clocks skip
+  stays as written; the edit dialog moves them the same way. The exclusion and the cut-off
+  are computed from the occurrence as it was (`info.oldEvent`), not from the dragged handle;
 - tasks, read-only calendars and guest sessions cannot drag.
 
 ## Entries written elsewhere
