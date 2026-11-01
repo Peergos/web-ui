@@ -148,6 +148,7 @@ const ModalPro = require("./modal/ModalPro.vue");
 const ModalCancel = require("./modal/ModalCancel.vue");
 const ModalPassword = require("./modal/ModalPassword.vue");
 const ModalRecovery = require("./modal/ModalRecovery.vue");
+const ModalFriendLink = require("./modal/ModalFriendLink.vue");
 const ModalAccount = require("./modal/ModalAccount.vue");
 const ModalProfile = require("./modal/ModalProfile.vue");
 const ModalLanguage = require("./modal/ModalLanguage.vue");
@@ -216,6 +217,7 @@ module.exports = {
                 ModalCancel,
 		ModalPassword,
 		ModalRecovery,
+		ModalFriendLink,
 		ModalAccount,
 		ModalMigrate,
 		ModalProfile,

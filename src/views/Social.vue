@@ -56,6 +56,23 @@
 			</div>
 		</section>
 
+		<section class="pg-card social-link">
+			<h2>{{ translate("FRIENDLINK.SECTION") }}</h2>
+			<p class="pg-note">{{ translate("FRIENDLINK.SECTION.BLURB") }}</p>
+			<div class="social-invite">
+				<input type="text" class="pg-input social-invite__field social-link__field" v-model="friendLinkText"
+					:placeholder="translate('FRIENDLINK.PASTE')" autocomplete="off" @keyup.enter="addFriendLink()"/>
+				<button type="button" class="pg-btn" @click="scanning = ! scanning">{{ translate("FRIENDLINK.SCAN") }}</button>
+				<button type="button" class="pg-btn pg-btn--primary" :disabled="friendLinkText.trim().length == 0" @click="addFriendLink()">
+					{{ translate("FRIENDLINK.ADD") }}
+				</button>
+			</div>
+			<div v-if="scanning" class="qrcode-container social-link__scanner">
+				<QrScanner :decoder="decodeLink" @scanned="linkScanned" @failed="scanFailed"/>
+			</div>
+			<button type="button" class="pg-btn social-link__mine" @click="showFriendLinks()">{{ translate("FRIENDLINK.MINE") }}</button>
+		</section>
+
 		<section v-if="nobody" class="pg-empty">
 			<span class="pg-empty__mark" aria-hidden="true">
 				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -262,9 +279,11 @@ const ViewProfile = require("../components/profile/ViewProfile.vue");
 const Fingerprint = require("../components/fingerprint/Fingerprint.vue");
 const FormAutocomplete = require("../components/form/FormAutocomplete.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
+const QrScanner = require("../components/social/QrScanner.vue");
 const i18n = require("../i18n/index.js");
 
 const routerMixins = require("../mixins/router/index.js");
+const UriDecoder = require("../mixins/uridecoder/index.js");
 
 module.exports = {
 	components: {
@@ -276,9 +295,12 @@ module.exports = {
 		Choice,
 		AppPrompt,
 		Spinner,
+		QrScanner,
 	},
     data() {
         return {
+            friendLinkText: "",
+            scanning: false,
             targetUsername: "",
             targetUsernames: [],
             profile: {
@@ -322,7 +344,7 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins, i18n],
+	mixins:[routerMixins, i18n, UriDecoder],
 
 	computed: {
         nobody() {
@@ -442,6 +464,59 @@ module.exports = {
 		that.showFingerprint = true;
 	    })
 	},
+
+        showFriendLinks() {
+            this.$store.commit("CURRENT_MODAL", "ModalFriendLink");
+        },
+        decodeLink(pixels, width, height) {
+            return peergos.shared.SecretLinkQRCode.decodeFromPixels(pixels, width, height);
+        },
+        linkScanned(text) {
+            this.scanning = false;
+            this.friendLinkText = text;
+            this.addFriendLink();
+        },
+        scanFailed(message) {
+            this.scanning = false;
+            if (message != null)
+                this.$toast.error(message, {timeout: false, id: 'social'});
+        },
+        // The bundle is fetched and verified before anything of it is shown, and only when asked (remove-pki §8)
+        addFriendLink() {
+            let that = this;
+            let text = this.friendLinkText.trim();
+            if (text.length == 0)
+                return;
+            if (! peergos.shared.social.FriendLink.isFriendLink(text)) {
+                this.$toast.error(this.translate("FRIENDLINK.INVALID"), {timeout: false, id: 'social'});
+                return;
+            }
+            this.showSpinner = true;
+            this.context.fetchFriendLink(text).thenApply(bundle => {
+                that.showSpinner = false;
+                let name = bundle.suggestedName;
+                that.choice_message = that.translate("FRIENDLINK.CONFIRM.TITLE").replace("$NAME", name);
+                that.choice_body = that.translate("FRIENDLINK.CONFIRM.BODY").replace("$NAME", name);
+                that.choice_options = [that.translate("FRIENDLINK.CONFIRM.SEND")];
+                that.choice_consumer_func = (index) => {
+                    that.showSpinner = true;
+                    that.context.sendFollowRequestToLink(text).thenApply(sent => {
+                        that.friendLinkText = "";
+                        that.updateSocial(() => {
+                            that.showSpinner = false;
+                            that.$toast(that.translate("SOCIAL.SENT"));
+                        });
+                    }).exceptionally(t => {
+                        that.showSpinner = false;
+                        that.$toast.error(that.uriDecode(t.getMessage()), {timeout: false, id: 'social'});
+                    });
+                };
+                that.showChoice = true;
+            }).exceptionally(t => {
+                that.showSpinner = false;
+                that.$toast.error(that.uriDecode(t.getMessage()), {timeout: false, id: 'social'});
+            });
+        },
 
 	sendInitialFollowRequest() {
 	        let that = this;
@@ -781,8 +856,28 @@ module.exports = {
 	font-size: 15px;
 }
 
-.social-send {
+.social-send,
+.social-link {
 	gap: 12px;
+}
+
+/* the camera, square and on white, as the fingerprint check shows it */
+.social-link__scanner {
+	width: 100%;
+	max-width: 280px;
+	padding: 12px;
+	background-color: #ffffff;
+	border-radius: var(--radius-control);
+}
+
+.social-link__scanner .qrcode {
+	display: block;
+	width: 100%;
+	height: auto;
+}
+
+.social-link__mine {
+	align-self: flex-start;
 }
 
 /* the field and the action that sends it belong on one line, with the field taking the
