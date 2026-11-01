@@ -104,14 +104,15 @@ public class CalendarMovedSeriesDatesTest {
             System.out.println("  ok   a start moved a day keeps the deleted occurrence on its day: " + kept);
 
             // --- an added date at a time of its own, when the series turns all-day ------------------
-            // an all-day value has no time, so it keeps its own day rather than moving by the series' 09:00
+            // an all-day value has no time of day, so the added date keeps its own day; and the rule's UNTIL takes
+            // the type of the new start, a date, as RFC 5545 has it
             String zone = String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;"));
             LocalDate monday = first.with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
             LocalDate early = monday.plusDays(9);
             CalendarApp.write(d, recurring, "turned.ics", CalendarClockChangeTest.vevent("turned", "Turned all-day",
                     "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000",
                     "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T093000",
-                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=" + monday.plusWeeks(5).format(DateTimeFormatter.BASIC_ISO_DATE) + "T235900Z",
                     "RDATE;TZID=" + zone + ":" + early.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000"));
             CalendarClockChangeTest.reload(d, monday);
             CalendarApp.waitInFrame(d, "the series to turn all-day", CalendarSeriesTest.drawn("Turned all-day"), 30_000);
@@ -124,8 +125,11 @@ public class CalendarMovedSeriesDatesTest {
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
             String allDay = CalendarApp.awaitStored(d, recurring, "turned.ics", "DTSTART;VALUE=DATE:");
             String rdate = CalendarApp.property(allDay, "RDATE");
-            if (rdate == null || ! rdate.contains(early.format(DateTimeFormatter.BASIC_ISO_DATE)))
+            if (rdate == null || ! rdate.endsWith("VALUE=DATE:" + early.format(DateTimeFormatter.BASIC_ISO_DATE)))
                 throw new AssertionError("Turned all-day, the date added at 08:00 on " + early + " should stay on its day, but the file lists " + rdate + ":\n" + allDay);
+            String rule = CalendarApp.property(allDay, "RRULE");
+            if (rule == null || ! rule.matches(".*UNTIL=\\d{8}(;.*)?"))
+                throw new AssertionError("Turned all-day, the rule's UNTIL should be a date like its start, but it says " + rule + ":\n" + allDay);
             System.out.println("  ok   an added date at 08:00 kept its day when the series turned all-day: " + rdate);
             System.out.println("PASS");
         } finally {

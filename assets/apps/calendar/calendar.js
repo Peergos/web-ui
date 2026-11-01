@@ -811,7 +811,7 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     if (!recur.freq) return null;
     // Exclusions are their own line, so a detached occurrence still leaves the
     // rule itself untouched.
-    if (recur.source && sameRecurFields(recur, recur.sourceFields))
+    if (recur.source && sameRecurFields(recur, recur.sourceFields) && untilFitsStart(recur.source, allDay))
         return 'RRULE:' + recur.source;
     // Only its end moved - a series cut short by "this and following", a counted
     // task completed: the rule keeps every other part as the file had it, the ones
@@ -831,6 +831,14 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     // Read out of the file and carried back, though nothing here can set one.
     if (recur.bysetpos && recur.bysetpos.length) parts.push('BYSETPOS=' + recur.bysetpos.join(','));
     return 'RRULE:' + parts.concat(rruleEndParts(recur, allDay, tzid)).join(';');
+}
+
+// RFC 5545 has an UNTIL take DTSTART's type, a date for an all-day series and a time
+// otherwise, so a rule kept as the file had it is written with a new end once the
+// series has turned all-day or timed.
+function untilFitsStart(source, allDay) {
+    let until = /(?:^|;)UNTIL=(\d{8})(T\d{6}Z?)?/i.exec(source);
+    return !until || allDay === !until[2];
 }
 
 function rruleEndParts(recur, allDay, tzid) {
@@ -1542,10 +1550,11 @@ function moveOccurrence(ev, scope, moved) {
     let extra = extraPropsOf(ev);
     if (scope === 'all') {
         // Every occurrence: the series' own start takes the change this one's time of
-        // day took - a drag keeps an occurrence on its day - and all of them take the
+        // day took, from where it was drawn to where it was dropped - a drag keeps an
+        // occurrence on its day, and a resize moves nothing - and all of them take the
         // new length.
         let recur = Object.assign({}, ev.extendedProps.recur);
-        let minutes = storedMinutes(toLocalInputValue(moved.start, moved.allDay)) - storedMinutes(storedStartOf(ev, recur));
+        let minutes = storedMinutes(toLocalInputValue(moved.start, moved.allDay)) - storedMinutes(toLocalInputValue(ev.start, ev.allDay));
         recur.dtstart = shiftStored(recur.dtstart || toLocalInputValue(ev.start, ev.allDay), minutes, moved.allDay);
         shiftListedDates(recur, minutes, moved.allDay);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
@@ -1554,7 +1563,7 @@ function moveOccurrence(ev, scope, moved) {
         return;
     }
     if (scope === 'following') {
-        let recur = adjustRecurForFollowing(ev, ev.extendedProps.recur, moved.allDay);
+        let recur = adjustRecurForFollowing(ev, ev.extendedProps.recur, ev.allDay);
         recur.dtstart = toLocalInputValue(moved.start, moved.allDay);
         takeListedDatesFrom(ev, recur, moved.allDay);
         // built before the series is cut short, so a new part that fails to build leaves the series as it was
@@ -4627,11 +4636,11 @@ function sameFolder(a, b) {
 }
 
 // A series' excluded and added dates name occurrences by their start. When the
-// series' time of day changes, each takes the new time, or the deleted occurrences
-// come back and the added ones land where the series no longer is. They keep their
-// day: the days are the rule's, and the dialog leaves the weekday and the day of
-// the month it names alone. (A rule that names none, as an imported bare
-// FREQ=WEEKLY, moves with its start and leaves them behind.)
+// series' time of day changes, each moves with it, or the deleted occurrences come
+// back and the added ones land where the series no longer is. Each keeps its day:
+// the days are the rule's, and the dialog leaves the weekday and the day of the
+// month it names alone. (A rule that names none, as an imported bare FREQ=WEEKLY,
+// moves with its start and leaves them behind.)
 function shiftListedDates(recur, minutes, allDay) {
     let move = function (list) {
         return (list || []).map(function (s) { return shiftStored(s, minutes, allDay); });
@@ -4647,16 +4656,15 @@ function storedMinutes(value) {
     return text.length === 10 ? 0 : minutesOfDay(text.slice(11, 16));
 }
 
-// A stored value moved on the wall clock, in the form of an all-day or timed
-// series. Worked on the text's own fields: a Date would turn a time the clocks
+// A stored value at a time of day so many minutes on, on its own day, in the form of
+// an all-day or timed series. Worked on the text: a Date would turn a time the clocks
 // skip into the hour after, which no longer names the occurrence. Into the all-day
-// form a value keeps its own date, as a DATE has no time of day to move.
+// form only the date is left, as a DATE has no time of day.
 function shiftStored(value, minutes, allDay) {
     let date = String(value).slice(0, 10);
     if (allDay) return date;
-    let parts = date.split('-').map(Number);
-    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 0, storedMinutes(value) + minutes))
-        .toISOString().slice(0, 16);
+    let time = ((storedMinutes(value) + minutes) % 1440 + 1440) % 1440;
+    return date + 'T' + minutesToTimeValue(time);
 }
 
 // The stored start an occurrence stands for: an added date as it is listed, or else
@@ -4669,10 +4677,11 @@ function storedStartOf(occurrence, recur) {
 }
 
 // "This and following": the series from the occurrence the change started at, whose
-// start is recur.dtstart now, takes the excluded and added dates after it, at its new
-// time of day; the earlier ones stay with the series it is cut from. An occurrence
-// that is an added date is the new start, and listed as well: this app draws a start
-// only where the rule falls, and RFC 5545 counts the two as one.
+// start is recur.dtstart now, takes the excluded and added dates after it; the
+// earlier ones stay with the series it is cut from. Its rule falls at its new start's
+// time of day, so they move as far as the rule's time did. An occurrence that is an
+// added date is the new start, and listed as well: this app draws a start only where
+// the rule falls, and RFC 5545 counts the two as one.
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
@@ -4681,7 +4690,7 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     };
     recur.exdates = after(was.exdates);
     recur.rdates = after(was.rdates);
-    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(cut), allDay);
+    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(was.dtstart || cut), allDay);
     if ((was.rdates || []).indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }

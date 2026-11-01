@@ -3,11 +3,11 @@ import java.time.*;
 import java.time.format.*;
 import java.time.zone.*;
 
-/** An all-day series starting on a day whose clocks go forward at midnight, turned into a timed one.
- *
- *  That day has no midnight, and a Date for its start says 01:00. A series' deleted dates take its new
- *  time of day, and measured from that 01:00 the shift came out an hour short: the deleted occurrence two
- *  weeks on was excluded at 09:00 instead of 10:00, which excludes nothing, and it came back.
+/** Series around a day whose clocks go forward at midnight, so that day has no midnight and skips
+ *  00:00-01:00. Turned from all-day into timed, a series' deleted dates take its new time of day counted
+ *  from the start of each date, not from the 01:00 a Date gives that day's start. Moved into the skipped
+ *  hour, a deleted time is kept as written. Resized on that day, where its 00:30 is drawn at 01:30, the
+ *  series' start stays where it is.
  *
  *  Usage: java -cp ../server/Peergos.jar CalendarMidnightClockChangeTest.java [engine] [url]
  */
@@ -75,8 +75,8 @@ public class CalendarMidnightClockChangeTest {
             // --- a series moved into the hour the clocks skip ---------------------------------------
             // the deleted occurrence on the change day goes to 00:30, which that day doesn't have; the stored time
             // stays 00:30, which RFC 5545 reads with the offset before the gap, rather than turning into 01:30, which
-            // names no occurrence of the series. The file is what is checked: this app's grid draws an occurrence at
-            // a skipped time whatever its EXDATE says.
+            // names no occurrence of the series. The file is what is checked: read back, this app turns a skipped
+            // time into another one, so its grid can't show the exclusion after a reload.
             LocalDate from = changeDay.minusDays(3);
             CalendarApp.write(d, recurring, "skipped.ics", CalendarClockChangeTest.vevent("skipped", "Late shift",
                     "DTSTART;TZID=" + zone + ":" + from.format(BASIC) + "T233000",
@@ -99,6 +99,31 @@ public class CalendarMidnightClockChangeTest {
                 throw new AssertionError("Moved to 00:30, the deleted " + changeDay + " should be excluded at 00:30, but the file says "
                         + skippedExdate + ":\n" + early);
             System.out.println("  ok   moved into the skipped hour, the deleted occurrence is still named at 00:30: " + skippedExdate);
+
+            // --- resized on the skipped day --------------------------------------------------------
+            // the occurrence on the change day is drawn at 01:30 though the series is at 00:30; a resize changes the
+            // length of every occurrence and the start of none
+            LocalDate weekBefore = changeDay.minusWeeks(1);
+            CalendarApp.write(d, recurring, "resized.ics", CalendarClockChangeTest.vevent("resized", "Early round",
+                    "DTSTART;TZID=" + zone + ":" + weekBefore.format(BASIC) + "T003000",
+                    "DTEND;TZID=" + zone + ":" + weekBefore.format(BASIC) + "T010000",
+                    "RRULE:FREQ=WEEKLY;COUNT=3"));
+            String before = CalendarApp.read(d, recurring, "resized.ics");
+            CalendarClockChangeTest.reload(d, changeDay);
+            CalendarApp.waitInFrame(d, "the early series", CalendarSeriesTest.drawn("Early round"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            CalendarFollowingDatesTest.weekShowing(d, changeDay);
+            CalendarApp.waitInFrame(d, "the occurrence on the change day", CalendarDragTest.inColumn(changeDay.toString(), "Early round"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Early round", changeDay.toString(),
+                    CalendarDragTest.slotDistance("02:00:00", "03:00:00"), true), "all");
+            String resized = d.waitUntil("the resized series to be written",
+                    () -> { String now = CalendarApp.read(d, recurring, "resized.ics"); return now.equals(before) ? null : now; }, 60_000);
+            String start = CalendarApp.property(resized, "DTSTART");
+            if (start == null || ! start.endsWith(weekBefore.format(BASIC) + "T003000"))
+                throw new AssertionError("A resize on " + changeDay + " moved the series' start to " + start + ":\n" + resized);
+            System.out.println("  ok   a resize on the skipped day left the series' start alone: " + start);
             System.out.println("PASS");
         } finally {
             if (own != null)

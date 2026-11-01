@@ -154,6 +154,35 @@ public class CalendarFollowingDatesTest {
             if (! movedDrawn.contains(moveTo.toString()) || movedDrawn.contains(added.toString()))
                 throw new AssertionError("Moved from " + added + " to " + moveTo + ", the occurrence is drawn on " + movedDrawn);
             System.out.println("  ok   an added date moved to " + moveTo + " in the dialog went there: " + movedDrawn);
+
+            // --- from an added date at a time of its own, dragged an hour on ----------------------
+            // the new part's rule falls at its start's time, 15:00, so the deleted Monday goes there too
+            String ownTime = "Own time";
+            LocalDate wed = first.plusDays(2);
+            LocalDate gone = first.plusWeeks(2);
+            CalendarApp.write(d, recurring, "own-time.ics", CalendarClockChangeTest.vevent("own-time", ownTime,
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "EXDATE;TZID=" + zone + ":" + gone.format(BASIC) + "T090000",
+                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000"));
+            CalendarClockChangeTest.reload(d, wed);
+            CalendarApp.waitInFrame(d, "the series with an added date at 14:00", CalendarSeriesTest.drawn(ownTime), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            weekShowing(d, wed);
+            CalendarApp.waitInFrame(d, "the added date in its week", CalendarDragTest.inColumn(wed.toString(), ownTime), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(ownTime, wed.toString(),
+                    CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
+            String ownPart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("own-time.ics"), ownTime));
+            assertListed(ownPart, "EXDATE", gone, "T150000", "the deleted Monday, where the new part's rule now falls");
+            CalendarClockChangeTest.reload(d, gone);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the split series", CalendarSeriesTest.drawn(ownTime), 30_000);
+            if (CalendarApp.occurrenceDates(d, ownTime).contains(gone.toString()))
+                throw new AssertionError("The deleted " + gone + " is back after the split: " + CalendarApp.occurrenceDates(d, ownTime));
+            System.out.println("  ok   split at an added date at its own time: the deleted Monday moved with the rule");
             System.out.println("PASS");
         } finally {
             if (own != null)
