@@ -2858,11 +2858,9 @@ weekdayToggleButtons.forEach(function (btn) {
     });
 });
 
-// Keeps "Monthly on the 3rd Tuesday" (computed from the start date, not
-// a fixed string) in sync if the date changes while the modal is open.
+// The end keeps the entry's length when its start date changes.
 startDateInput.addEventListener('change', function () {
     applyFormSpan();
-    if (repeatFreqInput.value === 'monthly') updateMonthlyModeLabels();
 });
 
 cancelButton.addEventListener('click', closeModal);
