@@ -16,7 +16,6 @@ import java.util.*;
  */
 public class CalendarFollowingDatesTest {
 
-    static final String ZONE = "Europe/Athens";
     static final DateTimeFormatter BASIC = DateTimeFormatter.BASIC_ISO_DATE;
 
     public static void main(String[] args) throws Exception {
@@ -36,13 +35,14 @@ public class CalendarFollowingDatesTest {
         Server own = given == null ? Server.start(serverDir) : null;
         String url = own != null ? own.url() : given;
         Fixtures.Account me = Fixtures.account(url);
-        // the seeded times are read in the browser's zone
-        try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless, ZONE)) {
+        try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-calendar-"), headless)) {
             d.navigate(url + "/");
             d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
             Page.login(d, me.name(), me.password());
             CalendarApp.open(d);
             String recurring = CalendarApp.directoryOf(d, me.name()) + "/recurring";
+            // seeded in the browser's own zone, so the times below are its local times whatever zone it runs in
+            String zone = String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;"));
             // Mondays, with a Wednesday added before the split and one after, and a Monday deleted after it
             LocalDate first = LocalDate.now().withDayOfMonth(1).plusMonths(1).with(TemporalAdjusters.firstInMonth(DayOfWeek.MONDAY));
             LocalDate earlyAdded = first.plusDays(2);
@@ -53,11 +53,11 @@ public class CalendarFollowingDatesTest {
             // --- dragged to another time ----------------------------------------------------------
             String dragged = "Dragged split";
             CalendarApp.write(d, recurring, "dragged.ics", CalendarClockChangeTest.vevent("dragged", dragged,
-                    "DTSTART;TZID=" + ZONE + ":" + first.format(BASIC) + "T090000",
-                    "DTEND;TZID=" + ZONE + ":" + first.format(BASIC) + "T093000",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
                     "RRULE:FREQ=WEEKLY;BYDAY=MO",
-                    "EXDATE;TZID=" + ZONE + ":" + deleted.format(BASIC) + "T090000",
-                    "RDATE;TZID=" + ZONE + ":" + earlyAdded.format(BASIC) + "T090000," + lateAdded.format(BASIC) + "T090000"));
+                    "EXDATE;TZID=" + zone + ":" + deleted.format(BASIC) + "T090000",
+                    "RDATE;TZID=" + zone + ":" + earlyAdded.format(BASIC) + "T090000," + lateAdded.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, split);
             CalendarApp.waitInFrame(d, "the series on the grid", CalendarSeriesTest.drawn(dragged), 30_000);
             CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
