@@ -1524,9 +1524,11 @@ function truncateMasterSeries(master) {
         removeAndPersist(master);
         return;
     }
-    // what a file of listed dates alone parses to: nothing of the rule it had stays
+    // What a file of listed dates alone parses to: nothing of the rule it had stays. The start is listed
+    // too, or with one date left the file has no RDATE and reads back as a plain event, filed where this
+    // one isn't (RFC 5545 counts a date both starts and lists once).
     replaceMasterSeries(master, { freq: null, interval: 1, end: 'never', until: null, count: null,
-        exdates: [], dtstart: left[0], rdates: left.slice(1) });
+        exdates: [], dtstart: left[0], rdates: left });
 }
 
 // --- Drag to move ---------------------------------------------------------
@@ -4729,14 +4731,22 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     let ownMove = storedMinutes(recur.dtstart) - storedMinutes(cut);
     let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
     let after = function (list) { return (list || []).filter(function (s) { return s > cut; }); };
-    let shift = function (s) { return shiftStored(s, added.indexOf(s) >= 0 ? ownMove : ruleMove, allDay); };
-    let exdates = after(was.exdates), rdates = after(was.rdates);
+    // An added date that is excluded too is no occurrence (RFC 5545), so neither goes along: moved as
+    // an added date, the exclusion could land on one of the rule's. At the series' time it takes out
+    // one of the rule's dates as well, and stays as an exclusion of that.
+    let excluded = was.exdates || [];
+    let seriesTime = storedMinutes(was.dtstart);
+    let rdates = after(was.rdates).filter(function (s) { return excluded.indexOf(s) < 0; });
+    let exdates = after(was.exdates).filter(function (s) {
+        return added.indexOf(s) < 0 || storedMinutes(s) === seriesTime;
+    });
+    let shift = function (s) { return shiftStored(s, rdates.indexOf(s) >= 0 ? ownMove : ruleMove, allDay); };
     let movedAdded = rdates.map(shift);
     // an exclusion of one of the rule's dates, moved with the rule, can land on the new start or on an added
     // date, which are occurrences of their own and stay
     let lands = exdates.map(function (s) {
         let d = shift(s);
-        return added.indexOf(s) < 0 && (d === recur.dtstart || movedAdded.indexOf(d) >= 0);
+        return d === recur.dtstart || movedAdded.indexOf(d) >= 0;
     });
     exdates = exdates.filter(function (s, i) { return !lands[i]; });
     recur.exdates = exdates.map(shift);

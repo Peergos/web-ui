@@ -107,18 +107,20 @@ public class CalendarMovedSeriesDatesTest {
             // an all-day value has no time of day, so the added date keeps its own day; and the rule's UNTIL takes
             // the type of the new start, a date, as RFC 5545 has it. A Monday whose 09:00 is deleted but which has a
             // time added at 18:00 still has an occurrence, so it isn't excluded as a whole day; nor is one whose
-            // added 14:00 was deleted, which still has the rule's 09:00
+            // added 14:00 was deleted, which still has the rule's 09:00. One whose 09:00 alone was deleted stays deleted
             String zone = String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;"));
             LocalDate monday = first.with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
             LocalDate early = monday.plusDays(9);
             LocalDate swapped = monday.plusWeeks(1);
             LocalDate addedAndDeleted = monday.plusWeeks(2);
+            LocalDate plainDeleted = monday.plusWeeks(3);
             CalendarApp.write(d, recurring, "turned.ics", CalendarClockChangeTest.vevent("turned", "Turned all-day",
                     "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000",
                     "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T093000",
                     "RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=" + monday.plusWeeks(5).format(DateTimeFormatter.BASIC_ISO_DATE) + "T235900Z",
                     "EXDATE;TZID=" + zone + ":" + swapped.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000,"
-                            + addedAndDeleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T140000",
+                            + addedAndDeleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T140000,"
+                            + plainDeleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000",
                     "RDATE;TZID=" + zone + ":" + swapped.format(DateTimeFormatter.BASIC_ISO_DATE) + "T180000,"
                             + addedAndDeleted.format(DateTimeFormatter.BASIC_ISO_DATE) + "T140000,"
                             + early.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000"));
@@ -144,6 +146,10 @@ public class CalendarMovedSeriesDatesTest {
                         + swappedExdate + ":\n" + allDay);
             if (swappedExdate != null && swappedExdate.contains(addedAndDeleted.format(DateTimeFormatter.BASIC_ISO_DATE)))
                 throw new AssertionError("Turned all-day, " + addedAndDeleted + " still has the rule's 09:00, but the file excludes the day: "
+                        + swappedExdate + ":\n" + allDay);
+            if (swappedExdate == null || ! swappedExdate.matches("EXDATE;VALUE=DATE:[0-9,]+")
+                    || ! swappedExdate.contains(plainDeleted.format(DateTimeFormatter.BASIC_ISO_DATE)))
+                throw new AssertionError("Turned all-day, the rule's deleted " + plainDeleted + " should stay deleted as a day, but the file lists "
                         + swappedExdate + ":\n" + allDay);
             System.out.println("  ok   an added date at 08:00 kept its day when the series turned all-day: " + rdate);
 

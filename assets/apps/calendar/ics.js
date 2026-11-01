@@ -122,7 +122,7 @@ function rruleStringFor(recur, allDay) {
         lines.push(rule.replace(/(\d{8}T\d{6})Z/g, '$1'));
     }
     let dates = (recur.rdates || []).slice();
-    if (!recur.freq) dates.unshift(recur.dtstart);
+    if (!recur.freq && dates.indexOf(recur.dtstart) < 0) dates.unshift(recur.dtstart);
     if (dates.length) lines.push('RDATE:' + dates.map(compact).join(','));
     return lines.join('\n');
 }
@@ -1041,7 +1041,8 @@ let recurIntervalUnits = { daily: 'days', weekly: 'weeks', monthly: 'months', ye
 
 function describeRecur(recur) {
     let added = (recur.rdates || []).length;
-    if (!recur.freq) return 'On ' + (added + 1) + ' dates';
+    // a list of dates may name its own start among them, which is one date
+    if (!recur.freq) return 'On ' + (added + ((recur.rdates || []).indexOf(recur.dtstart) < 0 ? 1 : 0)) + ' dates';
     let text = recur.interval > 1
         ? 'Every ' + recur.interval + ' ' + recurIntervalUnits[recur.freq]
         : recurFreqLabels[recur.freq];

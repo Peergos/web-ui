@@ -272,6 +272,67 @@ public class CalendarFollowingDatesTest {
             if (! CalendarApp.occurrenceDates(d, "Swapped later").contains(swapDay.toString()))
                 throw new AssertionError("Split at its 09:00, nothing of the new part is drawn on " + swapDay + ":\n" + later);
             System.out.println("  ok   split at an added time where the rule's was deleted: the new start is drawn");
+
+            // --- a cut that leaves one date --------------------------------------------------------------------
+            // the part a split at an added Wednesday makes: its start, listed, and its rule's Mondays. Deleted from the
+            // next Monday on, the Wednesday is left, and the file must still read back as a series: as a plain event it
+            // is looked for where a plain event's file goes, and deleting it leaves this one in place
+            LocalDate lone = first.plusDays(2);
+            CalendarApp.write(d, recurring, "lone.ics", CalendarClockChangeTest.vevent("lone", "Lone date",
+                    "DTSTART;TZID=" + zone + ":" + lone.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + lone.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;TZID=" + zone + ":" + lone.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, lone);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series from an added date", CalendarSeriesTest.drawn("Lone date"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Lone date", first.plusWeeks(1));
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            String lonePart = d.waitUntil("the cut to drop the rule", () -> {
+                String now = CalendarApp.read(d, recurring, "lone.ics");
+                return CalendarApp.property(now, "RRULE") == null ? now : null;
+            }, 60_000);
+            assertListed(lonePart, "RDATE", lone, "T090000", "the one date left");
+            CalendarClockChangeTest.reload(d, lone);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the date left", CalendarSeriesTest.drawn("Lone date"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Lone date", lone);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-delete") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            d.waitUntil("the date left to be deleted", () -> CalendarApp.list(d, recurring).contains("lone.ics") ? null : true, 60_000);
+            System.out.println("  ok   a cut that leaves one date keeps a series, which can be deleted after a reload");
+
+            // --- a split with an added date that was deleted again ----------------------------------------------
+            // a Monday has the rule's 09:00 and an added 14:00 that was deleted. Split at an added Wednesday 14:00 and
+            // dragged an hour on, the deleted 14:00 is no occurrence and goes nowhere: moved as an added date, it would
+            // land on the new part's 15:00 that Monday and take it out
+            LocalDate undone = first.plusWeeks(2);
+            CalendarApp.write(d, recurring, "undone.ics", CalendarClockChangeTest.vevent("undone", "Undone",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "EXDATE;TZID=" + zone + ":" + undone.format(BASIC) + "T140000",
+                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000," + undone.format(BASIC) + "T140000"));
+            CalendarClockChangeTest.reload(d, wed);
+            CalendarApp.waitInFrame(d, "the series with a deleted added date", CalendarSeriesTest.drawn("Undone"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            weekShowing(d, wed);
+            CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(wed.toString(), "Undone"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Undone", wed.toString(),
+                    CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
+            String undonePart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("undone.ics"), "Undone"));
+            String undoneEx = CalendarApp.property(undonePart, "EXDATE");
+            if (undoneEx != null && undoneEx.contains(undone.format(BASIC)))
+                throw new AssertionError("The deleted added date on " + undone + " went with the split and takes out the new part's Monday:\n" + undonePart);
+            CalendarClockChangeTest.reload(d, undone);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the split series", CalendarSeriesTest.drawn("Undone"), 30_000);
+            if (! CalendarApp.occurrenceDates(d, "Undone").contains(undone.toString()))
+                throw new AssertionError("After the split nothing is drawn on " + undone + ":\n" + undonePart);
+            System.out.println("  ok   a deleted added date stayed behind at a split, and the new part's Monday is drawn");
             System.out.println("PASS");
         } finally {
             if (own != null)
