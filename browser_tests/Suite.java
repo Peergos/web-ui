@@ -115,6 +115,7 @@ public class Suite {
             t("calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             t("calendar files read by another parser", () -> CalendarInteropTest.run(args1));
             t("a series stays as long as the clock says across a clock change", () -> CalendarClockChangeTest.run(args1));
+            t("a series turned timed from a day the clocks skip midnight keeps its deleted dates", () -> CalendarMidnightClockChangeTest.run(args1));
             t("calendar drag to move", () -> CalendarDragTest.run(args1));
             t("calendar shared read-only", () -> CalendarReadOnlyTest.run(args1));
             t("calendar writable link", () -> CalendarLinkWriteTest.run(args1));

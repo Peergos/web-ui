@@ -1541,11 +1541,12 @@ function handleDragChange(info) {
 function moveOccurrence(ev, scope, moved) {
     let extra = extraPropsOf(ev);
     if (scope === 'all') {
-        // Every occurrence: the series' own start shifts by as much as this one
-        // did, as the clock on the wall sees it, and all of them take the new length.
+        // Every occurrence: the series' own start shifts by as much as this one's
+        // time of day did - a drag keeps an occurrence on its day - and all of them
+        // take the new length.
         let recur = Object.assign({}, ev.extendedProps.recur);
-        let shiftMs = wallClockMs(ev.start, moved.start, ev.allDay && moved.allDay);
-        let first = plusWallClock(recur.dtstart ? toStoredDate(recur.dtstart) : ev.start, shiftMs);
+        let shiftMs = timeOfDayShiftMs(ev.start, ev.allDay, moved.start, moved.allDay);
+        let first = recur.dtstart ? plusWallClockFrom(recur.dtstart, shiftMs) : plusWallClock(ev.start, shiftMs);
         recur.dtstart = toLocalInputValue(first, moved.allDay);
         shiftListedDates(recur, shiftMs, moved.allDay);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
@@ -3888,8 +3889,8 @@ form.addEventListener('submit', function (e) {
                 recur.rdates = was.rdates || [];
                 // to the series' new time of day, and into the form of its new start, all-day or timed
                 if (was.dtstart)
-                    shiftListedDates(recur, timeOfDayShiftMs(toStoredDate(was.dtstart), toStoredDate(recur.dtstart),
-                        allDay && editingEvent.allDay), allDay);
+                    shiftListedDates(recur, timeOfDayShiftMs(toStoredDate(was.dtstart), editingEvent.allDay,
+                        toStoredDate(recur.dtstart), allDay), allDay);
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
@@ -4636,22 +4637,36 @@ function sameFolder(a, b) {
 function shiftListedDates(recur, shiftMs, allDay) {
     let move = function (list) {
         return (list || []).map(function (s) {
-            return toLocalInputValue(plusWallClock(toStoredDate(s), shiftMs), allDay);
+            return toLocalInputValue(plusWallClockFrom(s, shiftMs), allDay);
         });
     };
     if (recur.exdates) recur.exdates = move(recur.exdates);
     if (recur.rdates) recur.rdates = move(recur.rdates);
 }
 
+// A stored date or date-time plus a wall-clock length. A bare date counts from the
+// start of its day, taken from the date itself: on a day the clocks change at
+// midnight there is no midnight, and a Date for it says 01:00.
+function plusWallClockFrom(value, ms) {
+    let text = String(value);
+    if (text.length !== 10)
+        return plusWallClock(toStoredDate(text), ms);
+    let parts = text.split('-').map(Number);
+    return new Date(parts[0], parts[1] - 1, parts[2], 0, Math.round(ms / 60000));
+}
+
+// Minutes into its day on the wall clock. An all-day value has no time of day (an
+// RFC 5545 DATE), so it is at the day's start, whatever hour its Date says.
+function minutesIntoDay(date, allDay) {
+    return allDay ? 0 : date.getHours() * 60 + date.getMinutes();
+}
+
 // How far a series' time of day moved, leaving out any change of day. A date the
 // series lists names a day its rule chose, and the rule's days don't move with its
 // start - the dialog keeps the weekday and the day of the month it had - so a deleted
 // Monday stays deleted when the start moves to a Tuesday, or a week on.
-function timeOfDayShiftMs(from, to, bothAllDay) {
-    if (bothAllDay) return 0;
-    let sameDay = new Date(from.getFullYear(), from.getMonth(), from.getDate(),
-        to.getHours(), to.getMinutes(), to.getSeconds());
-    return wallClockMs(from, sameDay, false);
+function timeOfDayShiftMs(from, fromAllDay, to, toAllDay) {
+    return (minutesIntoDay(to, toAllDay) - minutesIntoDay(from, fromAllDay)) * 60000;
 }
 
 // "This and following": the series from the occurrence the change started at, whose start is
@@ -4667,7 +4682,7 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     };
     recur.exdates = fromCut(was.exdates);
     recur.rdates = fromCut(was.rdates);
-    shiftListedDates(recur, timeOfDayShiftMs(occurrence.start, toStoredDate(recur.dtstart), occurrence.allDay && allDay), allDay);
+    shiftListedDates(recur, timeOfDayShiftMs(occurrence.start, occurrence.allDay, toStoredDate(recur.dtstart), allDay), allDay);
 }
 
 // Identifies a stored event to the host: which file, in which calendar
