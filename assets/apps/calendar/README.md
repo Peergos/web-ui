@@ -355,8 +355,10 @@ The rules are those of the previous calendar:
   drop on another day and the event snaps back); a drop on the same day, or a resize, asks
   whether to change this occurrence (EXDATE on the master plus a standalone copy at the new
   time), this and following (the master is cut off with UNTIL and a new series starts at the
-  new time, taking the deleted and added dates after it) or all of them (the series' own
-  start shifts by the same amount and every occurrence takes the new length). Deleted
+  new time, taking the deleted and added dates after it; a master with none of its rule's dates
+  left before the cut keeps its start and earlier added dates as a series of listed dates) or
+  all of them (the series' own start shifts by the same amount and every occurrence takes the
+  new length). Deleted
   (EXDATE) and added (RDATE) dates move as far as the occurrences they name: the rule's
   dates with the series' time of day, on their own day, and an added date as far as the
   moved occurrence, into the next or previous day if it has to. They are worked on their

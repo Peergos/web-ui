@@ -459,7 +459,7 @@ function parseIcsVtodo(rawLines, tzResolver) {
     // one cannot carry it however the file was written.
     let rruleLine = find('RRULE');
     let recur = (dueLine && rruleLine)
-        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, due && !dueAllDay ? due : null) : null;
+        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, due && !dueAllDay ? dueLine.value : null) : null;
     if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
@@ -659,8 +659,8 @@ function makeTzResolver(fileVTimeZones) {
     };
 }
 
-// start: the series' first start if it has a time of day, which its UNTIL is measured against
-function parseIcsRRuleValue(value, dtstartTzid, tzResolver, start) {
+// startValue: DTSTART's (a task's DUE's) value as written if it has a time of day, the frame its UNTIL is measured in
+function parseIcsRRuleValue(value, dtstartTzid, tzResolver, startValue) {
     let freqMap = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
     let props = {};
     value.split(';').forEach(function (p) {
@@ -758,12 +758,24 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver, start) {
         if (parsed) {
             recur.end = 'until';
             let last = parsed.date;
-            // UNTIL bounds the starts (RFC 5545 3.3.10): one earlier on its own day than the series' time of
-            // day - as a UTC end of day is, read east of Greenwich - leaves that day out
-            if (start && !parsed.allDay) {
-                let atSeriesTime = new Date(last.getFullYear(), last.getMonth(), last.getDate(),
-                    start.getHours(), start.getMinutes(), start.getSeconds());
-                if (atSeriesTime > last) last = addDays(last, -1);
+            // UNTIL bounds the starts (RFC 5545 3.3.10), so the last day it lets in is the latest whose start, at
+            // the series' time of day in DTSTART's own frame (UTC, its TZID, or floating), is not after it
+            let w = startValue && !parsed.allDay && /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?/.exec(startValue);
+            if (w) {
+                let startOn = function (y, mo, d) {
+                    if (w[7]) return Date.UTC(y, mo, d, +w[4], +w[5], +w[6]);
+                    let ms = dtstartTzid && tzResolver ? tzResolver(dtstartTzid, y, mo, d, +w[4], +w[5], +w[6]) : null;
+                    return ms !== null ? ms : new Date(y, mo, d, +w[4], +w[5], +w[6]).getTime();
+                };
+                // a day of any frame's calendar is within two of UNTIL's day in UTC
+                for (let k = 1; k >= -2; k--) {
+                    let day = new Date(Date.UTC(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate() + k));
+                    let ms = startOn(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate());
+                    if (ms <= parsed.date.getTime()) {
+                        last = new Date(ms);
+                        break;
+                    }
+                }
             }
             recur.until = toDateInputValue(last);
         }
@@ -832,7 +844,7 @@ function parseIcsVevent(rawLines, tzResolver) {
     }
 
     let rruleLine = find('RRULE');
-    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver, allDay ? null : start) : null;
+    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver, allDay ? null : dtstartLine.value) : null;
     // Dates a series adds to its rule, or the whole of one another client lists date by
     // date. Of a PERIOD only the start is kept: an occurrence here lasts as long as the rest.
     let rdates = [];

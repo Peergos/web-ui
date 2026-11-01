@@ -1515,19 +1515,16 @@ function truncateMasterSeries(master) {
         replaceMasterSeries(master, masterRecur);
         return;
     }
+    let excluded = masterRecur.exdates || [];
     let left = (masterRecur.rdates || []).concat(masterRecur.dtstart < cut ? [masterRecur.dtstart] : [])
-        .filter(function (s, i, all) { return all.indexOf(s) === i; }).sort();
+        .filter(function (s, i, all) { return all.indexOf(s) === i && excluded.indexOf(s) < 0; }).sort();
     if (!left.length) {
         removeAndPersist(master);
         return;
     }
-    masterRecur.freq = null;
-    masterRecur.end = 'never';
-    masterRecur.until = null;
-    masterRecur.count = null;
-    masterRecur.dtstart = left[0];
-    masterRecur.rdates = left.slice(1);
-    replaceMasterSeries(master, masterRecur);
+    // what a file of listed dates alone parses to: nothing of the rule it had stays
+    replaceMasterSeries(master, { freq: null, interval: 1, end: 'never', until: null, count: null,
+        exdates: [], dtstart: left[0], rdates: left.slice(1) });
 }
 
 // --- Drag to move ---------------------------------------------------------
@@ -1567,7 +1564,7 @@ function moveOccurrence(ev, scope, moved) {
         let recur = Object.assign({}, ev.extendedProps.recur);
         let minutes = storedMinutes(toLocalInputValue(moved.start, moved.allDay)) - storedMinutes(toLocalInputValue(ev.start, ev.allDay));
         recur.dtstart = shiftStored(recur.dtstart || toLocalInputValue(ev.start, ev.allDay), minutes, moved.allDay);
-        shiftListedDates(recur, minutes, moved.allDay);
+        shiftListedDates(recur, minutes, moved.allDay, ev.extendedProps.recur.dtstart);
         let payload = buildRecurringEventPayload(ev.id, ev.title, moved.allDay, extra, recur, moved.durationMs);
         ev.remove();
         addAndPersist(payload);
@@ -3908,7 +3905,7 @@ form.addEventListener('submit', function (e) {
                 recur.rdates = was.rdates || [];
                 // to the series' new time of day, and into the form of its new start, all-day or timed
                 if (was.dtstart)
-                    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(was.dtstart), allDay);
+                    shiftListedDates(recur, storedMinutes(recur.dtstart) - storedMinutes(was.dtstart), allDay, was.dtstart);
             }
             data = buildRecurringEventPayload(id, titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay));
         } else {
@@ -4652,8 +4649,8 @@ function sameFolder(a, b) {
 // rule's, and the dialog leaves the weekday and the day of the month it names
 // alone, so a date at the series' time keeps its day; one at a time of its own goes
 // on into the next or the previous day where the move takes it.
-function shiftListedDates(recur, minutes, allDay) {
-    let was = { exdates: recur.exdates, rdates: recur.rdates };
+function shiftListedDates(recur, minutes, allDay, wasDtstart) {
+    let was = { exdates: recur.exdates, rdates: recur.rdates, dtstart: wasDtstart };
     let move = function (list) {
         return (list || []).map(function (s) { return shiftStored(s, minutes, allDay); });
     };
@@ -4662,14 +4659,22 @@ function shiftListedDates(recur, minutes, allDay) {
     keepAddedDays(recur, was, allDay);
 }
 
-// Into the all-day form an excluded time and an added one on the same day become the
-// same date, and an exclusion wins (RFC 5545): the day stays where a date added on it
-// was not itself excluded.
+// Into the all-day form a day is one date, and an exclusion of it wins over anything else
+// on it (RFC 5545). So an added date that was itself excluded is no occurrence and leaves
+// both lists, and an exclusion stays only where it took out one of the rule's own, at the
+// series' time of day, on a day no surviving added date falls on. `was` holds the values
+// the lists were made from, one for one.
 function keepAddedDays(recur, was, allDay) {
-    if (!allDay || !recur.exdates) return;
-    let added = (was.rdates || []).filter(function (s) { return (was.exdates || []).indexOf(s) < 0; })
-        .map(function (s) { return s.slice(0, 10); });
-    recur.exdates = recur.exdates.filter(function (d) { return added.indexOf(d) < 0; });
+    if (!allDay) return;
+    let wasEx = was.exdates || [], wasAdded = was.rdates || [];
+    let excludedAddition = function (s) { return wasAdded.indexOf(s) >= 0 && wasEx.indexOf(s) >= 0; };
+    let seriesTime = storedMinutes(was.dtstart);
+    let rdates = (recur.rdates || []).filter(function (d, i) { return !excludedAddition(wasAdded[i]); });
+    if (recur.exdates) recur.exdates = recur.exdates.filter(function (d, i) {
+        let s = wasEx[i];
+        return !excludedAddition(s) && (s.length === 10 || storedMinutes(s) === seriesTime) && rdates.indexOf(d) < 0;
+    });
+    if (recur.rdates) recur.rdates = rdates;
 }
 
 // Minutes into its day of a stored value. A bare date is an RFC 5545 DATE, which
@@ -4715,14 +4720,12 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     let added = was.rdates || [];
     let ownMove = storedMinutes(recur.dtstart) - storedMinutes(cut);
     let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
-    let take = function (list) {
-        return (list || []).filter(function (s) { return s > cut; }).map(function (s) {
-            return shiftStored(s, added.indexOf(s) >= 0 ? ownMove : ruleMove, allDay);
-        });
-    };
-    recur.exdates = take(was.exdates);
-    recur.rdates = take(was.rdates);
-    keepAddedDays(recur, was, allDay);
+    let after = function (list) { return (list || []).filter(function (s) { return s > cut; }); };
+    let shift = function (s) { return shiftStored(s, added.indexOf(s) >= 0 ? ownMove : ruleMove, allDay); };
+    let exdates = after(was.exdates), rdates = after(was.rdates);
+    recur.exdates = exdates.map(shift);
+    recur.rdates = rdates.map(shift);
+    keepAddedDays(recur, { exdates: exdates, rdates: rdates, dtstart: was.dtstart }, allDay);
     if (added.indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }

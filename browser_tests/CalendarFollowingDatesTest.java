@@ -207,6 +207,15 @@ public class CalendarFollowingDatesTest {
             }, 60_000);
             CalendarApp.assertTimeIs(kept, "DTSTART", wed.atTime(15, 0));
             assertListed(kept, "RDATE", fri.plusDays(1), "T003000", "the date added that week");
+            // and it is a series of those dates as it stands, before any reload: its dialog opens
+            weekShowing(d, wed);
+            CalendarApp.waitInFrame(d, "the Wednesday left", CalendarDragTest.inColumn(wed.toString(), ownTime), 30_000);
+            CalendarClockChangeTest.openOn(d, ownTime, wed);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the dialog of the dates left",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("event-cancel") + "return 1;");
             CalendarClockChangeTest.reload(d, wed);
             CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the parts on the grid", CalendarSeriesTest.drawn(ownTime), 30_000);
