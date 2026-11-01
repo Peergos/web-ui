@@ -448,11 +448,6 @@ function parseIcsVtodo(rawLines, tzResolver) {
     let dueLine = find('DUE');
     let due = null;
     let dueAllDay = true;
-    // A repeating task: the rule counts from the due date, so a task without
-    // one cannot carry it however the file was written.
-    let rruleLine = find('RRULE');
-    let recur = (dueLine && rruleLine)
-        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver) : null;
     if (dueLine) {
         let parsed = parseIcsDateValue(dueLine.value, dueLine.params, tzResolver);
         if (parsed) {
@@ -460,6 +455,11 @@ function parseIcsVtodo(rawLines, tzResolver) {
             dueAllDay = parsed.allDay;
         }
     }
+    // A repeating task: the rule counts from the due date, so a task without
+    // one cannot carry it however the file was written.
+    let rruleLine = find('RRULE');
+    let recur = (dueLine && rruleLine)
+        ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, due && !dueAllDay ? due : null) : null;
     if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
@@ -659,7 +659,8 @@ function makeTzResolver(fileVTimeZones) {
     };
 }
 
-function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
+// start: the series' first start if it has a time of day, which its UNTIL is measured against
+function parseIcsRRuleValue(value, dtstartTzid, tzResolver, start) {
     let freqMap = { DAILY: 'daily', WEEKLY: 'weekly', MONTHLY: 'monthly', YEARLY: 'yearly' };
     let props = {};
     value.split(';').forEach(function (p) {
@@ -756,7 +757,15 @@ function parseIcsRRuleValue(value, dtstartTzid, tzResolver) {
         let parsed = parseIcsDateValue(props.UNTIL, dtstartTzid ? { TZID: dtstartTzid } : {}, tzResolver);
         if (parsed) {
             recur.end = 'until';
-            recur.until = toDateInputValue(parsed.date);
+            let last = parsed.date;
+            // UNTIL bounds the starts (RFC 5545 3.3.10): one earlier on its own day than the series' time of
+            // day - as a UTC end of day is, read east of Greenwich - leaves that day out
+            if (start && !parsed.allDay) {
+                let atSeriesTime = new Date(last.getFullYear(), last.getMonth(), last.getDate(),
+                    start.getHours(), start.getMinutes(), start.getSeconds());
+                if (atSeriesTime > last) last = addDays(last, -1);
+            }
+            recur.until = toDateInputValue(last);
         }
     }
     recur.sourceFields = recurFormFields(recur);
@@ -823,7 +832,7 @@ function parseIcsVevent(rawLines, tzResolver) {
     }
 
     let rruleLine = find('RRULE');
-    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver) : null;
+    let recur = rruleLine ? parseIcsRRuleValue(rruleLine.value, dtstartLine.params.TZID, tzResolver, allDay ? null : start) : null;
     // Dates a series adds to its rule, or the whole of one another client lists date by
     // date. Of a PERIOD only the start is kept: an occurrence here lasts as long as the rest.
     let rdates = [];

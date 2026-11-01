@@ -833,10 +833,10 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     return 'RRULE:' + parts.concat(rruleEndParts(recur, allDay, tzid)).join(';');
 }
 
-// RFC 5545 has an UNTIL name the last start, of DTSTART's type: a date for an all-day
-// series, a time otherwise. So a rule kept as the file had it is written with a new end
-// once the series has moved to another time of day or turned all-day or timed; one that
-// did neither keeps the file's own.
+// RFC 5545 has an UNTIL bound the starts, in DTSTART's type: a date for an all-day series,
+// a time otherwise. So a rule kept as the file had it is written with a new end once the
+// series has moved to another time of day or turned all-day or timed; one that did
+// neither keeps the file's own.
 function untilFitsStart(recur) {
     return recur.end !== 'until' || String(recur.dtstart).slice(10) === recur.sourceFields.startTime;
 }
@@ -1498,26 +1498,35 @@ function excludeOccurrenceFromMaster(master) {
 }
 
 // Shared by "delete this and following" and "edit this and following".
-// Ends the series at the occurrence before the split point, or removes
-// it outright if the split point is the first occurrence.
+// Ends the series at the occurrence before the split point. With none of
+// its rule's dates left before it, its start and the dates it adds may
+// still be, which RFC 5545 counts as occurrences too: those stay, as a
+// series of listed dates. With nothing left it is removed outright.
 function truncateMasterSeries(master) {
     let masterRecur = Object.assign({}, master.extendedProps.recur);
     let cut = toLocalInputValue(master.start, master.allDay);
     // Dates the series adds from here on go with the rest of it; the earlier ones stay.
     if (masterRecur.rdates) masterRecur.rdates = masterRecur.rdates.filter(function (s) { return s < cut; });
-    if (!masterRecur.freq) {
-        if (masterRecur.dtstart >= cut) removeAndPersist(master);
-        else replaceMasterSeries(master, masterRecur);
+    let untilBoundary = masterRecur.freq && previousOccurrenceBoundary(masterRecur, master.allDay, master.start);
+    if (untilBoundary) {
+        masterRecur.end = 'until';
+        masterRecur.until = toDateInputValue(untilBoundary);
+        masterRecur.count = null;
+        replaceMasterSeries(master, masterRecur);
         return;
     }
-    let untilBoundary = previousOccurrenceBoundary(masterRecur, master.allDay, master.start);
-    if (!untilBoundary) {
+    let left = (masterRecur.rdates || []).concat(masterRecur.dtstart < cut ? [masterRecur.dtstart] : [])
+        .filter(function (s, i, all) { return all.indexOf(s) === i; }).sort();
+    if (!left.length) {
         removeAndPersist(master);
         return;
     }
-    masterRecur.end = 'until';
-    masterRecur.until = toDateInputValue(untilBoundary);
+    masterRecur.freq = null;
+    masterRecur.end = 'never';
+    masterRecur.until = null;
     masterRecur.count = null;
+    masterRecur.dtstart = left[0];
+    masterRecur.rdates = left.slice(1);
     replaceMasterSeries(master, masterRecur);
 }
 
@@ -4644,11 +4653,23 @@ function sameFolder(a, b) {
 // alone, so a date at the series' time keeps its day; one at a time of its own goes
 // on into the next or the previous day where the move takes it.
 function shiftListedDates(recur, minutes, allDay) {
+    let was = { exdates: recur.exdates, rdates: recur.rdates };
     let move = function (list) {
         return (list || []).map(function (s) { return shiftStored(s, minutes, allDay); });
     };
     if (recur.exdates) recur.exdates = move(recur.exdates);
     if (recur.rdates) recur.rdates = move(recur.rdates);
+    keepAddedDays(recur, was, allDay);
+}
+
+// Into the all-day form an excluded time and an added one on the same day become the
+// same date, and an exclusion wins (RFC 5545): the day stays where a date added on it
+// was not itself excluded.
+function keepAddedDays(recur, was, allDay) {
+    if (!allDay || !recur.exdates) return;
+    let added = (was.rdates || []).filter(function (s) { return (was.exdates || []).indexOf(s) < 0; })
+        .map(function (s) { return s.slice(0, 10); });
+    recur.exdates = recur.exdates.filter(function (d) { return added.indexOf(d) < 0; });
 }
 
 // Minutes into its day of a stored value. A bare date is an RFC 5545 DATE, which
@@ -4701,6 +4722,7 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     };
     recur.exdates = take(was.exdates);
     recur.rdates = take(was.rdates);
+    keepAddedDays(recur, was, allDay);
     if (added.indexOf(cut) >= 0)
         recur.rdates.unshift(recur.dtstart);
 }

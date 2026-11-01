@@ -74,9 +74,10 @@ public class CalendarMidnightClockChangeTest {
 
             // --- a series moved into the hour the clocks skip ---------------------------------------
             // the deleted occurrence on the change day goes to 00:30, which that day doesn't have; the stored time
-            // stays 00:30, which RFC 5545 reads with the offset before the gap, rather than turning into 01:30, which
-            // names no occurrence of the series. The file is what is checked: read back, this app turns a skipped
-            // time into another one, so its grid can't show the exclusion after a reload.
+            // stays 00:30, the series' own time as written, rather than the 01:30 a Date makes of it. RFC 5545 reads
+            // the two as one instant, the offset before the gap applying to 00:30, but an exclusion matched as text
+            // against the rule's dates needs the rule's time. The file is what is checked: read back, this app turns
+            // a skipped time into another one, so its grid can't show the exclusion after a reload.
             LocalDate from = changeDay.minusDays(3);
             CalendarApp.write(d, recurring, "skipped.ics", CalendarClockChangeTest.vevent("skipped", "Late shift",
                     "DTSTART;TZID=" + zone + ":" + from.format(BASIC) + "T233000",

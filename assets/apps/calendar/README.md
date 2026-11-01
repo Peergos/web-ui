@@ -332,9 +332,10 @@ Two rules keep what is written stable:
   itself in is the baseline that decides, since a rule the form cannot show
   whole does not come back out of them unaltered. So renaming such an event,
   moving it, or excluding one occurrence leaves its rule alone - all but its
-  `UNTIL`, which names the last start in the start's own type (RFC 5545), and so
-  is written anew once the series moves to another time of day or turns all-day
-  or timed. An import says how many entries it could only show simplified.
+  `UNTIL`, which bounds the starts and takes the start's own type (RFC 5545), and
+  so is written anew, at the last day it lets in, once the series moves to
+  another time of day or turns all-day or timed. An import says how many
+  entries it could only show simplified.
 
 Every date the app computes for itself - a reminder's occurrences, the boundary
 of a "this and following" split, a repeating task's next due date - goes through
