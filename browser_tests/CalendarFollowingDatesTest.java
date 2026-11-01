@@ -122,6 +122,38 @@ public class CalendarFollowingDatesTest {
             if (drawn.contains(deleted.toString()))
                 throw new AssertionError("The deleted occurrence is back on " + deleted + ": " + drawn);
             System.out.println("  ok   edited: the series went to 10:00 with its later dates, and draws as it should: " + drawn);
+
+            // --- from an added date, moved to another day in the dialog -----------------------------
+            // the added date is the new part's start, so it goes where the start goes, not where it was
+            String movedAdded = "Moved added date";
+            LocalDate added = first.plusDays(9);
+            LocalDate moveTo = added.plusDays(1);
+            CalendarApp.write(d, recurring, "moved-added.ics", CalendarClockChangeTest.vevent("moved-added", movedAdded,
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;TZID=" + zone + ":" + added.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, added);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series with its added date", CalendarSeriesTest.drawn(movedAdded), 30_000);
+            CalendarClockChangeTest.openOn(d, movedAdded, added);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-date", moveTo.toString())
+                    + CalendarApp.setField("event-end-date", moveTo.toString()) + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String moved = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("moved-added.ics"), movedAdded));
+            CalendarApp.assertTimeIs(moved, "DTSTART", moveTo.atTime(9, 0));
+            assertNotListed(moved, "RDATE", added, "the added date the split was moved off");
+            CalendarApp.awaitStored(d, recurring, "moved-added.ics", "UNTIL=");
+            CalendarClockChangeTest.reload(d, added);
+            CalendarApp.waitInFrame(d, "the moved part on the grid", CalendarSeriesTest.drawn(movedAdded), 30_000);
+            List<String> movedDrawn = CalendarApp.occurrenceDates(d, movedAdded);
+            if (! movedDrawn.contains(moveTo.toString()) || movedDrawn.contains(added.toString()))
+                throw new AssertionError("Moved from " + added + " to " + moveTo + ", the occurrence is drawn on " + movedDrawn);
+            System.out.println("  ok   an added date moved to " + moveTo + " in the dialog went there: " + movedDrawn);
             System.out.println("PASS");
         } finally {
             if (own != null)

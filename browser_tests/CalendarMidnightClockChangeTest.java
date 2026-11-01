@@ -42,8 +42,7 @@ public class CalendarMidnightClockChangeTest {
             LocalDate changeDay = nextMidnightChange(zone);
             if (changeDay == null || ! Boolean.TRUE.equals(d.script("return new Date(arguments[0], arguments[1] - 1, arguments[2], 0, 0).getHours() === 1;",
                     changeDay.getYear(), changeDay.getMonthValue(), changeDay.getDayOfMonth()))) {
-                System.out.println("  the browser's " + zone + " has no clock change at midnight in the year ahead, nothing to check");
-                System.out.println("PASS");
+                System.out.println("SKIP the browser's " + zone + " has no clock change at midnight in the year ahead");
                 return;
             }
             String recurring = CalendarApp.directoryOf(d, me.name()) + "/recurring";
@@ -72,6 +71,34 @@ public class CalendarMidnightClockChangeTest {
                 throw new AssertionError("Turned into a series at 10:00 from " + changeDay + " (clocks go forward at midnight in "
                         + zone + "), its deleted " + deleted + " should be excluded at 10:00, but the file says " + exdate + ":\n" + timed);
             System.out.println("  ok   the deleted occurrence took the new time: " + exdate);
+
+            // --- a series moved into the hour the clocks skip ---------------------------------------
+            // the deleted occurrence on the change day goes to 00:30, which that day doesn't have; the stored time
+            // stays 00:30, which RFC 5545 reads with the offset before the gap, rather than turning into 01:30, which
+            // names no occurrence of the series. The file is what is checked: this app's grid draws an occurrence at
+            // a skipped time whatever its EXDATE says.
+            LocalDate from = changeDay.minusDays(3);
+            CalendarApp.write(d, recurring, "skipped.ics", CalendarClockChangeTest.vevent("skipped", "Late shift",
+                    "DTSTART;TZID=" + zone + ":" + from.format(BASIC) + "T233000",
+                    "DTEND;TZID=" + zone + ":" + from.format(BASIC) + "T235000",
+                    "RRULE:FREQ=DAILY;COUNT=7",
+                    "EXDATE;TZID=" + zone + ":" + changeDay.format(BASIC) + "T233000"));
+            CalendarClockChangeTest.reload(d, changeDay);
+            CalendarApp.waitInFrame(d, "the late series on the grid", CalendarSeriesTest.drawn("Late shift"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Late shift", from);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-time", "00:30")
+                    + CalendarApp.setField("event-end-time", "00:50") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String early = CalendarApp.awaitStored(d, recurring, "skipped.ics", from.format(BASIC) + "T003000");
+            String skippedExdate = CalendarApp.property(early, "EXDATE");
+            if (skippedExdate == null || ! skippedExdate.contains(changeDay.format(BASIC) + "T003000"))
+                throw new AssertionError("Moved to 00:30, the deleted " + changeDay + " should be excluded at 00:30, but the file says "
+                        + skippedExdate + ":\n" + early);
+            System.out.println("  ok   moved into the skipped hour, the deleted occurrence is still named at 00:30: " + skippedExdate);
             System.out.println("PASS");
         } finally {
             if (own != null)

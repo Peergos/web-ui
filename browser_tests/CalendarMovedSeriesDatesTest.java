@@ -102,6 +102,31 @@ public class CalendarMovedSeriesDatesTest {
             if (after.contains(deleted.toString()))
                 throw new AssertionError("The deleted occurrence is back on " + deleted + " once the start moved: " + after);
             System.out.println("  ok   a start moved a day keeps the deleted occurrence on its day: " + kept);
+
+            // --- an added date at a time of its own, when the series turns all-day ------------------
+            // an all-day value has no time, so it keeps its own day rather than moving by the series' 09:00
+            String zone = String.valueOf(d.script("return Intl.DateTimeFormat().resolvedOptions().timeZone;"));
+            LocalDate monday = first.with(java.time.temporal.TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
+            LocalDate early = monday.plusDays(9);
+            CalendarApp.write(d, recurring, "turned.ics", CalendarClockChangeTest.vevent("turned", "Turned all-day",
+                    "DTSTART;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + monday.format(DateTimeFormatter.BASIC_ISO_DATE) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;TZID=" + zone + ":" + early.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000"));
+            CalendarClockChangeTest.reload(d, monday);
+            CalendarApp.waitInFrame(d, "the series to turn all-day", CalendarSeriesTest.drawn("Turned all-day"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Turned all-day", monday);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("event-all-day") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String allDay = CalendarApp.awaitStored(d, recurring, "turned.ics", "DTSTART;VALUE=DATE:");
+            String rdate = CalendarApp.property(allDay, "RDATE");
+            if (rdate == null || ! rdate.contains(early.format(DateTimeFormatter.BASIC_ISO_DATE)))
+                throw new AssertionError("Turned all-day, the date added at 08:00 on " + early + " should stay on its day, but the file lists " + rdate + ":\n" + allDay);
+            System.out.println("  ok   an added date at 08:00 kept its day when the series turned all-day: " + rdate);
             System.out.println("PASS");
         } finally {
             if (own != null)
