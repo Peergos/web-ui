@@ -128,6 +128,10 @@
                                     <a v-if="entry[0].displayFilename" v-on:click="viewFolder(entry[0])" class="feed-link">
                                         <span class="feed-link__name" :title="entry[0].link">{{ entry[0].name }}</span>
                                     </a>
+                                    <button v-if="introductions[entry[0].link] != null" type="button" class="pg-btn feed-introduce"
+                                        @click="requestViaIntroduction(entry[0])">
+                                        {{ translate("NEWSFEED.INTRODUCED").replace("$OWNER", entry[0].owner).replace("$SHARER", entry[0].sharer) }}
+                                    </button>
                                 </div>
                                 <div v-if="!entry[0].isPost && !entry[0].isMedia" class="feed-preview">
                                     <FeedTile v-if="entry[0].tile != null" :key="entry[0].link" :entry="entry[0]" :tileApp="entry[0].tile" :budget="tileBudget" @open="openTile">
@@ -241,6 +245,8 @@ const routerMixins = require("../mixins/router/index.js");
 const mixins = require("../mixins/mixins.js");
 const errors = require("../mixins/errors/index.js");
 
+const UriDecoder = require("../mixins/uridecoder/index.js");
+
 module.exports = {
     components: {
 		SocialPost,
@@ -298,6 +304,8 @@ module.exports = {
             knownChats: [],
             messenger: null,
             sharedItemsProcessedMap: new Map(),
+            // the introduction each reshared item of a stranger's came with, by its path
+            introductions: {},
             entryTree: null,
             showAppSandbox: false,
             sandboxAppName: '',
@@ -326,7 +334,7 @@ module.exports = {
         }
     },
     props: [],
-	mixins:[routerMixins, mixins, i18n, fileIcon, errors],
+	mixins:[routerMixins, mixins, i18n, fileIcon, errors, UriDecoder],
   	created: function() {
         let that = this;
         this.entryTree = new this.Tree(this);
@@ -1391,7 +1399,31 @@ module.exports = {
                 hiddenBlocked: hiddenBlocked,
                 tile: hiddenBlocked || isPost || isMedia || isChat ? null : this.tileFor(file, filePath)
             };
+            if (! hiddenBlocked)
+                this.lookUpIntroduction(item, entry);
             return item;
+        },
+        // A stranger's item a friend reshared may come with the owner's introduction, to ask them through it. Only
+        // the friend's own files are read here: the owner's server isn't asked until the request is sent.
+        lookUpIntroduction: function(item, entry) {
+            if (entry == null || item.owner == this.context.username || item.owner == item.sharer
+                    || item.sharer == this.context.username || this.canLoadProfile(item.owner))
+                return;
+            let that = this;
+            this.context.getIntroduction(entry).thenApply(link => {
+                if (link != null)
+                    that.introductions[item.link] = link;
+            });
+        },
+        requestViaIntroduction: function(row) {
+            let that = this;
+            let link = this.introductions[row.link];
+            this.context.sendFollowRequestToLink(link).thenApply(sent => {
+                delete that.introductions[row.link];
+                that.$toast(that.translate("SOCIAL.SENT"));
+            }).exceptionally(t => {
+                that.$toast.error(that.uriDecode(t.getMessage()), {timeout: false, id: 'introduction'});
+            });
         },
         getFileIconClass: function(file) {
             return this.getFileIcon(file);
