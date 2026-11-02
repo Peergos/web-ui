@@ -89,7 +89,9 @@
 			<ul v-if="socialData.pending.length > 0" id="follow-request-table-id" class="social-people">
 				<li v-for="req in socialData.pending" class="social-person">
 					<span class="social-person__initial" aria-hidden="true">{{ initialOf(req.getEntry().ownerName) }}</span>
-					<span class="social-person__name" :title="req.getEntry().ownerName">{{ req.getEntry().ownerName }}</span>
+					<span class="social-person__name" :title="req.getEntry().ownerName">{{ req.getEntry().ownerName }}
+						<span v-if="req.getIntroducer() != null" class="social-person__via">{{ translate("SOCIAL.INTRODUCED").replace("$NAME", req.getIntroducer()) }}</span>
+					</span>
 					<span class="social-person__actions">
 						<button type="button" class="pg-btn pg-btn--primary" @click="acceptAndReciprocate(req)">{{ translate("SOCIAL.ALLOWANDFOLLOW") }}</button>
 						<button type="button" class="pg-btn" @click="accept(req)">{{ translate("SOCIAL.ALLOW") }}</button>
@@ -874,6 +876,13 @@ module.exports = {
 	display: block;
 	width: 100%;
 	height: auto;
+}
+
+.social-person__via {
+	display: block;
+	font-size: var(--text-small);
+	font-weight: var(--regular);
+	color: var(--text-color);
 }
 
 .social-link__mine {

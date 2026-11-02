@@ -30,6 +30,15 @@
 				</label>
 				<button type="button" class="pg-btn pg-btn--primary" :disabled="busy" @click="create()">{{ translate("FRIENDLINK.CREATE") }}</button>
 			</div>
+			<div class="friend-link__introductions">
+				<label class="pg-switch">
+					<input type="checkbox" v-model="introductions" :disabled="introductions == null || busy"
+						@change="setIntroductions()" autocomplete="off">
+					<span class="pg-switch__track"></span>
+					{{ translate("FRIENDLINK.INTRODUCTIONS") }}
+				</label>
+				<p class="pg-note">{{ translate("FRIENDLINK.INTRODUCTIONS.BLURB") }}</p>
+			</div>
 			<Spinner v-if="links == null"></Spinner>
 			<template v-else-if="links.length > 0">
 				<h4>{{ translate("FRIENDLINK.YOURS") }}</h4>
@@ -71,6 +80,7 @@ module.exports = {
             busy: false,
             shownText: null,
             shownQr: null,
+            introductions: null,
         };
     },
     computed: {
@@ -79,7 +89,11 @@ module.exports = {
         ]),
     },
     mounted() {
+        let that = this;
         this.refresh();
+        this.context.getIntroductionsEnabled().thenApply(enabled => {
+            that.introductions = enabled;
+        });
     },
     methods: {
         refresh() {
@@ -115,6 +129,19 @@ module.exports = {
         display(text) {
             this.shownText = text;
             this.shownQr = peergos.shared.SecretLinkQRCode.generate(text).getBase64Thumbnail();
+        },
+        setIntroductions() {
+            let that = this;
+            let enabled = this.introductions;
+            this.busy = true;
+            this.context.setIntroductionsEnabled(enabled).thenApply(x => {
+                that.busy = false;
+            }).exceptionally(t => {
+                console.log(t);
+                that.busy = false;
+                that.introductions = ! enabled;
+                that.$toast.error(that.translate("FRIENDLINK.ERROR.INTRODUCTIONS"), {timeout: false});
+            });
         },
         revoke(link) {
             let that = this;
@@ -200,6 +227,17 @@ module.exports = {
 
 .friend-link__create .app-modal__field {
 	align-self: stretch;
+}
+
+.friend-link__introductions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+}
+
+.friend-link__introductions .pg-note {
+	margin: 0;
 }
 
 .friend-link__list {
