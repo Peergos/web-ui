@@ -124,7 +124,8 @@ public class CalendarFollowingDatesTest {
             System.out.println("  ok   edited: the series went to 10:00 with its later dates, and draws as it should: " + drawn);
 
             // --- from an added date, moved to another day in the dialog -----------------------------
-            // the added date is the new part's start, so it goes where the start goes, not where it was
+            // the added date goes where the dialog put it, listed before the new part's start, which is the rule's
+            // next date after it; it isn't drawn where it was any more
             String movedAdded = "Moved added date";
             LocalDate added = first.plusDays(9);
             LocalDate moveTo = added.plusDays(1);
@@ -145,7 +146,8 @@ public class CalendarFollowingDatesTest {
                     + CalendarApp.setField("event-end-date", moveTo.toString()) + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
             String moved = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("moved-added.ics"), movedAdded));
-            CalendarApp.assertTimeIs(moved, "DTSTART", moveTo.atTime(9, 0));
+            CalendarApp.assertTimeIs(moved, "DTSTART", added.with(TemporalAdjusters.next(DayOfWeek.MONDAY)).atTime(9, 0));
+            assertListed(moved, "RDATE", moveTo, "T090000", "the added date, where the dialog moved it");
             assertNotListed(moved, "RDATE", added, "the added date the split was moved off");
             CalendarApp.awaitStored(d, recurring, "moved-added.ics", "UNTIL=");
             CalendarClockChangeTest.reload(d, added);
@@ -156,8 +158,9 @@ public class CalendarFollowingDatesTest {
             System.out.println("  ok   an added date moved to " + moveTo + " in the dialog went there: " + movedDrawn);
 
             // --- from an added date at a time of its own, dragged an hour on ----------------------
-            // the new part's rule falls at its start's time, 15:00, so the deleted Monday goes there too; the date
-            // added later that week at 23:30 moves an hour as the dragged one did, into the next day
+            // the rule goes on as it was, from the next Monday at 09:00, with the dragged Wednesday listed at 15:00
+            // before it, and the deleted Monday stays at 09:00; the date added later that week at 23:30 moves an hour
+            // as the dragged one did, into the next day
             String ownTime = "Own time";
             LocalDate wed = first.plusDays(2);
             LocalDate fri = first.plusDays(4);
@@ -179,14 +182,16 @@ public class CalendarFollowingDatesTest {
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
             String ownFile = newSeries(d, recurring, Set.of("own-time.ics"), ownTime);
             String ownPart = CalendarApp.read(d, recurring, ownFile);
-            assertListed(ownPart, "EXDATE", gone, "T150000", "the deleted Monday, where the new part's rule now falls");
+            CalendarApp.assertTimeIs(ownPart, "DTSTART", first.plusWeeks(1).atTime(9, 0));
+            assertListed(ownPart, "RDATE", wed, "T150000", "the dragged Wednesday, before the new part's start");
+            assertListed(ownPart, "EXDATE", gone, "T090000", "the deleted Monday, where the rule still falls");
             assertListed(ownPart, "RDATE", fri.plusDays(1), "T003000", "the date added at 23:30 on " + fri + ", an hour on");
             CalendarClockChangeTest.reload(d, gone);
             CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the split series", CalendarSeriesTest.drawn(ownTime), 30_000);
             if (CalendarApp.occurrenceDates(d, ownTime).contains(gone.toString()))
                 throw new AssertionError("The deleted " + gone + " is back after the split: " + CalendarApp.occurrenceDates(d, ownTime));
-            System.out.println("  ok   split at an added date at its own time: the deleted Monday moved with the rule, the later added date an hour");
+            System.out.println("  ok   split at an added date at its own time: the rule went on from the next Monday, the later added date an hour");
 
             // split that part again at the next Monday: none of its rule's dates comes before it, but its start and
             // the date it added that week do, and they stay where they are
@@ -197,7 +202,7 @@ public class CalendarFollowingDatesTest {
             weekShowing(d, nextMonday);
             CalendarApp.waitInFrame(d, "the next Monday in its week", CalendarDragTest.inColumn(nextMonday.toString(), ownTime), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(ownTime, nextMonday.toString(),
-                    CalendarDragTest.slotDistance("15:00:00", "16:00:00"), false), "following");
+                    CalendarDragTest.slotDistance("09:00:00", "10:00:00"), false), "following");
             newSeries(d, recurring, Set.of("own-time.ics", ownFile), ownTime);
             String kept = d.waitUntil("the part from the added date to lose its rule", () -> {
                 if (! CalendarApp.list(d, recurring).contains(ownFile))
@@ -244,8 +249,9 @@ public class CalendarFollowingDatesTest {
             System.out.println("  ok   deleted from its first drawn Monday, a series starting off its rule is gone");
 
             // --- a split at an added time on a day whose rule time is deleted -------------------------------
-            // the rule's 15:00 is deleted that day and 09:00 added; split there, the deleted 15:00 moves with the rule to
-            // 09:00, where the new part's own start is, and must not take it out
+            // the rule's 15:00 is deleted that day and 09:00 added; split there, the new part goes on from the next day's
+            // 15:00 with the 09:00 listed before it, and its count is of the rule's dates from there, the deleted one
+            // too: the series ends on the day it did
             LocalDate swapDay = first.plusDays(3);
             CalendarApp.write(d, recurring, "swap.ics", CalendarClockChangeTest.vevent("swap", "Swapped day",
                     "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T150000",
@@ -264,14 +270,17 @@ public class CalendarFollowingDatesTest {
             CalendarApp.inFrame(d, CalendarApp.setField("event-title", "Swapped later") + "return 1;");
             CalendarApp.save(d, "event-save", "event-modal-backdrop");
             String later = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("swap.ics"), "Swapped later"));
-            String laterEx = CalendarApp.property(later, "EXDATE");
-            if (laterEx != null && laterEx.contains(swapDay.format(BASIC) + "T090000"))
-                throw new AssertionError("The new part's own start on " + swapDay + " is excluded:\n" + later);
+            CalendarApp.assertTimeIs(later, "DTSTART", swapDay.plusDays(1).atTime(15, 0));
+            assertListed(later, "RDATE", swapDay, "T090000", "the added 09:00 the split started from");
+            if (! String.valueOf(CalendarApp.property(later, "RRULE")).contains("COUNT=6"))
+                throw new AssertionError("Of 10 days, 3 and the deleted one come before the new start, so 6 are left:\n" + later);
             CalendarClockChangeTest.reload(d, swapDay);
+            CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the later part", CalendarSeriesTest.drawn("Swapped later"), 30_000);
-            if (! CalendarApp.occurrenceDates(d, "Swapped later").contains(swapDay.toString()))
-                throw new AssertionError("Split at its 09:00, nothing of the new part is drawn on " + swapDay + ":\n" + later);
-            System.out.println("  ok   split at an added time where the rule's was deleted: the new start is drawn");
+            List<String> laterDays = CalendarApp.occurrenceDates(d, "Swapped later");
+            if (! laterDays.contains(swapDay.toString()) || laterDays.contains(first.plusDays(10).toString()))
+                throw new AssertionError("The new part should draw " + swapDay + " and end on " + first.plusDays(9) + ", but draws " + laterDays + ":\n" + later);
+            System.out.println("  ok   split at an added time where the rule's was deleted: the rule went on from the next day, ending where it did");
 
             // --- a cut that leaves one date --------------------------------------------------------------------
             // the part a split at an added Wednesday makes: its start, listed, and its rule's Mondays. Deleted from the
@@ -400,6 +409,35 @@ public class CalendarFollowingDatesTest {
             CalendarApp.chooseScope(d, "all");
             d.waitUntil("the new part to be deleted", () -> CalendarApp.list(d, recurring).contains(lastPart) ? null : true, 60_000);
             System.out.println("  ok   split at the last of its listed dates, the new part is a series that can be deleted");
+
+            // --- a series of listed dates whose start comes after one of them ---------------------------------
+            // Friday at 10:00 starts it, with Wednesday 08:00 listed before and Saturday 10:00 after. Wednesday dragged
+            // to 09:00 for it and those after takes the Friday and the Saturday along, an hour on
+            LocalDate listedSat = first.plusDays(5);
+            Set<String> known = new HashSet<>(CalendarApp.list(d, recurring));
+            known.add("late-start.ics");
+            CalendarApp.write(d, recurring, "late-start.ics", CalendarClockChangeTest.vevent("late-start", "Late start",
+                    "DTSTART;TZID=" + zone + ":" + fri.format(BASIC) + "T100000",
+                    "DTEND;TZID=" + zone + ":" + fri.format(BASIC) + "T103000",
+                    "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T080000," + listedSat.format(BASIC) + "T100000"));
+            CalendarClockChangeTest.reload(d, wed);
+            CalendarApp.waitInFrame(d, "the late-start list", CalendarSeriesTest.drawn("Late start"), 30_000);
+            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+            weekShowing(d, wed);
+            CalendarApp.waitInFrame(d, "the Wednesday in its week", CalendarDragTest.inColumn(wed.toString(), "Late start"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Late start", wed.toString(),
+                    CalendarDragTest.slotDistance("08:00:00", "09:00:00"), false), "following");
+            String lateStart = d.waitUntil("the new part's file", () -> {
+                for (String name : CalendarApp.list(d, recurring))
+                    if (! known.contains(name) && CalendarApp.read(d, recurring, name).contains("SUMMARY:Late start"))
+                        return CalendarApp.read(d, recurring, name);
+                return null;
+            }, 60_000);
+            assertListed(lateStart, "RDATE", fri, "T110000", "the list's own start, after the split, an hour on");
+            assertListed(lateStart, "RDATE", listedSat, "T110000", "the Saturday, an hour on");
+            System.out.println("  ok   a list split at a date before its start kept the start");
             System.out.println("PASS");
         } finally {
             if (own != null)

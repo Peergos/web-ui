@@ -4691,7 +4691,8 @@ function keepAddedDays(recur, was, allDay) {
     let wasEx = was.exdates || [], wasAdded = was.rdates || [];
     let excludedAddition = function (s) { return wasAdded.indexOf(s) >= 0 && wasEx.indexOf(s) >= 0; };
     let seriesTime = storedMinutes(was.dtstart);
-    let rdates = (recur.rdates || []).filter(function (d, i) { return !excludedAddition(wasAdded[i]); });
+    let rdates = (recur.rdates || []).filter(function (d, i) { return !excludedAddition(wasAdded[i]); })
+        .filter(function (d, i, all) { return all.indexOf(d) === i; });
     if (recur.exdates) recur.exdates = recur.exdates.filter(function (d, i) {
         return storedMinutes(wasEx[i]) === seriesTime && rdates.indexOf(d) < 0;
     });
@@ -4727,21 +4728,47 @@ function storedStartOf(occurrence, recur) {
     return drawn.slice(0, 10) + String(recur.dtstart).slice(10);
 }
 
-// "This and following": the series from the occurrence the change started at, whose
-// start is recur.dtstart now, takes the excluded and added dates after it; the
-// earlier ones stay with the series it is cut from. An added date moves as far as
-// that occurrence did; one excluded as well is no occurrence and goes nowhere. Any
-// other exclusion is of one of the rule's dates, and the rule falls at its new
-// start's time of day, so it moves as far as the rule's time did - the same, unless
-// the split is at an added date at a time of its own. That occurrence is the new
-// start, and listed as well where the new part has a rule (this app draws a start
-// only where the rule falls, and RFC 5545 counts the two as one) or none (a file
-// with neither RRULE nor RDATE reads back as a plain event).
+// The rule's next date drawn after a stored start: the pattern as edited, from the
+// series' own start, within its own end and less its exclusions.
+function nextRuleDateAfter(recur, occurrence, allDay, cut) {
+    let was = occurrence.extendedProps.recur;
+    let rule = Object.assign({}, recur, { dtstart: was.dtstart, end: was.end, until: was.until, count: was.count });
+    let at = function (s) { return toFakeUtc(occurrence.allDay ? new Date(s + 'T00:00') : new Date(s)); };
+    let set = new rrule.RRuleSet();
+    set.rrule(new rrule.RRule(ruleOptions(rule, occurrence.allDay)));
+    (was.exdates || []).forEach(function (s) { set.exdate(at(s)); });
+    let next = set.after(at(cut), false);
+    if (!next) return null;
+    // the count left is of the rule's dates from there on, the excluded ones too (RFC 5545 3.3.10)
+    if (recur.end === 'count' && was.count)
+        recur.count = Math.max(1, was.count - countOccurrencesBefore(rule, occurrence.allDay, fromFakeUtc(next)));
+    return toLocalInputValue(fromFakeUtc(next), allDay);
+}
+
+// "This and following": the series from the occurrence the change started at takes
+// the excluded and added dates after it; the earlier ones stay with the series it is
+// cut from. From one of the rule's dates, the new part starts where that occurrence
+// went, and the rule falls at its time of day, so an exclusion of one of the rule's
+// dates moves as far as the rule's time did. From an added date, the rule goes on as
+// it was, from its next date drawn after the cut, and the moved occurrence is listed
+// before that start (an added date need not follow DTSTART, RFC 5545 3.8.5.2); with
+// no date of the rule's left, the new part is a list of dates. An added date moves as
+// far as the moved occurrence did; one excluded as well is no occurrence and goes
+// nowhere. A list of dates lists its start too, or a file with neither RRULE nor
+// RDATE reads back as a plain event.
 function takeListedDatesFrom(occurrence, recur, allDay) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
-    let added = was.rdates || [];
-    let ownMove = storedMinutes(recur.dtstart) - storedMinutes(cut);
+    // a list of dates is its start and the dates it lists alike, and its start may come after some of them
+    let added = (was.rdates || []).concat(!was.freq && (was.rdates || []).indexOf(was.dtstart) < 0 ? [was.dtstart] : []);
+    let moved = recur.dtstart;
+    let fromAdded = !!recur.freq && added.indexOf(cut) >= 0;
+    if (fromAdded) {
+        let next = nextRuleDateAfter(recur, occurrence, allDay, cut);
+        if (next) recur.dtstart = next;
+        else Object.assign(recur, { freq: null, interval: 1, end: 'never', until: null, count: null });
+    }
+    let ownMove = storedMinutes(moved) - storedMinutes(cut);
     let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
     let after = function (list) { return (list || []).filter(function (s) { return s > cut; }); };
     // An added date that is excluded too is no occurrence (RFC 5545), so neither goes along: moved as
@@ -4749,7 +4776,7 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     // one of the rule's dates as well, and stays as an exclusion of that.
     let excluded = was.exdates || [];
     let seriesTime = storedMinutes(was.dtstart);
-    let rdates = after(was.rdates).filter(function (s) { return excluded.indexOf(s) < 0; });
+    let rdates = after(added).filter(function (s) { return excluded.indexOf(s) < 0; });
     let exdates = after(was.exdates).filter(function (s) {
         return added.indexOf(s) < 0 || storedMinutes(s) === seriesTime;
     });
@@ -4762,11 +4789,11 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
         return d === recur.dtstart || movedAdded.indexOf(d) >= 0;
     });
     exdates = exdates.filter(function (s, i) { return !lands[i]; });
-    recur.exdates = exdates.map(shift);
+    recur.exdates = recur.freq ? exdates.map(shift) : [];
     recur.rdates = movedAdded;
     keepAddedDays(recur, { exdates: exdates, rdates: rdates, dtstart: was.dtstart }, allDay);
-    if (!recur.freq || added.indexOf(cut) >= 0)
-        recur.rdates.unshift(recur.dtstart);
+    if (fromAdded || !recur.freq)
+        recur.rdates.unshift(moved);
 }
 
 // Identifies a stored event to the host: which file, in which calendar
