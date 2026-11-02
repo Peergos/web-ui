@@ -105,7 +105,9 @@
                         <li><a @click="deletePost(currentRow)">{{ translate("DRIVE.DELETE") }}</a></li>
                     </ul>
                     <ul id="friendMenu" v-if="showFriendMenu" class="pg-menu" tabindex="0" @focusout="closeMenus(null)" @keydown.esc="closeMenus(null)" v-bind:style="{top:menutop, left:menuleft}" style="display:block;min-width:100px;">
-                        <li><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
+                        <li v-if="introductions[currentRow.link] != null"><a class="feed-introduce" @click="requestViaIntroduction(currentRow)">
+                            {{ translate("NEWSFEED.INTRODUCED").replace("$OWNER", currentRow.sharer).replace("$SHARER", introductions[currentRow.link].via) }}</a></li>
+                        <li v-else><a @click="sendFriendRequest(currentRow)">{{ translate("NEWSFEED.FRIEND") }}</a></li>
                     </ul>
 
                     <div id="feed" class="feed">
@@ -854,6 +856,7 @@ module.exports = {
                             let socialPost = result.socialPost;
                             accumulator = accumulator.concat({cap: ref.cap, path: fullPath, socialPost: socialPost, file: result.file});
                             let references = socialPost.comments.toArray([]);
+                            references.forEach(ref => that.noteIntroduction(socialPost, ref));
                             let future2 = peergos.shared.util.Futures.incomplete();
                             that.loadAllCommentPosts(references.slice(), future2);
                             future2.thenApply(result => {
@@ -892,6 +895,7 @@ module.exports = {
                 if (post != null) {
                     let references = post.comments.toArray([]);
                     references.forEach(ref => {
+                        that.noteIntroduction(post, ref);
                         let fullRefPath = that.toPathKey(ref.path);
                         if (refs.findIndex(v => that.comparePaths(v.path, fullRefPath)) == -1
                             && sharedPosts.findIndex(v => that.comparePaths(v.path, fullRefPath)) == -1) {
@@ -1412,12 +1416,19 @@ module.exports = {
             let that = this;
             this.context.getIntroduction(entry).thenApply(link => {
                 if (link != null)
-                    that.introductions[item.link] = link;
+                    that.introductions[item.link] = {link: link, via: item.sharer};
             });
+        },
+        // a friend's post carries the introductions of strangers who commented on it
+        noteIntroduction: function(post, ref) {
+            let link = post.getIntroduction(ref);
+            if (link != null)
+                this.introductions[this.toPathKey(ref.path)] = {link: link, via: post.author};
         },
         requestViaIntroduction: function(row) {
             let that = this;
-            let link = this.introductions[row.link];
+            let link = this.introductions[row.link].link;
+            this.showFriendMenu = false;
             this.context.sendFollowRequestToLink(link).thenApply(sent => {
                 delete that.introductions[row.link];
                 that.$toast(that.translate("SOCIAL.SENT"));
