@@ -1487,6 +1487,39 @@ module.exports = {
                 }
             }).exceptionally(failed);
         },
+        // The app only names a member: we find the introduction and ask the user, so an app can't send requests itself
+        confirmIntroduction: function(headerFunc, chatId, member) {
+            let that = this;
+            this.messenger.getChat(chatId).thenCompose(controller => that.messenger.getIntroducers(controller)
+                    .thenApply(introducers => {
+                let via = member == null ? null : introducers.get(member);
+                if (via == null) {
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    return true;
+                }
+                that.confirm_message = that.translate("NEWSFEED.INTRODUCED").replace("$OWNER", member).replace("$SHARER", via) + "?";
+                that.confirm_body = '';
+                that.confirm_consumer_cancel_func = () => {
+                    that.showConfirm = false;
+                    that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                };
+                that.confirm_consumer_func = () => {
+                    that.showConfirm = false;
+                    that.messenger.requestViaIntroduction(controller, member).thenApply(sent => {
+                        that.$toast(that.translate("SOCIAL.SENT"));
+                        that.buildResponse(headerFunc, null, that.CREATE_SUCCESS);
+                    }).exceptionally(t => {
+                        that.showToastError(t.getMessage());
+                        that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+                    });
+                };
+                that.showConfirm = true;
+                return true;
+            })).exceptionally(t => {
+                console.log(t);
+                that.buildResponse(headerFunc, null, that.ACTION_FAILED);
+            });
+        },
         // ask once per run, and only when the app touches the grant, so stale grants of apps not in use never nag
         promptStaleGrant: function(grantId) {
             if (this.staleGrantsPrompted.has(grantId)) {
@@ -3077,15 +3110,22 @@ module.exports = {
                                         }
                                         let chatMembers = updatedController.getMemberNames().toArray();
                                         let friendsInChat = that.friendnames.filter(friend => chatMembers.findIndex(v => v === friend) > -1);
-                                        let response = {
-                                            chatId: chatId,
-                                            startIndex: messageResults.startIndex,
-                                            messages: messages,
-                                            hasFriendsInChat: friendsInChat.length > 0
-                                        };
-                                        let encoder = new TextEncoder();
-                                        let data = encoder.encode(JSON.stringify(response));
-                                        that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                                        // who could introduce us to each member we don't follow, never the link itself
+                                        that.messenger.getIntroducers(updatedController).exceptionally(t => null).thenApply(introducers => {
+                                            let introductions = {};
+                                            if (introducers != null)
+                                                introducers.keySet().toArray([]).forEach(member => introductions[member] = introducers.get(member));
+                                            let response = {
+                                                chatId: chatId,
+                                                startIndex: messageResults.startIndex,
+                                                messages: messages,
+                                                hasFriendsInChat: friendsInChat.length > 0,
+                                                introductions: introductions
+                                            };
+                                            let encoder = new TextEncoder();
+                                            let data = encoder.encode(JSON.stringify(response));
+                                            that.buildResponse(headerFunc, data, that.GET_SUCCESS);
+                                        });
                                     });
                                 });
                             });
@@ -3237,6 +3277,8 @@ module.exports = {
                         } else {
                             that.buildResponse(headerFunc, null, that.ACTION_FAILED);
                         }
+                    } else if (path.endsWith("/introduce") || path.endsWith("/introduce/")) {
+                        this.confirmIntroduction(headerFunc, path.substring(0, path.indexOf("/introduce")), params.get('member'));
                     } else if (path.endsWith("/attachment") || path.endsWith("/attachment/")) {
                         let filename = decodeURIComponent(params.get('filename')).trim();
                         if (filename == null || filename.length == 0) {
