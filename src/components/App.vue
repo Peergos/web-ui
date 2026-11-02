@@ -491,12 +491,22 @@ module.exports = {
         // After the next render, which is when the view of the first screen exists. The drive
         // keeps a list of what to call when its listing is next refreshed; the other views do not.
         afterFirstListing(then) {
+            let done = false;
+            const once = () => {
+                if (done)
+                    return;
+                done = true;
+                then();
+            };
             this.$nextTick(() => {
                 let view = this.$refs.appView;
-                if (view != null && Array.isArray(view.onUpdateCompletion))
-                    view.onUpdateCompletion.push(then);
-                else
-                    setTimeout(then, 1500);
+                if (view != null && Array.isArray(view.onUpdateCompletion)) {
+                    view.onUpdateCompletion.push(once);
+                    // the drive only runs its queue when a listing changes its files, so an empty
+                    // folder, or one that fails to list, would never run it
+                    setTimeout(once, 5000);
+                } else
+                    setTimeout(once, 1500);
             });
         },
         checkForNewerRelease() {
