@@ -2,19 +2,27 @@ import peergos.server.Builder;
 import peergos.shared.Crypto;
 import peergos.shared.NetworkAccess;
 import peergos.shared.crypto.symmetric.SymmetricKey;
+import peergos.shared.display.*;
 import peergos.shared.social.FollowRequestWithCipherText;
 import peergos.shared.social.FriendLink;
+import peergos.shared.social.SharedItem;
+import peergos.shared.social.SocialFeed;
+import peergos.shared.social.SocialPost;
+import peergos.shared.user.SocialState;
 import peergos.shared.user.UserContext;
 import peergos.shared.user.fs.AsyncReader;
+import peergos.shared.user.fs.FileWrapper;
+import peergos.shared.util.Pair;
 import peergos.shared.util.PathUtil;
 
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
 
-/** An introduction passed on with a reshare (remove-pki §9). Carol and Bob became friends through a link, so Carol
- *  holds Bob's introduction; she reshares a file of his to Alice, who is not his friend. Alice's news feed offers to
- *  ask Bob through Carol, Bob's Social view says who introduced her, and turning introductions off stops it working.
+/** An introduction passed on with a reshare or a comment (remove-pki §9). Carol and Bob became friends through a link,
+ *  so Carol holds Bob's introduction. She reshares a file of his to Alice, and Bob comments on her post, which Dave
+ *  reads; neither is Bob's friend. Each is offered to ask Bob through Carol, Bob's Social view says who introduced
+ *  them, and turning introductions off stops it working.
  *
  *  Usage: java -cp ../server/Peergos.jar IntroductionTest.java [engine] [peergos url]
  */
@@ -41,7 +49,8 @@ public class IntroductionTest {
             Fixtures.Account alice = Fixtures.account(url);
             Fixtures.Account bob = Fixtures.account(url);
             Fixtures.Account carol = Fixtures.account(url);
-            UserContext a = login(url, alice), b = login(url, bob), c = login(url, carol);
+            Fixtures.Account dave = Fixtures.account(url);
+            UserContext a = login(url, alice), b = login(url, bob), c = login(url, carol), dv = login(url, dave);
 
             FriendLink carolsLink = c.createFriendLink("", Optional.empty(), 0).join();
             b.sendFollowRequestToLink(carolsLink.toLink()).join();
@@ -52,6 +61,10 @@ public class IntroductionTest {
             for (FollowRequestWithCipherText r : c.processFollowRequests().join())
                 c.sendReplyFollowRequest(r, true, true).join();
             a.processFollowRequests().join();
+            dv.sendFollowRequest(carol.name(), SymmetricKey.random()).join();
+            for (FollowRequestWithCipherText r : c.processFollowRequests().join())
+                c.sendReplyFollowRequest(r, true, true).join();
+            dv.processFollowRequests().join();
 
             byte[] data = "from bob".getBytes();
             b.getUserRoot().join().uploadOrReplaceFile("from-bob.txt", new AsyncReader.ArrayBacked(data), data.length,
@@ -60,6 +73,20 @@ public class IntroductionTest {
             UserContext c2 = login(url, carol);
             c2.getByPath(bob.name() + "/from-bob.txt").join().get();
             c2.shareReadAccessWith(PathUtil.get(bob.name(), "from-bob.txt"), Collections.singleton(alice.name())).join();
+
+            SocialPost post = SocialPost.createInitialPost(carol.name(), Arrays.asList(new Text("carol's post")), SocialPost.Resharing.Friends);
+            Pair<Path, FileWrapper> posted = c2.getSocialFeed().join().createNewPost(post).join();
+            c2.shareReadAccessWith(posted.left, Set.of(c2.getGroupUid(SocialState.FRIENDS_GROUP_NAME).join().get())).join();
+            UserContext b2 = login(url, bob);
+            SocialFeed bobsFeed = b2.getSocialFeed().join().update().join();
+            Pair<SharedItem, FileWrapper> received = bobsFeed.getSharedFiles(0, bobsFeed.getFeedSize() + 1).join().stream()
+                    .filter(f -> f.left.owner.equals(carol.name()) && f.left.path.contains("/.posts/"))
+                    .findFirst().get();
+            SocialPost comment = SocialPost.createComment(new FileRef(received.left.path, received.left.cap,
+                    post.contentHash(b2.crypto.hasher).join()), SocialPost.Resharing.Friends, bob.name(), Arrays.asList(new Text("bob's comment")));
+            Pair<Path, FileWrapper> commented = bobsFeed.createNewPost(comment).join();
+            b2.shareReadAccessWith(commented.left, Set.of(b2.getGroupUid(SocialState.FRIENDS_GROUP_NAME).join().get())).join();
+            login(url, carol).getSocialFeed().join().update().join();
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-introduction-"), headless)) {
                 d.setWindowRect(1280, 900);
@@ -75,11 +102,25 @@ public class IntroductionTest {
 
                 Page.logout(d);
                 d.navigate(url + "/");
+                Page.login(d, dave.name(), dave.password());
+                Page.gotoView(d, "Newsfeed", "requestViaIntroduction", "__newsfeed");
+                d.waitForScript("Bob's comment", "[...document.querySelectorAll('.feed-post a.feed-author')]"
+                        + ".some(a => a.textContent.trim() === '" + bob.name() + "')", 120_000);
+                d.script("[...document.querySelectorAll('.feed-post a.feed-author')].find(a => a.textContent.trim() === '" + bob.name() + "').click(); return 1;");
+                d.waitForScript("the offer to ask Bob through Carol", "!!document.querySelector('#friendMenu .feed-introduce')"
+                        + " && document.querySelector('#friendMenu .feed-introduce').textContent.trim() === '" + label + "'", 30_000);
+                d.script("document.querySelector('#friendMenu .feed-introduce').click(); return 1;");
+                d.waitForScript("the request sent", "document.body.innerText.includes('Follow request(s) sent')", 120_000);
+                System.out.println("  ok   a stranger's comment on a friend's post offers to ask them through that friend");
+
+                Page.logout(d);
+                d.navigate(url + "/");
                 Page.login(d, bob.name(), bob.password());
                 Page.gotoView(d, "Social", "sendInitialFollowRequest", "__social");
-                d.waitForScript("Alice's request, introduced by Carol", "[...document.querySelectorAll('#follow-request-table-id .social-person')]"
-                        + ".some(r => r.textContent.includes('" + alice.name() + "') && r.textContent.includes('introduced by " + carol.name() + "'))", 120_000);
-                System.out.println("  ok   the request says who introduced its sender");
+                for (String sender : List.of(alice.name(), dave.name()))
+                    d.waitForScript(sender + "'s request, introduced by Carol", "[...document.querySelectorAll('#follow-request-table-id .social-person')]"
+                            + ".some(r => r.textContent.includes('" + sender + "') && r.textContent.includes('introduced by " + carol.name() + "'))", 120_000);
+                System.out.println("  ok   each request says who introduced its sender");
 
                 d.script("document.querySelector('.social-link__mine').click(); return 1;");
                 d.waitForScript("the introductions switch, on", "!!document.querySelector('.friend-link__introductions input')"
