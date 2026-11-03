@@ -504,7 +504,7 @@ module.exports = {
     "DRIVE.LINK.MEMBERS.SAME.URL":"The link and QR code below do not change. Anyone already holding this link will see what you add here.",
     "DRIVE.LINK.MEMBERS.PATHS.VISIBLE":"Whoever opens this link sees each item's full path, including the folders above it.",
     "DRIVE.LINK.HIDE.LOCATION":"Hide where these are",
-    "DRIVE.LINK.HIDE.LOCATION.ON":"Whoever opens this link sees only these items and what's inside them, not your username or the folders they're in. Anything uploaded through a writable folder link gets new keys the first time you share it.",
+    "DRIVE.LINK.HIDE.LOCATION.ON":"Whoever opens this link sees only these items and what's inside them, not the folders they're in. The link still shows that they're yours. Anything uploaded through a writable folder link gets new keys the first time you share it.",
     "DRIVE.LINK.HIDE.LATER":"Anyone who already opened this link has seen where these are. Hiding them now doesn't change that.",
     "DRIVE.LINK.UNHIDE.CONFIRM":"Show everyone with this link where these are?\n\nThe link stays the same, so anyone who already has it will see the folders above each item the next time they open it. Hiding them again later won't undo that.",
     "DRIVE.LINK.HIDE.LOCATION.OFF":"Whoever opens this link sees your username and the folders above each item.",
