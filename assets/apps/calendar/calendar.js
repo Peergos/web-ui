@@ -803,7 +803,7 @@ function carryRecurSource(from, to) {
     // here so that the write sees the difference and replaces it - with the time
     // of day that end was written for.
     let fields = recurFormFields(to);
-    ['end', 'until', 'count', 'startTime'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
+    ['end', 'until', 'count', 'startTime', 'startZone'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
     to.sourceFields = fields;
 }
 
@@ -812,7 +812,7 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
     if (!recur.freq) return null;
     // Exclusions are their own line, so a detached occurrence still leaves the
     // rule itself untouched.
-    if (recur.source && sameRecurFields(recur, recur.sourceFields) && untilFitsStart(recur))
+    if (recur.source && sameRecurFields(recur, recur.sourceFields) && untilFitsStart(recur, allDay, tzid))
         return 'RRULE:' + recur.source;
     // Only its end moved - a series cut short by "this and following", a counted
     // task completed: the rule keeps every other part as the file had it, the ones
@@ -836,10 +836,15 @@ function recurToIcsRRuleLine(recur, allDay, tzid) {
 
 // RFC 5545 has an UNTIL bound the starts, in DTSTART's type: a date for an all-day series,
 // a time otherwise. So a rule kept as the file had it is written with a new end once the
-// series has moved to another time of day or turned all-day or timed; one that did
-// neither keeps the file's own.
-function untilFitsStart(recur) {
-    return recur.end !== 'until' || String(recur.dtstart).slice(10) === recur.sourceFields.startTime;
+// series has moved to another time of day or turned all-day or timed, or its start is
+// written in another zone than the file's (this app writes it in this one, or UTC for a
+// task's due time), where its later starts can fall either side of the old end; one that
+// did none of these keeps the file's own.
+function untilFitsStart(recur, allDay, tzid) {
+    if (recur.end !== 'until') return true;
+    let writtenIn = allDay ? '' : (tzid || 'UTC');
+    return String(recur.dtstart).slice(10) === recur.sourceFields.startTime
+        && writtenIn === recur.sourceFields.startZone;
 }
 
 function rruleEndParts(recur, allDay, tzid) {
@@ -4789,7 +4794,12 @@ function takeListedDatesFrom(occurrence, recur, allDay) {
     if (fromAdded) {
         let next = nextRuleDateAfter(recur, occurrence, allDay, cut, moved);
         if (next) recur.dtstart = next;
-        else Object.assign(recur, { freq: null, interval: 1, end: 'never', until: null, count: null });
+        else {
+            // a list of dates, with nothing of the rule's text left to keep
+            Object.assign(recur, { freq: null, interval: 1, end: 'never', until: null, count: null });
+            delete recur.source;
+            delete recur.sourceFields;
+        }
     }
     let ownMove = storedMinutes(moved) - storedMinutes(cut);
     let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);

@@ -334,8 +334,9 @@ Two rules keep what is written stable:
   moving it, or excluding one occurrence leaves its rule alone - all but its
   `UNTIL`, which bounds the starts and takes the start's own type (RFC 5545), and
   so is written anew, at the last day it lets in, once the series moves to
-  another time of day or turns all-day or timed. An import says how many
-  entries it could only show simplified.
+  another time of day or turns all-day or timed, or its start is written in
+  another zone than the file's (this app writes it in the browser's). An import
+  says how many entries it could only show simplified.
 
 Every date the app computes for itself - a reminder's occurrences, the boundary
 of a "this and following" split, a repeating task's next due date - goes through

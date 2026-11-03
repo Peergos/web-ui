@@ -288,6 +288,34 @@ public class CalendarMovedSeriesDatesTest {
             if (! CalendarApp.property(listed, "RDATE").contains(monday.plusDays(5).format(DateTimeFormatter.BASIC_ISO_DATE) + "T010000"))
                 throw new AssertionError("Two hours on, Friday's 23:00 should be Saturday's 01:00:\n" + listed);
             System.out.println("  ok   dragged, every listed date went two hours on: " + CalendarApp.property(listed, "RDATE"));
+
+            // --- a series written in UTC, renamed -----------------------------------------------------------------
+            // weekly at 13:00 UTC from October to an UNTIL of 13:00 UTC on 8 November. Renamed, it is written in the
+            // browser's zone, so its UNTIL is written anew: kept as it was, a start that moved with the zone's clock
+            // change could fall after it and the last Monday be lost
+            LocalDate utcFirst = LocalDate.of(2027, 10, 4);
+            LocalDate utcLast = LocalDate.of(2027, 11, 8);
+            CalendarApp.write(d, recurring, "utc.ics", CalendarClockChangeTest.vevent("utc", "Written in UTC",
+                    "DTSTART:" + utcFirst.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z",
+                    "DTEND:" + utcFirst.format(DateTimeFormatter.BASIC_ISO_DATE) + "T133000Z",
+                    "RRULE:FREQ=WEEKLY;UNTIL=" + utcLast.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z"));
+            CalendarClockChangeTest.reload(d, utcFirst);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series written in UTC", CalendarSeriesTest.drawn("Written in UTC"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Written in UTC", utcFirst);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-title", "Renamed from UTC") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String renamedUtc = CalendarApp.awaitStored(d, recurring, "utc.ics", "SUMMARY:Renamed from UTC");
+            CalendarClockChangeTest.reload(d, utcLast);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the renamed series", CalendarSeriesTest.drawn("Renamed from UTC"), 30_000);
+            if (! CalendarApp.occurrenceDates(d, "Renamed from UTC").contains(utcLast.toString()))
+                throw new AssertionError("Renamed, the series written in UTC lost its last Monday, " + utcLast + ":\n" + renamedUtc);
+            System.out.println("  ok   a series written in UTC keeps its last date once renamed: " + CalendarApp.property(renamedUtc, "RRULE"));
             System.out.println("PASS");
         } finally {
             if (own != null)

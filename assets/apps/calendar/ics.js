@@ -438,6 +438,13 @@ function storedBlockLines(kind, blockLines) {
     return out;
 }
 
+// The frame a date or time is written in: '' for a date, its TZID, UTC, or floating.
+function dateZoneOf(line, allDay) {
+    if (allDay) return '';
+    if (line.params.TZID) return line.params.TZID;
+    return /Z$/i.test(line.value) ? 'UTC' : 'floating';
+}
+
 // Same UID handling as an event: the value becomes a filename, so it goes
 // through the same sanitiser rather than being trusted.
 function parseIcsVtodo(rawLines, tzResolver) {
@@ -463,7 +470,10 @@ function parseIcsVtodo(rawLines, tzResolver) {
         return new Date(y, mo, d, due.getHours(), due.getMinutes(), due.getSeconds()).getTime();
     } : null;
     let recur = (dueLine && rruleLine) ? parseIcsRRuleValue(rruleLine.value, dueLine.params.TZID, tzResolver, dueOn) : null;
-    if (recur && due) recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
+    if (recur && due) {
+        recur.sourceFields.startTime = toLocalInputValue(due, dueAllDay).slice(10);
+        recur.sourceFields.startZone = dateZoneOf(dueLine, dueAllDay);
+    }
     let statusLine = find('STATUS');
     let completedLine = find('COMPLETED');
     let percentLine = find('PERCENT-COMPLETE');
@@ -868,9 +878,12 @@ function parseIcsVevent(rawLines, tzResolver) {
     if (recur) {
         if (rdates.length) recur.rdates = rdates;
         recur.dtstart = toLocalInputValue(start, allDay);
-        // The time of day the rule was written for, '' for a date: its UNTIL names a
-        // start at that time (recurToIcsRRuleLine).
-        if (recur.sourceFields) recur.sourceFields.startTime = recur.dtstart.slice(10);
+        // The time of day the rule was written for, '' for a date, and the zone it was
+        // written in: its UNTIL names a start at that time, there (recurToIcsRRuleLine).
+        if (recur.sourceFields) {
+            recur.sourceFields.startTime = recur.dtstart.slice(10);
+            recur.sourceFields.startZone = dateZoneOf(dtstartLine, allDay);
+        }
         findAll('EXDATE').forEach(function (l) {
             l.value.split(',').forEach(function (v) {
                 let parsed = parseIcsDateValue(v.trim(), l.params, tzResolver);

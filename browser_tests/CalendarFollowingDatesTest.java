@@ -547,6 +547,44 @@ public class CalendarFollowingDatesTest {
             String listedStart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("liststart.ics"), "Listed start"));
             CalendarApp.assertTimeIs(listedStart, "DTSTART", first.atTime(11, 0));
             System.out.println("  ok   a start that is listed too moved the rule with it");
+
+            // --- a split at an added date after the rule has run out, edited again at once -----------------------
+            // two Mondays, and a Wednesday and Thursday added after them. From the Wednesday on, moved to 11:00, the
+            // new part is a list of dates, and its dialog opens before any reload
+            LocalDate ranOutWed = first.plusDays(16);
+            LocalDate ranOutThu = first.plusDays(17);
+            Set<String> beforeRanOut = new HashSet<>(CalendarApp.list(d, recurring));
+            beforeRanOut.add("ranout.ics");
+            CalendarApp.write(d, recurring, "ranout.ics", CalendarClockChangeTest.vevent("ranout", "Ran out",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2",
+                    "RDATE;TZID=" + zone + ":" + ranOutWed.format(BASIC) + "T090000," + ranOutThu.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, ranOutWed);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series that ran out", CalendarSeriesTest.drawn("Ran out"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Ran out", ranOutWed);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-time", "11:00")
+                    + CalendarApp.setField("event-end-time", "11:30") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            d.waitUntil("the new part's file", () -> {
+                for (String name : CalendarApp.list(d, recurring))
+                    if (! beforeRanOut.contains(name) && CalendarApp.read(d, recurring, name).contains("SUMMARY:Ran out"))
+                        return name;
+                return null;
+            }, 60_000);
+            CalendarApp.waitInFrame(d, "the Thursday at its new time", CalendarSeriesTest.drawn("Ran out"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Ran out", ranOutThu);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the dialog of the dates left",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("event-cancel") + "return 1;");
+            System.out.println("  ok   a part left a list of dates by a split opens its dialog before a reload");
             System.out.println("PASS");
         } finally {
             if (own != null)
