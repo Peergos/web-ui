@@ -438,6 +438,115 @@ public class CalendarFollowingDatesTest {
             assertListed(lateStart, "RDATE", fri, "T110000", "the list's own start, after the split, an hour on");
             assertListed(lateStart, "RDATE", listedSat, "T110000", "the Saturday, an hour on");
             System.out.println("  ok   a list split at a date before its start kept the start");
+
+            String weekTab = "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                    + "  .find(t => t.textContent.trim() === 'Week');"
+                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;";
+
+            // --- an added time dragged onto the rule's deleted time that day --------------------------------------
+            // daily at 10:00, the fourth day's 10:00 deleted and 09:00 added. That 09:00, dragged to 10:00 for it and
+            // those after, is an occurrence of its own, and the deletion of the rule's 10:00 doesn't take it out
+            LocalDate ontoDeleted = first.plusDays(3);
+            CalendarApp.write(d, recurring, "onto.ics", CalendarClockChangeTest.vevent("onto", "Onto deleted",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T100000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T103000",
+                    "RRULE:FREQ=DAILY;COUNT=10",
+                    "EXDATE;TZID=" + zone + ":" + ontoDeleted.format(BASIC) + "T100000",
+                    "RDATE;TZID=" + zone + ":" + ontoDeleted.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, ontoDeleted);
+            CalendarApp.waitInFrame(d, "the series with its day swapped", CalendarSeriesTest.drawn("Onto deleted"), 30_000);
+            CalendarApp.inFrame(d, weekTab);
+            weekShowing(d, ontoDeleted);
+            CalendarApp.waitInFrame(d, "the added 09:00 in its week", CalendarDragTest.inColumn(ontoDeleted.toString(), "Onto deleted"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Onto deleted", ontoDeleted.toString(),
+                    CalendarDragTest.slotDistance("09:00:00", "10:00:00"), false), "following");
+            String onto = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("onto.ics"), "Onto deleted"));
+            CalendarApp.awaitStored(d, recurring, "onto.ics", "UNTIL=");
+            CalendarClockChangeTest.reload(d, ontoDeleted);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the split series", CalendarSeriesTest.drawn("Onto deleted"), 30_000);
+            if (! CalendarApp.occurrenceDates(d, "Onto deleted").contains(ontoDeleted.toString()))
+                throw new AssertionError("Dragged onto the rule's deleted 10:00, nothing is drawn on " + ontoDeleted + ":\n" + onto);
+            System.out.println("  ok   an added time dragged onto the rule's deleted time stays drawn");
+
+            // --- an all-day series split at an added date and made timed in the dialog ---------------------------
+            // the rule had no time of day, so it takes the moved occurrence's: the Mondays after are at 10:00 too
+            CalendarApp.write(d, recurring, "dayish.ics", CalendarClockChangeTest.vevent("dayish", "Day to time",
+                    "DTSTART;VALUE=DATE:" + first.format(BASIC),
+                    "DTEND;VALUE=DATE:" + first.plusDays(1).format(BASIC),
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;VALUE=DATE:" + wed.format(BASIC)));
+            CalendarClockChangeTest.reload(d, wed);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the all-day series", CalendarSeriesTest.drawn("Day to time"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Day to time", wed);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.click("event-all-day")
+                    + CalendarApp.setField("event-start-date", wed.toString())
+                    + CalendarApp.setField("event-start-time", "10:00")
+                    + CalendarApp.setField("event-end-date", wed.toString())
+                    + CalendarApp.setField("event-end-time", "10:30") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String dayToTime = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("dayish.ics"), "Day to time"));
+            CalendarApp.assertTimeIs(dayToTime, "DTSTART", first.plusWeeks(1).atTime(10, 0));
+            assertListed(dayToTime, "RDATE", wed, "T100000", "the Wednesday the split started from");
+            System.out.println("  ok   an all-day series made timed from an added date keeps its Mondays, at the new time");
+
+            // --- a split at an added date, with the count changed in the dialog ----------------------------------
+            // ten days at 10:00, the fourth's 10:00 deleted and 09:00 added; from that 09:00 on, the user asks for 3:
+            // the 09:00 and the next two days, after the three days before it
+            LocalDate counted = first.plusDays(3);
+            CalendarApp.write(d, recurring, "counted.ics", CalendarClockChangeTest.vevent("counted", "Counted",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T100000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T103000",
+                    "RRULE:FREQ=DAILY;COUNT=10",
+                    "EXDATE;TZID=" + zone + ":" + counted.format(BASIC) + "T100000",
+                    "RDATE;TZID=" + zone + ":" + counted.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, counted);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the counted series", CalendarSeriesTest.drawn("Counted"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Counted", counted);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-repeat-count", "3") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String countedPart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("counted.ics"), "Counted"));
+            CalendarApp.awaitStored(d, recurring, "counted.ics", "UNTIL=");
+            CalendarClockChangeTest.reload(d, counted);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "both parts", CalendarSeriesTest.drawn("Counted"), 30_000);
+            Set<String> countedDays = new TreeSet<>(CalendarApp.occurrenceDates(d, "Counted"));
+            Set<String> sixDays = new TreeSet<>();
+            for (int i = 0; i < 6; i++)
+                sixDays.add(first.plusDays(i).toString());
+            if (! countedDays.equals(sixDays))
+                throw new AssertionError("Asked for 3 from the added 09:00, the series should draw " + sixDays + ", but draws "
+                        + countedDays + ":\n" + countedPart);
+            System.out.println("  ok   the count typed in the dialog for a split at an added date is kept: " + countedDays);
+
+            // --- the start of a rule series that lists its start too, dragged for it and those after -------------
+            // a list of dates given a rule keeps its start listed; that start is one of the rule's own dates, so the
+            // rule moves with it to 11:00
+            CalendarApp.write(d, recurring, "liststart.ics", CalendarClockChangeTest.vevent("liststart", "Listed start",
+                    "DTSTART;TZID=" + zone + ":" + first.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + first.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;TZID=" + zone + ":" + first.format(BASIC) + "T090000," + wed.format(BASIC) + "T090000"));
+            CalendarClockChangeTest.reload(d, first);
+            CalendarApp.waitInFrame(d, "the series that lists its start", CalendarSeriesTest.drawn("Listed start"), 30_000);
+            CalendarApp.inFrame(d, weekTab);
+            weekShowing(d, first);
+            CalendarApp.waitInFrame(d, "the start in its week", CalendarDragTest.inColumn(first.toString(), "Listed start"), 30_000);
+            CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed start", first.toString(),
+                    CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
+            String listedStart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("liststart.ics"), "Listed start"));
+            CalendarApp.assertTimeIs(listedStart, "DTSTART", first.atTime(11, 0));
+            System.out.println("  ok   a start that is listed too moved the rule with it");
             System.out.println("PASS");
         } finally {
             if (own != null)
