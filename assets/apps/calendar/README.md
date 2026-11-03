@@ -359,8 +359,10 @@ The rules are those of the previous calendar:
   new time, taking the deleted and added dates after it; from an added date the rule goes on
   as it was from its next date, with the moved date listed before that start, which RFC 5545
   doesn't provide for (it has DTSTART as the first instance), so another client may not show
-  that one date; a master with none of its rule's dates left before the cut keeps its earlier
-  added dates as a series of listed dates) or all of them (the series' own start moves as far
+  that one date - unless the end set in the dialog brings the rule to the added date, which
+  makes it one of the rule's own, and the new part starts there; a master with none of its
+  rule's dates left before the cut keeps its earlier added dates as a series of listed dates)
+  or all of them (the series' own start moves as far
   as the occurrence's time of day did, within its own day, and every occurrence takes the new
   length). Deleted (EXDATE) and added (RDATE) dates move as far as the occurrences they name:
   the rule's dates with the series' time of day, on their own day, and an added date as far

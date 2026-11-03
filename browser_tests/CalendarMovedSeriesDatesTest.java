@@ -293,12 +293,15 @@ public class CalendarMovedSeriesDatesTest {
             // weekly at 13:00 UTC from October to an UNTIL of 13:00 UTC on 8 November. Renamed, it is written in the
             // browser's zone, so its UNTIL is written anew: kept as it was, a start that moved with the zone's clock
             // change could fall after it and the last Monday be lost
-            LocalDate utcFirst = LocalDate.of(2027, 10, 4);
-            LocalDate utcLast = LocalDate.of(2027, 11, 8);
+            LocalDate utcFirstDay = LocalDate.of(2027, 10, 4);
+            LocalDate utcLastDay = LocalDate.of(2027, 11, 8);
+            // the days they fall on in the browser's zone, which can be the next one east of UTC+11
+            LocalDate utcFirst = utcFirstDay.atTime(13, 0).atZone(ZoneOffset.UTC).withZoneSameInstant(ZoneId.of(zone)).toLocalDate();
+            LocalDate utcLast = utcLastDay.atTime(13, 0).atZone(ZoneOffset.UTC).withZoneSameInstant(ZoneId.of(zone)).toLocalDate();
             CalendarApp.write(d, recurring, "utc.ics", CalendarClockChangeTest.vevent("utc", "Written in UTC",
-                    "DTSTART:" + utcFirst.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z",
-                    "DTEND:" + utcFirst.format(DateTimeFormatter.BASIC_ISO_DATE) + "T133000Z",
-                    "RRULE:FREQ=WEEKLY;UNTIL=" + utcLast.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z"));
+                    "DTSTART:" + utcFirstDay.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z",
+                    "DTEND:" + utcFirstDay.format(DateTimeFormatter.BASIC_ISO_DATE) + "T133000Z",
+                    "RRULE:FREQ=WEEKLY;UNTIL=" + utcLastDay.format(DateTimeFormatter.BASIC_ISO_DATE) + "T130000Z"));
             CalendarClockChangeTest.reload(d, utcFirst);
             CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the series written in UTC", CalendarSeriesTest.drawn("Written in UTC"), 30_000);

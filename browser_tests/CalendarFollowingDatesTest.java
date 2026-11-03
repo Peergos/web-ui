@@ -585,6 +585,81 @@ public class CalendarFollowingDatesTest {
                     "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
             CalendarApp.inFrame(d, CalendarApp.click("event-cancel") + "return 1;");
             System.out.println("  ok   a part left a list of dates by a split opens its dialog before a reload");
+
+            // --- a rule the form can't show whole, split at an added date in the dialog --------------------------
+            // the last weekday of each month at 10:00, and 15 September added at 15:00. From that date on, saved as it
+            // is, the new part starts at the rule's next date, 30 September, which only the whole rule knows
+            LocalDate lastWeekdayStart = LocalDate.of(2027, 8, 31);
+            LocalDate lastWeekdayAdded = LocalDate.of(2027, 9, 15);
+            CalendarApp.write(d, recurring, "lastweekday.ics", CalendarClockChangeTest.vevent("lastweekday", "Last weekday",
+                    "DTSTART;TZID=" + zone + ":" + lastWeekdayStart.format(BASIC) + "T100000",
+                    "DTEND;TZID=" + zone + ":" + lastWeekdayStart.format(BASIC) + "T103000",
+                    "RRULE:FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYSETPOS=-1",
+                    "RDATE;TZID=" + zone + ":" + lastWeekdayAdded.format(BASIC) + "T150000"));
+            CalendarClockChangeTest.reload(d, lastWeekdayAdded);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the last-weekday series", CalendarSeriesTest.drawn("Last weekday"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Last weekday", lastWeekdayAdded);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String lastWeekday = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("lastweekday.ics"), "Last weekday"));
+            CalendarApp.assertTimeIs(lastWeekday, "DTSTART", LocalDate.of(2027, 9, 30).atTime(10, 0));
+            System.out.println("  ok   split at an added date, a rule the form can't show goes on from its own next date");
+
+            // --- a list of dates made a repeat from one of them -------------------------------------------------
+            // 2 March 10:00, 3 March 14:00 and 5 March 10:00, and no rule. From the 3rd on, made daily every 2 days,
+            // 3 times: the new rule starts where that occurrence is, the 3rd at 14:00
+            LocalDate listMade = LocalDate.of(2027, 3, 3);
+            Set<String> beforeMade = new HashSet<>(CalendarApp.list(d, recurring));
+            beforeMade.add("made.ics");
+            CalendarApp.write(d, recurring, "made.ics", CalendarClockChangeTest.vevent("made", "Made a repeat",
+                    "DTSTART;TZID=" + zone + ":20270302T100000",
+                    "DTEND;TZID=" + zone + ":20270302T103000",
+                    "RDATE;TZID=" + zone + ":20270303T140000,20270305T100000"));
+            CalendarClockChangeTest.reload(d, listMade);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the list", CalendarSeriesTest.drawn("Made a repeat"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Made a repeat", listMade);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-repeat-freq", "daily")
+                    + CalendarApp.setField("event-repeat-interval", "2")
+                    + CalendarApp.setField("event-repeat-end", "count")
+                    + CalendarApp.setField("event-repeat-count", "3") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String made = CalendarApp.read(d, recurring, newSeries(d, recurring, beforeMade, "Made a repeat"));
+            CalendarApp.assertTimeIs(made, "DTSTART", listMade.atTime(14, 0));
+            System.out.println("  ok   a list made a repeat from one of its dates starts the rule there");
+
+            // --- a split at an added date after the rule has run out, with a new count ------------------------------
+            // three days from 1 March, and 10 March added. From the 10th on, the user asks for 5: the rule goes on,
+            // and the 10th, a date of the rule once it runs on, is where it starts
+            LocalDate ranOutAdded = LocalDate.of(2027, 3, 10);
+            CalendarApp.write(d, recurring, "recount.ics", CalendarClockChangeTest.vevent("recount", "Counted again",
+                    "DTSTART;TZID=" + zone + ":20270301T100000",
+                    "DTEND;TZID=" + zone + ":20270301T103000",
+                    "RRULE:FREQ=DAILY;COUNT=3",
+                    "RDATE;TZID=" + zone + ":" + ranOutAdded.format(BASIC) + "T100000"));
+            CalendarClockChangeTest.reload(d, ranOutAdded);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series that ran out", CalendarSeriesTest.drawn("Counted again"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Counted again", ranOutAdded);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-repeat-count", "5") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String recounted = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("recount.ics"), "Counted again"));
+            if (! String.valueOf(CalendarApp.property(recounted, "RRULE")).contains("COUNT=5"))
+                throw new AssertionError("Asked for 5 more after its rule had run out, the new part should repeat 5 times:\n" + recounted);
+            CalendarApp.assertTimeIs(recounted, "DTSTART", ranOutAdded.atTime(10, 0));
+            System.out.println("  ok   a count typed after the rule ran out is kept: " + CalendarApp.property(recounted, "RRULE"));
             System.out.println("PASS");
         } finally {
             if (own != null)

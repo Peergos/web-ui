@@ -472,6 +472,8 @@ function updateRepeatVisibility() {
 // itself would call that difference a change nobody made, and rewrite a rule
 // that should have been left exactly as another client wrote it.
 let recurFormBaseline = null;
+// Where the series ends as the dialog showed it, to tell whether the user changed it.
+let recurFormEndShown = null;
 
 function populateRecurForm(recur) {
     repeatFreqInput.value = recur ? recur.freq : '';
@@ -493,6 +495,8 @@ function populateRecurForm(recur) {
     repeatMonthInput.value = (recur && recur.bymonth) || (start.getMonth() + 1);
     updateRepeatVisibility();
     recurFormBaseline = (recur && recur.source) ? recurFormFields(readRecurFromForm()) : null;
+    let shown = readRecurFromForm();
+    recurFormEndShown = shown ? { end: shown.end, until: shown.until, count: shown.count } : null;
 }
 
 function readRecurFromForm() {
@@ -3904,7 +3908,9 @@ form.addEventListener('submit', function (e) {
         // as a drag does: the new part is built before the series is cut short
         if (recur) {
             recur.dtstart = allDay ? startDateInput.value : (startDateInput.value + 'T' + startTimeInput.value);
-            takeListedDatesFrom(editingEvent, recur, allDay);
+            let endEdited = !recurFormEndShown || recur.end !== recurFormEndShown.end
+                || recur.until !== recurFormEndShown.until || recur.count !== recurFormEndShown.count;
+            takeListedDatesFrom(editingEvent, recur, allDay, endEdited);
             addAndPersist(buildRecurringEventPayload(nextEventId(), titleInput.value, allDay, extra, recur, computeDurationMs(start, end, allDay)));
         } else {
             addAndPersist(buildPlainEventPayload(nextEventId(), titleInput.value, allDay, start, end, extra));
@@ -4746,12 +4752,23 @@ function isRuleDate(recur, value) {
     return new rrule.RRule(ruleOptions(recur, allDay)).between(at, at, true).length > 0;
 }
 
-// The rule's next date drawn after a stored start: the pattern as edited, from the
-// series' own start, within its own end and less its exclusions, in the new part's
-// form. A rule that had no time of day takes the moved occurrence's.
-function nextRuleDateAfter(recur, occurrence, allDay, cut, moved) {
+// Where the rule a split goes on with ends: as set in the dialog if that was changed
+// there, else as the series' own. A count set in the dialog counts from the cut, not from
+// the series' start, so only an until bounds it.
+function endGoingOn(recur, was, endEdited) {
+    if (!endEdited) return { end: was.end, until: was.until, count: was.count };
+    return recur.end === 'until' ? { end: 'until', until: recur.until, count: null }
+        : { end: 'never', until: null, count: null };
+}
+
+// The rule's next date drawn after a stored start: the pattern as edited (the series'
+// own, parts the form can't show included, where the edit left it alone), from the
+// series' own start, less its exclusions and within the end it goes on with, in the new
+// part's form. A rule that had no time of day takes the moved occurrence's.
+function nextRuleDateAfter(recur, occurrence, allDay, cut, moved, end) {
     let was = occurrence.extendedProps.recur;
-    let rule = Object.assign({}, recur, { dtstart: was.dtstart, end: was.end, until: was.until, count: was.count });
+    let pattern = recur.source && recur.source === was.source ? was : recur;
+    let rule = Object.assign({}, pattern, end, { dtstart: was.dtstart });
     let at = function (s) { return toFakeUtc(occurrence.allDay ? new Date(s + 'T00:00') : new Date(s)); };
     let set = new rrule.RRuleSet();
     set.rrule(new rrule.RRule(ruleOptions(rule, occurrence.allDay)));
@@ -4784,15 +4801,19 @@ function nextRuleDateAfter(recur, occurrence, allDay, cut, moved) {
 // and goes nowhere. The moved occurrence is one of its own, and no exclusion takes it
 // out. A list of dates lists its start too, or a file with neither RRULE nor RDATE
 // reads back as a plain event.
-function takeListedDatesFrom(occurrence, recur, allDay) {
+function takeListedDatesFrom(occurrence, recur, allDay, endEdited) {
     let was = occurrence.extendedProps.recur;
     let cut = storedStartOf(occurrence, was);
     // a list of dates is its start and the dates it lists alike, and its start may come after some of them
     let added = (was.rdates || []).concat(!was.freq && (was.rdates || []).indexOf(was.dtstart) < 0 ? [was.dtstart] : []);
     let moved = recur.dtstart;
-    let fromAdded = !!recur.freq && added.indexOf(cut) >= 0 && !isRuleDate(was, cut);
+    let end = endGoingOn(recur, was, endEdited);
+    // a list of dates given a rule here has no rule to go on with: the new one starts where the occurrence went.
+    // An added date the rule reaches once its end is moved is one of its dates, and the new part starts there too
+    let fromAdded = !!recur.freq && !!was.freq && added.indexOf(cut) >= 0
+        && !isRuleDate(Object.assign({}, was, end), cut);
     if (fromAdded) {
-        let next = nextRuleDateAfter(recur, occurrence, allDay, cut, moved);
+        let next = nextRuleDateAfter(recur, occurrence, allDay, cut, moved, end);
         if (next) recur.dtstart = next;
         else {
             // a list of dates, with nothing of the rule's text left to keep
