@@ -2783,7 +2783,7 @@ function openModal(mode, opts) {
         statusInput.value = prefill.status || 'active';
         descriptionInput.value = prefill.description || '';
         showReminderIn(eventReminderSelect, prefill.reminder == null ? null : prefill.reminder);
-        recur = null;
+        recur = prefill.recur || null;
         renderCalendarSelectOptions(prefill.calendarId);
     }
 
@@ -2918,10 +2918,12 @@ popoverDeleteButton.addEventListener('click', function () {
     }
 });
 
-// Duplicates just the clicked occurrence as a standalone non-recurring
-// event, even for a recurring series.
+// A new event with everything the clicked one has, from its date: a repeating event's rule
+// goes with it, as its reminder does, and the series copied runs from here on. Its own
+// excluded and added dates are its history, not the copy's.
 popoverDuplicateButton.addEventListener('click', function () {
     let ev = popoverEvent;
+    let recur = ev.extendedProps.recur;
     hideEventPopover();
     openModal('create', {
         date: ev.start,
@@ -2932,6 +2934,9 @@ popoverDuplicateButton.addEventListener('click', function () {
             location: ev.extendedProps.location,
             status: ev.extendedProps.status,
             description: ev.extendedProps.description,
+            reminder: ev.extendedProps.reminder,
+            recur: recur ? { freq: recur.freq, interval: recur.interval, byday: recur.byday, bymonthday: recur.bymonthday,
+                bymonth: recur.bymonth, end: recur.end, until: recur.until, count: recur.count } : null,
             calendarId: ev.extendedProps.calendarId
         }
     });
