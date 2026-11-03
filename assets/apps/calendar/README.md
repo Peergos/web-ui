@@ -362,9 +362,9 @@ The rules are those of the previous calendar:
   that one date - unless the end set in the dialog brings the rule to the added date, which
   makes it one of the rule's own, and the new part starts there; a master with none of its
   rule's dates left before the cut keeps its earlier added dates as a series of listed dates)
-  or all of them (the series' own start moves as far
-  as the occurrence's time of day did, within its own day, and every occurrence takes the new
-  length). Deleted (EXDATE) and added (RDATE) dates move as far as the occurrences they name:
+  or all of them (the series' own start moves as far as the occurrence's time of day did,
+  within its own day, and every occurrence takes the new length). Deleted (EXDATE) and added
+  (RDATE) dates move as far as the occurrences they name:
   the rule's dates with the series' time of day, on their own day, and an added date as far
   as the moved occurrence, into the next or previous day if it has to. They are worked on
   their stored text, so a move doesn't turn a time the clocks skip into the hour after; the
