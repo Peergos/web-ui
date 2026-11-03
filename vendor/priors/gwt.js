@@ -2350,9 +2350,22 @@ function renderThumbnail(bytes, future, size, filename) {
 	    console.log("thumbnail generation failed for:" + filename);
 	future.complete("");
     }
-    var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+    var blob = new Blob([bytes], {type: "octet/stream"});
     var url = window.URL.createObjectURL(blob);
+    future.thenApply(function() {
+        releaseMedia(img, url);
+    });
     img.src = url;
+}
+
+// an unrevoked object url pins the whole file for the life of the page
+function releaseMedia(element, url) {
+    element.onload = element.onerror = element.onloadedmetadata = element.oncanplay = null;
+    element.removeAttribute('src');
+    if (element.load)
+        element.load();
+    if (url)
+        (window.webkitURL || window.URL).revokeObjectURL(url);
 }
 
 function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
@@ -2446,8 +2459,11 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName, mimeT
             console.log(e);
             future.complete("");
         }
-        let blob = new Blob([new Uint8Array(bytes)], {type: mimeType});
+        let blob = new Blob([bytes], {type: mimeType});
         var url = (window.webkitURL || window.URL).createObjectURL(blob);
+        future.thenApply(function() {
+            releaseMedia(video, url);
+        });
         video.src = url;
     });
     return future;
@@ -2622,6 +2638,9 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 setTimeout(function(){thumbnailGenerator();}, 1000);
             }
         }
+        future.thenApply(function() {
+            releaseMedia(video, null);
+        });
         video.src = url;
         video.play();
     }, function(seekHi, seekLo, seekLength, uuid){
