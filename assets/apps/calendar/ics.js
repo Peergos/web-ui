@@ -1053,10 +1053,10 @@ let recurFreqLabels = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', ye
 let recurIntervalUnits = { daily: 'days', weekly: 'weeks', monthly: 'months', yearly: 'years' };
 
 function describeRecur(recur) {
-    let added = (recur.rdates || []).length;
+    // a series may list its own start among the dates it adds (a split at one does), which is no date more
+    let added = (recur.rdates || []).filter(function (s) { return s !== recur.dtstart; }).length;
     if (!recur.freq) {
-        // a list of dates may name its own start among them, which is one date
-        let dates = added + ((recur.rdates || []).indexOf(recur.dtstart) < 0 ? 1 : 0);
+        let dates = added + 1;
         return 'On ' + dates + (dates === 1 ? ' date' : ' dates');
     }
     let text = recur.interval > 1
