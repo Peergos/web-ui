@@ -96,6 +96,7 @@
                             <span>{{ translate("DRIVE.LINK.HIDE.LOCATION") }}</span>
                         </label>
                         <p class="pg-note">{{ translate(hideLocation ? "DRIVE.LINK.HIDE.LOCATION.ON" : "DRIVE.LINK.HIDE.LOCATION.OFF") }}</p>
+                        <p v-if="currentProps != null && !wasHidden && hideLocation" class="pg-note">{{ translate("DRIVE.LINK.HIDE.LATER") }}</p>
                         <label v-if="link.isFile || members.length > 1" class="pg-switch">
                             <input type="checkbox" v-model="autoOpen" @change="onChange()"/>
                             <span class="pg-switch__track" aria-hidden="true"></span>
@@ -160,7 +161,7 @@
                             </button>
                         </template>
                         <template v-else>
-                            <button type="button" id="modal-button-id" class="pg-btn" :disabled="showSpinner" @click="createOrUpdateLink">
+                            <button type="button" id="modal-button-id" class="pg-btn" :disabled="showSpinner" @click="updateLink">
                                 {{ translate("DRIVE.LINK.UPDATE") }}
                             </button>
                             <button type="button" class="pg-btn pg-btn--primary" @click="$emit('hide-modal')">{{ translate("DRIVE.LINK.OK") }}</button>
@@ -184,6 +185,14 @@
                     :consumer_cancel_func="keepMember"
                     :consumer_func="confirmRemoveMember"
                     @hide-confirm="showRemoveConfirm = false"
+                />
+                <Confirm
+                    v-if="showUnhideConfirm"
+                    :confirm_message="unhideConfirm.message"
+                    :confirm_body="unhideConfirm.body"
+                    :consumer_cancel_func="keepHidden"
+                    :consumer_func="createOrUpdateLink"
+                    @hide-confirm="showUnhideConfirm = false"
                 />
             </div>
         </div>
@@ -233,6 +242,7 @@ module.exports = {
                 // asks about are kept apart: clearing the member on hide lost it before Yes landed
                 showRemoveConfirm: false,
                 removeIndex: null,
+                showUnhideConfirm: false,
             };
 	},
     computed: {
@@ -247,6 +257,13 @@ module.exports = {
         },
         anyWritable: function() {
             return this.members.some(m => m.writable);
+        },
+        wasHidden: function() {
+            return this.currentProps != null && this.currentProps.getMembers().toArray().some(m => m.isHidden());
+        },
+        unhideConfirm: function() {
+            let parts = this.translate("DRIVE.LINK.UNHIDE.CONFIRM").split("\n\n");
+            return {message: parts[0], body: parts.slice(1).join(" ")};
         },
         /** the confirmation's first paragraph is the question, the rest is why it matters */
         removeConfirm: function() {
@@ -392,6 +409,18 @@ module.exports = {
             },
             showLink: function() {
                 return this.currentProps != null;
+            },
+            /** the URL stays the same, so un-hiding shows every existing holder where these are */
+            updateLink: function() {
+                if (this.wasHidden && !this.hideLocation) {
+                    this.showUnhideConfirm = true;
+                    return;
+                }
+                this.createOrUpdateLink();
+            },
+            keepHidden: function() {
+                this.hideLocation = true;
+                this.onChange();
             },
             createOrUpdateLink: function() {
                 let create = this.currentProps == null;
