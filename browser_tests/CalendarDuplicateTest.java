@@ -146,7 +146,13 @@ public class CalendarDuplicateTest {
             CalendarApp.assertHas(weekdayCopy, "RRULE", "BYDAY=MO,TU,WE,TH,FR");
             CalendarApp.assertTimeIs(weekdayCopy, "DTSTART", wednesday.atTime(12, 0).atZone(ZoneOffset.UTC)
                     .withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime());
-            System.out.println("  ok   a rule the form can't show is copied as it is");
+            // and drawn by it at once, not by the bare rule until the file is read again
+            for (String day : CalendarApp.occurrenceDates(d, weekdays)) {
+                DayOfWeek weekday = LocalDate.parse(day).getDayOfWeek();
+                if (weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY)
+                    throw new AssertionError("The copy of the weekday series is drawn on a " + weekday + ", " + day);
+            }
+            System.out.println("  ok   a rule the form can't show is copied as it is, and drawn by it");
 
             // --- an added date --------------------------------------------------------------------------------
             // the Saturday added to the fortnightly series is one occurrence, so its copy is one event
