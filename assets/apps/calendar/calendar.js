@@ -2727,8 +2727,13 @@ document.addEventListener('focusin', function (e) {
     titleInput.focus();
 }, true);
 
+// The rule a new event's dialog was filled in from, by Duplicate: saved unchanged, its text
+// is written as it was, as an edited series' is.
+let prefillRecur = null;
+
 function openModal(mode, opts) {
     editingEvent = mode === 'edit' ? opts.event : null;
+    prefillRecur = null;
     editScope = opts.scope || 'all';
     modalHeading.textContent = mode === 'edit' ? 'Edit event' : (opts.prefill ? 'Duplicate event' : 'New event');
 
@@ -2784,6 +2789,7 @@ function openModal(mode, opts) {
         descriptionInput.value = prefill.description || '';
         showReminderIn(eventReminderSelect, prefill.reminder == null ? null : prefill.reminder);
         recur = prefill.recur || null;
+        prefillRecur = recur;
         renderCalendarSelectOptions(prefill.calendarId);
     }
 
@@ -2918,12 +2924,14 @@ popoverDeleteButton.addEventListener('click', function () {
     }
 });
 
-// A new event with everything the clicked one has, from its date: a repeating event's rule
-// goes with it, as its reminder does, and the series copied runs from here on. Its own
-// excluded and added dates are its history, not the copy's.
+// A new event with what the clicked one has, from its date: a repeating event's rule goes
+// with it whole, text the dialog can't show included, as its reminder does, and the copy
+// runs from here on by the same rule. The series' own excluded and added dates are its
+// history, not the copy's, and an added date is one occurrence, so its copy is one event.
 popoverDuplicateButton.addEventListener('click', function () {
     let ev = popoverEvent;
     let recur = ev.extendedProps.recur;
+    let added = recur && (recur.rdates || []).indexOf(toLocalInputValue(ev.start, ev.allDay)) >= 0;
     hideEventPopover();
     openModal('create', {
         date: ev.start,
@@ -2935,8 +2943,7 @@ popoverDuplicateButton.addEventListener('click', function () {
             status: ev.extendedProps.status,
             description: ev.extendedProps.description,
             reminder: ev.extendedProps.reminder,
-            recur: recur ? { freq: recur.freq, interval: recur.interval, byday: recur.byday, bymonthday: recur.bymonthday,
-                bymonth: recur.bymonth, end: recur.end, until: recur.until, count: recur.count } : null,
+            recur: recur && recur.freq && !added ? Object.assign({}, recur, { dtstart: null, exdates: [], rdates: [] }) : null,
             calendarId: ev.extendedProps.calendarId
         }
     });
@@ -3859,7 +3866,7 @@ form.addEventListener('submit', function (e) {
         extra.sharedDetached = editingEvent.extendedProps.sharedDetached;
     }
     let recur = readRecurFromForm();
-    if (recur && editingEvent) carryRecurSource(editingEvent.extendedProps.recur, recur);
+    if (recur) carryRecurSource(editingEvent ? editingEvent.extendedProps.recur : prefillRecur, recur);
     // The form has no control for dates a series lists one by one, so one with no rule
     // shows as not repeating there; saving it unchanged must not drop them.
     let editedRecur = editingEvent && editingEvent.extendedProps.recur;
