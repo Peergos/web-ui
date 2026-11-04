@@ -111,6 +111,7 @@ public class Suite {
             t("calendar series edits", () -> CalendarSeriesTest.run(args1));
             t("a series moved to start in another month keeps its file", () -> CalendarSeriesMoveTest.run(args1));
             t("calendar series with listed dates", () -> CalendarAddedDatesTest.run(args1));
+            t("a duplicate keeps a repeating event's rule and its reminder", () -> CalendarDuplicateTest.run(args1));
             t("calendar to and from the previous app", () -> CalendarLegacyTest.run(args1));
             t("calendar files read by another parser", () -> CalendarInteropTest.run(args1));
             t("a series stays as long as the clock says across a clock change", () -> CalendarClockChangeTest.run(args1));
