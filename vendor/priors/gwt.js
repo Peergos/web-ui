@@ -245,46 +245,50 @@ function postMultipartProm(url, dataArrays, timeout) {
 
 function putProm(url, data, headers) {
     var future = peergos.shared.util.Futures.incomplete();
-    new Promise(function(resolve, reject) {
-	var req = new XMLHttpRequest();
-	req.open('PUT', url);
-	req.responseType = 'arraybuffer';
-	var index = 0;
-	while (index < headers.length){
-	    var name = headers[index++];
-    	    var value = headers[index++];
-	    if (name != "Host" && name != "Content-Length")
-		req.setRequestHeader(name, value);
-	}
-	
-	req.onload = function() {
-            // This is called even on 404 etc
-            // so check the status
-            if (req.status == 200) {
-		resolve(new Int8Array(req.response));
-            } else if (req.status == 429 || req.status == 500 || req.status == 503) {
-	        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
-            } else {
-		reject("HTTP " + req.status);
-            }
-	};
-	
-	req.onerror = function(e) {
-            future.completeExceptionally(new peergos.shared.storage.RateLimitException());
-	};
+    var req = new XMLHttpRequest();
+    req.open('PUT', url);
+    req.responseType = 'arraybuffer';
+    var index = 0;
+    while (index < headers.length){
+	var name = headers[index++];
+    	var value = headers[index++];
+	if (name != "Host" && name != "Content-Length")
+	    req.setRequestHeader(name, value);
+    }
 
-	req.ontimeout = function(e) {
-            future.completeExceptionally(new peergos.shared.storage.RateLimitException());
-	};
+    req.onload = function() {
+        releaseRequestSlot();
+        // This is called even on 404 etc
+        // so check the status
+        if (req.status == 200) {
+	    future.complete(convertToByteArray(new Int8Array(req.response)));
+        } else if (req.status == 429 || req.status == 500 || req.status == 503) {
+	    future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+        } else {
+	    future.completeExceptionally(java.lang.Throwable.of(Error("HTTP " + req.status)));
+        }
+    };
 
-	req.send(data);
-    }).then(function(result, err) {
-        if (err != null)
-            future.completeExceptionally(java.lang.Throwable.of(err));
-        else
-            future.complete(convertToByteArray(result));
-    }, function(err) {
-	future.completeExceptionally(java.lang.Throwable.of(err)); 
+    // the uploader holds a concurrency permit until this completes, so a put that never
+    // completes stalls a writer for good
+    req.onerror = function(e) {
+        releaseRequestSlot();
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+    };
+
+    req.onabort = function(e) {
+        releaseRequestSlot();
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+    };
+
+    req.ontimeout = function(e) {
+        releaseRequestSlot();
+        future.completeExceptionally(new peergos.shared.storage.RateLimitException());
+    };
+
+    acquireRequestSlot(() => {
+        req.timeout = REQUEST_TIMEOUT_MILLIS;
+        req.send(data);
     });
     return future;
 }
@@ -2346,9 +2350,22 @@ function renderThumbnail(bytes, future, size, filename) {
 	    console.log("thumbnail generation failed for:" + filename);
 	future.complete("");
     }
-    var blob = new Blob([new Uint8Array(bytes)], {type: "octet/stream"});
+    var blob = new Blob([bytes], {type: "octet/stream"});
     var url = window.URL.createObjectURL(blob);
+    future.thenApply(function() {
+        releaseMedia(img, url);
+    });
     img.src = url;
+}
+
+// an unrevoked object url pins the whole file for the life of the page
+function releaseMedia(element, url) {
+    element.onload = element.onerror = element.onloadedmetadata = element.oncanplay = null;
+    element.removeAttribute('src');
+    if (element.load)
+        element.load();
+    if (url)
+        (window.webkitURL || window.URL).revokeObjectURL(url);
 }
 
 function getThumbnailFromCanvas(canvas, img, width, height, size, future) {
@@ -2442,8 +2459,11 @@ function createVideoThumbnailProm(future, asyncReader, fileSize, fileName, mimeT
             console.log(e);
             future.complete("");
         }
-        let blob = new Blob([new Uint8Array(bytes)], {type: mimeType});
+        let blob = new Blob([bytes], {type: mimeType});
         var url = (window.webkitURL || window.URL).createObjectURL(blob);
+        future.thenApply(function() {
+            releaseMedia(video, url);
+        });
         video.src = url;
     });
     return future;
@@ -2618,6 +2638,9 @@ function createVideoThumbnailStreamingProm(future, asyncReader, size, filename, 
                 setTimeout(function(){thumbnailGenerator();}, 1000);
             }
         }
+        future.thenApply(function() {
+            releaseMedia(video, null);
+        });
         video.src = url;
         video.play();
     }, function(seekHi, seekLo, seekLength, uuid){
