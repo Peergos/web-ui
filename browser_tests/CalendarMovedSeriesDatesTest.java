@@ -245,10 +245,7 @@ public class CalendarMovedSeriesDatesTest {
                     "RDATE;TZID=" + zone + ":" + addedWed.format(DateTimeFormatter.BASIC_ISO_DATE) + "T080000"));
             CalendarClockChangeTest.reload(d, addedWed);
             CalendarApp.waitInFrame(d, "the late series", CalendarSeriesTest.drawn("Late series"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            CalendarFollowingDatesTest.weekShowing(d, addedWed);
+            CalendarFollowingDatesTest.weekViewOn(d, addedWed);
             CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(addedWed.toString(), "Late series"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Late series", addedWed.toString(),
                     CalendarDragTest.slotDistance("08:00:00", "10:00:00"), false), "all");
@@ -275,10 +272,7 @@ public class CalendarMovedSeriesDatesTest {
                             + monday.plusDays(4).format(DateTimeFormatter.BASIC_ISO_DATE) + "T230000"));
             CalendarClockChangeTest.reload(d, listedWed);
             CalendarApp.waitInFrame(d, "the listed dates", CalendarSeriesTest.drawn("Listed late"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            CalendarFollowingDatesTest.weekShowing(d, listedWed);
+            CalendarFollowingDatesTest.weekViewOn(d, listedWed);
             CalendarApp.waitInFrame(d, "the Wednesday in its week", CalendarDragTest.inColumn(listedWed.toString(), "Listed late"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed late", listedWed.toString(),
                     CalendarDragTest.slotDistance("08:00:00", "10:00:00"), false), "all");

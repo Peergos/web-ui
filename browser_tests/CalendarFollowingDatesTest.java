@@ -60,10 +60,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + earlyAdded.format(BASIC) + "T090000," + lateAdded.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, split);
             CalendarApp.waitInFrame(d, "the series on the grid", CalendarSeriesTest.drawn(dragged), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, split);
+            weekViewOn(d, split);
             CalendarApp.waitInFrame(d, "the occurrence in its week", CalendarDragTest.inColumn(split.toString(), dragged), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(dragged, split.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
@@ -173,10 +170,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000," + fri.format(BASIC) + "T233000"));
             CalendarClockChangeTest.reload(d, wed);
             CalendarApp.waitInFrame(d, "the series with an added date at 14:00", CalendarSeriesTest.drawn(ownTime), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, wed);
+            weekViewOn(d, wed);
             CalendarApp.waitInFrame(d, "the added date in its week", CalendarDragTest.inColumn(wed.toString(), ownTime), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(ownTime, wed.toString(),
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
@@ -196,10 +190,7 @@ public class CalendarFollowingDatesTest {
             // split that part again at the next Monday: none of its rule's dates comes before it, but its start and
             // the date it added that week do, and they stay where they are
             LocalDate nextMonday = first.plusWeeks(1);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, nextMonday);
+            weekViewOn(d, nextMonday);
             CalendarApp.waitInFrame(d, "the next Monday in its week", CalendarDragTest.inColumn(nextMonday.toString(), ownTime), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(ownTime, nextMonday.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "10:00:00"), false), "following");
@@ -325,10 +316,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T140000," + undone.format(BASIC) + "T140000"));
             CalendarClockChangeTest.reload(d, wed);
             CalendarApp.waitInFrame(d, "the series with a deleted added date", CalendarSeriesTest.drawn("Undone"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, wed);
+            weekViewOn(d, wed);
             CalendarApp.waitInFrame(d, "the added Wednesday in its week", CalendarDragTest.inColumn(wed.toString(), "Undone"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Undone", wed.toString(),
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
@@ -387,10 +375,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T090000," + listedFri.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, listedFri);
             CalendarApp.waitInFrame(d, "the listed dates", CalendarSeriesTest.drawn("Listed dates"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, listedFri);
+            weekViewOn(d, listedFri);
             CalendarApp.waitInFrame(d, "the Friday in its week", CalendarDragTest.inColumn(listedFri.toString(), "Listed dates"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed dates", listedFri.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
@@ -422,10 +407,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + wed.format(BASIC) + "T080000," + listedSat.format(BASIC) + "T100000"));
             CalendarClockChangeTest.reload(d, wed);
             CalendarApp.waitInFrame(d, "the late-start list", CalendarSeriesTest.drawn("Late start"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            weekShowing(d, wed);
+            weekViewOn(d, wed);
             CalendarApp.waitInFrame(d, "the Wednesday in its week", CalendarDragTest.inColumn(wed.toString(), "Late start"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Late start", wed.toString(),
                     CalendarDragTest.slotDistance("08:00:00", "09:00:00"), false), "following");
@@ -439,10 +421,6 @@ public class CalendarFollowingDatesTest {
             assertListed(lateStart, "RDATE", listedSat, "T110000", "the Saturday, an hour on");
             System.out.println("  ok   a list split at a date before its start kept the start");
 
-            String weekTab = "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;";
-
             // --- an added time dragged onto the rule's deleted time that day --------------------------------------
             // daily at 10:00, the fourth day's 10:00 deleted and 09:00 added. That 09:00, dragged to 10:00 for it and
             // those after, is an occurrence of its own, and the deletion of the rule's 10:00 doesn't take it out
@@ -455,8 +433,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + ontoDeleted.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, ontoDeleted);
             CalendarApp.waitInFrame(d, "the series with its day swapped", CalendarSeriesTest.drawn("Onto deleted"), 30_000);
-            CalendarApp.inFrame(d, weekTab);
-            weekShowing(d, ontoDeleted);
+            weekViewOn(d, ontoDeleted);
             CalendarApp.waitInFrame(d, "the added 09:00 in its week", CalendarDragTest.inColumn(ontoDeleted.toString(), "Onto deleted"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Onto deleted", ontoDeleted.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "10:00:00"), false), "following");
@@ -539,8 +516,7 @@ public class CalendarFollowingDatesTest {
                     "RDATE;TZID=" + zone + ":" + first.format(BASIC) + "T090000," + wed.format(BASIC) + "T090000"));
             CalendarClockChangeTest.reload(d, first);
             CalendarApp.waitInFrame(d, "the series that lists its start", CalendarSeriesTest.drawn("Listed start"), 30_000);
-            CalendarApp.inFrame(d, weekTab);
-            weekShowing(d, first);
+            weekViewOn(d, first);
             CalendarApp.waitInFrame(d, "the start in its week", CalendarDragTest.inColumn(first.toString(), "Listed start"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Listed start", first.toString(),
                     CalendarDragTest.slotDistance("09:00:00", "11:00:00"), false), "following");
@@ -695,6 +671,14 @@ public class CalendarFollowingDatesTest {
             if (own != null)
                 own.close();
         }
+    }
+
+    /** The week view, on the week a day is in */
+    static void weekViewOn(WebDriver d, LocalDate day) {
+        CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
+                + "  .find(t => t.textContent.trim() === 'Week');"
+                + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
+        weekShowing(d, day);
     }
 
     /** The week view opens on a week of the month the grid was on, which can be after the day, and the

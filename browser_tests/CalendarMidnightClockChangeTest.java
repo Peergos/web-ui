@@ -112,10 +112,7 @@ public class CalendarMidnightClockChangeTest {
             String before = CalendarApp.read(d, recurring, "resized.ics");
             CalendarClockChangeTest.reload(d, changeDay);
             CalendarApp.waitInFrame(d, "the early series", CalendarSeriesTest.drawn("Early round"), 30_000);
-            CalendarApp.inFrame(d, "let tab = Array.from(document.querySelectorAll('#calendar [role=\"tab\"]'))"
-                    + "  .find(t => t.textContent.trim() === 'Week');"
-                    + "if (!tab) throw new Error('no Week tab'); tab.click(); return 1;");
-            CalendarFollowingDatesTest.weekShowing(d, changeDay);
+            CalendarFollowingDatesTest.weekViewOn(d, changeDay);
             CalendarApp.waitInFrame(d, "the occurrence on the change day", CalendarDragTest.inColumn(changeDay.toString(), "Early round"), 30_000);
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn("Early round", changeDay.toString(),
                     CalendarDragTest.slotDistance("02:00:00", "03:00:00"), true), "all");
