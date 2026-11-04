@@ -795,10 +795,12 @@ function carryRecurSource(from, to) {
     // the dialog ever opening still has to keep the series' text.
     if (!sameRecurFields(to, recurFormBaseline || from.sourceFields)) return;
     to.source = from.source;
-    // The parts the dialog has no control for go with the text, or the event is drawn, and its
-    // reminders set, by the bare rule until the file is read again.
-    ['bydayFilter', 'bymonthdayList', 'bymonthList', 'bysetpos', 'byweekno', 'byyearday', 'wkst'].forEach(function (key) {
-        if (from[key] !== undefined) to[key] = from[key];
+    // Every part the text names goes with it, the ones the dialog shows too: the form's reading
+    // of a rule it can't show whole is another rule (for "every Friday the 13th" it is the 13th,
+    // and the day filter alone is every Friday), and the event is drawn, and its reminders set,
+    // by what the file says rather than by that until the file is read again.
+    ['byday', 'bymonthday', 'bymonth', 'bydayFilter', 'bymonthdayList', 'bymonthList', 'bysetpos', 'byweekno', 'byyearday', 'wkst'].forEach(function (key) {
+        to[key] = from[key];
     });
     // The fields this rule now reads as, not the ones the file parsed to: for a
     // rule the dialog cannot show whole the two differ, and writing it out asks

@@ -38,6 +38,17 @@ public class CalendarDuplicateTest {
                 "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
     }
 
+    /** Each day a series is drawn on is that day of a month, and a weekday. */
+    static void onlyOnDay(List<String> days, int dayOfMonth, String when) {
+        for (String day : days) {
+            LocalDate date = LocalDate.parse(day);
+            DayOfWeek weekday = date.getDayOfWeek();
+            if (date.getDayOfMonth() != dayOfMonth || weekday == DayOfWeek.SATURDAY || weekday == DayOfWeek.SUNDAY)
+                throw new AssertionError("Once " + when + ", the series is drawn on " + day + "; it runs on day "
+                        + dayOfMonth + " of a month when that is a weekday. Drawn on: " + days);
+        }
+    }
+
     /** The one file a directory gained. */
     static String newFileIn(WebDriver d, String dir, Set<String> before) throws Exception {
         for (int i = 0; i < 60; i++) {
@@ -153,6 +164,46 @@ public class CalendarDuplicateTest {
                     throw new AssertionError("The copy of the weekday series is drawn on a " + weekday + ", " + day);
             }
             System.out.println("  ok   a rule the form can't show is copied as it is, and drawn by it");
+
+            // --- a rule the dialog reads as less than it says ------------------------------------------------
+            // the day of the month the series starts on, when that is a weekday: the dialog reads it as "monthly
+            // on that day", and drawn by that with the weekday filter alone it would be every weekday. Kept as
+            // its own text, the series is drawn by all of it at once, renamed and duplicated alike.
+            String numbered = "Payday";
+            String rename = "Payday run";
+            int dayOfMonth = first.getDayOfMonth();
+            String numberedRule = "FREQ=MONTHLY;BYDAY=MO,TU,WE,TH,FR;BYMONTHDAY=" + dayOfMonth;
+            CalendarApp.write(d, recurring, "payday-to-duplicate.ics", String.join("\r\n",
+                    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//test//test//EN",
+                    "BEGIN:VEVENT",
+                    "UID:payday-to-duplicate",
+                    "DTSTAMP:20260101T000000Z",
+                    "DTSTART:" + first.format(DateTimeFormatter.BASIC_ISO_DATE) + "T120000Z",
+                    "DTEND:" + first.format(DateTimeFormatter.BASIC_ISO_DATE) + "T121500Z",
+                    "RRULE:" + numberedRule,
+                    "SUMMARY:" + numbered,
+                    "END:VEVENT", "END:VCALENDAR", ""));
+            Page.gotoView(d, "Drive", "downloadFile", "__drive");
+            CalendarApp.open(d);
+            CalendarApp.gotoMonth(d, first.toString());
+            CalendarApp.waitInFrame(d, "the numbered series on the grid", CalendarSeriesTest.drawn(numbered), 30_000);
+            CalendarApp.openPopover(d, numbered);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "all");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-title", rename) + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            CalendarApp.assertHas(CalendarApp.awaitStored(d, recurring, "payday-to-duplicate.ics", "SUMMARY:" + rename),
+                    "RRULE", numberedRule);
+            CalendarApp.waitInFrame(d, "the renamed series on the grid", CalendarSeriesTest.drawn(rename), 30_000);
+            onlyOnDay(CalendarApp.occurrenceDates(d, rename), dayOfMonth, "renamed");
+            before = new HashSet<>(CalendarApp.list(d, recurring));
+            duplicateOn(d, rename, first);
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            CalendarApp.assertHas(CalendarApp.read(d, recurring, newFileIn(d, recurring, before)), "RRULE", numberedRule);
+            onlyOnDay(CalendarApp.occurrenceDates(d, rename), dayOfMonth, "duplicated");
+            System.out.println("  ok   a rule the dialog reads as less is drawn by the whole of it, renamed and duplicated");
 
             // --- an added date --------------------------------------------------------------------------------
             // the Saturday added to the fortnightly series is one occurrence, so its copy is one event
