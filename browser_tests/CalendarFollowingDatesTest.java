@@ -660,6 +660,36 @@ public class CalendarFollowingDatesTest {
                 throw new AssertionError("Asked for 5 more after its rule had run out, the new part should repeat 5 times:\n" + recounted);
             CalendarApp.assertTimeIs(recounted, "DTSTART", ranOutAdded.atTime(10, 0));
             System.out.println("  ok   a count typed after the rule ran out is kept: " + CalendarApp.property(recounted, "RRULE"));
+
+            // --- from an added date, moved past midnight in the dialog -----------------------------------------------
+            // weekly on Mondays at 09:00, with Wednesday 23:00 and Friday 14:00 added. From the Wednesday on, moved two
+            // hours to Thursday 01:00: the Friday goes as far, to 16:00 that Friday, not back to the Thursday
+            LocalDate pastMonday = LocalDate.of(2027, 5, 3);
+            LocalDate pastWednesday = pastMonday.plusDays(2), pastThursday = pastMonday.plusDays(3), pastFriday = pastMonday.plusDays(4);
+            CalendarApp.write(d, recurring, "pastmidnight.ics", CalendarClockChangeTest.vevent("pastmidnight", "Past midnight",
+                    "DTSTART;TZID=" + zone + ":" + pastMonday.format(BASIC) + "T090000",
+                    "DTEND;TZID=" + zone + ":" + pastMonday.format(BASIC) + "T093000",
+                    "RRULE:FREQ=WEEKLY;BYDAY=MO",
+                    "RDATE;TZID=" + zone + ":" + pastWednesday.format(BASIC) + "T230000," + pastFriday.format(BASIC) + "T140000"));
+            CalendarClockChangeTest.reload(d, pastWednesday);
+            CalendarApp.monthView(d);
+            CalendarApp.waitInFrame(d, "the series with dates past midnight", CalendarSeriesTest.drawn("Past midnight"), 30_000);
+            CalendarClockChangeTest.openOn(d, "Past midnight", pastWednesday);
+            CalendarApp.inFrame(d, CalendarApp.click("popover-edit") + "return 1;");
+            CalendarApp.chooseScope(d, "following");
+            CalendarApp.waitInFrame(d, "the event dialog",
+                    "document.getElementById('event-modal-backdrop').classList.contains('open')", 30_000);
+            CalendarApp.inFrame(d, CalendarApp.setField("event-start-date", pastThursday.toString())
+                    + CalendarApp.setField("event-start-time", "01:00")
+                    + CalendarApp.setField("event-end-date", pastThursday.toString())
+                    + CalendarApp.setField("event-end-time", "01:30") + "return 1;");
+            CalendarApp.save(d, "event-save", "event-modal-backdrop");
+            String pastPart = CalendarApp.read(d, recurring, newSeries(d, recurring, Set.of("pastmidnight.ics"), "Past midnight"));
+            String pastAdded = String.valueOf(CalendarApp.property(pastPart, "RDATE"));
+            if (! pastAdded.contains(pastThursday.format(BASIC) + "T010000") || ! pastAdded.contains(pastFriday.format(BASIC) + "T160000"))
+                throw new AssertionError("Moved two hours past midnight, the Friday should go two hours on, to "
+                        + pastFriday + " 16:00, with the moved date listed at " + pastThursday + " 01:00:\n" + pastPart);
+            System.out.println("  ok   moved past midnight in the dialog, a later added date goes as far: " + pastAdded);
             System.out.println("PASS");
         } finally {
             if (own != null)

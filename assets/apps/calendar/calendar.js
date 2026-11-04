@@ -4822,7 +4822,11 @@ function takeListedDatesFrom(occurrence, recur, allDay, endEdited) {
             delete recur.sourceFields;
         }
     }
-    let ownMove = storedMinutes(moved) - storedMinutes(cut);
+    // An added date goes as far as the moved occurrence did. From one of the rule's dates that is how far the
+    // rule's time of day went, as the rule's dates go; from an added date the rule stays where it was, and the
+    // dialog may have taken the occurrence to another day, which the dates listed after it go to as well.
+    let ownMove = storedMinutes(moved) - storedMinutes(cut)
+        + (fromAdded ? 1440 * daysBetweenInputDates(String(cut).slice(0, 10), String(moved).slice(0, 10)) : 0);
     let ruleMove = storedMinutes(recur.dtstart) - storedMinutes(was.dtstart);
     let after = function (list) { return (list || []).filter(function (s) { return s > cut; }); };
     // An added date that is excluded too is no occurrence (RFC 5545), so neither goes along: moved as
