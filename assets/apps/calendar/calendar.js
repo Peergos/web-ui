@@ -802,12 +802,10 @@ function carryRecurSource(from, to) {
     ['byday', 'bymonthday', 'bymonth', 'bydayFilter', 'bymonthdayList', 'bymonthList', 'bysetpos', 'byweekno', 'byyearday', 'wkst'].forEach(function (key) {
         to[key] = from[key];
     });
-    // The fields this rule now reads as, not the ones the file parsed to: for a
-    // rule the dialog cannot show whole the two differ, and writing it out asks
-    // this same question again. Where the series ends is the exception: the
-    // dialog shows the occurrences left from the one it opened on, so a series
-    // cut there has fewer than its rule names, and the file's own end is kept
-    // here so that the write sees the difference and replaces it.
+    // What writing it out compares the rule against, with the file's own end: the
+    // dialog shows the occurrences left from the one it opened on, so a series cut
+    // there has fewer than its rule names, and keeping the file's end here lets the
+    // write see the difference and replace it.
     let fields = recurFormFields(to);
     ['end', 'until', 'count'].forEach(function (key) { fields[key] = from.sourceFields[key]; });
     to.sourceFields = fields;
