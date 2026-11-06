@@ -18,7 +18,8 @@ public class PackagePeergos {
         String OS_ARCH = getOsArch();
         String ARCH = canonicaliseArchitecture(System.getProperty("os.arch"));
 
-        if (runCommand("java", "Specialise.java", "../server/Peergos.jar") != 0)
+        if (runCommand("java", "Specialise.java", "../server/Peergos.jar",
+                System.getProperty("os.name"), System.getProperty("os.arch")) != 0)
             throw new IllegalStateException("Specialise failed");
         Files.copy(Paths.get("../server/Peergos.jar"), Paths.get("Peergos.jar"), StandardCopyOption.REPLACE_EXISTING);
 
