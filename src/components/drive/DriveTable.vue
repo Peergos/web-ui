@@ -285,8 +285,8 @@ module.exports = {
 
 .tablethumb {
 	display: block;
-	width: 36px;
-	height: 36px;
+	width: 100%;
+	height: 100%;
 	object-fit: cover;
 	object-position: center center;
 	border-radius: var(--radius-control);
