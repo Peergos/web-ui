@@ -63,6 +63,7 @@ public class MultiLinkCheck {
                     ctx.createSecretLinkTo(
                         peergos.client.JsUtil.asList(dirs),
                         peergos.client.JsUtil.asList([dirs[1]]),
+                        peergos.client.JsUtil.asList([]),
                         java.util.Optional.empty(), '', '', false)
                     .thenApply(props => {
                         window.__r = {members: props.memberCount(),

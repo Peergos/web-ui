@@ -399,7 +399,9 @@ module.exports = {
             let that = this;
             let filePath = peergos.client.PathUtils.toPath(this.path, this.files[0].getFileProperties().name).toString();
             this.showSpinner = true;
-            this.context.addToSecretLink(summary, filePath, writable).thenApply(props => {
+            // an item joins a link on the same terms as what's already in it
+            let hidden = summary.props.getMembers().toArray().some(m => m.isHidden());
+            this.context.addToSecretLink(summary, filePath, writable, hidden).thenApply(props => {
                 that.showSpinner = false;
                 that.showAddToExisting = false;
                 that.$toast.success(that.translate("DRIVE.SHARE.LINK.ADDED"));
