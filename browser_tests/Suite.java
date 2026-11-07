@@ -56,6 +56,7 @@ public class Suite {
             // table's headings set it, and both views must follow whichever did.
             t("sorting a listing from either view", () -> GridSortTest.run(args1));
             t("a file's menu in the last row opens without moving the page", () -> DriveMenuScrollTest.run(args1));
+            t("video and music thumbnails wear a mark, in the drive and the feed", () -> MediaMarkTest.run(args1));
             t("a long path trail opens out", () -> PathExpandTest.run(args1));
             t("what the mount page shows once mounted", () -> MountCardTest.run(args1));
             t("what the mount page says about syncing into a phone's own apps", () -> MountDeviceTest.run(args1));

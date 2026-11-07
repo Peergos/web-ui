@@ -26,11 +26,11 @@
                     </label>
                 </td>
                 <td class="glyph">
-                    <img
-				class="tablethumb"
-				v-if="getThumbnailURL(file)"
-				:src="getThumbnailURL(file)"
-		    />
+                    <span class="tablethumb__frame" v-if="getThumbnailURL(file)">
+                        <!-- the name in the next cell already says what it is -->
+                        <img class="tablethumb" :src="getThumbnailURL(file)" alt=""/>
+                        <MediaMark :type="file.getFileProperties().getType()" class="tablethumb__media"/>
+                    </span>
                     <AppIcon v-else class="card__icon" :icon="cardIcon(file)" />
                 </td>
 				<td class="file"
@@ -64,6 +64,7 @@
 const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const ShareMark = require("./ShareMark.vue");
+const MediaMark = require("./MediaMark.vue");
 const downloader = require("../../mixins/downloader/index.js");
 const i18n = require("../../i18n/index.js");
 const fileIcon = require("../../mixins/fileicon/index.js");
@@ -74,7 +75,8 @@ module.exports = {
 	components: {
 	    AppButton,
 	    AppIcon,
-	    ShareMark
+	    ShareMark,
+	    MediaMark
 	},
 	props: {
 		files: {
@@ -273,14 +275,30 @@ module.exports = {
 	color: var(--pg-muted);
 }
 
-.tablethumb {
+.tablethumb__frame {
+	position: relative;
 	display: block;
 	width: 36px;
 	height: 36px;
 	margin: 0 auto;
+}
+
+.tablethumb {
+	display: block;
+	width: 100%;
+	height: 100%;
 	object-fit: cover;
 	object-position: center center;
 	border-radius: var(--radius-control);
+}
+
+/* Centred: a corner of a thumbnail this small has no room for a mark that still reads. */
+.tablethumb__media {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 20px;
+	height: 20px;
 }
 
 .drive-table td.file {

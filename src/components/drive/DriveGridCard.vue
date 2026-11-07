@@ -23,13 +23,15 @@
 
 		<figure :id="itemIndex" 
             :draggable="! isTouchLayout" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
+			<!-- the name under the picture already says what it is -->
 			<img
 				class="cover"
 				v-if="src"
 				:src="src"
-				:alt="alt"
+				alt=""
 			/>
 			<AppIcon v-else class="card__icon" :icon="cardIcon" />
+			<MediaMark v-if="src" :type="type" class="card__media"/>
 			<figcaption :class="{ 'name-open': nameOpen }">
 				<span class="card__name" :title="filename"
 					@click="toggleName">{{ filename }}</span>
@@ -44,6 +46,7 @@
 const AppButton = require("../AppButton.vue");
 const AppIcon = require("../AppIcon.vue");
 const ShareMark = require("./ShareMark.vue");
+const MediaMark = require("./MediaMark.vue");
 const i18n = require("../../i18n/index.js");
 const fileIcon = require("../../mixins/fileicon/index.js");
 
@@ -52,12 +55,12 @@ module.exports = {
         AppButton,
 	    AppIcon,
 	    ShareMark,
+	    MediaMark,
     },
     mixins: [i18n, fileIcon],
 	props: [
 		'filename',
 		'src',
-		'alt',
 		'srcset',
 		'type',
 		'dragstartFunc',
@@ -316,6 +319,18 @@ module.exports = {
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* The top right corner of the picture, where photo grids put it: the select circle has the top
+   left, and the menu sits in the row below. Over the tint of a picked tile, and the same size as
+   the select circle, so the two corners match when both are up. */
+.grid-card .card__media {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	z-index: 2;
+	width: 26px;
+	height: 26px;
 }
 
 /* both controls appear for the tile under the pointer, as they always have */

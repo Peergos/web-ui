@@ -138,7 +138,10 @@
                                     <a v-if="entry[0].tile == null && !entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__icon">
                                         <AppIcon @click.stop="view($event, entry[0])" class="card__icon" :icon="fileIcon(entry[0].fileType)"></AppIcon>
                                     </a>
-                                    <img v-if="entry[0].tile == null && entry[0].hasThumbnail && !entry[0].isChat" v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
+                                    <span v-if="entry[0].tile == null && entry[0].hasThumbnail && !entry[0].isChat" class="feed-preview__frame">
+                                        <img v-on:click="view($event, entry[0])" v-bind:src="entry[0].thumbnail" class="feed-preview__thumb" alt=""/>
+                                        <MediaMark :type="entry[0].fileType" class="feed-mark"/>
+                                    </span>
                                     <button v-if="entry[0].isChat && entry[0].isNewChat" type="button" class="pg-btn pg-btn--primary" @click="joinConversation(entry[0])">{{ translate("NEWSFEED.JOIN") }}</button>
                                     <button v-if="entry[0].isChat && !entry[0].isNewChat" type="button" class="pg-btn" @click="openConversation(entry[0])">{{ translate("DRIVE.VIEW") }}</button>
                                 </div>
@@ -158,6 +161,7 @@
                                                         <AppIcon v-on:click="viewMediaList(row.mediaList, mediaIndex)" class="card__icon" :icon="fileIcon(media.fileType)"> </AppIcon>
                                                     </a>
                                                     <img v-if="media.hasThumbnail" v-on:click="viewMediaList(row.mediaList, mediaIndex)" v-bind:src="media.thumbnail" alt=""/>
+                                                    <MediaMark v-if="media.hasThumbnail" :type="media.fileType" class="feed-mark"/>
                                                 </div>
                                             </div>
                                             <div v-if="displayCommentButtonForPrevious(entry, rowIndex)" class="feed-actions" v-bind:style="{ marginLeft: threadIndent(entry[rowIndex-1]) }">
@@ -231,6 +235,7 @@ const FeedTile = require("../components/social/FeedTile.vue");
 const TileBudget = require("../components/social/tile-budget.js");
 const FolderPicker = require('../components/picker/FolderPicker.vue');
 const Gallery = require("../components/drive/DriveGallery.vue");
+const MediaMark = require("../components/drive/MediaMark.vue");
 const ViewProfile = require("../components/profile/ViewProfile.vue");
 const AppSandbox = require("../components/sandbox/AppSandbox.vue");
 const Spinner = require("../components/spinner/Spinner.vue");
@@ -247,6 +252,7 @@ module.exports = {
 		FeedTile,
 		FolderPicker,
 		Gallery,
+		MediaMark,
 		ViewProfile,
 		AppButton,
 		AppSandbox,
@@ -2058,6 +2064,12 @@ module.exports = {
 	gap: 12px;
 }
 
+/* the picture's own box, so a mark can sit in its corner rather than in the row's */
+.feed-preview__frame {
+	position: relative;
+	display: flex;
+}
+
 .feed-preview__thumb {
 	max-width: 100%;
 	max-height: 240px;
@@ -2069,6 +2081,19 @@ module.exports = {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
+}
+
+.feed-media__item {
+	position: relative;
+}
+
+/* where the drive's grid puts it, at the same size */
+.feed-mark {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 26px;
+	height: 26px;
 }
 
 .feed-media__item img {
