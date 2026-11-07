@@ -147,7 +147,7 @@ modules:
             --strip-debug --no-man-pages --no-header-files --output /app/jre &&
         cd .. && rm -rf jdeps-classes
 
-      - java packager/StripNatives.java server/Peergos.jar
+      - java packager/Specialise.java server/Peergos.jar linux
       - install -Dm644 server/Peergos.jar /app/share/peergos/Peergos.jar
 
       - install -Dm755 peergos.sh /app/bin/peergos
