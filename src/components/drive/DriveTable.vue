@@ -26,10 +26,12 @@
                     </label>
                 </td>
                 <td class="glyph">
+                    <!-- the name in the next cell already says what it is -->
                     <img
 				class="tablethumb"
 				v-if="getThumbnailURL(file)"
 				:src="getThumbnailURL(file)"
+				alt=""
 		    />
                     <AppIcon v-else class="card__icon" :icon="cardIcon(file)" />
                 </td>

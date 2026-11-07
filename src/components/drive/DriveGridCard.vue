@@ -23,11 +23,12 @@
 
 		<figure :id="itemIndex" 
             :draggable="! isTouchLayout" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
+			<!-- the name under the picture already says what it is -->
 			<img
 				class="cover"
 				v-if="src"
 				:src="src"
-				:alt="alt"
+				alt=""
 			/>
 			<AppIcon v-else class="card__icon" :icon="cardIcon" />
 			<figcaption :class="{ 'name-open': nameOpen }">
@@ -57,7 +58,6 @@ module.exports = {
 	props: [
 		'filename',
 		'src',
-		'alt',
 		'srcset',
 		'type',
 		'dragstartFunc',
