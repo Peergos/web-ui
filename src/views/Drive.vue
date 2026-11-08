@@ -162,6 +162,8 @@
             @sortBy="setSortBy"
             @openMenu="openMenu"
             @navigateDrive="navigateDrive"
+            :dragstartFunc="dragStart"
+            :dropFunc="drop"
           />
 
           <!-- opening an empty folder swaps no view, so the target arrives on its own -->
