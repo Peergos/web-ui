@@ -11,7 +11,9 @@
             </tr>
 		</thead>
 		<tbody role="presentation">
-			<tr v-for="file in files" tabindex="1" role="row" class="table__item" :class="{ 'is-selected': selectedSet.has(file), 'is-menu-target': file === menuTarget }">
+			<tr v-for="file in files" tabindex="1" role="row" class="table__item" :class="{ 'is-selected': selectedSet.has(file), 'is-menu-target': file === menuTarget }"
+                :id="file.getFileProperties().name"
+                :draggable="! isTouchLayout" @dragover.prevent @dragstart="dragstartFunc($event, file)" @drop="dropFunc($event, file)">
                 <td class="select">
                     <label class="checkbox__group">
                         <input
@@ -34,7 +36,6 @@
                     <AppIcon v-else class="card__icon" :icon="cardIcon(file)" />
                 </td>
 				<td class="file"
-					:id="file.getFileProperties().name"
 					@click="$emit('navigateDrive', file)"
 				>
 					<span class="table__name" :title="file.getFileProperties().name">{{ file.getFileProperties().name }}</span>
@@ -106,6 +107,14 @@ module.exports = {
             type: Boolean,
             default: true
         },
+        dragstartFunc: {
+            type: Function,
+            default: () => {}
+        },
+        dropFunc: {
+            type: Function,
+            default: () => {}
+        },
         // name -> "" | "people" | "link" | "people link"
         shareKinds: {
             type: Object,
@@ -121,6 +130,9 @@ module.exports = {
         }
     },
     computed: {
+        isTouchLayout() {
+            return this.$store.getters.isTouchLayout;
+        },
         // a set, not indexOf per row: a folder with thousands of files would
         // otherwise scan the selection once for every row it draws
         selectedSet() {
