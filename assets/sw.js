@@ -185,6 +185,7 @@ const precachedAssets = [
   'js/nacl-fast.min.js',
   'js/scrypt.js',
   'js/blake2b.js',
+  'js/mldsa.js',
   'js/vendor.js',
   'js/peergoslib.nocache.js',
   'js/wrapper.js',

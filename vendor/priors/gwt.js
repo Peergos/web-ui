@@ -1893,6 +1893,33 @@ function decapsulate(ct, sk) {
     return future;
 }
 
+function mldsa44_public_key(seed) {
+    var keys = window.ml_dsa44.keygen(new Uint8Array(seed));
+    return convertToByteArray(new Int8Array(keys.publicKey));
+}
+
+function mldsa44_sign(message, seed) {
+    var future = peergos.shared.util.Futures.incomplete();
+    try {
+        var keys = window.ml_dsa44.keygen(new Uint8Array(seed));
+        var sig = window.ml_dsa44.sign(keys.secretKey, new Uint8Array(message));
+        future.complete(convertToByteArray(new Int8Array(sig)));
+    } catch (e) {
+        future.completeExceptionally(java.lang.Throwable.of(e));
+    }
+    return future;
+}
+
+function mldsa44_verify(signature, message, publicKey) {
+    var future = peergos.shared.util.Futures.incomplete();
+    try {
+        future.complete(window.ml_dsa44.verify(new Uint8Array(publicKey), new Uint8Array(message), new Uint8Array(signature)));
+    } catch (e) {
+        future.complete(false);
+    }
+    return future;
+}
+
 if (window.crypto.subtle == null) { // polyfill webcrypto if it is absent
     console.log("Using webcrypto polyfill.");
     window.crypto.subtle = {
@@ -2269,6 +2296,9 @@ var tweetNaCl = {
         this.generateMlkemKeyPair = generate_mlkem_keypair;
         this.encapsulate = encapsulate;
         this.decapsulate = decapsulate;
+        this.mldsa44_public_key = mldsa44_public_key;
+        this.mldsa44_sign = mldsa44_sign;
+        this.mldsa44_verify = mldsa44_verify;
     }   
 };
 
