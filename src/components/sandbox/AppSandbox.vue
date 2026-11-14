@@ -1877,8 +1877,7 @@ module.exports = {
                             }
                         } else {
                             //fallback to attachment sender
-                            let owner = that.extractOwnerFromPath(ref.path);
-                            that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                            that.context.getFile(ref).thenApply(optFile => {
                                let mediaFile = optFile.ref;
                                if (mediaFile != null) {
                                    let fullPath = ref.path.startsWith("/") ? ref.path : "/" + ref.path;
@@ -3381,8 +3380,7 @@ module.exports = {
                     future.complete({path: mirrorPath, file: mediaFile});
                 } else {
                     //fallback to attachment sender
-                    let owner = that.extractOwnerFromPath(ref.path);
-                    that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                    that.context.getFile(ref).thenApply(optFile => {
                        let mediaFile = optFile.ref;
                        if (mediaFile != null) {
                            future.complete({path: ref.path, file: mediaFile});
