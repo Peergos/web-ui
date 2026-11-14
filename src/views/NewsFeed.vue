@@ -784,8 +784,7 @@ module.exports = {
             } else {
                 var loadedCount = 0;
                 refs.forEach(ref => {
-                    let owner = that.extractOwnerFromPath(ref.path);
-                    that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+                    that.context.getFile(ref).thenApply(optFile => {
                         loadedCount++;
                         let mediaFile = optFile.ref;
                         if (mediaFile != null) {
@@ -868,8 +867,7 @@ module.exports = {
         loadFileFromRef: function(ref) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let owner = that.extractOwnerFromPath(ref.path);
-            that.context.network.getFile(ref.cap, owner).thenApply(optFile => {
+            that.context.getFile(ref).thenApply(optFile => {
                 let file = optFile.ref;
                 if (file != null) {
                     that.loadFile(ref.path, file).thenApply(result => {
