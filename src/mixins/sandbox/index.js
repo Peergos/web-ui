@@ -86,7 +86,10 @@ module.exports = {
                     "EXCHANGE_MESSAGES_WITH_FRIENDS", "USE_MAILBOX", "MANAGE_CONTACTS", "ACCESS_PROFILE_PHOTO", "CSP_UNSAFE_EVAL"];
                   let validTemplateValues = ["messaging", "messaging-instance"];
                   // these share .apps/<name> with built-in data, which uninstalling an app would delete
-                  let reservedAppNames = ["calendar", "contacts", "launcher"];
+                  let reservedAppNames = ["calendar", "contacts", "launcher", "htmlviewer"];
+                  // the sandbox gives the app named "chat" every conversation no other app created
+                  let storeOnlyAppNames = ["chat"];
+                  let fromAppStore = that.isString(appPath) && appPath.startsWith("/peergos/recommended-apps/");
                   mandatoryFields.forEach(field => {
                       if (props[field] == null) {
                           errors.push("Missing property " + field);
@@ -115,8 +118,13 @@ module.exports = {
                         // in the menu now, where a copy installed from Custom Apps wouldn't be shown
                         if (isCustomAppsAddressBook(props)) {
                             errors.push("Address Book is part of Peergos now: open it from the menu");
-                        } else if (reservedAppNames.includes(props.name)) {
-                            errors.push("Invalid displayName property. The name '" + props.name + "' is reserved");
+                        } else if (!that.isString(props.name) || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/.test(props.name)) {
+                            // it is the app's folder name and part of its chat ids
+                            errors.push("Invalid name property. Use only letters, digits, dash and underscore");
+                        } else if (reservedAppNames.includes(props.name.toLowerCase())) {
+                            errors.push("Invalid name property. The name '" + props.name + "' is reserved");
+                        } else if (storeOnlyAppNames.includes(props.name.toLowerCase()) && !fromAppStore) {
+                            errors.push("Invalid name property. The name '" + props.name + "' is reserved for the App Store app");
                         }
                         if (props.displayName.length > 25) {
                             errors.push("Invalid displayName property. Length must not exceed 25 characters");
