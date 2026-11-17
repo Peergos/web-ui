@@ -211,9 +211,11 @@ module.exports = {
         checkAvailableSpace: function(fileSize) {
             return Number(this.quotaBytes.toString()) - (Number(this.usageBytes.toString()) + fileSize);
         },
-        confirmReplaceAppInstall(appName, oldVersion, newVersion, replaceFunction, cancelFunction) {
-            this.confirm_message = 'App: ' + appName + ' ' + oldVersion + ' currently installed';
-            this.confirm_body = "Are you sure you want to replace with version: " + newVersion + "?";
+        confirmReplaceAppInstall(oldDisplayName, oldVersion, newDisplayName, newVersion, replaceFunction, cancelFunction) {
+            this.confirm_message = 'App: ' + oldDisplayName + ' ' + oldVersion + ' currently installed';
+            this.confirm_body = this.isTemplateApp || oldDisplayName == newDisplayName ?
+                "Are you sure you want to replace with version: " + newVersion + "?" :
+                "Warning: '" + newDisplayName + "' " + newVersion + " will replace '" + oldDisplayName + "' and get access to its data. Are you sure?";
             this.confirm_consumer_cancel_func = cancelFunction;
             this.confirm_consumer_func = replaceFunction;
             this.showConfirm = true;
@@ -238,7 +240,7 @@ module.exports = {
                         } else {
                             let oldVersion = props.version;
                             that.showSpinner = false;
-                            that.confirmReplaceAppInstall(displayName, oldVersion, newVersion,
+                            that.confirmReplaceAppInstall(props.displayName, oldVersion, displayName, newVersion,
                                 () => {
                                     that.showConfirm = false;
                                     that.showSpinner = true;
