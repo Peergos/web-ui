@@ -17,7 +17,7 @@ jobs:
     - name: Set up JDK ${{ matrix.Java }}
       uses: actions/setup-java@v5
       with:
-        distribution: temurin
+        distribution: zulu
         java-version: ${{ matrix.Java }}
     - name: Build with Ant
       run: ant -noinput -buildfile build.xml peergos_submodule_sync dist 
