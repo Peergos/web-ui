@@ -31,7 +31,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v5
       with:
-        distribution: temurin
+        distribution: zulu
         java-version: 25
         architecture: ${{ matrix.arch }}
     - name: Install the Apple certificate and provisioning profile
