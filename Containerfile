@@ -1,6 +1,6 @@
 FROM debian:trixie-slim as build
 
-RUN apt-get update && apt-get install --assume-yes ant git curl ca-certificates
+RUN apt-get update && apt-get install --assume-yes ant git curl ca-certificates binutils
 
 # Pinned for CVE-2026-114938 until the Temurin and Zulu docker images ship 25.0.5.1
 ARG TARGETARCH
