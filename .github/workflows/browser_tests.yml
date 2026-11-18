@@ -48,7 +48,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v5
       with:
-        distribution: temurin
+        distribution: zulu
         java-version: 25
 
     - name: Install ant
