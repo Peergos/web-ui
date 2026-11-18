@@ -32,12 +32,16 @@ self.onfetch = event => {
     let requestURL = new URL(url);
     if (requestURL.pathname.startsWith('/api')) return;
     if (event.request.mode === 'navigate') {
-        event.respondWith(caches.open(cacheName).then(async cache => {
-            const cached = await cache.match(event.request.url);
-            if (cached) return cached;
-            const index = await cache.match('index.html');
-            if (index) return index;
-            return fetch(event.request.url);
+        // Network first: a cached index.html carries SRI hashes for the scripts of an older deploy
+        event.respondWith(caches.open(cacheName).then(cache => {
+            return fetch(event.request.url).then(fetchedResponse => {
+                if (fetchedResponse.ok)
+                    cache.put(event.request.url, fetchedResponse.clone());
+                return fetchedResponse;
+            }).catch(async () => {
+                const cached = await cache.match(event.request.url);
+                return cached || cache.match('index.html');
+            });
         }));
     } else if (event.request.mode === 'no-cors') {
         let cacheKey = requestURL.pathname.substring(1);
