@@ -444,7 +444,7 @@
     </Error>
     <Confirm
       v-if="showConfirm"
-      v-on:hide-confirm="showConfirm = false"
+      v-on:hide-confirm="confirmHidden()"
       :confirm_message="confirm_message"
       :confirm_body="confirm_body"
       :consumer_cancel_func="confirm_consumer_cancel_func"
@@ -647,6 +647,7 @@ module.exports = {
             confirm_body: "",
             confirm_consumer_cancel_func: () => {},
             confirm_consumer_func: () => {},
+            confirm_on_hide: null,
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
@@ -1072,6 +1073,8 @@ module.exports = {
 
 	beforeUnmount() {
 		window.removeEventListener('resize', this.onResize );
+		// a question left open, by going to another view, still has to be answered
+		this.confirmHidden();
 		// an open still waiting for the apps would otherwise bring the drive back
 		this.closed = true;
 	},
@@ -2634,16 +2637,36 @@ module.exports = {
             }
             return uploadFuture;
         },
+        // whoever asked is told the question went, however it went: closed by its X, Escape or a
+        // click beside it is no answer, and something may be waiting on one
+        confirmHidden() {
+            this.showConfirm = false;
+            let onHide = this.confirm_on_hide;
+            this.confirm_on_hide = null;
+            if (onHide != null)
+                onHide();
+        },
         confirmMove() {
             var future = peergos.shared.util.Futures.incomplete();;
+            // Asked part way through a move, whose spinner is up and drawn over dialogs, so it is
+            // down while asking. The move holds its writer's other writes until it has an answer,
+            // so closing the question keeps access as it is, which loses nothing.
+            let spinning = this.showSpinner;
+            this.showSpinner = false;
+            let answered = false;
+            let answer = keep => {
+                if (answered)
+                    return;
+                answered = true;
+                this.showSpinner = spinning;
+                future.complete(keep);
+            };
             this.confirm_message=this.translate("DRIVE.MOVE.ACCESS.TITLE");
             this.confirm_body=this.translate("DRIVE.MOVE.ACCESS.BODY");
-            this.confirm_consumer_cancel_func = () => {
-               future.complete(false);
-            };
-            this.confirm_consumer_func = () => {
-                future.complete(true);
-            };
+            this.confirm_consumer_cancel_func = () => answer(false);
+            this.confirm_consumer_func = () => answer(true);
+            // a turn later: Yes and No hide the question before they answer, so theirs comes first
+            this.confirm_on_hide = () => setTimeout(() => answer(true));
             this.showConfirm = true;
             return future;
         },
