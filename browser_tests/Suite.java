@@ -37,6 +37,7 @@ public class Suite {
             t("upload file", () -> UploadTest.run(args1));
             t("upload a group of files", () -> UploadGroupTest.run(args1));
             t("upload folder", () -> UploadFolderTest.run(args1));
+            t("an upload with a file gone since it was picked", () -> UploadUnreadableFileTest.run(args1));
             t("render a pdf in the pdf app", () -> PdfRenderTest.run(args1));
             t("follow markdown links", () -> MarkdownLinksTest.run(args1));
             t("html viewer links and images", () -> HtmlViewerTest.run(args1));

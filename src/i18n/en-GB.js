@@ -128,6 +128,7 @@ module.exports = {
     "DRIVE.DOWNLOAD.CANCELLED":"Download cancelled",
     "DRIVE.UPLOAD.COMPLETE":"Completing upload and refreshing folder...",
     "DRIVE.UPLOAD.ERROR":"Error Uploading files",
+    "DRIVE.UPLOAD.UNREADABLE":"Not uploaded, as it could not be read: $NAMES",
     "DRIVE.UPLOAD.RESUME.TITLE":"Do you wish to resume failed file upload?",
     "DRIVE.UPLOAD.RESUME.BODY":"File: $NAME, Folder: $PATH",
     "DRIVE.UPLOAD.EMPTY":"Nothing to upload",
