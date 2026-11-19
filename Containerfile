@@ -1,23 +1,13 @@
-FROM debian:trixie-slim as build
+FROM azul/zulu-openjdk:25 as build
 
-RUN apt-get update && apt-get install --assume-yes ant git curl ca-certificates binutils
-
-# Pinned for CVE-2026-114938 until the Temurin and Zulu docker images ship 25.0.5.1
-ARG TARGETARCH
-ARG ZULU=zulu25.38.201-ca-jdk25.0.5.1
-RUN if [ "$TARGETARCH" = "arm64" ]; then ZARCH=aarch64; SHA=7f0c356813de315dbac44d1a2a2d61a5cab9d6ac8f2cdff6e32c994be5c02da1; \
-    else ZARCH=x64; SHA=fc7a3d9396b443134666b9cf7cd946b532dc1781f5350c725849ac50d16a7198; fi && \
-    curl -fsSL -o /tmp/jdk.tar.gz https://cdn.azul.com/zulu/bin/${ZULU}-linux_${ZARCH}.tar.gz && \
-    echo "$SHA  /tmp/jdk.tar.gz" | sha256sum -c - && \
-    mkdir /opt/jdk && tar xzf /tmp/jdk.tar.gz -C /opt/jdk --strip-components=1 && rm /tmp/jdk.tar.gz
-ENV JAVA_HOME=/opt/jdk
-ENV PATH="/opt/jdk/bin:${PATH}"
+RUN apt-get update && apt-get install --assume-yes ant git binutils
 
 COPY . /opt/peergos
 WORKDIR /opt/peergos
 
 RUN ant dist && java packager/Specialise.java server/Peergos.jar linux
 
+ARG TARGETARCH
 RUN NACL_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "amd64") && \
     SQLITE_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "aarch64" || echo "x86_64") && \
     mkdir -p native-libs && \
