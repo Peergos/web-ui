@@ -2689,7 +2689,20 @@ module.exports = {
                 }
                 future.complete(true);
             } else {
-                this.uploadFile(files[index], uploadParams, previousDirectoryHolder).thenApply(result => {
+                this.uploadFile(files[index], uploadParams, previousDirectoryHolder).exceptionally(t => {
+                    // A file that could not be prepared, most often because it can no longer be read
+                    // (gone, moved or locked since it was picked), is left out and said so, in one
+                    // message per upload, rather than stopping the whole upload unseen.
+                    console.log(t);
+                    let file = files[index];
+                    uploadParams.progress.total -= 1;
+                    uploadParams.progress.max -= (file.size + (4096 - (file.size % 4096))) * 2;
+                    let skipped = uploadParams.unreadable = (uploadParams.unreadable || []).concat(file.name);
+                    let names = skipped.slice(0, 5).join(", ") + (skipped.length > 5 ? " +" + (skipped.length - 5) : "");
+                    that.$toast.error(that.translate("DRIVE.UPLOAD.UNREADABLE").replace("$NAMES", names),
+                        {timeout: false, id: uploadParams.name + "-unreadable"});
+                    return false;
+                }).thenApply(result => {
                     that.reduceAllUploads(index+1, files, future, uploadParams, previousDirectoryHolder);
                 });
             }
