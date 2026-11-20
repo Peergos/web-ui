@@ -150,6 +150,7 @@ public class Suite {
             if (canPlaceDownloads) {
                 t("download calendar event", () -> CalendarEventDownloadTest.run(args1));
                 t("a selection with an empty file in it downloads to the end", () -> EmptyFileDownloadTest.run(args1));
+                t("a folder downloaded from the selection bar", () -> SelectionBarDownloadTest.run(args1));
                 // The export half of this one downloads a file, so it belongs with the group
                 // that can say where downloads land.
                 t("calendar import and export", () -> CalendarImportExportTest.run(args1));

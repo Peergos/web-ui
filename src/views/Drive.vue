@@ -2016,6 +2016,9 @@ module.exports = {
                     folderCount = folderCount + 1;
                 }
             }
+            // Down before asking, as zipAndDownloadFolder does: the spinner is drawn over dialogs,
+            // so left up it covers the question, which then can never be answered.
+            this.showSpinner = false;
             this.confirmZipAndDownloadOfFolders(folderCount, stats,
                 () => {
                     that.showConfirm = false;
