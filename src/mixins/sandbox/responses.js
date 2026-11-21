@@ -118,7 +118,17 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        readInFile: function(headerFunc, file) {
+        // The latest version is read, and its size, type and ETag are taken from it too: a file overwritten since
+        // it was found isn't read cut or padded to its old length, nor tagged as the version before.
+        readInFile: function(headerFunc, found) {
+            let that = this;
+            found.getLatest(this.context.network).thenApply(file => that.readVersion(headerFunc, file))
+                .exceptionally(t => {
+                    console.log(t.getMessage());
+                    that.buildResponse(headerFunc(found.getFileProperties().mimeType), null, that.ACTION_FAILED);
+                });
+        },
+        readVersion: function(headerFunc, file) {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
@@ -131,16 +141,14 @@ module.exports = {
                 that.postData(convertToByteArray(headerFunc(props.mimeType, headInfo, etag)));
             } else if (size < maxChunkSize) {
                 let header = headerFunc(props.mimeType, null, etag);
-                file.getLatest(this.context.network).thenApply(updatedFile => {
-                    updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                        var bytes = new Uint8Array(size + header.byteLength);
-                        for(var i=0;i < header.byteLength;i++){
-                            bytes[i] = header[i];
-                        }
-                        let data = convertToByteArray(bytes);
-                        reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
-                            that.postData(data);
-                        });
+                file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
+                    var bytes = new Uint8Array(size + header.byteLength);
+                    for(var i=0;i < header.byteLength;i++){
+                        bytes[i] = header[i];
+                    }
+                    let data = convertToByteArray(bytes);
+                    reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
+                        that.postData(data);
                     });
                 });
             } else if(props.sizeHigh() > 0) {
@@ -149,29 +157,27 @@ module.exports = {
             } else {
                 let streamingInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), appFileStreaming: true};
                 let header = headerFunc(props.mimeType, streamingInfo, etag);
-                file.getLatest(this.context.network).thenApply(updatedFile => {
-                    updatedFile.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
-                        var currentSize = props.sizeLow();
-                        var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
-                        var pump = function() {
-                            if(blockSize > 0) {
-                                var bytes = new Uint8Array(blockSize + header.byteLength);
-                                for(var i=0;i < header.byteLength;i++){
-                                    bytes[i] = header[i];
-                                }
-                                var data = convertToByteArray(bytes);
-                                reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
-                                    currentSize = currentSize - read.value_0;
-                                    blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
-                                    that.postData(data);
-                                    Vue.nextTick(function() {
-                                        pump();
-                                    });
-                                });
+                file.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
+                    var currentSize = props.sizeLow();
+                    var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                    var pump = function() {
+                        if(blockSize > 0) {
+                            var bytes = new Uint8Array(blockSize + header.byteLength);
+                            for(var i=0;i < header.byteLength;i++){
+                                bytes[i] = header[i];
                             }
+                            var data = convertToByteArray(bytes);
+                            reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
+                                currentSize = currentSize - read.value_0;
+                                blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                                that.postData(data);
+                                Vue.nextTick(function() {
+                                    pump();
+                                });
+                            });
                         }
-                        pump();
-                    });
+                    }
+                    pump();
                 });
             }
         },
