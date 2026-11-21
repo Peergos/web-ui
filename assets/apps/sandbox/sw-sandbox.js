@@ -8,6 +8,9 @@ var streamingMap
 let instances = new Map();
 // Which instance each app document belongs to, learned from its navigation.
 let clientInstances = new Map();
+// workers mapped as their script was fetched, by when, as they aren't listed as clients until they run
+let startingWorkers = new Map();
+const WORKER_START_MS = 60 * 1000;
 let latestInstanceId = null;
 let downloadUrls = new Set();
 let INSTANCE_PARAM = 'pgi';
@@ -272,6 +275,8 @@ function setupNewApp(inst) {
 // A sandbox registers from its worker-sandbox.html frame, which lives exactly as long as the
 // sandbox does: an instance whose frame has gone is a closed tile or app.
 function pruneInstances() {
+    // only what was mapped before asking: a client mapped meanwhile may not be listed yet
+    let known = new Set(clientInstances.keys());
     // workers too: a sandbox's worker keeps its place while it runs
     return self.clients.matchAll({includeUncontrolled: true, type: 'all'}).then(all => {
         let alive = new Set(all.map(c => c.id));
@@ -279,9 +284,17 @@ function pruneInstances() {
             if (inst.sourceId != null && ! alive.has(inst.sourceId))
                 instances.delete(id);
         });
+        let now = Date.now();
         clientInstances.forEach((id, clientId) => {
-            if (! alive.has(clientId))
-                clientInstances.delete(clientId);
+            if (alive.has(clientId)) {
+                startingWorkers.delete(clientId);
+                return;
+            }
+            // a worker isn't listed until its script, and the importScripts in it, have been answered
+            if (! known.has(clientId) || now - (startingWorkers.get(clientId) || 0) < WORKER_START_MS)
+                return;
+            clientInstances.delete(clientId);
+            startingWorkers.delete(clientId);
         });
     });
 }
@@ -298,8 +311,10 @@ function instanceIdFromUrl(url) {
 // sandbox's: its own requests, such as importScripts, are answered by the same host.
 async function instanceIdFor(event) {
     let id = await requesterInstanceId(event);
-    if (id != null && event.request.destination == 'worker' && event.resultingClientId)
+    if (id != null && event.request.destination == 'worker' && event.resultingClientId) {
         clientInstances.set(event.resultingClientId, id);
+        startingWorkers.set(event.resultingClientId, Date.now());
+    }
     return id;
 }
 
