@@ -1078,9 +1078,13 @@ module.exports = {
         saveAsking: function(headerFunc, folderPath, name, data, allowed) {
             let that = this;
             this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => new Promise(done => {
+                // the next save goes on even when this one's answer can't be built (a name too long for the header)
                 let answer = code => {
-                    that.buildResponse(headerFunc(), null, code);
-                    done();
+                    try {
+                        that.buildResponse(headerFunc(), null, code);
+                    } finally {
+                        done();
+                    }
                 };
                 let askName = value => {
                     that.prompt_placeholder = 'Save File';
@@ -1104,8 +1108,11 @@ module.exports = {
                                     .exceptionally(t => answer(that.ACTION_FAILED));
                             } else {
                                 that.askToReplace(filename, () => {
-                                    that.overwriteFile(headerFunc(), fullPath, bytes, file, false);
-                                    done();
+                                    try {
+                                        that.overwriteFile(headerFunc(), fullPath, bytes, file, false);
+                                    } finally {
+                                        done();
+                                    }
                                 }, () => askName(filename));
                             }
                             return null;
