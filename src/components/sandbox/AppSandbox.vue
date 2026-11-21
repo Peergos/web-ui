@@ -4221,12 +4221,12 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let pathNameCount = peergos.client.PathUtils.getNameCount(path);
             let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
-            this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt =>
+            this.context.getByPath(pathWithoutFilename.toString()).thenCompose(dirOpt =>
                 dirOpt.get().uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
                         new peergos.shared.user.fs.AsyncReader.build(data),
-                        0, data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-            );
+                        0, data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         patchAction: function(header, filePath, bytes) {
