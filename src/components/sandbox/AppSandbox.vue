@@ -307,6 +307,7 @@ module.exports = {
             showConfirm: false,
             confirm_on_hide: null,
             keepAccessQueue: null,
+            replaceOnClose: null,
             saveQueue: null,
             keepAccessAnswer: null,
             sandboxClosed: false,
@@ -1145,12 +1146,19 @@ module.exports = {
                     if (answered)
                         return;
                     answered = true;
+                    that.replaceOnClose = null;
                     that.showConfirm = false;
                     resolve();
                     if (yes)
                         replace();
                     else
                         askAgain();
+                };
+                // an app closed while it is asked is past answering, and the questions queued behind it go on
+                that.replaceOnClose = () => {
+                    answered = true;
+                    that.replaceOnClose = null;
+                    resolve();
                 };
                 that.confirm_message = that.translate("DRIVE.UPLOAD.EXISTS").replace("$NAME", name);
                 that.confirm_body = that.translate("DRIVE.UPLOAD.REPLACE");
@@ -1583,6 +1591,8 @@ module.exports = {
         },
         keepAccessOnClose: function() {
             this.sandboxClosed = true;
+            if (this.replaceOnClose != null)
+                this.replaceOnClose();
             if (this.keepAccessAnswer != null)
                 this.keepAccessAnswer(true);
         },
