@@ -1161,24 +1161,33 @@ module.exports = {
         // otherwise the name is asked again, as a desktop save dialog does. Closing the question is a no.
         askToReplace: function(name, replace, askAgain) {
             let that = this;
-            let answered = false;
-            let answer = yes => {
-                if (answered)
+            // one question at a time: the Confirm dialog is shared with the keep-access question, which queues here
+            this.keepAccessQueue = (this.keepAccessQueue || Promise.resolve()).then(() => new Promise(resolve => {
+                // an app closed meanwhile is past answering
+                if (that.sandboxClosed) {
+                    resolve();
                     return;
-                answered = true;
-                that.showConfirm = false;
-                if (yes)
-                    replace();
-                else
-                    askAgain();
-            };
-            this.confirm_message = this.translate("DRIVE.UPLOAD.EXISTS").replace("$NAME", name);
-            this.confirm_body = this.translate("DRIVE.UPLOAD.REPLACE");
-            this.confirm_consumer_func = () => answer(true);
-            this.confirm_consumer_cancel_func = () => answer(false);
-            // the dialog hides before it runs the button's callback, so wait a turn to see whether one ran
-            this.confirm_on_hide = () => setTimeout(() => answer(false), 0);
-            this.showConfirm = true;
+                }
+                let answered = false;
+                let answer = yes => {
+                    if (answered)
+                        return;
+                    answered = true;
+                    that.showConfirm = false;
+                    resolve();
+                    if (yes)
+                        replace();
+                    else
+                        askAgain();
+                };
+                that.confirm_message = that.translate("DRIVE.UPLOAD.EXISTS").replace("$NAME", name);
+                that.confirm_body = that.translate("DRIVE.UPLOAD.REPLACE");
+                that.confirm_consumer_func = () => answer(true);
+                that.confirm_consumer_cancel_func = () => answer(false);
+                // the dialog hides before it runs the button's callback, so wait a turn to see whether one ran
+                that.confirm_on_hide = () => setTimeout(() => answer(false), 0);
+                that.showConfirm = true;
+            }));
         },
         handleFilePickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
