@@ -315,10 +315,7 @@ async function requesterInstanceId(event) {
         return id;
     }
     if (event.clientId) {
-        // matchAll, not get: get waits for the client to be ready, and a worker running its own
-        // script (an importScripts) isn't until we answer it, so in Firefox it never was
-        let clients = await self.clients.matchAll({includeUncontrolled: true, type: 'all'});
-        let client = clients.find(c => c.id == event.clientId);
+        let client = await self.clients.get(event.clientId);
         let id = client ? instanceIdFromUrl(client.url) : null;
         if (id != null)
             clientInstances.set(event.clientId, id);
