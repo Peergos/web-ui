@@ -1082,9 +1082,14 @@ module.exports = {
                         }
                         var bytes = convertToByteArray(new Int8Array(data));
                         let fullPathToNewFile = folderPath + filename;
-                        that.findFile(fullPathToNewFile, false).thenApply(file => {
+                        that.findSaveTarget(fullPathToNewFile).thenApply(file => {
                             if (file != null) {
-                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
+                                that.askToReplace(filename,
+                                    () => that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false),
+                                    () => {
+                                        that.prompt_value = filename;
+                                        that.showPrompt = true;
+                                    });
                             } else {
                                 let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
                                 that.writeNewFile(filePath, bytes).thenApply(res => {
@@ -1118,9 +1123,14 @@ module.exports = {
                         }
                         var bytes = convertToByteArray(new Int8Array(data));
                         let fullPathToNewFile = folderPath + filename;
-                        that.findFile(fullPathToNewFile, false).thenApply(file => {
+                        that.findSaveTarget(fullPathToNewFile).thenApply(file => {
                             if (file != null) {
-                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
+                                that.askToReplace(filename,
+                                    () => that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false),
+                                    () => {
+                                        that.prompt_value = filename;
+                                        that.showPrompt = true;
+                                    });
                             } else {
                                 let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
                                 that.writeNewFile(filePath, bytes).thenApply(res => {
@@ -1138,6 +1148,37 @@ module.exports = {
         },
         closePrompt() {
             this.showPrompt = false;
+        },
+        // The file a save would replace, looked up by the path the user chose: findFile reads a path as the app's
+        // own, so an app in its own folder saving to the home folder never found the file it then replaced.
+        findSaveTarget: function(fullPath) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(fullPath).thenApply(opt => future.complete(opt.ref == null ? null : opt.get()))
+                .exceptionally(t => future.complete(null));
+            return future;
+        },
+        // A name chosen for a save that a file there already has: the file is replaced only if the user says so, and
+        // otherwise the name is asked again, as a desktop save dialog does. Closing the question is a no.
+        askToReplace: function(name, replace, askAgain) {
+            let that = this;
+            let answered = false;
+            let answer = yes => {
+                if (answered)
+                    return;
+                answered = true;
+                that.showConfirm = false;
+                if (yes)
+                    replace();
+                else
+                    askAgain();
+            };
+            this.confirm_message = this.translate("DRIVE.UPLOAD.EXISTS").replace("$NAME", name);
+            this.confirm_body = this.translate("DRIVE.UPLOAD.REPLACE");
+            this.confirm_consumer_func = () => answer(true);
+            this.confirm_consumer_cancel_func = () => answer(false);
+            // the dialog hides before it runs the button's callback, so wait a turn to see whether one ran
+            this.confirm_on_hide = () => setTimeout(() => answer(false), 0);
+            this.showConfirm = true;
         },
         handleFilePickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
