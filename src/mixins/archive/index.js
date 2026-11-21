@@ -219,6 +219,9 @@ module.exports = {
                 getBufferedInputStream: function(net, crypto, sizeHigh, sizeLow, nChunks, progress) {
                     return that.readArchiveEntry(archive, entry, progress);
                 },
+                getVersionInputStream: function(net, crypto, nChunks, progress) {
+                    return that.readArchiveEntry(archive, entry, progress);
+                },
                 samePointer: function(other) {
                     return other.isArchiveEntry === true && other.entry.path == entry.path;
                 },

@@ -118,8 +118,8 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        // The latest version is read, and its size, type and ETag are taken from it too: a file overwritten since
-        // it was found isn't read cut or padded to its old length, nor tagged as the version before.
+        // The latest version is read, and its size, type, ETag and every chunk are taken from it: a file overwritten
+        // since it was found isn't read cut or padded to its old length, tagged as the version before, or mixed.
         readInFile: function(headerFunc, found) {
             let that = this;
             found.getLatest(this.context.network).thenApply(file => that.readVersion(headerFunc, file))
@@ -141,7 +141,7 @@ module.exports = {
                 that.postData(convertToByteArray(headerFunc(props.mimeType, headInfo, etag)));
             } else if (size < maxChunkSize) {
                 let header = headerFunc(props.mimeType, null, etag);
-                file.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
+                file.getVersionInputStream(that.context.network, that.context.crypto, 1, read => {}).thenApply(reader => {
                     var bytes = new Uint8Array(size + header.byteLength);
                     for(var i=0;i < header.byteLength;i++){
                         bytes[i] = header[i];
@@ -157,7 +157,7 @@ module.exports = {
             } else {
                 let streamingInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), appFileStreaming: true};
                 let header = headerFunc(props.mimeType, streamingInfo, etag);
-                file.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
+                file.getVersionInputStream(that.context.network, that.context.crypto, 10, read => {}).thenApply(reader => {
                     var currentSize = props.sizeLow();
                     var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
                     var pump = function() {
