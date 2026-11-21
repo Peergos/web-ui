@@ -130,7 +130,8 @@ function StreamingEntry(fileSize) {
         let fileSize = low + (sizeHigh * Math.pow(2, 32));
         this.setFileSize(fileSize);
         this.setMimeType(mimeType);
-        if (seEtag) this.etag = seEtag;
+        // the tag of the bytes this chunk holds, as the response is built from them: none if it has none
+        this.etag = seEtag;
 
         let moreData = data.subarray(offset)
         const currentBytes = this.bytes;

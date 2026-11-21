@@ -128,12 +128,16 @@ module.exports = {
                     that.buildResponse(headerFunc(found.getFileProperties().mimeType), null, that.ACTION_FAILED);
                 });
         },
+        // A file's ETag: its tree hash, which changes with its contents.
+        etagOf: function(props) {
+            let treeHash = props.treeHash;
+            return treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
+        },
         readVersion: function(headerFunc, file) {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
-            let treeHash = props.treeHash;
-            let etag = treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
+            let etag = this.etagOf(props);
             let maxChunkSize = 1024 * 1024 * 10;
             if (headerFunc.isHead) {
                 // answer HEAD from the file properties without reading the file

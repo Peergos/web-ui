@@ -4343,6 +4343,8 @@ module.exports = {
         stream: function(seekHi, seekLo, seekLength, file, filePath) {
             var props = file.getFileProperties();
             let that = this;
+            // a 206 carries the ETag a 200 would (RFC 9110 15.3.7): that of the version every range is read from
+            let etag = this.etagOf(props);
             function Context(file, filePath, mimeType, network, crypto, sizeHigh, sizeLow) {
                 this.maxBlockSize = 1024 * 1024 * 5;
                 this.writer = null;
@@ -4390,7 +4392,7 @@ module.exports = {
                                     thatRef.readerFuture = readerFuture;
 
                                     let streamingInfo = {sizeHigh: sizeHigh, sizeLow: sizeLow, appFileStreaming: false};
-                                    let header = that.buildHeader(filePath, mimeType, '', streamingInfo);
+                                    let header = that.buildHeader(filePath, mimeType, '', streamingInfo, etag);
                                     return pump(seekReader, header);
                                 })
                             });
