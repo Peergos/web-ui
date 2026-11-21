@@ -276,8 +276,9 @@ public class AddressBookTest {
                     throw new AssertionError("Cancel should leave the contact as it was: " + stored(api, data + "default"));
                 System.out.println("  ok   Cancel leaves a contact as it was");
 
-                // on a phone: a contact on its own page with Back, and the address books in a picker
-                d.setWindowRect(390, 844);
+                // on a phone, as narrow as many Android ones: a contact on its own page with Back, and the
+                // address books in a picker
+                d.setWindowRect(360, 844);
                 String visible = "const shown = id => document.getElementById(id).getClientRects().length > 0; ";
                 waitInFrame(d, "the contact on its own", visible + "return ! shown('list') && ! shown('books')"
                         + " && document.querySelector('#detail .back').getClientRects().length > 0 ? true : null");
