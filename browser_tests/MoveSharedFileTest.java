@@ -71,7 +71,8 @@ public class MoveSharedFileTest {
                 click(d, ".pg-dialog .pg-dialog__close", "the close button");
                 awaitMoved(d, jar, url, me, "closed.txt");
                 UserContext fresh = UserContext.signIn(me.name(), me.password(), mfa -> null, network, crypto).join();
-                if (fresh.getAllSecretLinks().join().stream().noneMatch(l -> l.recordedUnder.endsWith("dest/closed.txt")))
+                // the path a link is recorded under has the platform's separator, a backslash on a Windows JVM
+                if (fresh.getAllSecretLinks().join().stream().noneMatch(l -> l.recordedUnder.replace('\\', '/').endsWith("dest/closed.txt")))
                     throw new AssertionError("Closing the question dropped the moved file's secret link");
                 System.out.println("  ok   closing the question lets the move finish, keeping the link");
 
