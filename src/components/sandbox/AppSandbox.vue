@@ -4216,19 +4216,25 @@ module.exports = {
                 return this.sandboxedApp.writeInternal(dataPath, bytes);
             }
         },
+        // The folder a data file of an app run in place goes in, made if need be under the folder the app runs from,
+        // where reads look too: that may be another user's, shared with this one, rather than under this user's root.
+        getOrMkdirsInPlace: function(path) {
+            let that = this;
+            let folderNameCount = this.getPath.split('/').filter(n => n.length > 0).length;
+            let relative = peergos.client.PathUtils.subpath(path, folderNameCount, peergos.client.PathUtils.getNameCount(path));
+            return this.context.getByPath(this.getPath).thenCompose(folder =>
+                folder.get().getOrMkdirs(peergos.client.PathUtils.getParent(relative), that.context.network, false,
+                    that.getMirrorBatId(folder.get()), that.context.crypto));
+        },
         writeFile: function(path, data) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
-            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
-            this.context.getByPath(this.context.username).thenApply(userRoot =>
-                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
-                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
-                    .thenApply(dir => dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
-                        new peergos.shared.user.fs.AsyncReader.build(data),
-                        0, data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-                    ));
+            this.getOrMkdirsInPlace(path)
+                .thenCompose(dir => dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
+                    new peergos.shared.user.fs.AsyncReader.build(data),
+                    0, data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         writeNewFile: function(path, data) {
@@ -4273,16 +4279,12 @@ module.exports = {
         appendFile: function(path, data) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
-            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
-            this.context.getByPath(this.context.username).thenApply(userRoot =>
-                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
-                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
-                    .thenApply(dir => dir.appendFileJS(peergos.client.PathUtils.getFileName(path).toString(),
-                        new peergos.shared.user.fs.AsyncReader.build(data), 0,
-                        data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-                    ));
+            this.getOrMkdirsInPlace(path)
+                .thenCompose(dir => dir.appendFileJS(peergos.client.PathUtils.getFileName(path).toString(),
+                    new peergos.shared.user.fs.AsyncReader.build(data), 0,
+                    data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
