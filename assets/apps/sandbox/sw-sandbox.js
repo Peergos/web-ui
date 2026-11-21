@@ -272,7 +272,8 @@ function setupNewApp(inst) {
 // A sandbox registers from its worker-sandbox.html frame, which lives exactly as long as the
 // sandbox does: an instance whose frame has gone is a closed tile or app.
 function pruneInstances() {
-    return self.clients.matchAll({includeUncontrolled: true}).then(all => {
+    // workers too: a sandbox's worker keeps its place while it runs
+    return self.clients.matchAll({includeUncontrolled: true, type: 'all'}).then(all => {
         let alive = new Set(all.map(c => c.id));
         instances.forEach((inst, id) => {
             if (inst.sourceId != null && ! alive.has(inst.sourceId))
@@ -293,10 +294,18 @@ function instanceIdFromUrl(url) {
     }
 }
 
-// The id of the sandbox that made this request. Only a navigation is taken at its word, and
-// only for the document it creates: a sub-resource naming an id in its own url would otherwise
-// pick which host answers it.
+// The id of the sandbox that made this request. A dedicated worker a sandbox starts is that
+// sandbox's: its own requests, such as importScripts, are answered by the same host.
 async function instanceIdFor(event) {
+    let id = await requesterInstanceId(event);
+    if (id != null && event.request.destination == 'worker' && event.resultingClientId)
+        clientInstances.set(event.resultingClientId, id);
+    return id;
+}
+
+// Only a navigation is taken at its word, and only for the document it creates: a sub-resource
+// naming an id in its own url would otherwise pick which host answers it.
+async function requesterInstanceId(event) {
     if (event.clientId && clientInstances.has(event.clientId))
         return clientInstances.get(event.clientId);
     if (event.request.mode === 'navigate') {
@@ -306,7 +315,10 @@ async function instanceIdFor(event) {
         return id;
     }
     if (event.clientId) {
-        let client = await self.clients.get(event.clientId);
+        // matchAll, not get: get waits for the client to be ready, and a worker running its own
+        // script (an importScripts) isn't until we answer it, so in Firefox it never was
+        let clients = await self.clients.matchAll({includeUncontrolled: true, type: 'all'});
+        let client = clients.find(c => c.id == event.clientId);
         let id = client ? instanceIdFromUrl(client.url) : null;
         if (id != null)
             clientInstances.set(event.clientId, id);
