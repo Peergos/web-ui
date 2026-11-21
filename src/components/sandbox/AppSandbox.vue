@@ -307,6 +307,7 @@ module.exports = {
             showConfirm: false,
             confirm_on_hide: null,
             keepAccessQueue: null,
+            saveQueue: null,
             keepAccessAnswer: null,
             sandboxClosed: false,
             confirm_message: "",
@@ -1054,54 +1055,8 @@ module.exports = {
                 }
                 if (apiMethod == 'POST' || apiMethod == 'PUT') {
                     let folderPath = that.appPath.substring(0, that.appPath.lastIndexOf('/') + 1);
-                    this.prompt_placeholder = 'Save File';
-                    this.prompt_message = 'Folder: ' + folderPath;
-                    this.prompt_value = path;
-                    this.prompt_consumer_func = function (prompt_result) {
-                        this.showPrompt = false;
-                        if (prompt_result === null) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        let filename = prompt_result.trim();
-                        if (filename === '') {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (filename.startsWith('.')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (filename.includes('/') || filename.includes('\\')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (folderPath + filename  == that.appPath) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        var bytes = convertToByteArray(new Int8Array(data));
-                        let fullPathToNewFile = folderPath + filename;
-                        that.findSaveTarget(fullPathToNewFile).thenApply(file => {
-                            if (file != null) {
-                                that.askToReplace(filename,
-                                    () => that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false),
-                                    () => {
-                                        that.prompt_value = filename;
-                                        that.showPrompt = true;
-                                    });
-                            } else {
-                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
-                                that.writeNewFile(filePath, bytes).thenApply(res => {
-                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
-                                });
-                            }
-                        }).exceptionally(t => {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return null;
-                        });
-                    }.bind(this);
-                    this.showPrompt = true;
+                    // not over the file the app was opened on
+                    this.saveAsking(headerFunc, folderPath, path, data, filename => folderPath + filename != that.appPath);
                 } else {
                     that.showError("App attempted unexpected action: " + apiMethod);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
@@ -1110,47 +1065,58 @@ module.exports = {
                 // Launchable app with no file context — save to user's home folder
                 if (apiMethod == 'POST' || apiMethod == 'PUT') {
                     let folderPath = '/' + this.context.username + '/';
-                    this.prompt_placeholder = 'Save File';
-                    this.prompt_message = 'Folder: ' + folderPath;
-                    this.prompt_value = path;
-                    this.prompt_consumer_func = function (prompt_result) {
-                        this.showPrompt = false;
-                        if (prompt_result === null) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        let filename = prompt_result.trim();
-                        if (filename === '' || filename.startsWith('.') || filename.includes('/') || filename.includes('\\')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        var bytes = convertToByteArray(new Int8Array(data));
-                        let fullPathToNewFile = folderPath + filename;
-                        that.findSaveTarget(fullPathToNewFile).thenApply(file => {
-                            if (file != null) {
-                                that.askToReplace(filename,
-                                    () => that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false),
-                                    () => {
-                                        that.prompt_value = filename;
-                                        that.showPrompt = true;
-                                    });
-                            } else {
-                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
-                                that.writeNewFile(filePath, bytes).thenApply(res => {
-                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
-                                });
-                            }
-                        }).exceptionally(t => {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return null;
-                        });
-                    }.bind(this);
-                    this.showPrompt = true;
+                    this.saveAsking(headerFunc, folderPath, path, data, filename => true);
                 } else {
                     that.showError("App attempted unexpected action: " + apiMethod);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                 }
             }
+        },
+        // A save to a folder, under a name the user confirms. Saves go one at a time, as they share the prompt and the
+        // question: a name a file there already has is replaced only on a Yes, and on a No it is asked again.
+        saveAsking: function(headerFunc, folderPath, name, data, allowed) {
+            let that = this;
+            this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => new Promise(done => {
+                let answer = code => {
+                    that.buildResponse(headerFunc(), null, code);
+                    done();
+                };
+                let askName = value => {
+                    that.prompt_placeholder = 'Save File';
+                    that.prompt_message = 'Folder: ' + folderPath;
+                    that.prompt_value = value;
+                    that.prompt_consumer_func = prompt_result => {
+                        that.showPrompt = false;
+                        let filename = prompt_result === null ? '' : prompt_result.trim();
+                        if (filename === '' || filename.startsWith('.') || filename.includes('/') || filename.includes('\\') ||
+                                ! allowed(filename)) {
+                            answer(that.ACTION_FAILED);
+                            return;
+                        }
+                        let bytes = convertToByteArray(new Int8Array(data));
+                        let fullPath = folderPath + filename;
+                        that.findSaveTarget(fullPath).thenApply(file => {
+                            if (file == null) {
+                                let filePath = peergos.client.PathUtils.directoryToPath(fullPath.split('/').filter(n => n.length > 0));
+                                that.writeNewFile(filePath, bytes)
+                                    .thenApply(res => answer(that.UPDATE_SUCCESS))
+                                    .exceptionally(t => answer(that.ACTION_FAILED));
+                            } else {
+                                that.askToReplace(filename, () => {
+                                    that.overwriteFile(headerFunc(), fullPath, bytes, file, false);
+                                    done();
+                                }, () => askName(filename));
+                            }
+                            return null;
+                        }).exceptionally(t => {
+                            answer(that.ACTION_FAILED);
+                            return null;
+                        });
+                    };
+                    that.showPrompt = true;
+                };
+                askName(name);
+            }));
         },
         closePrompt() {
             this.showPrompt = false;
