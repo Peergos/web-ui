@@ -161,18 +161,25 @@ module.exports = {
                 refuse();
             }
         },
+        // The limits are checked on the version that is read: the file may have been replaced since the feed found it.
         serveTileFile: function(path, requestId, refuse) {
-            let file = this.entry.file;
-            let props = file.getFileProperties();
-            if (props.isDirectory || props.sizeHigh() != 0 || props.sizeLow() > MAX_TILE_FILE_BYTES || props.sizeLow() < 0) {
+            let that = this;
+            this.entry.file.getLatest(this.context.network).thenApply(file => {
+                let props = file.getFileProperties();
+                if (props.isDirectory || props.sizeHigh() != 0 || props.sizeLow() > MAX_TILE_FILE_BYTES || props.sizeLow() < 0) {
+                    refuse();
+                    return null;
+                }
+                let mimeType = DOCUMENT_TYPES.test(props.mimeType) ? 'text/plain' : props.mimeType;
+                let headerFunc = (ignored, streamingInfo, etag = null) =>
+                    that.buildHeaderWithMime(path, mimeType, requestId, streamingInfo, etag);
+                headerFunc.isHead = requestId.startsWith('HEAD-');
+                that.readVersion(headerFunc, file);
+                return null;
+            }).exceptionally(t => {
                 refuse();
-                return;
-            }
-            let mimeType = DOCUMENT_TYPES.test(props.mimeType) ? 'text/plain' : props.mimeType;
-            let headerFunc = (ignored, streamingInfo, etag = null) =>
-                this.buildHeaderWithMime(path, mimeType, requestId, streamingInfo, etag);
-            headerFunc.isHead = requestId.startsWith('HEAD-');
-            this.readInFile(headerFunc, file);
+                return null;
+            });
         },
         serveAppFile: function(headerFunc, path, refuse) {
             let that = this;
