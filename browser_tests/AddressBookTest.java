@@ -99,6 +99,10 @@ public class AddressBookTest {
                 boolean keys = canTypeInFrame(engine);
                 Object firstName = inFrame(d, "return document.querySelector('#contacts li.card .list-row .names div').textContent");
                 if (keys) {
+                    // the page hands the focus to the frame first, as a person's click or Tab does: since 158,
+                    // chromium denies focus-without-user-activation to a sandboxed frame, and Peergos sandboxes
+                    // each app's subdomain, so the driver can't focus the row from inside it
+                    d.script("document.querySelector(arguments[0]).focus(); return 1;", FRAME);
                     d.switchToFrame(FRAME);
                     try {
                         d.sendKeys(d.find("#contacts li.card .list-row"), "\uE007");
