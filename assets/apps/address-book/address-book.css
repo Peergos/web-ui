@@ -251,7 +251,8 @@ form select { width: 112px; }
 }
 /* and on a phone, one column at a time */
 @media (max-width: 760px) {
-	#app { grid-template-columns: 1fr; }
+	/* as narrow as the phone, rather than as wide as the list's widest row */
+	#app { grid-template-columns: minmax(0, 1fr); }
 	#list { border-right: none; }
 	#app.show-detail #list { display: none; }
 	#app:not(.show-detail) #detail { display: none; }
