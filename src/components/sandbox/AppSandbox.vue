@@ -4376,7 +4376,7 @@ module.exports = {
                         }
                         var updated = thatRef.readerFuture != null && thatRef.counter == currentCount ?
                         thatRef.readerFuture :
-                            file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 10, function(read) {})
+                            file.getVersionInputStream(network, crypto, 10, function(read) {})
                             updated.thenCompose(function(reader) {
                                 return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     var readerFuture = peergos.shared.util.Futures.incomplete();
