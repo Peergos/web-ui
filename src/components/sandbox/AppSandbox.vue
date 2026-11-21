@@ -1096,6 +1096,9 @@ module.exports = {
                                     that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
                                 });
                             }
+                        }).exceptionally(t => {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return null;
                         });
                     }.bind(this);
                     this.showPrompt = true;
@@ -1137,6 +1140,9 @@ module.exports = {
                                     that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
                                 });
                             }
+                        }).exceptionally(t => {
+                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
+                            return null;
                         });
                     }.bind(this);
                     this.showPrompt = true;
@@ -1154,7 +1160,7 @@ module.exports = {
         findSaveTarget: function(fullPath) {
             let future = peergos.shared.util.Futures.incomplete();
             this.context.getByPath(fullPath).thenApply(opt => future.complete(opt.ref == null ? null : opt.get()))
-                .exceptionally(t => future.complete(null));
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         // A name chosen for a save that a file there already has: the file is replaced only if the user says so, and
