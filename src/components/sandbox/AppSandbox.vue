@@ -854,6 +854,15 @@ module.exports = {
         isPathWritable: function() {
                 return this.targetFile != null && this.targetFile.isWritable();
         },
+        // '/assets' when a path the app reads is one of its own files, rather than what it was opened on or given
+        assetsPrefix: function(path) {
+            return !this.browserMode
+                && !this.isUnderAppPath(path)
+                && !path.startsWith(this.apiRequest + '/data')
+                && !(this.isSelectedFolder(path))
+                && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
+                ? '/assets' : '';
+        },
         streamFile: function(seekHi, seekLo, seekLength, streamFilePath) {
             let that = this;
             let originalStreamFilePath = streamFilePath;
@@ -870,13 +879,17 @@ module.exports = {
                     }).exceptionally(t => console.log(t.getMessage()));
                     return;
                 }
+                // found as a whole read of the same url is, whether or not the app was opened on a file
                 var prefix = '';
-                if (!this.browserMode && this.appPath.length > 0 && !this.isUnderAppPath(streamFilePath)) {
-                    if(streamFilePath.startsWith(that.apiRequest + '/data')) {
-                        streamFilePath = streamFilePath.substring(that.apiRequest.length);
-                    } else {
-                        prefix = '/assets';
+                let dataPrefix = that.apiRequest + '/data/';
+                if (streamFilePath.startsWith(dataPrefix)) {
+                    if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                        that.showError("App attempted to access file without permission :" + streamFilePath.substring(dataPrefix.length));
+                        return;
                     }
+                    streamFilePath = '/data/' + streamFilePath.substring(dataPrefix.length);
+                } else {
+                    prefix = this.assetsPrefix(streamFilePath);
                 }
                 this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
@@ -963,12 +976,7 @@ module.exports = {
                                 that.readFileOrFolder(headerFunc, '/data/' + path, params, true, false);
                             }
                         } else {
-                            let prefix = !this.browserMode
-                                && !this.isUnderAppPath(path)
-                                && !path.startsWith(that.apiRequest + '/data')
-                                && !(this.isSelectedFolder(path))
-                                && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
-                                ? '/assets' : '';
+                            let prefix = this.assetsPrefix(path);
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
                             } else {
