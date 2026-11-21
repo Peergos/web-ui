@@ -192,6 +192,8 @@ function AppData() {
             return 404;
         } else if (code == '13') { //            FORBIDDEN: 13,
             return 403;
+        } else if (code == '14') { //            PRECONDITION_FAILED: 14,
+            return 412;
         } else {
             return 400;
         }
@@ -642,7 +644,8 @@ function appResponse(event, inst) {
                             }
                         }
                         inst.port.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
-                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate'});
+                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate',
+                            ifMatch: event.request.headers.get('If-Match')});
                         return returnAppData(inst, method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )

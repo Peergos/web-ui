@@ -761,7 +761,7 @@ module.exports = {
                         that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.api, e.data.apiMethod, e.data.bytes,
-                            e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate);
+                            e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate, e.data.ifMatch);
                     }
                 }
             }
@@ -883,7 +883,7 @@ module.exports = {
                 });
             }
         },
-        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
+        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate, ifMatch) {
             let that = this;
             let headerFunc = (mimeType, streamingInfo, etag = null) => that.buildHeader(path, mimeType, requestId, streamingInfo, etag);
             headerFunc.isHead = requestId.startsWith("HEAD-");
@@ -1018,7 +1018,10 @@ module.exports = {
                                 } else if(apiMethod == 'POST') {
                                     that.createAction(headerFunc(), path, bytes, hasFormData);
                                 } else if(apiMethod == 'PUT') {
-                                    that.putAction(headerFunc(), path, bytes);
+                                    if (ifMatch != null)
+                                        that.putIfMatch(headerFunc(), path, bytes, ifMatch);
+                                    else
+                                        that.putAction(headerFunc(), path, bytes);
                                 } else if(apiMethod == 'PATCH') {
                                     that.patchAction(headerFunc(), path, bytes);
                                 }
@@ -4084,6 +4087,20 @@ module.exports = {
                 console.log(throwable.getMessage());
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
+        },
+        // A write only from the version the app read (If-Match with the ETag a read gave): 412 when the file has
+        // changed since, or isn't there, and nothing is written.
+        putIfMatch: function(header, filePath, bytes, ifMatch) {
+            let that = this;
+            let written = this.currentProps != null ?
+                peergos.shared.user.App.writeIfMatch(this.context, peergos.client.PathUtils.directoryToPath(
+                    this.expandFilePath('data/' + filePath).split('/').filter(n => n.length > 0)), bytes, ifMatch) :
+                this.sandboxedApp.writeInternalIfMatch(peergos.client.PathUtils.directoryToPath(filePath.split('/')), bytes, ifMatch);
+            written.thenApply(ok => that.buildResponse(header, null, ok ? that.UPDATE_SUCCESS : that.PRECONDITION_FAILED))
+                .exceptionally(function(throwable) {
+                    console.log(throwable.getMessage());
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                });
         },
         exists: function(path) {
             let future = peergos.shared.util.Futures.incomplete();

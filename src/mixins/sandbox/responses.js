@@ -15,6 +15,7 @@ module.exports = {
             PATCH_SUCCESS: 9,
             NAVIGATE_TO: 10,
             FORBIDDEN: 13,
+            PRECONDITION_FAILED: 14,
         };
     },
     methods: {
