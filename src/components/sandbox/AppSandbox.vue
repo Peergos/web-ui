@@ -338,7 +338,6 @@ module.exports = {
             file_picker_consumer_func: () => { },
             initialNewFilename: '',
             newFileExtension: '',
-            closeNewFilePicker: () => { },
         }
     },
     computed: {
@@ -1136,6 +1135,10 @@ module.exports = {
         },
         closePrompt() {
             this.showPrompt = false;
+        },
+        // after either button, once the choice has been passed on
+        closeNewFilePicker() {
+            this.showNewFilePicker = false;
         },
         // The file a save would replace, looked up by the path the user chose: findFile reads a path as the app's
         // own, so an app in its own folder saving to the home folder never found the file it then replaced.
@@ -3964,8 +3967,13 @@ module.exports = {
                             if (msg.includes('Concurrent modification of a file or directory!')) {
                                 that.currentSaveConflictBytes = bytes;
                                 that.save_conflict_consumer_func = function (bytes) {
-                                    that.continueSaveConflictPrompt(bytes, refreshTargetFile, (res, path, filename) => {
-                                        if (res) {
+                                    // named after the file it was to replace: a launched app has no file of its own
+                                    that.continueSaveConflictPrompt(bytes, fileToOverwrite.getName(), refreshTargetFile, (res, path, filename) => {
+                                        // answered whatever the user chose, and the overwrites queued behind it aren't held
+                                        that.buildResponse(header, null, res ? that.UPDATE_SUCCESS : that.ACTION_FAILED);
+                                        future.complete(res);
+                                        // only an app opened on that file goes on with the copy
+                                        if (res && refreshTargetFile) {
                                             setTimeout(() => {
                                                 that.navigateTo = { app: that.currentAppName, navigationPath: "/" + path, navigationFilename: filename};
                                                 that.closeSandbox();
@@ -3996,11 +4004,10 @@ module.exports = {
                 });
             }
         },
-        continueSaveConflictPrompt(data, refreshTargetFile, callback) {
+        continueSaveConflictPrompt(data, currentFilename, refreshTargetFile, callback) {
             let that = this;
             that.showSaveConflictPrompt = false;
             Vue.nextTick(function() {
-                let currentFilename = that.currentFile.getName();
                 let extension = currentFilename.substring(currentFilename.lastIndexOf('.'));
                 that.newFileExtension = extension.substring(1);
                 let filenameWithoutExtension = currentFilename.substring(0, currentFilename.lastIndexOf('.'));
