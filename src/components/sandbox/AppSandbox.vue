@@ -179,9 +179,10 @@ const names = require("../../mixins/names/index.js");
 const contactsMixin = require("../../mixins/contacts/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const offlineMixin = require("../../mixins/offline/index.js");
+const errorsMixin = require("../../mixins/errors/index.js");
 
 module.exports = {
-	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder, offlineMixin],
+	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder, offlineMixin, errorsMixin],
     components: {
         AddToChat,
         AppInstall,
@@ -3964,7 +3965,9 @@ module.exports = {
                             future.complete(true);
                         }).exceptionally(function(throwable) {
                             let msg = that.uriDecode(throwable.detailMessage);
-                            if (msg.includes('Concurrent modification of a file or directory!')) {
+                            // changed since it was read: found when the commit lost to another device's, or before it,
+                            // once this device has seen the other's save
+                            if (msg.includes('Concurrent modification of a file or directory!') || that.isWriteConflict(throwable)) {
                                 that.currentSaveConflictBytes = bytes;
                                 that.save_conflict_consumer_func = function (bytes) {
                                     // named after the file it was to replace: a launched app has no file of its own
