@@ -3944,7 +3944,7 @@ module.exports = {
                 that.showError('Unable to overwrite folder: ' + filePath);
                 that.buildResponse(header, null, that.ACTION_FAILED);
             } else {
-                this.invokeOverwriteFile((isOK) => {
+                this.invokeOverwriteFile(filePath, (isOK) => {
                     let future = peergos.shared.util.Futures.incomplete();
                     if (!isOK) {
                         that.buildResponse(header, null, that.ACTION_FAILED);
@@ -4089,42 +4089,35 @@ module.exports = {
             });
             return future;
         },
+        // Overwrites run one at a time. One that fails or is cancelled takes those of the same file queued behind it
+        // with it, answered as failed; those of other files, such as saves to the home folder, still run.
         reduceCommands: function(future) {
             let that = this;
-            let command = this.commandQueue.shift();
-            if (command == null) {
+            let next = this.commandQueue.shift();
+            if (next == null) {
                 future.complete(true);
             } else {
-                command(true).thenApply(function(res){
-                    if (res) {
-                        that.reduceCommands(future);
-                    } else {
-                        future.complete(false);
-                    }
+                next.command(true).thenApply(function(res){
+                    if (! res)
+                        that.failQueuedOverwrites(next.path);
+                    that.reduceCommands(future);
                 });
             }
             return future;
         },
-        emptyCommandQueue: function() {
-            let that = this;
-            let command = this.commandQueue.shift();
-            if (command != null) {
-                command(false).thenApply(function(res){
-                    that.emptyCommandQueue();
-                });
-            }
+        failQueuedOverwrites: function(path) {
+            let same = this.commandQueue.filter(c => c.path == path);
+            this.commandQueue = this.commandQueue.filter(c => c.path != path);
+            same.forEach(c => c.command(false));
         },
-        invokeOverwriteFile: function(overwriteCommand) {
-            this.commandQueue.push(overwriteCommand);
+        invokeOverwriteFile: function(path, overwriteCommand) {
+            this.commandQueue.push({path: path, command: overwriteCommand});
             let that = this;
             if (!that.executingCommands) {
                 that.executingCommands = true;
                 let future = peergos.shared.util.Futures.incomplete();
                 that.reduceCommands(future);
                 future.thenApply(res => {
-                    if (!res) {
-                        that.emptyCommandQueue();
-                    }
                     that.commandFileRefs.clear();
                     that.executingCommands = false;
                 });
