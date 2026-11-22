@@ -85,9 +85,9 @@ function streamFile(seekHi, seekLo, seekLength, streamFilePath) {
     mainWindow.postMessage({action:'streamFile', seekHi: seekHi, seekLo: seekLo, seekLength: seekLength
         , streamFilePath: streamFilePath}, origin);
 }
-function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate) {
+function actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate, ifMatch) {
     mainWindow.postMessage({action:'actionRequest', requestId: requestId, filePath: filePath, api: api, apiMethod: apiMethod,
-    bytes: bytes, hasFormData: hasFormData, params: params, isFromRedirect: isFromRedirect, isNavigate: isNavigate}, origin);
+    bytes: bytes, hasFormData: hasFormData, params: params, isFromRedirect: isFromRedirect, isNavigate: isNavigate, ifMatch: ifMatch}, origin);
 }
 function load(appName, appPath, allowBrowsing, theme, chatId, username, props, lang) {
     lastLoadParams = [appName, appPath, allowBrowsing, theme, chatId, username, props, lang];
@@ -137,8 +137,8 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
         }, function(seekHi, seekLo, seekLength, streamFilePath){
             that.streamFile(seekHi, seekLo, seekLength, streamFilePath);
         }, 0
-        ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate){
-            that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate);
+        ,function(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate, ifMatch){
+            that.actionRequest(filePath, requestId, api, apiMethod, bytes, hasFormData, params, isFromRedirect, isNavigate, ifMatch);
         }, {id: instanceId, tile: tileMode}
     );
     that.streamWriter = fileStream.getWriter();

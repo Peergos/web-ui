@@ -15,6 +15,7 @@ module.exports = {
             PATCH_SUCCESS: 9,
             NAVIGATE_TO: 10,
             FORBIDDEN: 13,
+            PRECONDITION_FAILED: 14,
         };
     },
     methods: {
@@ -117,12 +118,26 @@ module.exports = {
             let data = convertToByteArray(bytes);
             this.postData(data);
         },
-        readInFile: function(headerFunc, file) {
+        // The latest version is read, and its size, type, ETag and every chunk are taken from it: a file overwritten
+        // since it was found isn't read cut or padded to its old length, tagged as the version before, or mixed.
+        readInFile: function(headerFunc, found) {
+            let that = this;
+            found.getLatest(this.context.network).thenApply(file => that.readVersion(headerFunc, file))
+                .exceptionally(t => {
+                    console.log(t.getMessage());
+                    that.buildResponse(headerFunc(found.getFileProperties().mimeType), null, that.ACTION_FAILED);
+                });
+        },
+        // A file's ETag: its tree hash, which changes with its contents.
+        etagOf: function(props) {
+            let treeHash = props.treeHash;
+            return treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
+        },
+        readVersion: function(headerFunc, file) {
             let that = this;
             let props = file.getFileProperties();
             let size = props.sizeLow();
-            let treeHash = props.treeHash;
-            let etag = treeHash.isPresent() ? '"' + treeHash.get().toString() + '"' : null;
+            let etag = this.etagOf(props);
             let maxChunkSize = 1024 * 1024 * 10;
             if (headerFunc.isHead) {
                 // answer HEAD from the file properties without reading the file
@@ -130,16 +145,14 @@ module.exports = {
                 that.postData(convertToByteArray(headerFunc(props.mimeType, headInfo, etag)));
             } else if (size < maxChunkSize) {
                 let header = headerFunc(props.mimeType, null, etag);
-                file.getLatest(this.context.network).thenApply(updatedFile => {
-                    updatedFile.getInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), read => {}).thenApply(reader => {
-                        var bytes = new Uint8Array(size + header.byteLength);
-                        for(var i=0;i < header.byteLength;i++){
-                            bytes[i] = header[i];
-                        }
-                        let data = convertToByteArray(bytes);
-                        reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
-                            that.postData(data);
-                        });
+                file.getVersionInputStream(that.context.network, that.context.crypto, 1, read => {}).thenApply(reader => {
+                    var bytes = new Uint8Array(size + header.byteLength);
+                    for(var i=0;i < header.byteLength;i++){
+                        bytes[i] = header[i];
+                    }
+                    let data = convertToByteArray(bytes);
+                    reader.readIntoArray(data, header.byteLength, size).thenApply(function(read){
+                        that.postData(data);
                     });
                 });
             } else if(props.sizeHigh() > 0) {
@@ -148,29 +161,27 @@ module.exports = {
             } else {
                 let streamingInfo = {sizeHigh: props.sizeHigh(), sizeLow: props.sizeLow(), appFileStreaming: true};
                 let header = headerFunc(props.mimeType, streamingInfo, etag);
-                file.getLatest(this.context.network).thenApply(updatedFile => {
-                    updatedFile.getBufferedInputStream(that.context.network, that.context.crypto, props.sizeHigh(), props.sizeLow(), 10, read => {}).thenApply(reader => {
-                        var currentSize = props.sizeLow();
-                        var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
-                        var pump = function() {
-                            if(blockSize > 0) {
-                                var bytes = new Uint8Array(blockSize + header.byteLength);
-                                for(var i=0;i < header.byteLength;i++){
-                                    bytes[i] = header[i];
-                                }
-                                var data = convertToByteArray(bytes);
-                                reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
-                                    currentSize = currentSize - read.value_0;
-                                    blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
-                                    that.postData(data);
-                                    Vue.nextTick(function() {
-                                        pump();
-                                    });
-                                });
+                file.getVersionInputStream(that.context.network, that.context.crypto, 10, read => {}).thenApply(reader => {
+                    var currentSize = props.sizeLow();
+                    var blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                    var pump = function() {
+                        if(blockSize > 0) {
+                            var bytes = new Uint8Array(blockSize + header.byteLength);
+                            for(var i=0;i < header.byteLength;i++){
+                                bytes[i] = header[i];
                             }
+                            var data = convertToByteArray(bytes);
+                            reader.readIntoArray(data, header.byteLength, blockSize).thenApply(function(read){
+                                currentSize = currentSize - read.value_0;
+                                blockSize = currentSize > maxChunkSize ? maxChunkSize : currentSize;
+                                that.postData(data);
+                                Vue.nextTick(function() {
+                                    pump();
+                                });
+                            });
                         }
-                        pump();
-                    });
+                    }
+                    pump();
                 });
             }
         },

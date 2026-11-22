@@ -8,6 +8,9 @@ var streamingMap
 let instances = new Map();
 // Which instance each app document belongs to, learned from its navigation.
 let clientInstances = new Map();
+// workers mapped as their script was fetched, by when, as they aren't listed as clients until they run
+let startingWorkers = new Map();
+const WORKER_START_MS = 60 * 1000;
 let latestInstanceId = null;
 let downloadUrls = new Set();
 let INSTANCE_PARAM = 'pgi';
@@ -127,7 +130,8 @@ function StreamingEntry(fileSize) {
         let fileSize = low + (sizeHigh * Math.pow(2, 32));
         this.setFileSize(fileSize);
         this.setMimeType(mimeType);
-        if (seEtag) this.etag = seEtag;
+        // the tag of the bytes this chunk holds, as the response is built from them: none if it has none
+        this.etag = seEtag;
 
         let moreData = data.subarray(offset)
         const currentBytes = this.bytes;
@@ -192,6 +196,8 @@ function AppData() {
             return 404;
         } else if (code == '13') { //            FORBIDDEN: 13,
             return 403;
+        } else if (code == '14') { //            PRECONDITION_FAILED: 14,
+            return 412;
         } else {
             return 400;
         }
@@ -270,15 +276,26 @@ function setupNewApp(inst) {
 // A sandbox registers from its worker-sandbox.html frame, which lives exactly as long as the
 // sandbox does: an instance whose frame has gone is a closed tile or app.
 function pruneInstances() {
-    return self.clients.matchAll({includeUncontrolled: true}).then(all => {
+    // only what was mapped before asking: a client mapped meanwhile may not be listed yet
+    let known = new Set(clientInstances.keys());
+    // workers too: a sandbox's worker keeps its place while it runs
+    return self.clients.matchAll({includeUncontrolled: true, type: 'all'}).then(all => {
         let alive = new Set(all.map(c => c.id));
         instances.forEach((inst, id) => {
             if (inst.sourceId != null && ! alive.has(inst.sourceId))
                 instances.delete(id);
         });
+        let now = Date.now();
         clientInstances.forEach((id, clientId) => {
-            if (! alive.has(clientId))
-                clientInstances.delete(clientId);
+            if (alive.has(clientId)) {
+                startingWorkers.delete(clientId);
+                return;
+            }
+            // a worker isn't listed until its script, and the importScripts in it, have been answered
+            if (! known.has(clientId) || now - (startingWorkers.get(clientId) || 0) < WORKER_START_MS)
+                return;
+            clientInstances.delete(clientId);
+            startingWorkers.delete(clientId);
         });
     });
 }
@@ -291,10 +308,20 @@ function instanceIdFromUrl(url) {
     }
 }
 
-// The id of the sandbox that made this request. Only a navigation is taken at its word, and
-// only for the document it creates: a sub-resource naming an id in its own url would otherwise
-// pick which host answers it.
+// The id of the sandbox that made this request. A dedicated worker a sandbox starts is that
+// sandbox's: its own requests, such as importScripts, are answered by the same host.
 async function instanceIdFor(event) {
+    let id = await requesterInstanceId(event);
+    if (id != null && event.request.destination == 'worker' && event.resultingClientId) {
+        clientInstances.set(event.resultingClientId, id);
+        startingWorkers.set(event.resultingClientId, Date.now());
+    }
+    return id;
+}
+
+// Only a navigation is taken at its word, and only for the document it creates: a sub-resource
+// naming an id in its own url would otherwise pick which host answers it.
+async function requesterInstanceId(event) {
     if (event.clientId && clientInstances.has(event.clientId))
         return clientInstances.get(event.clientId);
     if (event.request.mode === 'navigate') {
@@ -642,7 +669,8 @@ function appResponse(event, inst) {
                             }
                         }
                         inst.port.postMessage({ filePath: restFilePath, requestId: uniqueId, api: api, apiMethod: method, bytes: buffer,
-                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate'});
+                            hasFormData: formData != null, params: params, isFromRedirect: isFromRedirect, isNavigate: event.request.mode == 'navigate',
+                            ifMatch: event.request.headers.get('If-Match')});
                         return returnAppData(inst, method, restFilePath, uniqueId, ignoreBody);
                     })()
                 )

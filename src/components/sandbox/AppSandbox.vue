@@ -179,9 +179,10 @@ const names = require("../../mixins/names/index.js");
 const contactsMixin = require("../../mixins/contacts/index.js");
 const UriDecoder = require('../../mixins/uridecoder/index.js');
 const offlineMixin = require("../../mixins/offline/index.js");
+const errorsMixin = require("../../mixins/errors/index.js");
 
 module.exports = {
-	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder, offlineMixin],
+	mixins:[mixins, downloaderMixins, router, sandboxMixin, sandboxResponses, launcherMixin, contactsMixin, UriDecoder, offlineMixin, errorsMixin],
     components: {
         AddToChat,
         AppInstall,
@@ -307,6 +308,8 @@ module.exports = {
             showConfirm: false,
             confirm_on_hide: null,
             keepAccessQueue: null,
+            replaceOnClose: null,
+            saveQueue: null,
             keepAccessAnswer: null,
             sandboxClosed: false,
             confirm_message: "",
@@ -336,7 +339,6 @@ module.exports = {
             file_picker_consumer_func: () => { },
             initialNewFilename: '',
             newFileExtension: '',
-            closeNewFilePicker: () => { },
         }
     },
     computed: {
@@ -761,7 +763,7 @@ module.exports = {
                         that.streamFile(e.data.seekHi, e.data.seekLo, e.data.seekLength, e.data.streamFilePath);
                     } else if(e.data.action == 'actionRequest') {
                         that.actionRequest(e.data.filePath, e.data.requestId, e.data.api, e.data.apiMethod, e.data.bytes,
-                            e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate);
+                            e.data.hasFormData, e.data.params, e.data.isFromRedirect, e.data.isNavigate, e.data.ifMatch);
                     }
                 }
             }
@@ -852,6 +854,15 @@ module.exports = {
         isPathWritable: function() {
                 return this.targetFile != null && this.targetFile.isWritable();
         },
+        // '/assets' when a path the app reads is one of its own files, rather than what it was opened on or given
+        assetsPrefix: function(path) {
+            return !this.browserMode
+                && !this.isUnderAppPath(path)
+                && !path.startsWith(this.apiRequest + '/data')
+                && !(this.isSelectedFolder(path))
+                && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
+                ? '/assets' : '';
+        },
         streamFile: function(seekHi, seekLo, seekLength, streamFilePath) {
             let that = this;
             let originalStreamFilePath = streamFilePath;
@@ -868,13 +879,17 @@ module.exports = {
                     }).exceptionally(t => console.log(t.getMessage()));
                     return;
                 }
+                // found as a whole read of the same url is, whether or not the app was opened on a file
                 var prefix = '';
-                if (!this.browserMode && this.appPath.length > 0 && !this.isUnderAppPath(streamFilePath)) {
-                    if(streamFilePath.startsWith(that.apiRequest + '/data')) {
-                        streamFilePath = streamFilePath.substring(that.apiRequest.length);
-                    } else {
-                        prefix = '/assets';
+                let dataPrefix = that.apiRequest + '/data/';
+                if (streamFilePath.startsWith(dataPrefix)) {
+                    if (!that.permissionsMap.get(that.PERMISSION_STORE_APP_DATA)) {
+                        that.showError("App attempted to access file without permission :" + streamFilePath.substring(dataPrefix.length));
+                        return;
                     }
+                    streamFilePath = '/data/' + streamFilePath.substring(dataPrefix.length);
+                } else {
+                    prefix = this.assetsPrefix(streamFilePath);
                 }
                 this.findFile(prefix + streamFilePath).thenApply(file => {
                     if (file != null) {
@@ -883,7 +898,7 @@ module.exports = {
                 });
             }
         },
-        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate) {
+        actionRequest: function(path, requestId, api, apiMethod, data, hasFormData, params, isFromRedirect, isNavigate, ifMatch) {
             let that = this;
             let headerFunc = (mimeType, streamingInfo, etag = null) => that.buildHeader(path, mimeType, requestId, streamingInfo, etag);
             headerFunc.isHead = requestId.startsWith("HEAD-");
@@ -961,12 +976,7 @@ module.exports = {
                                 that.readFileOrFolder(headerFunc, '/data/' + path, params, true, false);
                             }
                         } else {
-                            let prefix = !this.browserMode
-                                && !this.isUnderAppPath(path)
-                                && !path.startsWith(that.apiRequest + '/data')
-                                && !(this.isSelectedFolder(path))
-                                && !(path == this.pickerSelectedFile || this.pickerWritableFileRefs.has(path))
-                                ? '/assets' : '';
+                            let prefix = this.assetsPrefix(path);
                             if (this.browserMode) {
                                 that.handleBrowserRequest(headerFunc, path, params, isFromRedirect, isNavigate);
                             } else {
@@ -1018,7 +1028,10 @@ module.exports = {
                                 } else if(apiMethod == 'POST') {
                                     that.createAction(headerFunc(), path, bytes, hasFormData);
                                 } else if(apiMethod == 'PUT') {
-                                    that.putAction(headerFunc(), path, bytes);
+                                    if (ifMatch != null)
+                                        that.putIfMatch(headerFunc(), path, bytes, ifMatch);
+                                    else
+                                        that.putAction(headerFunc(), path, bytes);
                                 } else if(apiMethod == 'PATCH') {
                                     that.patchAction(headerFunc(), path, bytes);
                                 }
@@ -1051,46 +1064,8 @@ module.exports = {
                 }
                 if (apiMethod == 'POST' || apiMethod == 'PUT') {
                     let folderPath = that.appPath.substring(0, that.appPath.lastIndexOf('/') + 1);
-                    this.prompt_placeholder = 'Save File';
-                    this.prompt_message = 'Folder: ' + folderPath;
-                    this.prompt_value = path;
-                    this.prompt_consumer_func = function (prompt_result) {
-                        this.showPrompt = false;
-                        if (prompt_result === null) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        let filename = prompt_result.trim();
-                        if (filename === '') {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (filename.startsWith('.')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (filename.includes('/') || filename.includes('\\')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        if (folderPath + filename  == that.appPath) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        var bytes = convertToByteArray(new Int8Array(data));
-                        let fullPathToNewFile = folderPath + filename;
-                        that.findFile(fullPathToNewFile, false).thenApply(file => {
-                            if (file != null) {
-                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
-                            } else {
-                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
-                                that.writeNewFile(filePath, bytes).thenApply(res => {
-                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
-                                });
-                            }
-                        });
-                    }.bind(this);
-                    this.showPrompt = true;
+                    // not over the file the app was opened on
+                    this.saveAsking(headerFunc, folderPath, path, data, filename => folderPath + filename != that.appPath);
                 } else {
                     that.showError("App attempted unexpected action: " + apiMethod);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
@@ -1099,42 +1074,119 @@ module.exports = {
                 // Launchable app with no file context — save to user's home folder
                 if (apiMethod == 'POST' || apiMethod == 'PUT') {
                     let folderPath = '/' + this.context.username + '/';
-                    this.prompt_placeholder = 'Save File';
-                    this.prompt_message = 'Folder: ' + folderPath;
-                    this.prompt_value = path;
-                    this.prompt_consumer_func = function (prompt_result) {
-                        this.showPrompt = false;
-                        if (prompt_result === null) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        let filename = prompt_result.trim();
-                        if (filename === '' || filename.startsWith('.') || filename.includes('/') || filename.includes('\\')) {
-                            that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
-                            return;
-                        }
-                        var bytes = convertToByteArray(new Int8Array(data));
-                        let fullPathToNewFile = folderPath + filename;
-                        that.findFile(fullPathToNewFile, false).thenApply(file => {
-                            if (file != null) {
-                                that.overwriteFile(headerFunc(), fullPathToNewFile, bytes, file, false);
-                            } else {
-                                let filePath = peergos.client.PathUtils.directoryToPath(fullPathToNewFile.split('/').filter(n => n.length > 0));
-                                that.writeNewFile(filePath, bytes).thenApply(res => {
-                                    that.buildResponse(headerFunc(), null, that.UPDATE_SUCCESS);
-                                });
-                            }
-                        });
-                    }.bind(this);
-                    this.showPrompt = true;
+                    this.saveAsking(headerFunc, folderPath, path, data, filename => true);
                 } else {
                     that.showError("App attempted unexpected action: " + apiMethod);
                     that.buildResponse(headerFunc(), null, that.ACTION_FAILED);
                 }
             }
         },
+        // A save to a folder, under a name the user confirms. Saves go one at a time, as they share the prompt and the
+        // question: a name a file there already has is replaced only on a Yes, and on a No it is asked again.
+        saveAsking: function(headerFunc, folderPath, name, data, allowed) {
+            let that = this;
+            this.saveQueue = (this.saveQueue || Promise.resolve()).then(() => new Promise(done => {
+                // the next save goes on even when this one's answer can't be built (a name too long for the header)
+                let answer = code => {
+                    try {
+                        that.buildResponse(headerFunc(), null, code);
+                    } finally {
+                        done();
+                    }
+                };
+                let askName = value => {
+                    that.prompt_placeholder = 'Save File';
+                    that.prompt_message = 'Folder: ' + folderPath;
+                    that.prompt_value = value;
+                    that.prompt_consumer_func = prompt_result => {
+                        that.showPrompt = false;
+                        let filename = prompt_result === null ? '' : prompt_result.trim();
+                        if (filename === '' || filename.startsWith('.') || filename.includes('/') || filename.includes('\\') ||
+                                ! allowed(filename)) {
+                            answer(that.ACTION_FAILED);
+                            return;
+                        }
+                        let bytes = convertToByteArray(new Int8Array(data));
+                        let fullPath = folderPath + filename;
+                        that.findSaveTarget(fullPath).thenApply(file => {
+                            if (file == null) {
+                                let filePath = peergos.client.PathUtils.directoryToPath(fullPath.split('/').filter(n => n.length > 0));
+                                that.writeNewFile(filePath, bytes)
+                                    .thenApply(res => answer(that.UPDATE_SUCCESS))
+                                    .exceptionally(t => answer(that.ACTION_FAILED));
+                            } else {
+                                that.askToReplace(filename, () => {
+                                    try {
+                                        that.overwriteFile(headerFunc(), fullPath, bytes, file, false);
+                                    } finally {
+                                        done();
+                                    }
+                                }, () => askName(filename));
+                            }
+                            return null;
+                        }).exceptionally(t => {
+                            answer(that.ACTION_FAILED);
+                            return null;
+                        });
+                    };
+                    that.showPrompt = true;
+                };
+                askName(name);
+            }));
+        },
         closePrompt() {
             this.showPrompt = false;
+        },
+        // after either button, once the choice has been passed on
+        closeNewFilePicker() {
+            this.showNewFilePicker = false;
+        },
+        // The file a save would replace, looked up by the path the user chose: findFile reads a path as the app's
+        // own, so an app in its own folder saving to the home folder never found the file it then replaced.
+        findSaveTarget: function(fullPath) {
+            let future = peergos.shared.util.Futures.incomplete();
+            this.context.getByPath(fullPath).thenApply(opt => future.complete(opt.ref == null ? null : opt.get()))
+                .exceptionally(t => future.completeExceptionally(t));
+            return future;
+        },
+        // A name chosen for a save that a file there already has: the file is replaced only if the user says so, and
+        // otherwise the name is asked again, as a desktop save dialog does. Closing the question is a no.
+        askToReplace: function(name, replace, askAgain) {
+            let that = this;
+            // one question at a time: the Confirm dialog is shared with the keep-access question, which queues here
+            this.keepAccessQueue = (this.keepAccessQueue || Promise.resolve()).then(() => new Promise(resolve => {
+                // an app closed meanwhile is past answering
+                if (that.sandboxClosed) {
+                    resolve();
+                    return;
+                }
+                let answered = false;
+                let answer = yes => {
+                    if (answered)
+                        return;
+                    answered = true;
+                    that.replaceOnClose = null;
+                    that.showConfirm = false;
+                    resolve();
+                    if (yes)
+                        replace();
+                    else
+                        askAgain();
+                };
+                // an app closed while it is asked is past answering, and the questions queued behind it go on
+                that.replaceOnClose = () => {
+                    answered = true;
+                    that.replaceOnClose = null;
+                    resolve();
+                };
+                that.confirm_message = that.translate("DRIVE.UPLOAD.EXISTS").replace("$NAME", name);
+                that.confirm_body = that.translate("DRIVE.UPLOAD.REPLACE");
+                that.confirm_consumer_func = () => answer(true);
+                that.confirm_consumer_cancel_func = () => answer(false);
+                // the dialog hides before it runs the button's callback, so wait a turn to see whether one ran
+                that.confirm_on_hide = () => setTimeout(() => answer(false), 0);
+                that.showConfirm = true;
+            }));
         },
         handleFilePickerRequest: function(headerFunc, path, apiMethod, data, hasFormData, params) {
             let that = this;
@@ -1558,6 +1610,8 @@ module.exports = {
         },
         keepAccessOnClose: function() {
             this.sandboxClosed = true;
+            if (this.replaceOnClose != null)
+                this.replaceOnClose();
             if (this.keepAccessAnswer != null)
                 this.keepAccessAnswer(true);
         },
@@ -3890,7 +3944,7 @@ module.exports = {
                 that.showError('Unable to overwrite folder: ' + filePath);
                 that.buildResponse(header, null, that.ACTION_FAILED);
             } else {
-                this.invokeOverwriteFile((isOK) => {
+                this.invokeOverwriteFile(filePath, (isOK) => {
                     let future = peergos.shared.util.Futures.incomplete();
                     if (!isOK) {
                         that.buildResponse(header, null, that.ACTION_FAILED);
@@ -3900,8 +3954,18 @@ module.exports = {
                         let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
                         let moreRecentFile = that.commandFileRefs.get(filePath);
                         let currentFile = moreRecentFile != null ? moreRecentFile : fileToOverwrite;
-                        currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
-                        .thenApply(function(updatedFile) {
+                        let written;
+                        try {
+                            written = currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {});
+                        } catch (e) {
+                            // refused before it starts, as a file this user can only read is: answered, and the
+                            // overwrites queued behind it go on
+                            that.showError("Unexpected error: " + that.cleanError(that.errText(e)));
+                            that.buildResponse(header, null, that.ACTION_FAILED);
+                            future.complete(false);
+                            return future;
+                        }
+                        written.thenApply(function(updatedFile) {
                             if (refreshTargetFile) {
                                 that.targetFile = updatedFile;
                             }
@@ -3911,11 +3975,18 @@ module.exports = {
                             future.complete(true);
                         }).exceptionally(function(throwable) {
                             let msg = that.uriDecode(throwable.detailMessage);
-                            if (msg.includes('Concurrent modification of a file or directory!')) {
+                            // changed since it was read: found when the commit lost to another device's, or before it,
+                            // once this device has seen the other's save
+                            if (msg.includes('Concurrent modification of a file or directory!') || that.isWriteConflict(throwable)) {
                                 that.currentSaveConflictBytes = bytes;
                                 that.save_conflict_consumer_func = function (bytes) {
-                                    that.continueSaveConflictPrompt(bytes, refreshTargetFile, (res, path, filename) => {
-                                        if (res) {
+                                    // named after the file it was to replace: a launched app has no file of its own
+                                    that.continueSaveConflictPrompt(bytes, fileToOverwrite.getName(), refreshTargetFile, (res, path, filename) => {
+                                        // answered whatever the user chose, and the overwrites queued behind it aren't held
+                                        that.buildResponse(header, null, res ? that.UPDATE_SUCCESS : that.ACTION_FAILED);
+                                        future.complete(res);
+                                        // only an app opened on that file goes on with the copy
+                                        if (res && refreshTargetFile) {
                                             setTimeout(() => {
                                                 that.navigateTo = { app: that.currentAppName, navigationPath: "/" + path, navigationFilename: filename};
                                                 that.closeSandbox();
@@ -3946,11 +4017,10 @@ module.exports = {
                 });
             }
         },
-        continueSaveConflictPrompt(data, refreshTargetFile, callback) {
+        continueSaveConflictPrompt(data, currentFilename, refreshTargetFile, callback) {
             let that = this;
             that.showSaveConflictPrompt = false;
             Vue.nextTick(function() {
-                let currentFilename = that.currentFile.getName();
                 let extension = currentFilename.substring(currentFilename.lastIndexOf('.'));
                 that.newFileExtension = extension.substring(1);
                 let filenameWithoutExtension = currentFilename.substring(0, currentFilename.lastIndexOf('.'));
@@ -3988,13 +4058,21 @@ module.exports = {
         },
         writeNewFileAfterSaveConflict: function(path, data, refreshTargetFile, callback) {
             let that = this;
+            // answered once whatever happens, as the overwrites queued behind this one wait for it
+            let answered = false;
+            let answer = (...args) => {
+                if (! answered) {
+                    answered = true;
+                    callback(...args);
+                }
+            };
             let pathNameCount = peergos.client.PathUtils.getNameCount(path);
             let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
             this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt => {
                 let dir = dirOpt.get();
                 if(!dir.isWritable()) {
                     that.showError("You do not have write access to folder!");
-                    callback(false);
+                    answer(false);
                 } else {
                     let filename = peergos.client.PathUtils.getFileName(path).toString();
                     dir.uploadOrReplaceFile(filename,
@@ -4002,15 +4080,19 @@ module.exports = {
                             0, data.length, that.context.network, that.context.crypto, x => {})
                                 .thenApply(function(updatedFolder) {
                                     that.context.getByPath(path.toString()).thenApply(fileOpt => {
-                                        callback(true, pathWithoutFilename, filename);
-                                    });
+                                        answer(true, pathWithoutFilename, filename);
+                                    }).exceptionally(t => answer(true, pathWithoutFilename, filename));
                                 }).exceptionally(function(throwable) {
                                     let msg = that.uriDecode(throwable.detailMessage);
                                     that.showError("Unexpected error", throwable.detailMessage);
                                     console.log(throwable.getMessage());
-                                    callback(false);
+                                    answer(false);
                                 })
                 }
+            }).exceptionally(function(throwable) {
+                // the folder chosen can't be read now
+                that.showError("Unexpected error", throwable.detailMessage);
+                answer(false);
             });
         },
         findFileByPath: function(filePath) {
@@ -4029,42 +4111,35 @@ module.exports = {
             });
             return future;
         },
+        // Overwrites run one at a time. One that fails or is cancelled takes those of the same file queued behind it
+        // with it, answered as failed; those of other files, such as saves to the home folder, still run.
         reduceCommands: function(future) {
             let that = this;
-            let command = this.commandQueue.shift();
-            if (command == null) {
+            let next = this.commandQueue.shift();
+            if (next == null) {
                 future.complete(true);
             } else {
-                command(true).thenApply(function(res){
-                    if (res) {
-                        that.reduceCommands(future);
-                    } else {
-                        future.complete(false);
-                    }
+                next.command(true).thenApply(function(res){
+                    if (! res)
+                        that.failQueuedOverwrites(next.path);
+                    that.reduceCommands(future);
                 });
             }
             return future;
         },
-        emptyCommandQueue: function() {
-            let that = this;
-            let command = this.commandQueue.shift();
-            if (command != null) {
-                command(false).thenApply(function(res){
-                    that.emptyCommandQueue();
-                });
-            }
+        failQueuedOverwrites: function(path) {
+            let same = this.commandQueue.filter(c => c.path == path);
+            this.commandQueue = this.commandQueue.filter(c => c.path != path);
+            same.forEach(c => c.command(false));
         },
-        invokeOverwriteFile: function(overwriteCommand) {
-            this.commandQueue.push(overwriteCommand);
+        invokeOverwriteFile: function(path, overwriteCommand) {
+            this.commandQueue.push({path: path, command: overwriteCommand});
             let that = this;
             if (!that.executingCommands) {
                 that.executingCommands = true;
                 let future = peergos.shared.util.Futures.incomplete();
                 that.reduceCommands(future);
                 future.thenApply(res => {
-                    if (!res) {
-                        that.emptyCommandQueue();
-                    }
                     that.commandFileRefs.clear();
                     that.executingCommands = false;
                 });
@@ -4084,6 +4159,20 @@ module.exports = {
                 console.log(throwable.getMessage());
                 that.buildResponse(header, null, that.ACTION_FAILED);
             });
+        },
+        // A write only from the version the app read (If-Match with the ETag a read gave): 412 when the file has
+        // changed since, or isn't there, and nothing is written.
+        putIfMatch: function(header, filePath, bytes, ifMatch) {
+            let that = this;
+            let written = this.currentProps != null ?
+                peergos.shared.user.App.writeIfMatch(this.context, peergos.client.PathUtils.directoryToPath(
+                    this.expandFilePath('data/' + filePath).split('/').filter(n => n.length > 0)), bytes, ifMatch) :
+                this.sandboxedApp.writeInternalIfMatch(peergos.client.PathUtils.directoryToPath(filePath.split('/')), bytes, ifMatch);
+            written.thenApply(ok => that.buildResponse(header, null, ok ? that.UPDATE_SUCCESS : that.PRECONDITION_FAILED))
+                .exceptionally(function(throwable) {
+                    console.log(throwable.getMessage());
+                    that.buildResponse(header, null, that.ACTION_FAILED);
+                });
         },
         exists: function(path) {
             let future = peergos.shared.util.Futures.incomplete();
@@ -4152,19 +4241,25 @@ module.exports = {
                 return this.sandboxedApp.writeInternal(dataPath, bytes);
             }
         },
+        // The folder a data file of an app run in place goes in, made if need be under the folder the app runs from,
+        // where reads look too: that may be another user's, shared with this one, rather than under this user's root.
+        getOrMkdirsInPlace: function(path) {
+            let that = this;
+            let folderNameCount = this.getPath.split('/').filter(n => n.length > 0).length;
+            let relative = peergos.client.PathUtils.subpath(path, folderNameCount, peergos.client.PathUtils.getNameCount(path));
+            return this.context.getByPath(this.getPath).thenCompose(folder =>
+                folder.get().getOrMkdirs(peergos.client.PathUtils.getParent(relative), that.context.network, false,
+                    that.getMirrorBatId(folder.get()), that.context.crypto));
+        },
         writeFile: function(path, data) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
-            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
-            this.context.getByPath(this.context.username).thenApply(userRoot =>
-                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
-                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
-                    .thenApply(dir => dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
-                        new peergos.shared.user.fs.AsyncReader.build(data),
-                        0, data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-                    ));
+            this.getOrMkdirsInPlace(path)
+                .thenCompose(dir => dir.uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
+                    new peergos.shared.user.fs.AsyncReader.build(data),
+                    0, data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         writeNewFile: function(path, data) {
@@ -4172,12 +4267,12 @@ module.exports = {
             let future = peergos.shared.util.Futures.incomplete();
             let pathNameCount = peergos.client.PathUtils.getNameCount(path);
             let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
-            this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt =>
+            this.context.getByPath(pathWithoutFilename.toString()).thenCompose(dirOpt =>
                 dirOpt.get().uploadOrReplaceFile(peergos.client.PathUtils.getFileName(path).toString(),
                         new peergos.shared.user.fs.AsyncReader.build(data),
-                        0, data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-            );
+                        0, data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         patchAction: function(header, filePath, bytes) {
@@ -4209,16 +4304,12 @@ module.exports = {
         appendFile: function(path, data) {
             let that = this;
             let future = peergos.shared.util.Futures.incomplete();
-            let pathNameCount = peergos.client.PathUtils.getNameCount(path);
-            let pathWithoutUsername = peergos.client.PathUtils.subpath(path, 1, pathNameCount);
-            this.context.getByPath(this.context.username).thenApply(userRoot =>
-                userRoot.get().getOrMkdirs(peergos.client.PathUtils.getParent(pathWithoutUsername), that.context.network, false,
-                    that.getMirrorBatId(userRoot.get()), that.context.crypto)
-                    .thenApply(dir => dir.appendFileJS(peergos.client.PathUtils.getFileName(path).toString(),
-                        new peergos.shared.user.fs.AsyncReader.build(data), 0,
-                        data.length, that.context.network, that.context.crypto, x => {})
-                            .thenApply(fw => future.complete(true))
-                    ));
+            this.getOrMkdirsInPlace(path)
+                .thenCompose(dir => dir.appendFileJS(peergos.client.PathUtils.getFileName(path).toString(),
+                    new peergos.shared.user.fs.AsyncReader.build(data), 0,
+                    data.length, that.context.network, that.context.crypto, x => {}))
+                .thenApply(fw => future.complete(true))
+                .exceptionally(t => future.completeExceptionally(t));
             return future;
         },
         //https://stackoverflow.com/questions/105034/how-to-create-guid-uuid
@@ -4279,6 +4370,8 @@ module.exports = {
         stream: function(seekHi, seekLo, seekLength, file, filePath) {
             var props = file.getFileProperties();
             let that = this;
+            // a 206 carries the ETag a 200 would (RFC 9110 15.3.7): that of the version every range is read from
+            let etag = this.etagOf(props);
             function Context(file, filePath, mimeType, network, crypto, sizeHigh, sizeLow) {
                 this.maxBlockSize = 1024 * 1024 * 5;
                 this.writer = null;
@@ -4318,7 +4411,7 @@ module.exports = {
                         }
                         var updated = thatRef.readerFuture != null && thatRef.counter == currentCount ?
                         thatRef.readerFuture :
-                            file.getBufferedInputStream(network, crypto, sizeHigh, sizeLow, 10, function(read) {})
+                            file.getVersionInputStream(network, crypto, 10, function(read) {})
                             updated.thenCompose(function(reader) {
                                 return reader.seekJS(seekHi, seekLo).thenApply(function(seekReader){
                                     var readerFuture = peergos.shared.util.Futures.incomplete();
@@ -4326,7 +4419,7 @@ module.exports = {
                                     thatRef.readerFuture = readerFuture;
 
                                     let streamingInfo = {sizeHigh: sizeHigh, sizeLow: sizeLow, appFileStreaming: false};
-                                    let header = that.buildHeader(filePath, mimeType, '', streamingInfo);
+                                    let header = that.buildHeader(filePath, mimeType, '', streamingInfo, etag);
                                     return pump(seekReader, header);
                                 })
                             });
