@@ -337,8 +337,6 @@ module.exports = {
                 this.onChange();
             },
             removeMember: function(i) {
-                // removing is not revoking: anyone who already opened the link keeps that
-                // capability, and only rotating the item's keys takes it back
                 this.removeIndex = i;
                 this.showRemoveConfirm = true;
             },

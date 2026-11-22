@@ -501,7 +501,7 @@ module.exports = {
     "DRIVE.LINK.MEMBER.REMOVE.HINT":"Remove from this link",
     "DRIVE.LINK.MEMBER.DUPLICATE":"That is already in this link",
     "DRIVE.LINK.MEMBER.TOO.MANY":"A link can hold at most 100 items. Share a folder instead.",
-    "DRIVE.LINK.MEMBER.REMOVE.CONFIRM":"Remove %s from this link?\n\nAnyone who opens the link from now on will not see it. Anyone who already opened the link keeps access to it - to take that away you need to revoke access, which changes the file's keys and affects everyone else it is shared with.",
+    "DRIVE.LINK.MEMBER.REMOVE.CONFIRM":"Remove %s from this link?\n\nThis also takes it away from anyone who already opened the link, by changing its keys. Everyone else it is shared with keeps access.",
     "DRIVE.LINK.MEMBERS.SAME.URL":"The link and QR code below do not change. Anyone already holding this link will see what you add here.",
     "DRIVE.LINK.MEMBERS.PATHS.VISIBLE":"Whoever opens this link sees each item's full path, including the folders above it.",
     "DRIVE.LINK.ERROR.CREATE":"Error occurred creating secret link",
