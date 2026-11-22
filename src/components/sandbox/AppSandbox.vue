@@ -4048,13 +4048,21 @@ module.exports = {
         },
         writeNewFileAfterSaveConflict: function(path, data, refreshTargetFile, callback) {
             let that = this;
+            // answered once whatever happens, as the overwrites queued behind this one wait for it
+            let answered = false;
+            let answer = (...args) => {
+                if (! answered) {
+                    answered = true;
+                    callback(...args);
+                }
+            };
             let pathNameCount = peergos.client.PathUtils.getNameCount(path);
             let pathWithoutFilename = peergos.client.PathUtils.subpath(path, 0, pathNameCount -1);
             this.context.getByPath(pathWithoutFilename.toString()).thenApply(dirOpt => {
                 let dir = dirOpt.get();
                 if(!dir.isWritable()) {
                     that.showError("You do not have write access to folder!");
-                    callback(false);
+                    answer(false);
                 } else {
                     let filename = peergos.client.PathUtils.getFileName(path).toString();
                     dir.uploadOrReplaceFile(filename,
@@ -4062,15 +4070,19 @@ module.exports = {
                             0, data.length, that.context.network, that.context.crypto, x => {})
                                 .thenApply(function(updatedFolder) {
                                     that.context.getByPath(path.toString()).thenApply(fileOpt => {
-                                        callback(true, pathWithoutFilename, filename);
-                                    });
+                                        answer(true, pathWithoutFilename, filename);
+                                    }).exceptionally(t => answer(true, pathWithoutFilename, filename));
                                 }).exceptionally(function(throwable) {
                                     let msg = that.uriDecode(throwable.detailMessage);
                                     that.showError("Unexpected error", throwable.detailMessage);
                                     console.log(throwable.getMessage());
-                                    callback(false);
+                                    answer(false);
                                 })
                 }
+            }).exceptionally(function(throwable) {
+                // the folder chosen can't be read now
+                that.showError("Unexpected error", throwable.detailMessage);
+                answer(false);
             });
         },
         findFileByPath: function(filePath) {
