@@ -3954,8 +3954,18 @@ module.exports = {
                         let sizeHi = (bytes.length - (bytes.length % Math.pow(2, 32)))/Math.pow(2, 32);
                         let moreRecentFile = that.commandFileRefs.get(filePath);
                         let currentFile = moreRecentFile != null ? moreRecentFile : fileToOverwrite;
-                        currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {})
-                        .thenApply(function(updatedFile) {
+                        let written;
+                        try {
+                            written = currentFile.overwriteFileJS(java_reader, sizeHi, bytes.length, that.context.network, that.context.crypto, len => {});
+                        } catch (e) {
+                            // refused before it starts, as a file this user can only read is: answered, and the
+                            // overwrites queued behind it go on
+                            that.showError("Unexpected error: " + that.cleanError(that.errText(e)));
+                            that.buildResponse(header, null, that.ACTION_FAILED);
+                            future.complete(false);
+                            return future;
+                        }
+                        written.thenApply(function(updatedFile) {
                             if (refreshTargetFile) {
                                 that.targetFile = updatedFile;
                             }
