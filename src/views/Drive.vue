@@ -120,6 +120,7 @@
 
     <div
       id="dnd"
+      @pointerdown.capture="menuAtPress = viewMenu || viewPasteMenu"
       @drop="dndDrop($event)"
       @dragover.prevent
       @click="clearSelectionOnEmptySpace($event)"
@@ -161,7 +162,7 @@
             :shareKinds="shareKinds"
             @sortBy="setSortBy"
             @openMenu="openMenu"
-            @navigateDrive="navigateDrive"
+            @navigateDrive="openOrSelect"
             :dragstartFunc="dragStart"
             :dropFunc="drop"
           />
@@ -547,6 +548,9 @@ module.exports = {
 			// non-empty: openMenu borrows that list to say which file its actions apply to.
 			// Only a deliberate pick puts the drive in selection mode.
 			picking: false,
+			// Whether a file's menu, or a folder's paste menu, was open when the press now ending began:
+			// that press closed it, and a click that closes a menu does nothing else.
+			menuAtPress: false,
 			// path: [],
             searchPath: null,
 			currentDir: null,
@@ -3743,22 +3747,35 @@ module.exports = {
 		},
 
 		// While files are being picked a click adds to the pick rather than opening, on either
-		// platform - the whole tile, so there is no corner of it that means something else. A
-		// phone gets into that state by pressing and holding; a desktop has the circle and the
-		// menu's Select. With nothing being picked, a click opens.
+		// platform - the whole tile, or a name in the list, so no part of it means something else.
+		// A phone gets into that state by pressing and holding; a desktop has the circle and the
+		// menu's Select. With nothing being picked, a click opens - unless it closed a file's menu,
+		// which the press it began with does, a bottom sheet on a phone with nothing else to tap.
 		openOrSelect(file, event) {
+			if (this.menuAtPress)
+				return;
 			if (this.picking)
 				this.toggleSelection(file, event != null && event.shiftKey);
 			else
-				this.navigateDrive(file);
+				this.navigateDrive(file, event);
 		},
 
-		navigateDrive(file) {
+		navigateDrive(file, event) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
+			let touch = this.isTouch(event);
+			// a quick second tap - which UI Events counts as detail 2, where the browser counts taps -
+			// is one open, not two
+			if (touch && event != null && event.detail > 1)
+				return;
 			if (file.isDirectory() || this.isArchiveFile(file.getFileProperties())) {
 				// a zip is browsed into, like a directory, rather than opened
 				this.navigateToSubdir(file.getFileProperties().name);
+			} else if (touch) {
+				// A finger opens a file with one tap, as the file apps on phones and tablets do, and
+				// as it opens a folder: press and hold is what picks.
+				this.selectedFiles = [file];
+				this.openFile();
 			} else {
 			    let newClickedFilename = file.getFileProperties().name;
 			    let existingClickedFilename = this.clickedFilename;
@@ -3775,6 +3792,27 @@ module.exports = {
                     this.clicks = 0;
                 }
 			}
+			if (touch)
+				this.ignoreSecondClick();
+		},
+		// The second click of a double click or tap lands on whatever the first one opened in its
+		// place - a viewer's controls, the rows of the choice of app or the mask that closes it - and
+		// is not meant for it. That is the drive's own views: a click inside an app's or a viewer's
+		// frame is the frame's, and never reaches this window.
+		ignoreSecondClick() {
+			window.addEventListener("click", e => {
+				if (e.detail > 1) {
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}, {capture: true, once: true});
+		},
+		// Whether a click came from a finger, or a pen, which taps as a finger does: the click says so
+		// itself where the browser makes it a PointerEvent, and otherwise the screen's main pointer does.
+		isTouch(event) {
+			if (event != null && event.pointerType)
+				return event.pointerType != "mouse";
+			return window.matchMedia != null && window.matchMedia("(pointer: coarse)").matches;
 		},
 		navigateToSubdir(name) {
 			this.changePath(this.getPath + name);
