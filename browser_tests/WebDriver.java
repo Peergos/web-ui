@@ -32,6 +32,10 @@ public interface WebDriver extends AutoCloseable {
     /** Sizes the window, so a test can ask for a phone rather than assume the one it got. */
     void setWindowRect(int width, int height);
 
+    /** W3C WebDriver input actions: real input, which the browser scrolls for, where an event a
+     *  script dispatches scrolls nothing. */
+    void performActions(List<Map<String, Object>> actions);
+
     @Override
     void close();
 
