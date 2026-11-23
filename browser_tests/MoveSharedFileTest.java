@@ -15,6 +15,9 @@ import java.util.*;
  *  finished. Answered with Yes, closed with its X - which keeps the link - or left open by going
  *  to another view, the move has to finish.
  *
+ *  A folder whose file has a secret link moves too, with the link: in the browser, working out
+ *  where that file's record goes threw, and the move failed.
+ *
  *  Usage: java -cp ../server/Peergos.jar MoveSharedFileTest.java [engine] [url]
  */
 public class MoveSharedFileTest {
@@ -45,6 +48,9 @@ public class MoveSharedFileTest {
             Files.writeString(f, name + " has a secret link\n");
             commands.add("put " + f.toAbsolutePath());
         }
+        Path inside = local.resolve("inside.txt");
+        Files.writeString(inside, "inside.txt has a secret link, and its folder is moved\n");
+        commands.addAll(List.of("mkdir folder", "cd folder", "put " + inside.toAbsolutePath()));
         try {
             Fixtures.commands(jar, url, me.name(), me.password(), commands.toArray(new String[0]));
             Crypto crypto = Builder.initCrypto();
@@ -53,13 +59,15 @@ public class MoveSharedFileTest {
             UserContext owner = UserContext.signIn(me.name(), me.password(), mfa -> null, network, crypto).join();
             for (String name : List.of("yes.txt", "closed.txt", "left.txt"))
                 owner.createSecretLink("/" + me.name() + "/" + name, false, Optional.empty(), Optional.empty(), "", false).join();
+            String insideLink = owner.createSecretLink("/" + me.name() + "/folder/inside.txt", false, Optional.empty(),
+                    Optional.empty(), "", false).join().toLinkString(owner.signer.publicKeyHash);
 
             try (WebDriver d = Browsers.launch(Browsers.engine(engine), Temp.directory("peergos-move-shared-dl-"), headless)) {
                 d.navigate(url + "/");
                 d.waitForScript("login form", "document.querySelector('input[name=username]')", 60_000);
                 Page.login(d, me.name(), me.password());
                 Page.gotoDrive(d);
-                for (String name : List.of("yes.txt", "closed.txt", "left.txt", "dest"))
+                for (String name : List.of("yes.txt", "closed.txt", "left.txt", "folder", "dest"))
                     Page.waitForInDrive(d, name, 120_000);
 
                 moveIntoDest(d, "yes.txt");
@@ -76,11 +84,38 @@ public class MoveSharedFileTest {
                     throw new AssertionError("Closing the question dropped the moved file's secret link");
                 System.out.println("  ok   closing the question lets the move finish, keeping the link");
 
+                moveIntoDest(d, "folder");
+                click(d, ".pg-dialog .pg-btn--primary", "Yes");
+                d.waitForScript("the folder's move to end", "!window.__drive.showSpinner || window.__drive.showError", 60_000);
+                if (Boolean.TRUE.equals(d.script("return window.__drive.showError;")))
+                    throw new AssertionError("Moving a folder whose file has a secret link failed: "
+                            + d.script("return window.__drive.errorTitle + ': ' + window.__drive.errorBody;"));
+                awaitMoved(d, jar, url, me, "folder");
+                Fixtures.awaitListing(jar, url, me.name(), me.password(), "dest/folder", 60_000, "inside.txt");
+                if (Fixtures.listing(jar, url, me.name(), me.password()).contains("folder"))
+                    throw new AssertionError("The moved folder is still at its old path too");
+                // cleared, as the pointers read a moment ago are cached for longer than the move took
+                List<String> recorded = UserContext.signIn(me.name(), me.password(), mfa -> null, network.clear(), crypto).join()
+                        .getAllSecretLinks().join().stream().map(l -> l.recordedUnder.replace('\\', '/')).toList();
+                if (recorded.stream().noneMatch(p -> p.endsWith("dest/folder/inside.txt")))
+                    throw new AssertionError("Moving the folder dropped its file's secret link, recorded under " + recorded);
+                System.out.println("  ok   a folder whose file has a secret link moves, keeping the link");
+
                 // the drive left, with the question still open, as Back does
                 moveIntoDest(d, "left.txt");
                 Page.gotoView(d, "Launcher", "launchAppFromUI", "__launcher");
                 Fixtures.awaitListing(jar, url, me.name(), me.password(), "dest", 60_000, "left.txt");
                 System.out.println("  ok   leaving the drive with the question open lets the move finish");
+
+                d.navigate("about:blank");
+                d.navigate(url + "/" + insideLink);
+                String drive = Page.VUE + ".find('downloadFile')";
+                d.waitForScript("the moved folder's file behind its link",
+                        "((" + drive + " || {}).files || []).some(f => f.getName() === 'inside.txt')", 60_000);
+                Object at = d.script("return " + drive + ".getPath;");
+                if (! String.valueOf(at).endsWith("/dest/folder/"))
+                    throw new AssertionError("The link opens the moved folder's file at " + at + ", not in dest/folder");
+                System.out.println("  ok   the link still opens the moved folder's file, where it is now");
                 System.out.println("PASS");
             }
         } finally {
