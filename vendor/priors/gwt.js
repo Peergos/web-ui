@@ -745,9 +745,12 @@ function setDesiredCacheSize(desiredSize) {
 function modifyCacheSize(newCacheSizeMiB) {
     let future = peergos.shared.util.Futures.incomplete();
     if (window.location.hostname == "localhost") {
-        new Promise(function(resolve, reject) {
+        // the local server's config api needs the token the app hands this page (local-auth.js)
+        window.peergosLocalAuth.headers().then(headers => new Promise(function(resolve, reject) {
 	    var req = new XMLHttpRequest();
 	    req.open('POST', "peergos/v0/config/cache/set-size-mb?size="+newCacheSizeMiB);
+	    for (const name in headers)
+	        req.setRequestHeader(name, headers[name]);
             req.responseType = 'json';
 	    
 	    req.onload = function() {
@@ -762,7 +765,7 @@ function modifyCacheSize(newCacheSizeMiB) {
                         if (trailer == null) {
                             reject('Unexpected error from server. Status code: ' + req.status);
                         } else {
-                            reject(trailer);
+                            reject(decodeURIComponent(trailer.replace(/\+/g, ' ')));
                         }
 		    } catch (e) {
 		        reject(e);
@@ -779,7 +782,7 @@ function modifyCacheSize(newCacheSizeMiB) {
             };
             
 	    req.send(new Int8Array(0));
-        }).then(function(result, err) {
+        })).then(function(result, err) {
             if (err != null)
                 future.completeExceptionally(java.lang.Throwable.of(err));
             else
@@ -836,9 +839,11 @@ function isSafariTest() {
 }
 function getBrowserStorageQuota() {
     if (window.location.hostname == "localhost") {
-        return new Promise(function(resolve, reject) {
+        return window.peergosLocalAuth.headers().then(headers => new Promise(function(resolve, reject) {
 	    var req = new XMLHttpRequest();
 	    req.open('POST', "peergos/v0/config/cache/get-size");
+	    for (const name in headers)
+	        req.setRequestHeader(name, headers[name]);
             req.responseType = 'json';
 	    
 	    req.onload = function() {
@@ -854,7 +859,7 @@ function getBrowserStorageQuota() {
                         if (trailer == null) {
                             reject('Unexpected error from server. Status code: ' + req.status);
                         } else {
-                            reject(trailer);
+                            reject(decodeURIComponent(trailer.replace(/\+/g, ' ')));
                         }
 		    } catch (e) {
 		        reject(e);
@@ -871,7 +876,7 @@ function getBrowserStorageQuota() {
             };
             
 	    req.send(new Int8Array(0));
-        });
+        }));
     }
     if (navigator.storage && navigator.storage.estimate) {
         return navigator.storage.estimate().then(quota => quota.quota);
