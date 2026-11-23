@@ -94,6 +94,7 @@ public class Suite {
             t("calendar repeat and reminder", () -> CalendarRepeatTest.run(args1));
             t("a series cut short keeps the parts of its rule the form can't show", () -> CalendarShortenedRuleTest.run(args1));
             t("calendar task", () -> CalendarTaskTest.run(args1));
+            t("calendar search lists what is to come first, with the year where it isn't this one", () -> CalendarSearchOrderTest.run(args1));
             t("a link to a calendar entry opens it", () -> CalendarEntryLinkTest.run(args1));
             t("calendar sharing stays with the host", () -> CalendarSharingTest.run(args1));
             t("a series cut by this-and-following ends after the occurrences it had left", () -> CalendarFollowingCountTest.run(args1));
