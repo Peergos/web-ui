@@ -142,6 +142,8 @@
                 <iframe id="print-data-container" style="display:none" aria-hidden="true" tabindex="-1"></iframe>
             </div>
             <div id="sandbox-container" class="pg-viewer__body">
+                <!-- until the page is in: starting an app, or reading a page from the server, can take seconds -->
+                <Spinner v-if="!pageShown && !showSpinner" :since="openedAt || startedAt" :absolutePosition="true"></Spinner>
             </div>
             <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
         </section>
@@ -205,6 +207,9 @@ module.exports = {
         return {
             showSpinner: false,
             spinnerMessage: '',
+            startedAt: Date.now(),
+            pageShown: false,
+            pageShownTimer: null,
             maxBlockSize: 1024 * 1024 * 5,
             sandboxedApp: null,
             isIframeInitialised: false,
@@ -360,17 +365,23 @@ module.exports = {
             return this.socialData.friends;
         }
     },
+    // openedAt: when the user asked, if what opens it looked something up first
     props: ['sandboxAppName', 'currentFile', 'currentPath', 'currentProps', 'sandboxAppChatId', 'htmlAnchor',
-            'archiveResolver'],
+            'archiveResolver', 'openedAt'],
     // Vue 3's name for the hook: as beforeDestroy it never ran, and a sandbox left by a view
     // change kept its window listeners, so the next app's requests were answered twice.
     beforeUnmount: function() {
+        clearTimeout(this.pageShownTimer);
         this.keepAccessOnClose();
         window.removeEventListener('message', this.messageHandler);
         window.removeEventListener("resize", this.resizeHandler);
     },
     created: function() {
         let that = this;
+        // A page that never says it is in - a sandbox page older than this one, still cached, or a frame
+        // that never loads - is not left under the spinner for good. Timed from here, not from the
+        // click: a lookup that was slow before the viewer opened must not use up the viewer's wait.
+        this.pageShownTimer = setTimeout(() => that.pageShown = true, 15000);
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.currentAppName = this.sandboxAppName;
         let currentFilename = this.currentFile == null ? '' : this.currentFile.getName();
@@ -757,6 +768,8 @@ module.exports = {
                 if ((e.origin === "null" || e.origin === that.frameDomain()) && e.source === iframe.contentWindow) {
                     if (e.data.action == 'pong') {
                         that.isIframeInitialised = true;
+                    } else if (e.data.action == 'pageShown') {
+                        that.pageShown = true;
                     } else if (e.data.action == 'failedInit') {
                         that.giveUp();
                     } else if (e.data.action == 'streamFile') {

@@ -131,6 +131,7 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
                     let src = allowBrowsing ? appPath.substring(1) + query + anchor : "index.html" + path;
                     iframe.src= src;
                     iframe.contentWindow.focus();
+                    tellWhenShown(iframe);
                 }
             }
             that.startPing(url + "/ping");
@@ -142,6 +143,15 @@ function load(appName, appPath, allowBrowsing, theme, chatId, username, props, l
         }, {id: instanceId, tile: tileMode}
     );
     that.streamWriter = fileStream.getWriter();
+}
+// Tells the host once the page has been read, so it can take down what it shows meanwhile: not
+// at the load event, which Firefox holds back until the lazy pictures in view are in as well.
+function tellWhenShown(iframe) {
+    let doc = iframe.contentDocument;
+    if (doc == null || (doc.URL != 'about:blank' && doc.readyState != 'loading'))
+        mainWindow.postMessage({action: 'pageShown'}, origin);
+    else
+        requestAnimationFrame(() => tellWhenShown(iframe));
 }
 function respondToLoadedChunk(bytes) {
     streamWriter.write(bytes);

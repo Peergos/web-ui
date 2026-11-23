@@ -12,7 +12,7 @@
                 <DialogClose @close="close"/>
             </header>
             <div class="pg-viewer__body">
-                <Spinner :absolutePosition="true"></Spinner>
+                <Spinner :absolutePosition="true" :since="openedAt"></Spinner>
             </div>
         </section>
     </div>
@@ -20,7 +20,8 @@
         v-else
         v-on:hide-app-sandbox="closeAppSandbox"
         :sandboxAppName="sandboxAppName"
-        :currentProps="currentProps">
+        :currentProps="currentProps"
+        :openedAt="openedAt">
     </AppSandbox>
 </template>
 
@@ -42,7 +43,9 @@ module.exports = {
             showAppSandbox: false,
             sandboxAppName: '',
             currentProps: null,
-            closed: false
+            closed: false,
+            // the manifest's read and the app's start are one wait, timed from when it was asked for
+            openedAt: Date.now()
         }
     },
     props: ['appPropsFile'],
