@@ -44,7 +44,7 @@
                         <option value="text/plain">{{ translate("SEARCH.TEXT") }}</option>
                         <option value="video">{{ translate("SEARCH.VIDEO") }}</option>
                     </select>
-                    <button id='submit-search' class="pg-btn pg-btn--primary" @click="search()">{{ translate("SEARCH.SEARCH") }}</button>
+                    <button id='submit-search' class="pg-btn pg-btn--primary" :disabled="showSpinner" @click="search()">{{ translate("SEARCH.SEARCH") }}</button>
                 </div>
 
             <div class="search-results">
@@ -95,6 +95,9 @@ const AppIcon = require("./AppIcon.vue");
 const i18n = require("../i18n/index.js");
 const sortColumn = require("../mixins/sortcolumn/index.js");
 
+// The folders a search lists at once: the fewest with which a search of folders not yet cached takes no longer than listing them all at once
+const FOLDERS_LISTED_AT_ONCE = 24;
+
 module.exports = {
 	components: {
 	    Spinner,
@@ -105,7 +108,6 @@ module.exports = {
         return {
             searchContains: "",
             showSpinner: false,
-            walkCounter: 0,
             matches: [],
             selectedSearchType: "contains",
             selectedSizeUnit: "M",
@@ -124,7 +126,7 @@ module.exports = {
                 {key: "modified", cls: "search-table__date", label: "DRIVE.MODIFIED"},
                 {key: "created", cls: "search-table__date", label: "DRIVE.CREATED"},
             ],
-            cancelSearch: false,
+            run: null,
 	        showCancel: false,
             availableApps: [],
             showAppMenu: false,
@@ -136,6 +138,9 @@ module.exports = {
     props: ['path', 'navigateToAction'],
     created: function() {
         this.selectedDate = new Date().toISOString().split('T')[0];
+    },
+    beforeUnmount: function() {
+        this.stopSearch();
     },
     methods: {
     convertBytesToHumanReadable:function(bytes) {
@@ -152,49 +157,66 @@ module.exports = {
     roundToDisplay:function(x) {
             return Math.round(x * 100) / 100;
     },
-	walk: function(file, path, searchTerm, searchTest) {
-        let searchButton = document.getElementById("submit-search");
-        if (this.cancelSearch) {
-            this.showSpinner = false;
-            searchButton.disabled = false;
-            return;
-        }
-        let fileProperties = file.getFileProperties();
-        if (fileProperties.isHidden)
-            return;
+	// Folders are listed a few at a time, and only while this search is the current one: closing the dialog, Cancel
+	// or a new search ends it.
+	walk: function(root, rootPath, searchTerm, searchTest, run) {
         let that = this;
-        if (fileProperties.isDirectory) {
-            that.walkCounter++;
-            if (that.walkCounter == 1) {
-                that.showSpinner = true;
-                searchButton.disabled = true;
-            }
-            file.getChildren(this.context.crypto.hasher, this.context.network).thenCompose(function(children) {
-                let arr = children.toArray();
-                let size = arr.length;
-                if (size == 0) {
-                    that.walkCounter--;
-                    if (that.walkCounter == 0) {
-                        that.showSpinner = false;
-			that.showCancel = false;
-                        searchButton.disabled = false;
-                    }
-                }
-                arr.forEach(function(child, index){
-                    let newPath = child.getFileProperties().isDirectory ? path + "/" + child.getFileProperties().name : path;
-                    that.walk(child, newPath, searchTerm, searchTest);
-                    if (index == size - 1) {
-                        that.walkCounter--;
-                        if (that.walkCounter == 0) {
-                            that.showSpinner = false;
-			    that.showCancel = false;
-                            searchButton.disabled = false;
+        let queue = [{dir: root, path: rootPath}];
+        let listing = 0;
+        let starting = false;
+        if (! root.getFileProperties().isHidden)
+            searchTest(root, rootPath, searchTerm);
+        let next = function() {
+            // a cached folder is listed before getChildren returns, and lands here from inside the loop below: the loop
+            // carries on with what it added, as starting it from here would nest a call for every folder of the drive
+            if (run.cancelled || starting)
+                return;
+            starting = true;
+            while (listing < FOLDERS_LISTED_AT_ONCE && queue.length > 0) {
+                let entry = queue.shift();
+                listing++;
+                let listed = false;
+                let done = function() {
+                    if (listed)
+                        return;
+                    listed = true;
+                    listing--;
+                    next();
+                };
+                try {
+                    entry.dir.getChildren(that.context.crypto.hasher, that.context.network).thenApply(function(children) {
+                        try {
+                            if (! run.cancelled)
+                                children.toArray().forEach(function(child) {
+                                    let props = child.getFileProperties();
+                                    if (props.isHidden)
+                                        return;
+                                    let path = props.isDirectory ? entry.path + "/" + props.name : entry.path;
+                                    if (props.isDirectory)
+                                        queue.push({dir: child, path: path});
+                                    searchTest(child, path, searchTerm);
+                                });
+                        } finally {
+                            done();
                         }
-                    }
-                });
-            });
-        }
-        searchTest(file, path, searchTerm); //could be file or dir
+                    }).exceptionally(function(throwable) {
+                        // a folder that can't be listed is left out, and the rest are still searched
+                        console.log(throwable);
+                        done();
+                    });
+                } catch (unreadable) {
+                    // getChildren throws for a folder it can't read, rather than failing its future
+                    console.log(unreadable);
+                    done();
+                }
+            }
+            starting = false;
+            if (queue.length == 0 && listing == 0) {
+                that.showSpinner = false;
+                that.showCancel = false;
+            }
+        };
+        next();
     },
     getFileSize: function(props) {
             var low = props.sizeLow();
@@ -222,6 +244,7 @@ module.exports = {
     },
     textFileContainsTest: function(file, path, searchTerm) {
         let that = this;
+        let run = this.run;
         let props = file.getFileProperties();
         let mimeType = props.mimeType;
         if (mimeType.startsWith('text/')) {
@@ -231,9 +254,11 @@ module.exports = {
                     let maxBlockSize = 1024 * 1024 * 1;
                     var blockSize = size > maxBlockSize ? maxBlockSize : size;
                     let pump = (previousBlockSnippet) => {
-                        if (blockSize > 0) {
+                        if (blockSize > 0 && ! run.cancelled) {
                             var data = convertToByteArray(new Uint8Array(blockSize))
                             reader.readIntoArray(data, 0, blockSize).thenApply(function (read) {
+                                if (run.cancelled)
+                                    return;
                                 size = size - read.value_0;
                                 blockSize = size > maxBlockSize ? maxBlockSize : size;
                                 let textBlock = previousBlockSnippet + new TextDecoder().decode(data);
@@ -342,8 +367,7 @@ module.exports = {
             return Number(searchTerm) * 1024 * 1024 * 1024;
     },
 	search: function() {
-	    this.showCancel = true;
-            this.cancelSearch = false;
+            this.stopSearch();
             this.isError = false;
             this.error = "";
             this.errorClass = "";
@@ -351,7 +375,6 @@ module.exports = {
             var that = this;
             let path = this.path == '' ? '/' + this.context.username : this.path;
             this.matches = [];
-            this.walkCounter = 0;
             let filterFunction = null;
 	        let searchTerm = null;
             if(this.selectedSearchType == "contains") {
@@ -397,19 +420,24 @@ module.exports = {
             if (searchTerm == null) {
                 return;
             }
+            let run = this.run = {cancelled: false};
+            this.showCancel = true;
+            this.showSpinner = true;
             this.context.getByPath(path).thenApply(function(dir){
-                that.walk(dir.get(), path, searchTerm, filterFunction);
+                if (! run.cancelled)
+                    that.walk(dir.get(), path, searchTerm, filterFunction, run);
             }).exceptionally(function(throwable) {
-                that.showSpinner = false;
-                let searchButton = document.getElementById("submit-search");
-                searchButton.disabled = false;
+                if (! run.cancelled)
+                    that.stopSearch();
                 throwable.printStackTrace();
             });
 
         },
         stopSearch: function () {
-            this.cancelSearch = true;
-	    this.showCancel = false;
+            if (this.run != null)
+                this.run.cancelled = true;
+            this.showCancel = false;
+            this.showSpinner = false;
         },
         view: function (event, entry) {
             if (entry.isDirectory) {

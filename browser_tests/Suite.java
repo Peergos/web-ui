@@ -104,6 +104,7 @@ public class Suite {
             t("a series split from an occurrence takes its later dates", () -> CalendarFollowingDatesTest.run(args1));
             t("a blocked user's comment is hidden in the feed", () -> NewsFeedBlockTest.run(args1));
             t("hidden files aren't listed in the drive", () -> HiddenFilesTest.run(args1));
+            t("a search of nested folders, ended by closing its dialog", () -> SearchDialogTest.run(args1));
             t("a delete that fails part way leaves the drive usable", () -> DeleteSpinnerTest.run(args1));
             t("a copy over the quota is refused and leaves the drive usable", () -> CopyOverQuotaTest.run(args1));
             t("a drag that lands nowhere leaves what was cut to paste", () -> DragThenPasteTest.run(args1));
