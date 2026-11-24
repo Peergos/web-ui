@@ -175,6 +175,8 @@ public class CalendarFollowingDatesTest {
             CalendarDragTest.dragThenChoose(d, CalendarDragTest.dragInColumn(ownTime, wed.toString(),
                     CalendarDragTest.slotDistance("14:00:00", "15:00:00"), false), "following");
             String ownFile = newSeries(d, recurring, Set.of("own-time.ics"), ownTime);
+            // the part before is cut short too, or after the reload it still draws the next Monday itself
+            CalendarApp.awaitStored(d, recurring, "own-time.ics", "UNTIL=");
             String ownPart = CalendarApp.read(d, recurring, ownFile);
             CalendarApp.assertTimeIs(ownPart, "DTSTART", first.plusWeeks(1).atTime(9, 0));
             assertListed(ownPart, "RDATE", wed, "T150000", "the dragged Wednesday, before the new part's start");
@@ -386,6 +388,11 @@ public class CalendarFollowingDatesTest {
                 return null;
             }, 60_000);
             assertListed(CalendarApp.read(d, recurring, lastPart), "RDATE", listedFri, "T110000", "the one date of the new part");
+            // the part before gives up the Friday too, or after the reload it still draws that Friday itself
+            d.waitUntil("the part before to give up the Friday", () -> {
+                String rdate = CalendarApp.property(CalendarApp.read(d, recurring, "listed.ics"), "RDATE");
+                return rdate != null && rdate.contains(listedFri.format(BASIC)) ? null : true;
+            }, 60_000);
             CalendarClockChangeTest.reload(d, listedFri);
             CalendarApp.monthView(d);
             CalendarApp.waitInFrame(d, "the parts", CalendarSeriesTest.drawn("Listed dates"), 30_000);
