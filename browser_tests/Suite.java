@@ -19,6 +19,9 @@ public class Suite {
             System.out.println("server at " + server.url() + ", engine " + engine);
             String[] args1 = {engine, server.url()};
             serial("smoke", () -> SmokeTest.main(new String[]{engine, server.url() + "/"}));
+            // Alone, so that it is over before the links below are begun: once the first of them is made,
+            // Custom Apps can't be opened (see below), and on several workers the two would overlap.
+            serial("Custom Apps, with a spinner while it is slow to open", () -> CustomAppsSpinnerTest.run(args1));
             // Before anything uploads: if the browser's BLAKE3 disagreed with the Java one,
             // every later hash in the run is built on it, and the failure to look at is this.
             t("browser and java blake3 agree", () -> Blake3AgreementTest.run(args1));

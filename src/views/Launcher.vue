@@ -6,7 +6,7 @@
 		</template>
 	</AppHeader>
         <main>
-            <Spinner v-if="showSpinner" :message="spinnerMessage"></Spinner>
+            <Spinner v-if="showSpinner && !showAppSandbox" :message="spinnerMessage" :since="openedAt" :class="{'pg-spinner--passive': openedAt != null}"></Spinner>
             <Replace
                 v-if="showReplace"
                 v-on:hide-replace="showReplace = false"
@@ -52,7 +52,8 @@
                 :sandboxAppName="sandboxAppName"
                 :currentFile="currentFile"
                 :currentPath="currentPath"
-                :htmlAnchor="htmlAnchor">
+                :htmlAnchor="htmlAnchor"
+                :openedAt="openedAt">
             </AppSandbox>
             <Confirm
                     v-if="showConfirm"
@@ -212,6 +213,10 @@ module.exports = {
                 {key: "created", cls: "shortcut-table__date", label: "DRIVE.CREATED"},
             ],
             showSpinner: false,
+            // when Custom Apps was asked for, as the wait for it is timed from then
+            openedAt: null,
+            // left for another view: a lookup answered after that is for no one
+            closed: false,
             startRetry: false,
             spinnerMessage: '',
             launcherApp: null,
@@ -376,6 +381,9 @@ module.exports = {
     created: function() {
         this.messenger = new peergos.shared.messaging.Messenger(this.context);
         this.startLauncher();
+    },
+    beforeUnmount: function() {
+        this.closed = true;
     },
     methods: {
         /** The launcher's folder, then its apps. If it cannot be read (offline, say) the spinner
@@ -812,15 +820,35 @@ module.exports = {
                 return false;
             }
         },
+        // The page is looked up before its viewer opens, which the first time can take a while: the
+        // wait is timed from the click, and the viewer keeps the spinner up until the page is in.
         navigateToRecommendedApps: function() {
             let that = this;
             let path = "/peergos/recommended-apps/";
-            that.findFile(path + "index.html").thenApply(file => {
-                if (file != null) {
-                    that.launchApp('$$app-gallery$$', file, path);
-                }
+            this.openedAt = Date.now();
+            this.showSpinner = true;
+            this.context.getByPath(path + "index.html").thenApply(fileOpt => {
+                // an answer at all means an earlier failure's reason has gone, wherever the user is now
+                that.$toast.dismiss('custom-apps');
+                if (that.closed)
+                    return;
+                that.showSpinner = false;
+                if (fileOpt.ref != null)
+                    that.launchApp('$$app-gallery$$', fileOpt.get(), path);
+                else
+                    that.openedAt = null;
+            }).exceptionally(t => {
+                // the app still learns it is offline once the user has left the launcher
+                let offline = that.noteOffline(t);
+                if (that.closed)
+                    return null;
+                that.openedAt = null;
+                that.showSpinner = false;
+                // one toast however often it is tried, as the launcher's own start does
+                that.$toast.error(offline ? that.translate('APP.OFFLINE') : that.uriDecode(t.getMessage ? t.getMessage() : '' + t),
+                    {timeout: false, id: 'custom-apps'});
+                return null;
             });
-
         },
         loadAppIcons: function() {
             let that = this;
@@ -884,6 +912,7 @@ module.exports = {
         },
         closeAppSandbox() {
             this.showAppSandbox = false;
+            this.openedAt = null;
             this.setShortcutList(new Map(this.shortcuts.shortcutsMap));
             this.loadInstalledApps();
         },

@@ -77,7 +77,7 @@ public class CustomAppsThemeTest {
     }
 
     /** Runs in the page itself, inside the sandbox's frame inside the viewer: null until both are there. */
-    private static Object inPage(WebDriver d, String body) {
+    static Object inPage(WebDriver d, String body) {
         try {
             d.switchToFrame("#sandboxId");
             d.switchToFrame("#appSandboxId");

@@ -1,5 +1,5 @@
 <template>
-<div class="pg-spinner" style="width:100%; left:0; top:0;">
+<div class="pg-spinner" style="width:100%; left:0; top:0;" :hidden="!due">
     <div id="spinner" style="width:100%; height:100%; ">
         <div v-if="isMessageSet()" class="spinner-text">{{ message }}</div>
     </div>
@@ -11,12 +11,21 @@ module.exports = {
     data: function() {
         return {
             isPositionAbsolute: false,
+            due: true,
+            dueTimer: null,
         };
     },
-    props: ['message','absolutePosition'],
+    // since: when the wait began, if it is to show only once the wait has lasted 400 ms - a shorter
+    // one needs none, and a spinner that comes and goes at once only flashes
+    props: ['message','absolutePosition', 'since'],
     created: function() {
         var that = this;
         this.isPositionAbsolute = this.absolutePosition != null && this.absolutePosition === true;
+        let wait = this.since == null ? 0 : this.since + 400 - Date.now();
+        if (wait > 0) {
+            this.due = false;
+            this.dueTimer = setTimeout(() => that.due = true, wait);
+        }
         Vue.nextTick(function() {
             let spinnerElement = document.getElementById("spinner");
             if (that.isPositionAbsolute) {
@@ -26,6 +35,9 @@ module.exports = {
             }
             that.spinner.spin(spinnerElement);
         });
+    },
+    beforeUnmount: function() {
+        clearTimeout(this.dueTimer);
     },
     methods: {
         isMessageSet: function () {
@@ -75,6 +87,12 @@ module.exports = {
   height:100%;
   position:absolute;
 }
+
+/* a wait the page under it stays usable through, which can be long on a connection that hangs */
+.pg-spinner--passive {
+    pointer-events: none;
+}
+
 /* anchored, not just fixed: a fixed box with no offset starts at wherever it
    flowed, so the spinner drew below the middle of the page - or off it */
 .spinner-fixed-position {
