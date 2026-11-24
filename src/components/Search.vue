@@ -4,9 +4,7 @@
     <div class="pg-dialog search-dialog" @click.stop>
         <div class="pg-dialog__head">
             <h2 class="pg-dialog__title">{{ translate("SEARCH.SEARCH") }}: {{ path }}</h2>
-            <button type="button" class="pg-dialog__close" @click="close" aria-label="close">
-                <AppIcon icon="close"/>
-            </button>
+            <DialogClose @close="close"/>
         </div>
         <div class="pg-dialog__body">
             <div class="search-error" v-bind:class="errorClass">
@@ -92,6 +90,7 @@
 const routerMixins = require("../mixins/router/index.js");
 const Spinner = require("./spinner/Spinner.vue");
 const AppIcon = require("./AppIcon.vue");
+const DialogClose = require("./dialog/DialogClose.vue");
 const i18n = require("../i18n/index.js");
 const sortColumn = require("../mixins/sortcolumn/index.js");
 
@@ -101,7 +100,8 @@ const FOLDERS_LISTED_AT_ONCE = 24;
 module.exports = {
 	components: {
 	    Spinner,
-	    AppIcon
+	    AppIcon,
+	    DialogClose
 	},
     mixins:[i18n, routerMixins, sortColumn],
     data: function() {

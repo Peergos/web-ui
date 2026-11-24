@@ -236,6 +236,7 @@ const errors = require("../mixins/errors/index.js");
 const Spinner = require("../components/spinner/Spinner.vue");
 const i18n = require("../i18n/index.js");
 const loopback = require("../mixins/loopback/index.js");
+const lockPage = require("../components/dialog/page-lock.js");
 
 // a mount that has not appeared in a minute is not going to
 const MOUNT_POLL_LIMIT = 60;
@@ -332,6 +333,12 @@ module.exports = {
     unmounted() {
         clearTimeout(this.pollTimeoutId);
         this.stopWorking();
+        lockPage(this, false);
+    },
+    watch: {
+        showTotpConfirm(shown) {
+            lockPage(this, shown);
+        },
     },
     computed: {
         ...Vuex.mapState(['context']),

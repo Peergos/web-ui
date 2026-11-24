@@ -38,6 +38,7 @@ const AppIcon = require("../AppIcon.vue");
 const MenuItem = require('./NavigationMenuItem.vue');
 const NavigationStorage = require('./NavigationStorage.vue');
 const loopback = require("../../mixins/loopback/index.js");
+const lockPage = require("../dialog/page-lock.js");
 const i18n = require("../../i18n/index.js");
 
 module.exports = {
@@ -59,9 +60,22 @@ module.exports = {
                 if (open != null)
                     this.$store.commit("SET_SIDEBAR", "true" === open);
         },
+	beforeUnmount() {
+		lockPage(this, false);
+	},
+	watch: {
+		// up to 1024px the panel lies over the view, and a tap on the view only closes the
+		// panel: the view doesn't scroll under it either
+		overView(over) {
+			lockPage(this, over);
+		},
+	},
 	computed: {
 		isOpen() {
 			return this.$store.state.isSidebarOpen;
+		},
+		overView() {
+			return this.isOpen && this.$store.state.windowWidth <= 1024;
 		},
 		currentTheme() {
 			return this.$store.getters.currentTheme;

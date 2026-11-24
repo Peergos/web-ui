@@ -6,6 +6,7 @@
 
 <script>
 const i18n = require("../../i18n/index.js");
+const lockPage = require("./page-lock.js");
 
 // Every dialog carries exactly one of these, so the keyboard is handled here rather than in
 // each dialog. Only the most recently opened one reacts, which is what lets a prompt sit above
@@ -59,20 +60,6 @@ function onKeyDown(e) {
     }
 }
 
-// The page behind a dialog must not move under the finger. Taking its scrollbar away
-// would widen the page by the width of that bar, so the room it took is held open.
-function lockPage() {
-    const gutter = window.innerWidth - document.documentElement.clientWidth;
-    if (gutter > 0)
-        document.body.style.paddingRight = gutter + "px";
-    document.body.classList.add("pg-dialog-open");
-}
-
-function unlockPage() {
-    document.body.classList.remove("pg-dialog-open");
-    document.body.style.paddingRight = "";
-}
-
 module.exports = {
   name: "DialogClose",
   mixins: [i18n],
@@ -83,8 +70,7 @@ module.exports = {
 
   mounted() {
     open.push(this);
-    if (open.length === 1)
-      lockPage();
+    lockPage(this, true);
     if (! listening) {
       document.addEventListener("keydown", onKeyDown, true);
       listening = true;
@@ -105,8 +91,8 @@ module.exports = {
     const at = open.indexOf(this);
     if (at > -1)
       open.splice(at, 1);
+    lockPage(this, false);
     if (open.length === 0) {
-      unlockPage();
       if (listening) {
         document.removeEventListener("keydown", onKeyDown, true);
         listening = false;
