@@ -655,10 +655,6 @@ module.exports = {
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-            dblClickDelay: 700,
-            clicks: 0,
-            clickTimer: null,
-            clickedFilename: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             sharedFolderFree: null,
@@ -3749,51 +3745,35 @@ module.exports = {
 		// While files are being picked a click adds to the pick rather than opening, on either
 		// platform - the whole tile, or a name in the list, so no part of it means something else.
 		// A phone gets into that state by pressing and holding; a desktop has the circle and the
-		// menu's Select. With nothing being picked, a click opens - unless it closed a file's menu,
-		// which the press it began with does, a bottom sheet on a phone with nothing else to tap.
+		// menu's Select, and a click with Ctrl, Cmd or Shift starts one, as file managers do. With
+		// nothing being picked, a click opens - unless it closed a file's menu, which the press it
+		// began with does, a bottom sheet on a phone with nothing else to tap.
 		openOrSelect(file, event) {
 			if (this.menuAtPress)
 				return;
-			if (this.picking)
+			if (this.picking || (event != null && (event.ctrlKey || event.metaKey || event.shiftKey)))
 				this.toggleSelection(file, event != null && event.shiftKey);
 			else
 				this.navigateDrive(file, event);
 		},
 
+		// One click or tap opens a file, as it opens a folder: the drive picks with the circle, the menu,
+		// the list's tick boxes and a press and hold, so a click has nothing else to do. A double click
+		// is one open, not two: its second click, which UI Events counts as detail 2, is let go, on the
+		// file and on whatever of the drive's own the first one opened in its place.
 		navigateDrive(file, event) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
-			let touch = this.isTouch(event);
-			// a quick second tap - which UI Events counts as detail 2, where the browser counts taps -
-			// is one open, not two
-			if (touch && event != null && event.detail > 1)
+			if (event != null && event.detail > 1)
 				return;
 			if (file.isDirectory() || this.isArchiveFile(file.getFileProperties())) {
 				// a zip is browsed into, like a directory, rather than opened
 				this.navigateToSubdir(file.getFileProperties().name);
-			} else if (touch) {
-				// A finger opens a file with one tap, as the file apps on phones and tablets do, and
-				// as it opens a folder: press and hold is what picks.
+			} else {
 				this.selectedFiles = [file];
 				this.openFile();
-			} else {
-			    let newClickedFilename = file.getFileProperties().name;
-			    let existingClickedFilename = this.clickedFilename;
-			    this.clickedFilename = newClickedFilename;
-                this.clicks++;
-                if (this.clicks === 1) {
-                    this.clickTimer = setTimeout( () => { this.clicks = 0}, this.dblClickDelay);
-                } else {
-                    clearTimeout(this.clickTimer);
-                    if (newClickedFilename == existingClickedFilename) {
-                        this.selectedFiles = [file];
-                        this.openFile();
-                    }
-                    this.clicks = 0;
-                }
 			}
-			if (touch)
-				this.ignoreSecondClick();
+			this.ignoreSecondClick();
 		},
 		// The second click of a double click or tap lands on whatever the first one opened in its
 		// place - a viewer's controls, the rows of the choice of app or the mask that closes it - and
@@ -3806,13 +3786,6 @@ module.exports = {
 					e.preventDefault();
 				}
 			}, {capture: true, once: true});
-		},
-		// Whether a click came from a finger, or a pen, which taps as a finger does: the click says so
-		// itself where the browser makes it a PointerEvent, and otherwise the screen's main pointer does.
-		isTouch(event) {
-			if (event != null && event.pointerType)
-				return event.pointerType != "mouse";
-			return window.matchMedia != null && window.matchMedia("(pointer: coarse)").matches;
 		},
 		navigateToSubdir(name) {
 			this.changePath(this.getPath + name);
