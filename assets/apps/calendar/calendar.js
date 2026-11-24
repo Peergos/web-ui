@@ -1614,7 +1614,14 @@ function moveOccurrence(ev, scope, moved) {
 // construct, and search rebuilds every result's meta line on every
 // keystroke.
 let DATE_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+let YEAR_DATE_FORMAT = new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
 let TIME_FORMAT = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' });
+
+// A date in a list that spans years, as mail and calendar apps write one: the year only when it is not
+// this one - "Mon, Nov 23", "Wed, Jan 6, 2027".
+function formatListDate(date) {
+    return (date.getFullYear() === new Date().getFullYear() ? DATE_FORMAT : YEAR_DATE_FORMAT).format(date);
+}
 
 function formatPopoverTime(ev) {
     if (ev.allDay) {
@@ -1936,7 +1943,7 @@ function getSearchableEvents(query) {
         onGrid[ev.id] = true;
         if (!matches(ev)) return;
         let jumpDate = ev.start || nearestRecurOccurrenceDate(ev.extendedProps.recur, ev.allDay, new Date());
-        results.push({ event: ev, jumpDate: jumpDate });
+        results.push({ event: ev, jumpDate: jumpDate, endDate: ev.end });
     });
     // Swept months the grid does not hold. The grid answers for the months it
     // has, because only those copies carry edits and deletions made here.
@@ -1946,7 +1953,7 @@ function getSearchableEvents(query) {
         // the index runs to tens of thousands of entries, and re-lowercasing
         // three fields of each on every keystroke is work with no result.
         if (rec.haystack.indexOf(q) === -1) return;
-        results.push({ event: rec, indexed: true, jumpDate: rec.start });
+        results.push({ event: rec, indexed: true, jumpDate: rec.start, endDate: rec.end });
     });
     // Hidden calendars are searched too, exactly as their events are: someone
     // searching by name is looking for the thing, not for whichever calendars
@@ -1956,22 +1963,29 @@ function getSearchableEvents(query) {
             && (task.description || '').toLowerCase().indexOf(q) === -1) return;
         results.push({ task: task, jumpDate: task.due });
     });
-    // Undated tasks have nothing to sort by, so they sit at the end rather
-    // than being treated as the year 1970.
+    // What is still to come first, soonest at the top, then what has been, latest first: the list
+    // starts at the next match. Today, and an entry still under way, count as to come. Undated
+    // tasks have nothing to sort by, so they sit at the end rather than in the year 1970.
+    let today = startOfToday();
+    results.forEach(function (r) {
+        r.group = !r.jumpDate ? 2 : (r.endDate ? r.endDate > today : r.jumpDate >= today) ? 0 : 1;
+    });
     results.sort(function (a, b) {
-        if (!a.jumpDate) return b.jumpDate ? 1 : 0;
-        if (!b.jumpDate) return -1;
-        return a.jumpDate - b.jumpDate;
+        if (a.group !== b.group) return a.group - b.group;
+        if (a.group === 2) return 0;
+        return a.group === 0 ? a.jumpDate - b.jumpDate : b.jumpDate - a.jumpDate;
     });
     return results;
 }
 
 function formatSearchResultMeta(ev, jumpDate, cal) {
-    let text = DATE_FORMAT.format(jumpDate);
-    if (!ev.allDay) text += ' · ' + TIME_FORMAT.format(jumpDate);
-    if (ev.extendedProps.location) text += ' · ' + ev.extendedProps.location;
-    if (cal) text += ' · ' + cal.name;
-    return text;
+    // a series another app kept in a month's folder has no start of its own, so no date to show
+    let parts = [];
+    if (jumpDate) parts.push(formatListDate(jumpDate));
+    if (jumpDate && !ev.allDay) parts.push(TIME_FORMAT.format(jumpDate));
+    if (ev.extendedProps.location) parts.push(ev.extendedProps.location);
+    if (cal) parts.push(cal.name);
+    return parts.join(' · ');
 }
 
 function renderSearchResults(query) {
@@ -1999,7 +2013,8 @@ function renderSearchResults(query) {
         searchResults.appendChild(empty);
         return;
     }
-    matches.slice(0, 20).forEach(function (match) {
+    let shown = matches.slice(0, 20);
+    shown.forEach(function (match) {
         if (match.task) {
             searchResults.appendChild(taskSearchResult(match.task));
             return;
@@ -2019,6 +2034,8 @@ function renderSearchResults(query) {
             }
         }));
     });
+    if (matches.length > shown.length)
+        appendSearchNote((matches.length - shown.length) + ' more not shown. Keep typing to narrow the search.');
     appendSearchSweepNote();
 }
 
@@ -2029,7 +2046,10 @@ function appendSearchSweepNote() {
     if (searchSweep.running) text = 'Still looking through earlier months…';
     else if (searchSweep.capped) text = 'Only the most recent months were searched.';
     else if (searchSweep.failed > 0) text = 'Some months could not be read.';
-    if (!text) return;
+    if (text) appendSearchNote(text);
+}
+
+function appendSearchNote(text) {
     let note = document.createElement('div');
     note.className = 'search-empty';
     note.textContent = text;
@@ -4450,7 +4470,8 @@ function formatTaskDue(task) {
     let today = startOfToday();
     let dayDiff = Math.round((new Date(task.due.getFullYear(), task.due.getMonth(), task.due.getDate()) - today) / 86400000);
     let day = dayDiff === 0 ? 'Today' : (dayDiff === 1 ? 'Tomorrow' : (dayDiff === -1 ? 'Yesterday' :
-        task.due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })));
+        task.due.toLocaleDateString(undefined, { month: 'short', day: 'numeric',
+            year: task.due.getFullYear() === today.getFullYear() ? undefined : 'numeric' })));
     return task.dueAllDay ? day : day + ' ' + task.due.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
