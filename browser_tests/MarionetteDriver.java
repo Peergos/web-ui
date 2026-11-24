@@ -373,6 +373,11 @@ public class MarionetteDriver implements WebDriver {
     }
 
     @Override
+    public void performActions(List<Map<String, Object>> actions) {
+        command("WebDriver:PerformActions", Map.of("actions", actions));
+    }
+
+    @Override
     public void navigate(String url) {
         // Loading a page is idempotent, and a server too busy to answer is usually busy for a
         // moment rather than for the rest of the run - so try a few times rather than once.

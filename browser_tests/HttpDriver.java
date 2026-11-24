@@ -114,6 +114,11 @@ public class HttpDriver implements WebDriver {
         System.out.println("  note: the window stayed at " + had + " rather than " + width + "x" + height);
     }
 
+    @Override
+    public void performActions(List<Map<String, Object>> actions) {
+        send("POST", session("/actions"), Map.of("actions", actions));
+    }
+
     private static int number(Object value) {
         return value instanceof Number ? ((Number) value).intValue() : -1;
     }
