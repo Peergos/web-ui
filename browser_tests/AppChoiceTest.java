@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-/** Double clicking a file two installed apps both open asks which to use, rather than saying
+/** Opening a file two installed apps both open asks which to use, rather than saying
  *  there is no app for it. Without "always use this app" it asks again next time; with it the
  *  choice is kept in local storage and the file opens straight in that app.
  *
@@ -57,7 +57,7 @@ public class AppChoiceTest {
                 Page.gotoDrive(d);
                 Page.waitForInDrive(d, file, 60_000);
 
-                doubleClick(d, file);
+                open(d, file);
                 awaitDialog(d);
                 String options = String.valueOf(d.script("return [...(" + DIALOG + ").querySelectorAll('.choice-block__text')]"
                         + ".map(x => x.textContent.trim()).join(' | ')"));
@@ -65,7 +65,7 @@ public class AppChoiceTest {
                     throw new AssertionError("The choice is missing an app: " + options);
                 if (Boolean.TRUE.equals(d.script("return document.body.innerText.includes('There is no app installed')")))
                     throw new AssertionError("Still told there is no app installed");
-                System.out.println("  ok   double click asks which app: " + options);
+                System.out.println("  ok   opening it asks which app: " + options);
                 screenshot(d, "appchoice-dialog.png");
 
                 pick(d, "Alpha Viewer", false);
@@ -75,7 +75,7 @@ public class AppChoiceTest {
                 System.out.println("  ok   it opens in the app picked, and remembers nothing");
 
                 closeApp(d);
-                doubleClick(d, file);
+                open(d, file);
                 awaitDialog(d);
                 System.out.println("  ok   without always, it asks again");
 
@@ -87,7 +87,7 @@ public class AppChoiceTest {
                 System.out.println("  ok   with always, it opens and stores .twoapp -> " + stored);
 
                 closeApp(d);
-                doubleClick(d, file);
+                open(d, file);
                 awaitApp(d, "betaview");
                 if (Boolean.TRUE.equals(d.script("return !!(" + DIALOG + ")")))
                     throw new AssertionError("Asked again despite the stored default");
@@ -100,11 +100,11 @@ public class AppChoiceTest {
         }
     }
 
-    /** Two clicks on the file's card, as a person double clicking does. */
-    static void doubleClick(WebDriver d, String name) {
+    /** A click on the file's card, which opens it. */
+    static void open(WebDriver d, String name) {
         Object clicked = d.script("const card = [...document.querySelectorAll('.grid-card, .drive-table tbody tr')]"
                 + ".find(c => c.textContent.includes(arguments[0]));"
-                + " if (! card) return false; card.click(); card.click(); return true;", name);
+                + " if (! card) return false; card.click(); return true;", name);
         if (! Boolean.TRUE.equals(clicked))
             throw new IllegalStateException("No card for " + name + " in " + Page.driveListing(d));
     }

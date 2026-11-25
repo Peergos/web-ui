@@ -120,6 +120,7 @@
 
     <div
       id="dnd"
+      @pointerdown.capture="menuAtPress = viewMenu || viewPasteMenu"
       @drop="dndDrop($event)"
       @dragover.prevent
       @click="clearSelectionOnEmptySpace($event)"
@@ -161,7 +162,7 @@
             :shareKinds="shareKinds"
             @sortBy="setSortBy"
             @openMenu="openMenu"
-            @navigateDrive="navigateDrive"
+            @navigateDrive="openOrSelect"
             :dragstartFunc="dragStart"
             :dropFunc="drop"
           />
@@ -547,6 +548,9 @@ module.exports = {
 			// non-empty: openMenu borrows that list to say which file its actions apply to.
 			// Only a deliberate pick puts the drive in selection mode.
 			picking: false,
+			// Whether a file's menu, or a folder's paste menu, was open when the press now ending began:
+			// that press closed it, and a click that closes a menu does nothing else.
+			menuAtPress: false,
 			// path: [],
             searchPath: null,
 			currentDir: null,
@@ -651,10 +655,6 @@ module.exports = {
 			showSpinner: true,
 			spinnerMessage: '',
 			onUpdateCompletion: [], // methods to invoke when current dir is next refreshed
-            dblClickDelay: 700,
-            clicks: 0,
-            clickTimer: null,
-            clickedFilename: null,
             uploadProgressQueue: { entries:[]},
             executingUploadProgressCommands: false,
             sharedFolderFree: null,
@@ -3743,38 +3743,49 @@ module.exports = {
 		},
 
 		// While files are being picked a click adds to the pick rather than opening, on either
-		// platform - the whole tile, so there is no corner of it that means something else. A
-		// phone gets into that state by pressing and holding; a desktop has the circle and the
-		// menu's Select. With nothing being picked, a click opens.
+		// platform - the whole tile, or a name in the list, so no part of it means something else.
+		// A phone gets into that state by pressing and holding; a desktop has the circle and the
+		// menu's Select, and a click with Ctrl, Cmd or Shift starts one, as file managers do. With
+		// nothing being picked, a click opens - unless it closed a file's menu, which the press it
+		// began with does, a bottom sheet on a phone with nothing else to tap.
 		openOrSelect(file, event) {
-			if (this.picking)
+			if (this.menuAtPress)
+				return;
+			if (this.picking || (event != null && (event.ctrlKey || event.metaKey || event.shiftKey)))
 				this.toggleSelection(file, event != null && event.shiftKey);
 			else
-				this.navigateDrive(file);
+				this.navigateDrive(file, event);
 		},
 
-		navigateDrive(file) {
+		// One click or tap opens a file, as it opens a folder: the drive picks with the circle, the menu,
+		// the list's tick boxes and a press and hold, so a click has nothing else to do. A double click
+		// is one open, not two: its second click, which UI Events counts as detail 2, is let go, on the
+		// file and on whatever of the drive's own the first one opened in its place.
+		navigateDrive(file, event) {
 			this.closeMenu();
             // console.log(file, 'navigateDrive' )
+			if (event != null && event.detail > 1)
+				return;
 			if (file.isDirectory() || this.isArchiveFile(file.getFileProperties())) {
 				// a zip is browsed into, like a directory, rather than opened
 				this.navigateToSubdir(file.getFileProperties().name);
 			} else {
-			    let newClickedFilename = file.getFileProperties().name;
-			    let existingClickedFilename = this.clickedFilename;
-			    this.clickedFilename = newClickedFilename;
-                this.clicks++;
-                if (this.clicks === 1) {
-                    this.clickTimer = setTimeout( () => { this.clicks = 0}, this.dblClickDelay);
-                } else {
-                    clearTimeout(this.clickTimer);
-                    if (newClickedFilename == existingClickedFilename) {
-                        this.selectedFiles = [file];
-                        this.openFile();
-                    }
-                    this.clicks = 0;
-                }
+				this.selectedFiles = [file];
+				this.openFile();
 			}
+			this.ignoreSecondClick();
+		},
+		// The second click of a double click or tap lands on whatever the first one opened in its
+		// place - a viewer's controls, the rows of the choice of app or the mask that closes it - and
+		// is not meant for it. That is the drive's own views: a click inside an app's or a viewer's
+		// frame is the frame's, and never reaches this window.
+		ignoreSecondClick() {
+			window.addEventListener("click", e => {
+				if (e.detail > 1) {
+					e.stopPropagation();
+					e.preventDefault();
+				}
+			}, {capture: true, once: true});
 		},
 		navigateToSubdir(name) {
 			this.changePath(this.getPath + name);

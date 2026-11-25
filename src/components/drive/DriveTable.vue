@@ -36,7 +36,7 @@
                     <AppIcon v-else class="card__icon" :icon="cardIcon(file)" />
                 </td>
 				<td class="file"
-					@click="$emit('navigateDrive', file)"
+					@click="$emit('navigateDrive', file, $event)"
 				>
 					<span class="table__name" :title="file.getFileProperties().name">{{ file.getFileProperties().name }}</span>
 					<ShareMark class="table__shared" :kind="shareKinds[file.getFileProperties().name]"/>

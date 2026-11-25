@@ -52,6 +52,7 @@ public class Suite {
             // Picking files out of the grid, which a pointer and a touch screen reach in
             // different ways and which the file menu must not be mistaken for.
             t("picking files in the grid", () -> GridSelectionTest.run(args1));
+            t("one tap or click opens a file, and a double click opens it once", () -> TapToOpenTest.run(args1));
             t("a folder cut with the selection bar can't be pasted into itself", () -> CutIntoItselfTest.run(args1));
             // Sorting is shared state drawn by two views: the header's menu sets it, the
             // table's headings set it, and both views must follow whichever did.
